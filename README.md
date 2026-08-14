@@ -117,3 +117,5 @@ Solo project, but the process is not informal — see [`docs/DEV_WORKFLOW.md`](.
 
 **Phase 0 — Sprint 0.** Repository scaffolded; no application code yet.
 Track progress against the week-by-week table in [`docs/E2E_MVP_PLAN.md`](./docs/E2E_MVP_PLAN.md) §4.
+
+<!-- CI verification commit, will be squashed/closed -->
