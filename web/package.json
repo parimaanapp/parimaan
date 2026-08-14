@@ -1,0 +1,15 @@
+{
+  "name": "@parimaan/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Parimaan web dashboard (Next.js App Router)",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . -c ../eslint.config.mjs --max-warnings=0",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@parimaan/shared": "workspace:*"
+  }
+}

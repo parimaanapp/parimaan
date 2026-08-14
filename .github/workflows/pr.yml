@@ -1,0 +1,125 @@
+name: PR
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege: this workflow reads code and nothing else.
+# It must NOT gain id-token/contents:write without a security review.
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Detect which parts of the repo are actually populated ───────────────────
+  # mobile/ is scaffolded by `flutter create` in a later step of Sprint 0, so the
+  # Flutter jobs must not run (and must not fail) before pubspec.yaml exists.
+  detect:
+    name: Detect workspaces
+    runs-on: ubuntu-latest
+    outputs:
+      mobile: ${{ steps.check.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        name: Check for mobile/pubspec.yaml
+        run: |
+          if [ -f mobile/pubspec.yaml ]; then
+            echo "mobile=true" >> "$GITHUB_OUTPUT"
+            echo "mobile/pubspec.yaml found — Flutter jobs will run."
+          else
+            echo "mobile=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::mobile/pubspec.yaml not present — skipping Flutter analyze/test."
+          fi
+
+  # ── TypeScript workspaces: web, api, shared, infra ─────────────────────────
+  node:
+    name: Lint · Type-check · Unit tests (TS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # SDL is the single source of truth for Ferry, graphql-codegen, urql, and Zod
+      # (DEV_WORKFLOW §6d "SDL drift across four consumers"). Once codegen exists,
+      # regenerate here and fail on a dirty tree. No-op until then.
+      - name: Fail on uncommitted generated artifacts
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Working tree is dirty after install/build. Commit generated artifacts."
+            git status --porcelain
+            exit 1
+          fi
+
+  # ── Flutter app (conditional until mobile/ is populated) ───────────────────
+  flutter:
+    name: Flutter analyze · test
+    needs: detect
+    if: needs.detect.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test
+        run: flutter test --coverage
+
+  # ── Single required status check ───────────────────────────────────────────
+  # Branch protection requires ONLY this job. It succeeds when every job either
+  # passed or was legitimately skipped, and fails otherwise — so a skipped
+  # Flutter job doesn't leave a required check permanently pending.
+  pr-ok:
+    name: PR OK
+    if: always()
+    needs: [detect, node, flutter]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify no job failed or was cancelled
+        run: |
+          echo "detect=${{ needs.detect.result }} node=${{ needs.node.result }} flutter=${{ needs.flutter.result }}"
+          for r in "${{ needs.detect.result }}" "${{ needs.node.result }}" "${{ needs.flutter.result }}"; do
+            case "$r" in
+              success|skipped) ;;
+              *) echo "::error::A required job did not succeed (result: $r)"; exit 1 ;;
+            esac
+          done

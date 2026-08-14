@@ -1,0 +1,17 @@
+# Parimaan GraphQL schema — SINGLE SOURCE OF TRUTH.
+#
+# This file feeds four consumers:
+#   1. ferry_generator      → Dart types for mobile/
+#   2. graphql-codegen      → TypeScript types for api/ and web/
+#   3. urql                 → web/ client operations
+#   4. Zod schema authoring → server-side validation in api/
+#
+# Never hand-edit a generated artifact. Edit this file, regenerate, commit both.
+# Any change here is a `doc-updater` trigger: re-sync SYSTEM_DESIGN.md §6.1.
+#
+# Populated in W1 from SYSTEM_DESIGN.md §6.1.
+
+type Query {
+  """Placeholder. Replaced by the real schema in W1."""
+  _health: String!
+}
