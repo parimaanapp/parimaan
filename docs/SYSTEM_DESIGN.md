@@ -1244,13 +1244,17 @@ Design-level, ranked by decision urgency:
 
 ## 18. Decisions log
 
+> **Amended 2026-08-14** (W1, during `auth-stack` planning): two lines below were superseded by decisions locked later in `E2E_MVP_PLAN.md` §10 and never reconciled back here — same class of drift already fixed once in §12.3. Both corrected below; original wording struck through for the audit trail.
+> - Auth: ~~hand-rolled clients, not Amplify libraries~~ → **Q2 (locked):** `amplify_auth_cognito` used for OAuth only (PKCE/redirect/refresh handling — realistically a 1-2 week hand-roll cost otherwise); everything else (GraphQL client, state) stays hand-rolled.
+> - DB: ~~accessed via RDS Proxy~~ → **Q1 (locked):** direct Postgres connections first; RDS Proxy added only if the W3/W11 connection-load spikes show failures, not a guaranteed component.
+
 - Region: `ap-south-1` (Mumbai) primary; `us-east-1` fallback for Bedrock only if needed.
 - Backend runtime: Node.js 20 + TypeScript on Lambda.
 - IaC: AWS CDK v2 in TypeScript, 6 stacks.
 - Repo: monorepo with pnpm workspaces (+ Flutter as a peer module).
-- Auth: Cognito with Google IdP only; hand-rolled clients, not Amplify libraries.
+- Auth: Cognito with Google IdP only; `amplify_auth_cognito` for OAuth, hand-rolled elsewhere (see amendment above).
 - API: AppSync GraphQL with Lambda resolvers; subscriptions per (household, entity-type).
-- DB: Aurora Serverless v2 Postgres with auto-pause ON, accessed via RDS Proxy.
+- DB: Aurora Serverless v2 Postgres with auto-pause ON, direct connections by default — RDS Proxy conditional (see amendment above).
 - Cache + rate limits: DynamoDB single table with TTL.
 - Storage: two S3 buckets (uploads private, exports 30-day lifecycle).
 - AI: Bedrock Claude Sonnet (vision + complex text) + Haiku (structured extraction + short summaries); prompts versioned in code; every response schema-validated.

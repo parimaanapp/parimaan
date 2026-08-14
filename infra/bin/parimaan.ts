@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
+import { AuthStack } from '../stacks/auth-stack';
 import { NetworkStack } from '../stacks/network-stack';
 
 const app = new cdk.App();
@@ -30,6 +31,26 @@ new NetworkStack(app, `Parimaan-${envName}-Network`, {
   env,
   envName,
   description: `Parimaan ${envName} — VPC, subnets, and gateway/interface endpoints.`,
+});
+
+// Google OAuth Client ID is not sensitive (client IDs are meant to be public),
+// so it's passed as CDK context rather than Secrets Manager — the Client
+// *Secret* is what's sensitive, and AuthStack sources that directly from
+// Secrets Manager (parimaan/google-oauth-secret), never through this file.
+//   pnpm cdk synth -c env=dev -c googleClientId=<id>.apps.googleusercontent.com
+const googleClientId = app.node.tryGetContext('googleClientId') as string | undefined;
+if (!googleClientId) {
+  throw new Error(
+    'Missing CDK context "googleClientId". Pass it explicitly, e.g. ' +
+      '`pnpm cdk synth -c env=dev -c googleClientId=<id>.apps.googleusercontent.com`.',
+  );
+}
+
+new AuthStack(app, `Parimaan-${envName}-Auth`, {
+  env,
+  envName,
+  googleClientId,
+  description: `Parimaan ${envName} — Cognito user pool, Google IdP, app clients.`,
 });
 
 cdk.Tags.of(app).add('Project', 'Parimaan');
