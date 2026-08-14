@@ -28,4 +28,15 @@ export default tseslint.config(
       'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }],
     },
   },
+  {
+    // Test files accumulate many independent `it()` cases inside one `describe`
+    // block by nature — that's breadth of coverage, not the kind of nested
+    // control-flow complexity max-lines-per-function exists to catch in
+    // application code. complexity/max-depth still apply within each test body.
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/test/**/*.ts'],
+    rules: {
+      'max-lines-per-function': 'off',
+      'max-lines': ['warn', { max: 800, skipBlankLines: true, skipComments: true }],
+    },
+  },
 );

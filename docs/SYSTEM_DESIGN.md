@@ -1112,10 +1112,12 @@ parimaan/
 
 ### 12.3 CDK stack structure
 
-- **network-stack:** VPC (2 AZs), subnets, RDS Proxy, VPC endpoints for Bedrock + S3.
+> **Amended 2026-08-14** (W1, during `NetworkStack` code review): the original text below listed RDS Proxy under `network-stack`, which both disagreed with §16's month-by-month plan (RDS Proxy lands in Month 2 as part of `api-stack`) and is now superseded by `E2E_MVP_PLAN.md` §10 Q1 (locked) — RDS Proxy is no longer a guaranteed component at all. Q1's decision is "direct Postgres connections first; add RDS Proxy only if the W3/W11 connection-load spikes show failures." RDS Proxy, if it ends up built, belongs conceptually next to the Aurora cluster it proxies (`data-stack`), not `network-stack` — a VPC/subnet/endpoint stack has no natural reason to own a database connection pooler. `network-stack` as actually implemented in W1 has 4 VPC endpoints (S3, DynamoDB — gateway; Bedrock, Secrets Manager — interface), not the "Bedrock + S3" pair originally written here.
+
+- **network-stack:** VPC (2 AZs), subnets, VPC endpoints for S3, DynamoDB, Bedrock, and Secrets Manager.
 - **auth-stack:** Cognito user pool, Google IdP config, app clients.
-- **data-stack:** Aurora Serverless v2 cluster (auto-pause ON), S3 buckets, DynamoDB cache table, KMS keys.
-- **api-stack:** AppSync API, GraphQL schema, Lambda resolvers, RDS Proxy connection, Bedrock IAM policy.
+- **data-stack:** Aurora Serverless v2 cluster (auto-pause ON), S3 buckets, DynamoDB cache table, KMS keys, **RDS Proxy (conditional — only if the Q1 spike shows direct-connection failures; see `E2E_MVP_PLAN.md` §10 Q1)**.
+- **api-stack:** AppSync API, GraphQL schema, Lambda resolvers, Aurora connection (direct by default, or via RDS Proxy per the Q1 spike outcome), Bedrock IAM policy.
 - **frontend-stack:** Amplify Hosting for web, CloudFront for CDN, Route 53 records.
 - **observability-stack:** CloudWatch alarms, SNS topic, log retention config, X-Ray settings.
 

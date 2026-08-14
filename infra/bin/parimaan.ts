@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { BootstrapStack } from '../stacks/bootstrap-stack';
+import { NetworkStack } from '../stacks/network-stack';
 
 const app = new cdk.App();
 
@@ -24,10 +24,12 @@ const env: cdk.Environment = {
   ...(process.env.CDK_DEFAULT_REGION ? { region: process.env.CDK_DEFAULT_REGION } : {}),
 };
 
-new BootstrapStack(app, `Parimaan-${envName}-Bootstrap`, {
+// `network.vpc` will be threaded into data-stack and api-stack once they land —
+// left uncaptured for now since nothing consumes it yet.
+new NetworkStack(app, `Parimaan-${envName}-Network`, {
   env,
   envName,
-  description: `Parimaan ${envName} — bootstrap/placeholder stack (Sprint 0). Real stacks land in W1.`,
+  description: `Parimaan ${envName} — VPC, subnets, and gateway/interface endpoints.`,
 });
 
 cdk.Tags.of(app).add('Project', 'Parimaan');
