@@ -1,0 +1,203 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AuthStack > matches the known-good synthesized template snapshot (dev) 1`] = `
+{
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "GoogleIdp206FECA7": {
+      "Properties": {
+        "AttributeMapping": {
+          "email": "email",
+          "name": "name",
+          "picture": "picture",
+        },
+        "ProviderDetails": {
+          "authorize_scopes": "profile email openid",
+          "client_id": "fake-google-client-id-123.apps.googleusercontent.com",
+          "client_secret": "{{resolve:secretsmanager:parimaan/google-oauth-secret:SecretString:::}}",
+        },
+        "ProviderName": "Google",
+        "ProviderType": "Google",
+        "UserPoolId": {
+          "Ref": "UserPool6BA7E5F2",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolIdentityProvider",
+    },
+    "UserPool6BA7E5F2": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "AccountRecoverySetting": {
+          "RecoveryMechanisms": [
+            {
+              "Name": "verified_phone_number",
+              "Priority": 1,
+            },
+            {
+              "Name": "verified_email",
+              "Priority": 2,
+            },
+          ],
+        },
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": true,
+        },
+        "AutoVerifiedAttributes": [
+          "email",
+        ],
+        "EmailVerificationMessage": "The verification code to your new account is {####}",
+        "EmailVerificationSubject": "Verify your new account",
+        "Schema": [
+          {
+            "Mutable": true,
+            "Name": "email",
+            "Required": true,
+          },
+          {
+            "Mutable": true,
+            "Name": "name",
+            "Required": false,
+          },
+          {
+            "Mutable": true,
+            "Name": "picture",
+            "Required": false,
+          },
+        ],
+        "SmsVerificationMessage": "The verification code to your new account is {####}",
+        "UsernameAttributes": [
+          "email",
+        ],
+        "VerificationMessageTemplate": {
+          "DefaultEmailOption": "CONFIRM_WITH_CODE",
+          "EmailMessage": "The verification code to your new account is {####}",
+          "EmailSubject": "Verify your new account",
+          "SmsMessage": "The verification code to your new account is {####}",
+        },
+      },
+      "Type": "AWS::Cognito::UserPool",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "UserPoolDomainD0EA232A": {
+      "Properties": {
+        "Domain": "parimaan-dev",
+        "UserPoolId": {
+          "Ref": "UserPool6BA7E5F2",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolDomain",
+    },
+    "UserPoolMobileClient046093C2": {
+      "DependsOn": [
+        "GoogleIdp206FECA7",
+      ],
+      "Properties": {
+        "AccessTokenValidity": 60,
+        "AllowedOAuthFlows": [
+          "code",
+        ],
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthScopes": [
+          "email",
+          "openid",
+          "profile",
+        ],
+        "CallbackURLs": [
+          "parimaan://auth",
+        ],
+        "ExplicitAuthFlows": [
+          "ALLOW_REFRESH_TOKEN_AUTH",
+        ],
+        "GenerateSecret": false,
+        "LogoutURLs": [
+          "parimaan://logout",
+        ],
+        "RefreshTokenValidity": 43200,
+        "SupportedIdentityProviders": [
+          "Google",
+        ],
+        "TokenValidityUnits": {
+          "AccessToken": "minutes",
+          "RefreshToken": "minutes",
+        },
+        "UserPoolId": {
+          "Ref": "UserPool6BA7E5F2",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolClient",
+    },
+    "UserPoolWebClient4C9370B0": {
+      "DependsOn": [
+        "GoogleIdp206FECA7",
+      ],
+      "Properties": {
+        "AccessTokenValidity": 60,
+        "AllowedOAuthFlows": [
+          "code",
+        ],
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthScopes": [
+          "email",
+          "openid",
+          "profile",
+        ],
+        "CallbackURLs": [
+          "https://dev.parimaan.app/api/auth/callback/cognito",
+        ],
+        "ExplicitAuthFlows": [
+          "ALLOW_REFRESH_TOKEN_AUTH",
+        ],
+        "GenerateSecret": true,
+        "LogoutURLs": [
+          "https://dev.parimaan.app",
+        ],
+        "RefreshTokenValidity": 43200,
+        "SupportedIdentityProviders": [
+          "Google",
+        ],
+        "TokenValidityUnits": {
+          "AccessToken": "minutes",
+          "RefreshToken": "minutes",
+        },
+        "UserPoolId": {
+          "Ref": "UserPool6BA7E5F2",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolClient",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;

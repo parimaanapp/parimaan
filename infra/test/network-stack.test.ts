@@ -113,4 +113,11 @@ describe('NetworkStack', () => {
     expect(stack.vpc).toBeDefined();
     expect(stack.vpc).toBeInstanceOf(Vpc);
   });
+
+  // Change-detector per DEV_WORKFLOW.md §3.4(c): fine-grained assertions above
+  // are primary; this snapshot exists only to flag *any* unreviewed diff in
+  // the synthesized template, not to encode intent on its own.
+  it('matches the known-good synthesized template snapshot (dev)', () => {
+    expect(synth('dev').toJSON()).toMatchSnapshot();
+  });
 });
