@@ -12,5 +12,8 @@
   },
   "dependencies": {
     "@parimaan/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.162"
   }
 }

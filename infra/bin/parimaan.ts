@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
+import { ApiStack } from '../stacks/api-stack';
 import { AuthStack } from '../stacks/auth-stack';
 import { DataStack } from '../stacks/data-stack';
 import { NetworkStack } from '../stacks/network-stack';
@@ -52,11 +53,18 @@ if (!googleClientId) {
   );
 }
 
-new AuthStack(app, `Parimaan-${envName}-Auth`, {
+const auth = new AuthStack(app, `Parimaan-${envName}-Auth`, {
   env,
   envName,
   googleClientId,
   description: `Parimaan ${envName} — Cognito user pool, Google IdP, app clients.`,
+});
+
+new ApiStack(app, `Parimaan-${envName}-Api`, {
+  env,
+  envName,
+  userPool: auth.userPool,
+  description: `Parimaan ${envName} — AppSync GraphQL API + Lambda resolvers.`,
 });
 
 cdk.Tags.of(app).add('Project', 'Parimaan');

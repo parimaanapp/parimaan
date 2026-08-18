@@ -9,9 +9,13 @@
 # Never hand-edit a generated artifact. Edit this file, regenerate, commit both.
 # Any change here is a `doc-updater` trigger: re-sync SYSTEM_DESIGN.md §6.1.
 #
-# Populated in W1 from SYSTEM_DESIGN.md §6.1.
+# The real schema (SYSTEM_DESIGN.md §6.1 — households, recipes, pantry, etc.)
+# lands incrementally starting W1, alongside the resolvers that implement each
+# field. Right now this file holds only the `_health` placeholder, wired to a
+# real Lambda resolver in api-stack — that pipeline (AppSync → Lambda →
+# response) working end-to-end is the actual W1 milestone, not the full schema.
 
 type Query {
-  """Placeholder. Replaced by the real schema in W1."""
+  """Health-check field. Proves the AppSync → Lambda → response pipeline works."""
   _health: String!
 }
