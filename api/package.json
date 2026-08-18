@@ -5,15 +5,19 @@
   "description": "Parimaan AppSync Lambda resolvers (Node 20 + TypeScript)",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.migrations.json",
     "lint": "eslint . -c ../eslint.config.mjs --max-warnings=0",
     "test": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@parimaan/shared": "workspace:*"
+    "@parimaan/shared": "workspace:*",
+    "node-pg-migrate": "^9.0.0",
+    "pg": "^8.23.0"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.162"
+    "@testcontainers/postgresql": "^11.14.0",
+    "@types/aws-lambda": "^8.10.162",
+    "@types/pg": "^8.23.1"
   }
 }
