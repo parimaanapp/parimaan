@@ -1116,7 +1116,9 @@ parimaan/
 
 - **network-stack:** VPC (2 AZs), subnets, VPC endpoints for S3, DynamoDB, Bedrock, and Secrets Manager.
 - **auth-stack:** Cognito user pool, Google IdP config, app clients.
-- **data-stack:** Aurora Serverless v2 cluster (auto-pause ON), S3 buckets, DynamoDB cache table, KMS keys, **RDS Proxy (conditional — only if the Q1 spike shows direct-connection failures; see `E2E_MVP_PLAN.md` §10 Q1)**.
+- **data-stack:** Aurora Serverless v2 cluster (auto-pause ON), S3 buckets, DynamoDB cache table, **RDS Proxy (conditional — only if the Q1 spike shows direct-connection failures; see `E2E_MVP_PLAN.md` §10 Q1)**. No customer-managed KMS key is created — Aurora and S3 use their AWS-managed default keys and DynamoDB its AWS-owned default, per §13.1's interpretation (amended below); the "KMS keys" bullet originally here is removed as it implied a resource this stack doesn't actually provision.
+
+> **Amended** (`DataStack` build, W1/W2): the line above dropped its "KMS keys" bullet. §13.1's "Aurora: encrypted with account-managed KMS key" is interpreted as the AWS-managed default (`aws/rds`), not a customer-managed key the stack would create and pay for ($1/mo/key) — consistent with §13.1's own parallel wording for DynamoDB ("AWS-owned key") and the cost-discipline theme in `PRD.md` §17.4. Verified independently by two reviewers against actual synthesized CloudFormation (zero `AWS::KMS::Key` resources), not just source reading.
 - **api-stack:** AppSync API, GraphQL schema, Lambda resolvers, Aurora connection (direct by default, or via RDS Proxy per the Q1 spike outcome), Bedrock IAM policy.
 - **frontend-stack:** Amplify Hosting for web, CloudFront for CDN, Route 53 records.
 - **observability-stack:** CloudWatch alarms, SNS topic, log retention config, X-Ray settings.

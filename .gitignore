@@ -4,6 +4,7 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/*
+.Rhistory
 !.vscode/extensions.json
 !.vscode/settings.json.example
 

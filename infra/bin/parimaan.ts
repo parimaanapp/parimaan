@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
 import { AuthStack } from '../stacks/auth-stack';
+import { DataStack } from '../stacks/data-stack';
 import { NetworkStack } from '../stacks/network-stack';
 
 const app = new cdk.App();
@@ -25,12 +26,17 @@ const env: cdk.Environment = {
   ...(process.env.CDK_DEFAULT_REGION ? { region: process.env.CDK_DEFAULT_REGION } : {}),
 };
 
-// `network.vpc` will be threaded into data-stack and api-stack once they land —
-// left uncaptured for now since nothing consumes it yet.
-new NetworkStack(app, `Parimaan-${envName}-Network`, {
+const network = new NetworkStack(app, `Parimaan-${envName}-Network`, {
   env,
   envName,
   description: `Parimaan ${envName} — VPC, subnets, and gateway/interface endpoints.`,
+});
+
+new DataStack(app, `Parimaan-${envName}-Data`, {
+  env,
+  envName,
+  vpc: network.vpc,
+  description: `Parimaan ${envName} — Aurora Serverless v2, S3 buckets, DynamoDB cache table.`,
 });
 
 // Google OAuth Client ID is not sensitive (client IDs are meant to be public),
