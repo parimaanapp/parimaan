@@ -60,7 +60,12 @@ export class ApiStack extends cdk.Stack {
 
     const healthFn = new NodejsFunction(this, 'HealthFn', {
       entry: join(__dirname, '../../api/src/resolvers/health.ts'),
-      runtime: Runtime.NODEJS_20_X,
+      // Lambda RUNTIME only — local dev tooling (.nvmrc, pnpm, CI) stays on
+      // Node 20 by deliberate choice. nodejs20.x was confirmed already
+      // deprecated by AWS (CFN validation warning: deprecated 2026-04-30,
+      // new-resource creation disabled 2027-02-01); bumped now while only
+      // one Lambda exists, per AWS's own suggested target in that warning.
+      runtime: Runtime.NODEJS_24_X,
       handler: 'handler',
     });
 
