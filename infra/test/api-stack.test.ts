@@ -108,18 +108,25 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/_health\s*:\s*String!/);
   });
 
-  it('declares our health Lambda function, on the Node.js 20 runtime', () => {
+  it('declares our health Lambda function, on the Node.js 24 runtime', () => {
     // Verified empirically: the stack's `logConfig` on the AppSync API (for
     // observability — see SYSTEM_DESIGN.md §11.3) makes CDK auto-create a
-    // second, internal "LogRetention" custom-resource Lambda (nodejs24.x, a
-    // CDK-owned helper, not something this stack declares) to manage the log
-    // group's retention period. A blanket "exactly 1 Lambda in the stack"
-    // count is the wrong assertion; scope to our own function specifically.
+    // second, internal "LogRetention" custom-resource Lambda to manage the
+    // log group's retention period — and as of the nodejs20.x → nodejs24.x
+    // runtime bump, both Lambdas now share the SAME Runtime and Handler
+    // values, so a property-match assertion can no longer disambiguate them.
+    // Filter by logical ID instead: CDK's LogRetention helper always uses
+    // the "LogRetention" construct-id prefix, so excluding it is a robust
+    // way to isolate our own function regardless of what runtime CDK's
+    // internal helper happens to use at any given aws-cdk-lib version.
     const template = synth('dev');
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      Runtime: 'nodejs20.x',
-      Handler: 'index.handler',
-    });
+    const allFunctions = template.findResources('AWS::Lambda::Function');
+    const ourFunctions = Object.entries(allFunctions).filter(
+      ([logicalId]) => !logicalId.startsWith('LogRetention'),
+    );
+    expect(ourFunctions).toHaveLength(1);
+    const [, healthFn] = ourFunctions[0] as [string, { Properties: { Runtime: string } }];
+    expect(healthFn.Properties.Runtime).toBe('nodejs24.x');
   });
 
   it('declares exactly one AppSync Lambda data source, wired to the Lambda function', () => {
