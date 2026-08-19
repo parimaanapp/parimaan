@@ -7,8 +7,12 @@ import {
   GraphqlApi,
 } from 'aws-cdk-lib/aws-appsync';
 import type { IUserPool, UserPool } from 'aws-cdk-lib/aws-cognito';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import type { ISecurityGroup, IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { SubnetType } from 'aws-cdk-lib/aws-ec2';
+import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Construct } from 'constructs';
 
 export interface ApiStackProps extends cdk.StackProps {
@@ -21,17 +25,35 @@ export interface ApiStackProps extends cdk.StackProps {
    * `NetworkStack.vpc` → `DataStack`, same narrow documented-cast fix below.
    */
   readonly userPool: UserPool;
+  /** VPC from NetworkStack — the `me`/`createHousehold` resolver Lambdas need it to reach Aurora. */
+  readonly vpc: Vpc;
+  /** Aurora cluster from DataStack — only its endpoint (host/port) is used; credentials come from `appRoleSecret`, not the cluster's own admin secret. */
+  readonly dbCluster: DatabaseCluster;
+  /**
+   * Login-password secret for the least-privileged `parimaan_app` Postgres
+   * role, from DataStack. Typed as the concrete `Secret` class (matching
+   * `DataStack.appRoleSecret`'s type), not `ISecret` — same
+   * `exactOptionalPropertyTypes` friction as `vpc`/`userPool` above.
+   */
+  readonly appRoleSecret: Secret;
+  /** Shared security group for VPC-attached Lambdas reaching Aurora, from DataStack. */
+  readonly lambdaSecurityGroup: ISecurityGroup;
 }
 
 /**
- * AppSync GraphQL API, Cognito-authorized, plus one real Lambda-backed
- * resolver for the placeholder `Query._health` field — proves the
- * AppSync → Lambda → response pipeline end-to-end before any real business
- * logic lands. See SYSTEM_DESIGN.md §6.1-§6.3 and E2E_MVP_PLAN.md §16
- * ("api-stack (AppSync + hello-world resolver)").
+ * AppSync GraphQL API, Cognito-authorized. Resolvers:
+ * - `Query._health` — W1 placeholder, proves the AppSync → Lambda →
+ *   response pipeline end-to-end (SYSTEM_DESIGN.md §6.1-§6.3).
+ * - `Query.me`, `Mutation.createHousehold`, `User.households` — the first
+ *   real slice (SYSTEM_DESIGN.md §5.1-§5.2), landing W3/W4 per
+ *   E2E_MVP_PLAN.md §4. `User.households` is its own field resolver
+ *   (rather than `me` returning a hydrated tree) specifically to avoid the
+ *   User↔HouseholdMembership↔User schema cycle failing on a non-null field
+ *   at arbitrary query depth.
  *
- * Real household/pantry/recipe resolvers are later, heavier work once this
- * skeleton exists — deliberately out of scope here.
+ * Only `_health` stays out of the VPC (no DB access needed) — the other
+ * three are VPC-attached, connecting to Aurora as the least-privileged
+ * `parimaan_app` role (never the cluster's admin credentials).
  */
 export class ApiStack extends cdk.Stack {
   public readonly api: GraphqlApi;
@@ -58,6 +80,11 @@ export class ApiStack extends cdk.Stack {
       logConfig: { fieldLogLevel: FieldLogLevel.ERROR },
     });
 
+    this.createHealthResolver();
+    this.createHouseholdResolvers(props);
+  }
+
+  private createHealthResolver(): void {
     const healthFn = new NodejsFunction(this, 'HealthFn', {
       entry: join(__dirname, '../../api/src/resolvers/health.ts'),
       // Lambda RUNTIME only — local dev tooling (.nvmrc, pnpm, CI) stays on
@@ -74,5 +101,92 @@ export class ApiStack extends cdk.Stack {
       typeName: 'Query',
       fieldName: '_health',
     });
+  }
+
+  private createHouseholdResolvers(props: ApiStackProps): void {
+    const { dbCluster, appRoleSecret, lambdaSecurityGroup } = props;
+    // Same `exactOptionalPropertyTypes` quirk as data-stack.ts's `vpc` cast —
+    // `Vpc` implements every member `IVpc` needs at runtime.
+    const vpc = props.vpc as IVpc;
+
+    const meFn = this.createDbResolverFunction('MeFn', 'me.ts', {
+      vpc,
+      dbCluster,
+      appRoleSecret,
+      lambdaSecurityGroup,
+    });
+    const createHouseholdFn = this.createDbResolverFunction('CreateHouseholdFn', 'createHousehold.ts', {
+      vpc,
+      dbCluster,
+      appRoleSecret,
+      lambdaSecurityGroup,
+    });
+    const userHouseholdsFn = this.createDbResolverFunction('UserHouseholdsFn', 'userHouseholds.ts', {
+      vpc,
+      dbCluster,
+      appRoleSecret,
+      lambdaSecurityGroup,
+    });
+
+    const meDataSource = this.api.addLambdaDataSource('MeDataSource', meFn);
+    meDataSource.createResolver('MeResolver', { typeName: 'Query', fieldName: 'me' });
+
+    const createHouseholdDataSource = this.api.addLambdaDataSource(
+      'CreateHouseholdDataSource',
+      createHouseholdFn,
+    );
+    createHouseholdDataSource.createResolver('CreateHouseholdResolver', {
+      typeName: 'Mutation',
+      fieldName: 'createHousehold',
+    });
+
+    const userHouseholdsDataSource = this.api.addLambdaDataSource(
+      'UserHouseholdsDataSource',
+      userHouseholdsFn,
+    );
+    userHouseholdsDataSource.createResolver('UserHouseholdsResolver', {
+      typeName: 'User',
+      fieldName: 'households',
+    });
+  }
+
+  /**
+   * Shared config for the three household-slice resolver Lambdas: VPC
+   * subnet placement, the shared `lambdaSecurityGroup`, and env vars for
+   * connecting to Aurora as `parimaan_app` (never the cluster's admin
+   * secret — these Lambdas only ever get read access to `appRoleSecret`).
+   */
+  private createDbResolverFunction(
+    id: string,
+    entryFile: string,
+    deps: {
+      vpc: IVpc;
+      dbCluster: DatabaseCluster;
+      appRoleSecret: Secret;
+      lambdaSecurityGroup: ISecurityGroup;
+    },
+  ): NodejsFunction {
+    const { vpc, dbCluster, appRoleSecret, lambdaSecurityGroup } = deps;
+
+    const fn = new NodejsFunction(this, id, {
+      entry: join(__dirname, `../../api/src/resolvers/${entryFile}`),
+      runtime: Runtime.NODEJS_24_X,
+      handler: 'handler',
+      vpc,
+      vpcSubnets: { subnetType: SubnetType.PRIVATE_ISOLATED },
+      securityGroups: [lambdaSecurityGroup],
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      tracing: Tracing.ACTIVE,
+      environment: {
+        APP_ROLE_SECRET_ARN: appRoleSecret.secretArn,
+        DB_HOST: dbCluster.clusterEndpoint.hostname,
+        DB_PORT: dbCluster.clusterEndpoint.port.toString(),
+        DB_NAME: 'parimaan',
+      },
+    });
+
+    appRoleSecret.grantRead(fn);
+    return fn;
   }
 }

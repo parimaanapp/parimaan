@@ -14,7 +14,8 @@
     "@aws-sdk/client-secrets-manager": "^3.933.0",
     "@parimaan/shared": "workspace:*",
     "node-pg-migrate": "^9.0.0",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^11.14.0",
