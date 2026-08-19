@@ -117,8 +117,11 @@ describe('DataStack', () => {
     });
 
     it('sources DB credentials via a Secrets-Manager-generated secret, never a literal password', () => {
+      // Total secret count (this one + the parimaan_app role's password
+      // secret) is asserted separately below, in "parimaan_app role
+      // password secret" — this test only checks the admin credentials
+      // secret's own shape and the absence of a literal password.
       const template = synth('dev');
-      template.resourceCountIs('AWS::SecretsManager::Secret', 1);
       template.hasResourceProperties('AWS::SecretsManager::Secret', {
         GenerateSecretString: Match.objectLike({
           GenerateStringKey: 'password',
@@ -131,25 +134,184 @@ describe('DataStack', () => {
       expect(json).not.toMatch(/"MasterUserPassword"\s*:\s*"(?!\{\{resolve:)[^"]+"/);
     });
 
-    it('the DB security group has zero ingress rules (api-stack adds specific ingress later)', () => {
+    it('the DB security group only allows ingress from the shared Lambda security group on 5432 — no CIDR-based rule', () => {
+      // Deliberately owned by DataStack, not added later by ApiStack: an
+      // ingress rule authored in ApiStack against a DataStack-owned SG would
+      // make DataStack export-depend on ApiStack's SG id, a circular
+      // CloudFormation stack dependency (ApiStack already depends on
+      // DataStack for the cluster endpoint/secret). DataStack owns both the
+      // DB security group and the shared Lambda security group, so the
+      // dependency stays one-directional; ApiStack's resolver Lambdas (and
+      // this stack's own migration-runner Lambda) merely attach to the
+      // Lambda security group DataStack exposes.
+      // Verified empirically: CDK generates security-group-to-security-group
+      // rules as a standalone `AWS::EC2::SecurityGroupIngress` resource
+      // (`GroupId` + `SourceSecurityGroupId` both `Fn::GetAtt` references),
+      // not as an inline `SecurityGroupIngress` property on the target SG —
+      // so this asserts against that separate resource type, not the DB
+      // security group's own (empty) inline property list.
       const template = synth('dev');
       const clusters = template.findResources('AWS::RDS::DBCluster');
       const [cluster] = Object.values(clusters) as Array<{
         Properties: { VpcSecurityGroupIds: Array<{ 'Fn::GetAtt': [string, string] }> };
       }>;
       if (!cluster) throw new Error('expected exactly one DBCluster');
-      const sgLogicalIds = cluster.Properties.VpcSecurityGroupIds.map(
+      const dbSgLogicalIds = cluster.Properties.VpcSecurityGroupIds.map(
         (ref) => ref['Fn::GetAtt'][0],
       );
-      expect(sgLogicalIds.length).toBeGreaterThan(0);
+      expect(dbSgLogicalIds).toHaveLength(1);
+      const [dbSgLogicalId] = dbSgLogicalIds;
+
       const allSgs = template.findResources('AWS::EC2::SecurityGroup');
-      for (const logicalId of sgLogicalIds) {
-        const sg = allSgs[logicalId] as {
-          Properties?: { SecurityGroupIngress?: unknown[] };
-        };
+      for (const logicalId of dbSgLogicalIds) {
+        const sg = allSgs[logicalId] as { Properties?: { SecurityGroupIngress?: unknown[] } };
         expect(sg).toBeDefined();
         expect(sg.Properties?.SecurityGroupIngress ?? []).toHaveLength(0);
       }
+
+      const ingressRules = Object.values(
+        template.findResources('AWS::EC2::SecurityGroupIngress'),
+      ) as Array<{
+        Properties: {
+          FromPort: number;
+          ToPort: number;
+          IpProtocol: string;
+          CidrIp?: string;
+          GroupId: { 'Fn::GetAtt': [string, string] };
+          SourceSecurityGroupId?: { 'Fn::GetAtt': [string, string] };
+        };
+      }>;
+      const dbIngressRules = ingressRules.filter(
+        (rule) => rule.Properties.GroupId['Fn::GetAtt'][0] === dbSgLogicalId,
+      );
+      expect(dbIngressRules).toHaveLength(1);
+      const [rule] = dbIngressRules;
+      if (!rule) throw new Error('expected exactly one ingress rule targeting the DB SG');
+      expect(rule.Properties.FromPort).toBe(5432);
+      expect(rule.Properties.ToPort).toBe(5432);
+      expect(rule.Properties.IpProtocol).toBe('tcp');
+      expect(rule.Properties.CidrIp).toBeUndefined();
+      expect(rule.Properties.SourceSecurityGroupId).toBeDefined();
+    });
+
+    it('sets defaultDatabaseName to "parimaan" rather than the engine default', () => {
+      const template = synth('dev');
+      template.hasResourceProperties('AWS::RDS::DBCluster', {
+        DatabaseName: 'parimaan',
+      });
+    });
+  });
+
+  describe('Lambda security group', () => {
+    it('declares exactly one additional (non-DB) security group for VPC-attached Lambdas', () => {
+      const template = synth('dev');
+      // 1 for the Aurora cluster + 1 shared one for Lambdas (resolvers,
+      // migration runner) that need to reach it.
+      template.resourceCountIs('AWS::EC2::SecurityGroup', 2);
+    });
+
+    it('exposes lambdaSecurityGroup as a public readonly property', () => {
+      const stack = build('dev');
+      expect(stack.lambdaSecurityGroup).toBeDefined();
+    });
+  });
+
+  describe('parimaan_app role password secret', () => {
+    it('declares a second Secrets-Manager-generated secret (admin credentials + app-role password)', () => {
+      const template = synth('dev');
+      template.resourceCountIs('AWS::SecretsManager::Secret', 2);
+      template.hasResourceProperties('AWS::SecretsManager::Secret', {
+        GenerateSecretString: Match.objectLike({
+          GenerateStringKey: 'password',
+        }),
+      });
+    });
+
+    it('exposes appRoleSecret as a public readonly property', () => {
+      const stack = build('dev');
+      expect(stack.appRoleSecret).toBeDefined();
+    });
+  });
+
+  describe('Automated migration runner (CustomResource)', () => {
+    it('declares exactly one migration-runner Lambda function, VPC-attached to the isolated subnets via the shared Lambda security group', () => {
+      const template = synth('dev');
+      const allFunctions = template.findResources('AWS::Lambda::Function');
+      // Exclude cr.Provider's own auto-generated "framework::onEvent"
+      // wrapper Lambda and CDK's LogRetention helper — neither is our code.
+      const ourFunctions = Object.entries(allFunctions).filter(
+        ([logicalId]) => !logicalId.includes('Provider') && !logicalId.startsWith('LogRetention'),
+      );
+      expect(ourFunctions).toHaveLength(1);
+      const [, migrationFn] = ourFunctions[0] as [
+        string,
+        {
+          Properties: {
+            Runtime: string;
+            Handler: string;
+            VpcConfig?: { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
+          };
+        },
+      ];
+      expect(migrationFn.Properties.Runtime).toBe('nodejs24.x');
+      expect(migrationFn.Properties.Handler).toBe('index.handler');
+      expect(migrationFn.Properties.VpcConfig).toBeDefined();
+      expect(migrationFn.Properties.VpcConfig?.SecurityGroupIds).toHaveLength(1);
+      expect(migrationFn.Properties.VpcConfig?.SubnetIds).toHaveLength(2);
+    });
+
+    it('grants the migration-runner Lambda secretsmanager:GetSecretValue scoped to exactly the 2 secrets — never Resource: "*"', () => {
+      const template = synth('dev');
+      const policies = template.findResources('AWS::IAM::Policy');
+      const statements = Object.values(policies).flatMap(
+        (policy) =>
+          (
+            policy as {
+              Properties: {
+                PolicyDocument: {
+                  Statement: Array<{ Action: string | string[]; Resource: unknown }>;
+                };
+              };
+            }
+          ).Properties.PolicyDocument.Statement,
+      );
+      const secretStatements = statements.filter((statement) => {
+        const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+        return actions.includes('secretsmanager:GetSecretValue');
+      });
+      expect(secretStatements.length).toBeGreaterThan(0);
+      for (const statement of secretStatements) {
+        expect(statement.Resource).not.toBe('*');
+      }
+    });
+
+    it('declares exactly one CloudFormation custom resource wired to the migration-runner Provider', () => {
+      const template = synth('dev');
+      const customResources = template.findResources('AWS::CloudFormation::CustomResource');
+      expect(Object.keys(customResources)).toHaveLength(1);
+    });
+
+    it('the custom resource carries a MigrationsHash property so a new migration file forces re-invocation on deploy', () => {
+      const template = synth('dev');
+      const customResources = Object.values(template.findResources('AWS::CloudFormation::CustomResource')) as Array<{
+        Properties: { MigrationsHash?: string };
+      }>;
+      expect(customResources).toHaveLength(1);
+      const [resource] = customResources;
+      if (!resource) throw new Error('expected exactly one custom resource');
+      expect(resource.Properties.MigrationsHash).toBeDefined();
+      expect(resource.Properties.MigrationsHash).toMatch(/^[0-9a-f]{64}$/);
+    });
+
+    it('does not embed the app-role secret ARN or DB secret ARN as a literal string outside a Ref/Fn::GetAtt', () => {
+      // Loose but useful guard: environment variable values for secret ARNs
+      // must be CFN intrinsic references (tokens), never resolved literals,
+      // which would mean the ARN (and, worse, potentially resolved secret
+      // material) leaked into the template at synth time.
+      const template = synth('dev').toJSON() as { Resources: Record<string, unknown> };
+      const json = JSON.stringify(template);
+      expect(json).not.toMatch(/"DB_SECRET_ARN"\s*:\s*"arn:aws:secretsmanager/);
+      expect(json).not.toMatch(/"APP_ROLE_SECRET_ARN"\s*:\s*"arn:aws:secretsmanager/);
     });
   });
 

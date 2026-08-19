@@ -10,6 +10,20 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
     },
   },
   "Resources": {
+    "AppRoleSecretA2E93149": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Description": "Login password for the parimaan_app least-privileged Postgres role (SD §6.2 layer 3 / RLS)",
+        "GenerateSecretString": {
+          "ExcludePunctuation": true,
+          "GenerateStringKey": "password",
+          "PasswordLength": 32,
+          "SecretStringTemplate": "{}",
+        },
+      },
+      "Type": "AWS::SecretsManager::Secret",
+      "UpdateReplacePolicy": "Delete",
+    },
     "AuroraCluster23D869C0": {
       "DeletionPolicy": "Snapshot",
       "Properties": {
@@ -19,6 +33,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
         "DBSubnetGroupName": {
           "Ref": "AuroraClusterSubnetsF3E9E6AD",
         },
+        "DatabaseName": "parimaan",
         "Engine": "aurora-postgresql",
         "EngineVersion": "16.4",
         "MasterUserPassword": {
@@ -128,7 +143,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
     },
     "DbSecurityGroupE9D701AD": {
       "Properties": {
-        "GroupDescription": "Aurora Serverless v2 cluster - ingress added by api-stack",
+        "GroupDescription": "Aurora Serverless v2 cluster",
         "SecurityGroupEgress": [
           {
             "CidrIp": "0.0.0.0/0",
@@ -141,6 +156,27 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
         },
       },
       "Type": "AWS::EC2::SecurityGroup",
+    },
+    "DbSecurityGroupfromParimaandevDataLambdaSecurityGroupE0E7E70254322AC36268": {
+      "Properties": {
+        "Description": "VPC-attached Lambdas (resolvers, migration runner) reaching Aurora",
+        "FromPort": 5432,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "DbSecurityGroupE9D701AD",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "LambdaSecurityGroup0BD9FC99",
+            "GroupId",
+          ],
+        },
+        "ToPort": 5432,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
     },
     "ExportsBucket5A12738B": {
       "DeletionPolicy": "Delete",
@@ -171,6 +207,315 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
         },
       },
       "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "LambdaSecurityGroup0BD9FC99": {
+      "Properties": {
+        "GroupDescription": "Shared security group for VPC-attached Lambdas reaching Aurora",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpc8378EB38272D6E3A",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "MigrationRunnerFn734B34B7": {
+      "DependsOn": [
+        "MigrationRunnerFnServiceRoleDefaultPolicy46A1A39B",
+        "MigrationRunnerFnServiceRoleB51FEED2",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "3d465d36b7216f5d221bf6143fbcc7e1aef757c1b8c2fa4559ace0d53f2c56d4.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Ref": "AppRoleSecretA2E93149",
+            },
+            "DB_HOST": {
+              "Fn::GetAtt": [
+                "AuroraCluster23D869C0",
+                "Endpoint.Address",
+              ],
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::GetAtt": [
+                "AuroraCluster23D869C0",
+                "Endpoint.Port",
+              ],
+            },
+            "DB_SECRET_ARN": {
+              "Ref": "AuroraClusterSecretAttachmentDB8032DA",
+            },
+            "MIGRATIONS_DIR": "/var/task/migrations",
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "MigrationRunnerFnServiceRoleB51FEED2",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 120,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::GetAtt": [
+                "LambdaSecurityGroup0BD9FC99",
+                "GroupId",
+              ],
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "MigrationRunnerFnServiceRoleB51FEED2": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "MigrationRunnerFnServiceRoleDefaultPolicy46A1A39B": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "AuroraClusterSecretAttachmentDB8032DA",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "AppRoleSecretA2E93149",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "MigrationRunnerFnServiceRoleDefaultPolicy46A1A39B",
+        "Roles": [
+          {
+            "Ref": "MigrationRunnerFnServiceRoleB51FEED2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "MigrationRunnerProviderframeworkonEvent4B2DF953": {
+      "DependsOn": [
+        "MigrationRunnerProviderframeworkonEventServiceRoleDefaultPolicy64530C61",
+        "MigrationRunnerProviderframeworkonEventServiceRole913EA538",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "e16ffb3b34af185b8b30c88fdb19faa13b6c42bb38580485c4e84b384ee48b63.zip",
+        },
+        "Description": "AWS CDK resource provider framework - onEvent (Parimaan-dev-Data/MigrationRunnerProvider)",
+        "Environment": {
+          "Variables": {
+            "USER_ON_EVENT_FUNCTION_ARN": {
+              "Fn::GetAtt": [
+                "MigrationRunnerFn734B34B7",
+                "Arn",
+              ],
+            },
+          },
+        },
+        "Handler": "framework.onEvent",
+        "LoggingConfig": {
+          "ApplicationLogLevel": "FATAL",
+          "LogFormat": "JSON",
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "MigrationRunnerProviderframeworkonEventServiceRole913EA538",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "MigrationRunnerProviderframeworkonEventServiceRole913EA538": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "MigrationRunnerProviderframeworkonEventServiceRoleDefaultPolicy64530C61": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "MigrationRunnerFn734B34B7",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "MigrationRunnerFn734B34B7",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "lambda:GetFunction",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "MigrationRunnerFn734B34B7",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "MigrationRunnerProviderframeworkonEventServiceRoleDefaultPolicy64530C61",
+        "Roles": [
+          {
+            "Ref": "MigrationRunnerProviderframeworkonEventServiceRole913EA538",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "MigrationRunnerTrigger": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "MigrationsHash": "3c84fb79aee5a9b5088ea412e58df1ee76754b38e62678fdaeec30d085a8d36c",
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "MigrationRunnerProviderframeworkonEvent4B2DF953",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::CloudFormation::CustomResource",
       "UpdateReplacePolicy": "Delete",
     },
     "ParimaandevDataAuroraClusterSecretE0EC3F773fdaad7efa858a3daf9490cf0a702aeb": {

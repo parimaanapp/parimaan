@@ -11,6 +11,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.933.0",
     "@parimaan/shared": "workspace:*",
     "node-pg-migrate": "^9.0.0",
     "pg": "^8.23.0"

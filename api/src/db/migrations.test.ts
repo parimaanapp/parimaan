@@ -23,6 +23,23 @@ const BASELINE_TABLES = [
 
 const VALID_SUBSCRIPTION_STATUSES = ['free', 'trial', 'active', 'past_due', 'cancelled'] as const;
 
+const APP_ROLE_PASSWORD_ENV_VAR = 'PARIMAAN_APP_ROLE_PASSWORD';
+const APP_ROLE = 'parimaan_app';
+const APP_ROLE_TEST_PASSWORD = 'app_role_test_password';
+
+/**
+ * The app-role migration (`migrations/1787124517648_app-role.ts`) requires
+ * `PARIMAAN_APP_ROLE_PASSWORD` to be set at migration-run time, and it's now
+ * part of the full migration set `runMigrations()` applies — so every
+ * describe block in this file that runs migrations ends up running it, not
+ * just the ones below that specifically test it. A default test-only value
+ * is set once here, at module load (before any test runs), so unrelated
+ * describe blocks aren't affected. The "without PARIMAAN_APP_ROLE_PASSWORD
+ * set" block below temporarily unsets it and restores this same default
+ * afterward.
+ */
+process.env[APP_ROLE_PASSWORD_ENV_VAR] = APP_ROLE_TEST_PASSWORD;
+
 interface InsertedUser {
   id: string;
 }
@@ -408,6 +425,183 @@ describe('baseline schema, once migrated', () => {
       expect(firstRow(result.rows).household_id).toBe(householdA.id);
     } finally {
       await asMember.end();
+    }
+  });
+});
+
+describe('running the app-role migration', () => {
+  describe('without PARIMAAN_APP_ROLE_PASSWORD set', () => {
+    let container: StartedPostgreSqlContainer;
+    let client: Client;
+
+    beforeAll(async () => {
+      delete process.env[APP_ROLE_PASSWORD_ENV_VAR];
+      container = await new PostgreSqlContainer(POSTGRES_IMAGE).start();
+      client = new Client({ connectionString: container.getConnectionUri() });
+      await client.connect();
+    });
+
+    afterAll(async () => {
+      // Restore the module-level default so later describe blocks in this
+      // file (which don't specifically test password validation) can still
+      // run the app-role migration successfully.
+      process.env[APP_ROLE_PASSWORD_ENV_VAR] = APP_ROLE_TEST_PASSWORD;
+      await client.end();
+      await container.stop();
+    });
+
+    it('throws a clear configuration error instead of a cryptic SQL error', async () => {
+      await expect(runMigrations(container.getConnectionUri(), 'up')).rejects.toThrow(
+        /PARIMAAN_APP_ROLE_PASSWORD/,
+      );
+    });
+
+    it('creates no parimaan_app role', async () => {
+      const result = await client.query(`SELECT 1 FROM pg_roles WHERE rolname = $1`, [
+        APP_ROLE,
+      ]);
+      expect(result.rows).toHaveLength(0);
+    });
+  });
+
+  describe('with PARIMAAN_APP_ROLE_PASSWORD set', () => {
+    let container: StartedPostgreSqlContainer;
+    let client: Client;
+
+    beforeAll(async () => {
+      process.env[APP_ROLE_PASSWORD_ENV_VAR] = APP_ROLE_TEST_PASSWORD;
+      container = await new PostgreSqlContainer(POSTGRES_IMAGE).start();
+      await runMigrations(container.getConnectionUri(), 'up');
+      client = new Client({ connectionString: container.getConnectionUri() });
+      await client.connect();
+    });
+
+    afterAll(async () => {
+      await client.end();
+      await container.stop();
+    });
+
+    beforeEach(async () => {
+      await client.query(
+        'TRUNCATE TABLE household_memberships, household_settings, households, users RESTART IDENTITY CASCADE',
+      );
+    });
+
+    const connectAsAppRole = async (): Promise<Client> => {
+      const uri = new URL(container.getConnectionUri());
+      uri.username = APP_ROLE;
+      uri.password = APP_ROLE_TEST_PASSWORD;
+      const appClient = new Client({ connectionString: uri.toString() });
+      await appClient.connect();
+      return appClient;
+    };
+
+    it('creates parimaan_app as a non-superuser, non-BYPASSRLS login role', async () => {
+      const result = await client.query<{ rolsuper: boolean; rolbypassrls: boolean }>(
+        `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`,
+        [APP_ROLE],
+      );
+      expect(firstRow(result.rows)).toMatchObject({ rolsuper: false, rolbypassrls: false });
+    });
+
+    it.each(BASELINE_TABLES)('allows parimaan_app to SELECT/INSERT/UPDATE/DELETE on %s', async () => {
+      const appClient = await connectAsAppRole();
+      try {
+        const owner = await insertUser(appClient);
+        const household = await insertHousehold(appClient, owner.id);
+        // household_settings has an RLS policy applying to INSERT too (no
+        // separate WITH CHECK was given, so Postgres reuses the USING
+        // expression), and it's evaluated for parimaan_app since it's
+        // neither the table owner nor a superuser — so this session-local
+        // setting must be present, just as it must be for `rls_probe_role`
+        // above. The policy's subquery also requires a matching
+        // household_memberships row to already exist for this household_id
+        // + user_id, so that insert must happen before household_settings.
+        await appClient.query(`SELECT set_config('parimaan.user_id', $1, false)`, [owner.id]);
+        const membership = await appClient.query<{ id: string }>(
+          `INSERT INTO household_memberships (household_id, user_id, role)
+           VALUES ($1, $2, 'primary') RETURNING id`,
+          [household.id, owner.id],
+        );
+        await appClient.query(`INSERT INTO household_settings (household_id) VALUES ($1)`, [
+          household.id,
+        ]);
+        await appClient.query(`UPDATE households SET name = 'Renamed' WHERE id = $1`, [
+          household.id,
+        ]);
+        await appClient.query(`DELETE FROM household_memberships WHERE id = $1`, [
+          firstRow(membership.rows).id,
+        ]);
+      } finally {
+        await appClient.end();
+      }
+    });
+
+    it('denies parimaan_app CREATE TABLE', async () => {
+      const appClient = await connectAsAppRole();
+      try {
+        await expect(appClient.query('CREATE TABLE should_not_exist (id INT)')).rejects.toThrow();
+      } finally {
+        await appClient.end();
+      }
+    });
+
+    it('denies parimaan_app DROP TABLE', async () => {
+      const appClient = await connectAsAppRole();
+      try {
+        await expect(appClient.query('DROP TABLE users')).rejects.toThrow();
+      } finally {
+        await appClient.end();
+      }
+    });
+
+    it('denies parimaan_app ALTER TABLE (schema changes)', async () => {
+      const appClient = await connectAsAppRole();
+      try {
+        await expect(
+          appClient.query('ALTER TABLE users ADD COLUMN should_not_exist TEXT'),
+        ).rejects.toThrow();
+      } finally {
+        await appClient.end();
+      }
+    });
+
+    it('sets relforcerowsecurity on household_settings', async () => {
+      const result = await client.query<{ relforcerowsecurity: boolean }>(
+        `SELECT relforcerowsecurity FROM pg_class WHERE relname = 'household_settings'`,
+      );
+      expect(firstRow(result.rows).relforcerowsecurity).toBe(true);
+    });
+  });
+});
+
+describe('reversing the app-role migration', () => {
+  let container: StartedPostgreSqlContainer;
+  let client: Client;
+
+  beforeAll(async () => {
+    process.env[APP_ROLE_PASSWORD_ENV_VAR] = APP_ROLE_TEST_PASSWORD;
+    container = await new PostgreSqlContainer(POSTGRES_IMAGE).start();
+    client = new Client({ connectionString: container.getConnectionUri() });
+    await client.connect();
+  });
+
+  afterAll(async () => {
+    await client.end();
+    await container.stop();
+  });
+
+  it('leaves no parimaan_app role behind after up then down, and baseline down still works', async () => {
+    await runMigrations(container.getConnectionUri(), 'up');
+    await runMigrations(container.getConnectionUri(), 'down');
+
+    const roleResult = await client.query(`SELECT 1 FROM pg_roles WHERE rolname = $1`, [
+      APP_ROLE,
+    ]);
+    expect(roleResult.rows).toHaveLength(0);
+
+    for (const table of BASELINE_TABLES) {
+      expect(await tableExists(client, table)).toBe(false);
     }
   });
 });
