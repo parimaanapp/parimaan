@@ -235,7 +235,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "e5347105612e9c03595e5946d1125772837209fe045e8569f6baf843b73d366a.zip",
+          "S3Key": "<ASSET_HASH>.zip",
         },
         "Environment": {
           "Variables": {
@@ -392,7 +392,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "e16ffb3b34af185b8b30c88fdb19faa13b6c42bb38580485c4e84b384ee48b63.zip",
+          "S3Key": "<ASSET_HASH>.zip",
         },
         "Description": "AWS CDK resource provider framework - onEvent (Parimaan-dev-Data/MigrationRunnerProvider)",
         "Environment": {

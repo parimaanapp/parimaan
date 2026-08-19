@@ -6,6 +6,7 @@ import { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { DataStack } from '../stacks/data-stack';
+import { redactAssetHashes } from './support/redactAssetHashes';
 
 /**
  * Minimal stand-in for `NetworkStack`'s VPC — same public/isolated subnet
@@ -487,6 +488,6 @@ describe('DataStack', () => {
   // are primary; this snapshot exists only to flag *any* unreviewed diff in
   // the synthesized template, not to encode intent on its own.
   it('matches the known-good synthesized template snapshot (dev)', () => {
-    expect(synth('dev').toJSON()).toMatchSnapshot();
+    expect(redactAssetHashes(synth('dev').toJSON())).toMatchSnapshot();
   });
 });
