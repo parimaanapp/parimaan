@@ -457,8 +457,17 @@ describe('DataStack', () => {
   });
 
   it('does not embed an account id or hardcoded ap-south-1 region literal in the synthesized template', () => {
+    // A bare `/\d{12}/` is too broad once the template contains long
+    // content-hash strings (the migration-runner Lambda's asset S3 key,
+    // this stack's own MigrationsHash property) — a random 12-digit run
+    // can and does occur by chance inside a 64-character hex hash,
+    // producing a false positive unrelated to any real embedded account
+    // id. A real embedded account id would appear as its own JSON string
+    // value (`"123456789012"`), not as a substring of a much longer one —
+    // requiring the 12 digits to be bounded by quotes on both sides
+    // catches the real case while ignoring hash-string false positives.
     const json = JSON.stringify(synth('prod').toJSON());
-    expect(json).not.toMatch(/\d{12}/);
+    expect(json).not.toMatch(/"\d{12}"/);
     expect(json).not.toMatch(/ap-south-1/);
   });
 

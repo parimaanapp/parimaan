@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import * as cdk from 'aws-cdk-lib';
 import type { IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Port, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2';
@@ -25,29 +25,60 @@ import type { Construct } from 'constructs';
 import { hashMigrationsDir } from '../lib/hashMigrationsDir';
 
 /**
+ * Resolves the real, already-installed `node-pg-migrate` package directory
+ * from `api/`'s own dependencies (not `infra/`'s — `node-pg-migrate` is an
+ * `api` dependency; pnpm's strict per-package linking means a bare
+ * `require.resolve('node-pg-migrate')` from `infra/` wouldn't find it).
+ */
+const resolveNodePgMigrateDir = (): string => {
+  const apiPackageDir = join(__dirname, '../../api');
+  // Synth-time-only filesystem lookup (CDK synth runs as CommonJS per
+  // infra/tsconfig.json) — not part of the deployed Lambda bundle.
+  const packageJsonPath = require.resolve('node-pg-migrate/package.json', {
+    paths: [apiPackageDir],
+  });
+  return dirname(packageJsonPath);
+};
+
+/**
  * `api/src/db/runMigrations.ts` computes its default migrations path via
  * `import.meta.url` — esbuild's default CJS output format makes
  * `import.meta` empty, which would throw at Lambda cold-start the moment
  * that module is imported (before `MIGRATIONS_DIR`'s env-var override even
  * gets a chance to matter). ESM keeps `import.meta` meaningful; Node 24's
- * Lambda runtime supports it natively. `node-pg-migrate` is left
- * un-inlined via `nodeModules` (a real `npm install`, not esbuild-bundled)
- * because it loads migration files from disk at runtime via `jiti`, which
- * a single-file bundle would not preserve — the migrations themselves are
- * copied into the bundle output by `afterBundling`, at the location
- * `MIGRATIONS_DIR` (above) points the handler at.
+ * Lambda runtime supports it natively.
+ *
+ * `node-pg-migrate` is left un-inlined (`externalModules`) because it loads
+ * migration files from disk at runtime via `jiti`, which a single-file
+ * esbuild bundle would not preserve. Rather than relying on CDK's
+ * `bundling.nodeModules` (which shells out to a fresh `pnpm install`
+ * *inside the ephemeral bundling temp directory* — this proved flaky in CI:
+ * a bare `CommandExitedWithNonZeroStatus ... exited with status 1` with no
+ * further detail, passing consistently in local dev but failing every run
+ * on GitHub Actions), the already-installed package is copied directly from
+ * this repo's own `node_modules` via `cp -RL`, which dereferences pnpm's
+ * symlinked `.pnpm` store layout recursively — including the package's own
+ * nested dependencies (`jiti`, etc.) — producing a fully self-contained
+ * copy with no network call or package-manager invocation at bundle time.
+ * Both CI and local dev already run the one `pnpm install --frozen-lockfile`
+ * this depends on being present.
  */
-const createMigrationRunnerBundlingOptions = (migrationsSourceDir: string): BundlingOptions => ({
-  format: OutputFormat.ESM,
-  nodeModules: ['node-pg-migrate'],
-  commandHooks: {
-    beforeBundling: (): string[] => [],
-    beforeInstall: (): string[] => [],
-    afterBundling: (_inputDir: string, outputDir: string): string[] => [
-      `cp -r "${migrationsSourceDir}" "${outputDir}/migrations"`,
-    ],
-  },
-});
+const createMigrationRunnerBundlingOptions = (migrationsSourceDir: string): BundlingOptions => {
+  const nodePgMigrateDir = resolveNodePgMigrateDir();
+  return {
+    format: OutputFormat.ESM,
+    externalModules: ['node-pg-migrate'],
+    commandHooks: {
+      beforeBundling: (): string[] => [],
+      beforeInstall: (): string[] => [],
+      afterBundling: (_inputDir: string, outputDir: string): string[] => [
+        `cp -r "${migrationsSourceDir}" "${outputDir}/migrations"`,
+        `mkdir -p "${outputDir}/node_modules"`,
+        `cp -RL "${nodePgMigrateDir}" "${outputDir}/node_modules/node-pg-migrate"`,
+      ],
+    },
+  };
+};
 
 export interface DataStackProps extends cdk.StackProps {
   /** Deployment environment name, supplied via CDK context. */

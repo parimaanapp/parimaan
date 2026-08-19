@@ -235,7 +235,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "3d465d36b7216f5d221bf6143fbcc7e1aef757c1b8c2fa4559ace0d53f2c56d4.zip",
+          "S3Key": "e5347105612e9c03595e5946d1125772837209fe045e8569f6baf843b73d366a.zip",
         },
         "Environment": {
           "Variables": {
