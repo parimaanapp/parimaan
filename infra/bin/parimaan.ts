@@ -33,7 +33,7 @@ const network = new NetworkStack(app, `Parimaan-${envName}-Network`, {
   description: `Parimaan ${envName} — VPC, subnets, and gateway/interface endpoints.`,
 });
 
-new DataStack(app, `Parimaan-${envName}-Data`, {
+const data = new DataStack(app, `Parimaan-${envName}-Data`, {
   env,
   envName,
   vpc: network.vpc,
@@ -64,6 +64,10 @@ new ApiStack(app, `Parimaan-${envName}-Api`, {
   env,
   envName,
   userPool: auth.userPool,
+  vpc: network.vpc,
+  dbCluster: data.dbCluster,
+  appRoleSecret: data.appRoleSecret,
+  lambdaSecurityGroup: data.lambdaSecurityGroup,
   description: `Parimaan ${envName} — AppSync GraphQL API + Lambda resolvers.`,
 });
 

@@ -5,7 +5,9 @@ import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { GraphqlApi } from 'aws-cdk-lib/aws-appsync';
 import { UserPool } from 'aws-cdk-lib/aws-cognito';
+import { SubnetType, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { ApiStack } from '../stacks/api-stack';
+import { DataStack } from '../stacks/data-stack';
 import { redactAssetHashes } from './support/redactAssetHashes';
 
 /**
@@ -22,6 +24,29 @@ const buildFakeUserPool = (app: cdk.App, envName: 'dev' | 'prod'): UserPool => {
   });
 };
 
+/** Same fake-VPC shape as data-stack.test.ts's own fixture — kept in sync deliberately. */
+const buildFakeVpc = (app: cdk.App, envName: 'dev' | 'prod'): Vpc => {
+  const vpcStack = new cdk.Stack(app, `Parimaan-${envName}-FakeNetwork`);
+  return new Vpc(vpcStack, 'Vpc', {
+    maxAzs: 2,
+    natGateways: 0,
+    subnetConfiguration: [
+      { name: 'public', subnetType: SubnetType.PUBLIC, cidrMask: 24 },
+      { name: 'isolated', subnetType: SubnetType.PRIVATE_ISOLATED, cidrMask: 24 },
+    ],
+  });
+};
+
+/**
+ * Real `DataStack`, built in its own `cdk.Stack`, so `ApiStack`'s
+ * `dbCluster`/`appRoleSecret`/`lambdaSecurityGroup` props exercise the same
+ * cross-stack reference shape production wiring (`infra/bin/parimaan.ts`)
+ * uses — cheaper and more accurate than hand-duplicating DataStack's
+ * internal construct calls as a second fake fixture.
+ */
+const buildFakeDataStack = (app: cdk.App, envName: 'dev' | 'prod', vpc: Vpc): DataStack =>
+  new DataStack(app, `Parimaan-${envName}-FakeData`, { envName, vpc });
+
 // SINGLE SOURCE OF TRUTH per shared/schema.graphql's own header — the
 // synthesized AppSync schema definition must be sourced from this exact
 // file, not an inline placeholder string that could silently drift from it.
@@ -32,10 +57,35 @@ describe('ApiStack', () => {
   const build = (envName: 'dev' | 'prod'): ApiStack => {
     const app = new cdk.App();
     const userPool = buildFakeUserPool(app, envName);
-    return new ApiStack(app, `Parimaan-${envName}-Api`, { envName, userPool });
+    const vpc = buildFakeVpc(app, envName);
+    const data = buildFakeDataStack(app, envName, vpc);
+    return new ApiStack(app, `Parimaan-${envName}-Api`, {
+      envName,
+      userPool,
+      vpc,
+      dbCluster: data.dbCluster,
+      appRoleSecret: data.appRoleSecret,
+      lambdaSecurityGroup: data.lambdaSecurityGroup,
+    });
   };
 
   const synth = (envName: 'dev' | 'prod'): Template => Template.fromStack(build(envName));
+
+  /**
+   * All Lambda functions belonging to *this* stack's own template, minus
+   * CDK's auto-created "LogRetention" custom-resource helper (a side effect
+   * of the AppSync API's `logConfig`, not one of our resolvers). Since
+   * `Template.fromStack` only synthesizes the one stack passed to it,
+   * DataStack's own Lambdas (the migration runner, its Provider framework
+   * function) never appear here — they live in the fake DataStack's
+   * separate template.
+   */
+  const ourFunctions = (
+    template: Template,
+  ): Array<[string, { Properties: { Runtime: string; Handler: string; VpcConfig?: unknown } }]> =>
+    Object.entries(template.findResources('AWS::Lambda::Function')).filter(
+      ([logicalId]) => !logicalId.startsWith('LogRetention'),
+    ) as Array<[string, { Properties: { Runtime: string; Handler: string; VpcConfig?: unknown } }]>;
 
   it('synthesizes without error for dev', () => {
     expect(() => synth('dev')).not.toThrow();
@@ -72,7 +122,16 @@ describe('ApiStack', () => {
     // to the pool passed in — not a separate `Modes` array entry.
     const app = new cdk.App();
     const userPool = buildFakeUserPool(app, 'dev');
-    const stack = new ApiStack(app, 'Parimaan-dev-Api', { envName: 'dev', userPool });
+    const vpc = buildFakeVpc(app, 'dev');
+    const data = buildFakeDataStack(app, 'dev', vpc);
+    const stack = new ApiStack(app, 'Parimaan-dev-Api', {
+      envName: 'dev',
+      userPool,
+      vpc,
+      dbCluster: data.dbCluster,
+      appRoleSecret: data.appRoleSecret,
+      lambdaSecurityGroup: data.lambdaSecurityGroup,
+    });
     const template = Template.fromStack(stack);
 
     const userPoolLogicalId = Object.keys(
@@ -109,46 +168,123 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/_health\s*:\s*String!/);
   });
 
-  it('declares our health Lambda function, on the Node.js 24 runtime', () => {
-    // Verified empirically: the stack's `logConfig` on the AppSync API (for
-    // observability — see SYSTEM_DESIGN.md §11.3) makes CDK auto-create a
-    // second, internal "LogRetention" custom-resource Lambda to manage the
-    // log group's retention period — and as of the nodejs20.x → nodejs24.x
-    // runtime bump, both Lambdas now share the SAME Runtime and Handler
-    // values, so a property-match assertion can no longer disambiguate them.
-    // Filter by logical ID instead: CDK's LogRetention helper always uses
-    // the "LogRetention" construct-id prefix, so excluding it is a robust
-    // way to isolate our own function regardless of what runtime CDK's
-    // internal helper happens to use at any given aws-cdk-lib version.
+  it('the real schema file still declares me, createHousehold, and User.households', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/\bme\s*:\s*User!/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/createHousehold\(name:\s*String!\)\s*:\s*Household!/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/households\s*:\s*\[HouseholdMembership!\]!/);
+  });
+
+  it('declares exactly 4 resolver Lambda functions (health + me + createHousehold + userHouseholds)', () => {
     const template = synth('dev');
-    const allFunctions = template.findResources('AWS::Lambda::Function');
-    const ourFunctions = Object.entries(allFunctions).filter(
-      ([logicalId]) => !logicalId.startsWith('LogRetention'),
-    );
-    expect(ourFunctions).toHaveLength(1);
-    const [, healthFn] = ourFunctions[0] as [string, { Properties: { Runtime: string } }];
+    expect(ourFunctions(template)).toHaveLength(4);
+  });
+
+  it('declares the health Lambda outside the VPC, on the Node.js 24 runtime', () => {
+    // health has no DB access and must not be dragged into the VPC — see
+    // its own comment in api-stack.ts.
+    const template = synth('dev');
+    const nonVpcFunctions = ourFunctions(template).filter(([, r]) => !r.Properties.VpcConfig);
+    expect(nonVpcFunctions).toHaveLength(1);
+    const [, healthFn] = nonVpcFunctions[0] as (typeof nonVpcFunctions)[0];
     expect(healthFn.Properties.Runtime).toBe('nodejs24.x');
   });
 
-  it('declares exactly one AppSync Lambda data source, wired to the Lambda function', () => {
+  it('declares 3 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 1);
-    template.hasResourceProperties('AWS::AppSync::DataSource', {
-      Type: 'AWS_LAMBDA',
-      LambdaConfig: Match.objectLike({
-        LambdaFunctionArn: Match.anyValue(),
-      }),
-    });
+    const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
+    expect(vpcFunctions).toHaveLength(3);
+    for (const [, fn] of vpcFunctions) {
+      expect(fn.Properties.Runtime).toBe('nodejs24.x');
+      const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
+      expect(vpcConfig.SecurityGroupIds).toHaveLength(1);
+      expect(vpcConfig.SubnetIds).toHaveLength(2);
+    }
   });
 
-  it('declares exactly one resolver, for Query._health, using the Lambda data source', () => {
+  it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 1);
+    const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
+    expect(vpcFunctions).toHaveLength(3);
+    for (const [, fn] of vpcFunctions) {
+      const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
+        .Properties.Environment.Variables;
+      expect(env['APP_ROLE_SECRET_ARN']).toBeDefined();
+      expect(env['DB_HOST']).toBeDefined();
+      expect(env['DB_PORT']).toBeDefined();
+      expect(env['DB_NAME']).toBe('parimaan');
+      // The cluster's own admin-credentials secret must never be referenced
+      // by these resolver Lambdas — they connect as parimaan_app only.
+      expect(env['DB_SECRET_ARN']).toBeUndefined();
+    }
+  });
+
+  it('grants each VPC-attached resolver Lambda secretsmanager:GetSecretValue scoped only to the app-role secret — never Resource: "*"', () => {
+    const template = synth('dev');
+    const policies = template.findResources('AWS::IAM::Policy');
+    const statements = Object.values(policies).flatMap(
+      (policy) =>
+        (
+          policy as {
+            Properties: {
+              PolicyDocument: { Statement: Array<{ Action: string | string[]; Resource: unknown }> };
+            };
+          }
+        ).Properties.PolicyDocument.Statement,
+    );
+    const secretStatements = statements.filter((statement) => {
+      const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+      return actions.includes('secretsmanager:GetSecretValue');
+    });
+    expect(secretStatements.length).toBeGreaterThan(0);
+    for (const statement of secretStatements) {
+      expect(statement.Resource).not.toBe('*');
+    }
+  });
+
+  it('declares exactly 4 AppSync Lambda data sources', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::DataSource', 4);
+  });
+
+  it('declares a resolver for Query._health', () => {
+    const template = synth('dev');
     template.hasResourceProperties('AWS::AppSync::Resolver', {
       TypeName: 'Query',
       FieldName: '_health',
       DataSourceName: Match.anyValue(),
     });
+  });
+
+  it('declares a resolver for Query.me', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Query',
+      FieldName: 'me',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.createHousehold', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'createHousehold',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for User.households', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'User',
+      FieldName: 'households',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares exactly 4 resolvers total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::Resolver', 4);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

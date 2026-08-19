@@ -11,11 +11,105 @@
 #
 # The real schema (SYSTEM_DESIGN.md §6.1 — households, recipes, pantry, etc.)
 # lands incrementally starting W1, alongside the resolvers that implement each
-# field. Right now this file holds only the `_health` placeholder, wired to a
-# real Lambda resolver in api-stack — that pipeline (AppSync → Lambda →
-# response) working end-to-end is the actual W1 milestone, not the full schema.
+# field. `_health` was the W1 placeholder (AppSync → Lambda → response
+# pipeline). `me` / `createHousehold` / `User.households` are the first real
+# slice (SYSTEM_DESIGN.md §5.1, §5.2), landing W3/W4 per E2E_MVP_PLAN.md §4.
+
+scalar AWSDateTime
+scalar AWSJSON
 
 type Query {
   """Health-check field. Proves the AppSync → Lambda → response pipeline works."""
   _health: String!
+
+  """
+  Returns the authenticated caller, upserting their `users` row on first
+  login (SYSTEM_DESIGN.md §5.1). Does not include `households` — see the
+  separate `User.households` field resolver, which exists specifically to
+  break the User↔HouseholdMembership↔User type cycle at arbitrary query
+  depth (a single flat resolver on `me` cannot terminate that cycle).
+  """
+  me: User!
+}
+
+type Mutation {
+  """
+  Creates a household with the caller as its `primary` member, default
+  settings, and a generated invite code (SYSTEM_DESIGN.md §5.2).
+  """
+  createHousehold(name: String!): Household!
+}
+
+type User {
+  id: ID!
+  email: String!
+  displayName: String
+  avatarUrl: String
+  households: [HouseholdMembership!]!
+}
+
+type Household {
+  id: ID!
+  name: String!
+  inviteCode: String!
+  primaryUserId: ID!
+  members: [HouseholdMembership!]!
+  settings: HouseholdSettings!
+  subscriptionStatus: SubscriptionStatus!
+}
+
+type HouseholdMembership {
+  id: ID!
+  household: Household!
+  user: User!
+  role: HouseholdRole!
+  joinedAt: AWSDateTime!
+}
+
+enum HouseholdRole {
+  primary
+  member
+}
+
+enum SubscriptionStatus {
+  free
+  trial
+  active
+  past_due
+  cancelled
+}
+
+type HouseholdSettings {
+  householdId: ID!
+  mealsEnabled: [MealType!]!
+  mealStructure: AWSJSON!
+  cuisineTier1: [CuisineTier1!]!
+  cuisineTier2Weights: AWSJSON!
+  dietaryTags: [DietaryTag!]!
+  allergens: [String!]!
+  skipIngredients: [String!]!
+}
+
+enum MealType {
+  breakfast
+  lunch
+  snacks
+  dinner
+}
+
+enum CuisineTier1 {
+  north_indian
+  south_indian
+  pan_india
+  indo_chinese
+  continental
+}
+
+enum DietaryTag {
+  veg
+  vegan
+  jain
+  eggetarian
+  gluten_free
+  dairy_free
 }
