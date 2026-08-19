@@ -6,6 +6,7 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import { GraphqlApi } from 'aws-cdk-lib/aws-appsync';
 import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import { ApiStack } from '../stacks/api-stack';
+import { redactAssetHashes } from './support/redactAssetHashes';
 
 /**
  * Minimal stand-in for `AuthStack`'s user pool — built directly in the test,
@@ -158,8 +159,12 @@ describe('ApiStack', () => {
   });
 
   it('does not embed an account id or hardcoded ap-south-1 region literal in the synthesized template', () => {
+    // See the identical comment in data-stack.test.ts: a bare `/\d{12}/`
+    // can false-positive on a random 12-digit run inside a bundled
+    // Lambda's long content-hash S3 asset key. Requiring the digits to be
+    // quote-bounded catches a real embedded account id without that risk.
     const json = JSON.stringify(synth('prod').toJSON());
-    expect(json).not.toMatch(/\d{12}/);
+    expect(json).not.toMatch(/"\d{12}"/);
     expect(json).not.toMatch(/ap-south-1/);
   });
 
@@ -173,6 +178,6 @@ describe('ApiStack', () => {
   // are primary; this snapshot exists only to flag *any* unreviewed diff in
   // the synthesized template, not to encode intent on its own.
   it('matches the known-good synthesized template snapshot (dev)', () => {
-    expect(synth('dev').toJSON()).toMatchSnapshot();
+    expect(redactAssetHashes(synth('dev').toJSON())).toMatchSnapshot();
   });
 });

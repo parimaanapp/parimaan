@@ -239,7 +239,7 @@ type Query {
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "e11bb9b2998210123bb308ba8be13f8dc35e40d926446835c367c0ad59a56997.zip",
+          "S3Key": "<ASSET_HASH>.zip",
         },
         "Handler": "index.handler",
         "Role": {
@@ -293,7 +293,7 @@ type Query {
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "2819175352ad1ce0dae768e83fc328fb70fb5f10b4a8ff0ccbcb791f02b0716d.zip",
+          "S3Key": "<ASSET_HASH>.zip",
         },
         "Handler": "index.handler",
         "Role": {

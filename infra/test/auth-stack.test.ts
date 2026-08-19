@@ -252,8 +252,12 @@ describe('AuthStack', () => {
   });
 
   it('does not embed an account id or region literal in the synthesized template', () => {
+    // See the identical comment in data-stack.test.ts: a bare `/\d{12}/`
+    // can false-positive on a random 12-digit run inside a bundled
+    // Lambda's long content-hash S3 asset key. Requiring the digits to be
+    // quote-bounded catches a real embedded account id without that risk.
     const json = JSON.stringify(synth('prod').toJSON());
-    expect(json).not.toMatch(/\d{12}/);
+    expect(json).not.toMatch(/"\d{12}"/);
     expect(json).not.toMatch(/ap-south-1/);
   });
 
