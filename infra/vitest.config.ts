@@ -10,18 +10,26 @@ export default defineConfig({
     // synth calls in the same worker are fast (modules already loaded), so
     // this is a one-time-per-worker cost, not a sign anything is slow.
     testTimeout: 15_000,
-    // Vitest's default `isolate: true` gives every test FILE a fresh module
-    // registry, so each of our 5 files re-pays the jsii/aws-cdk-lib
-    // cold-start cost independently — even with fileParallelism disabled
-    // (tried first; didn't help, since the cost is per-file, not just
-    // per-parallel-worker). That repeated heavy synchronous synth work is
-    // what starves the event loop long enough for the worker's IPC
-    // heartbeat back to the main thread ("onTaskUpdate", 60s birpc default)
-    // to time out — even though every individual test still passes well
-    // within testTimeout (confirmed on PR #11: 108/108 tests green twice,
-    // but the run still failed both times with "[vitest-worker]: Timeout
-    // calling 'onTaskUpdate'"). Sharing one module registry across files in
-    // the same worker means the cold start is paid once, not 5 times.
+    // Cuts per-file cold start (each file no longer re-pays the
+    // jsii/aws-cdk-lib module-load cost), a genuine local speedup, but did
+    // NOT fix the CI-only "[vitest-worker]: Timeout calling 'onTaskUpdate'"
+    // failure on its own (confirmed on PR #11: still failed a 3rd time with
+    // the identical error, same place, after this was already in place).
+    // Kept anyway for the real perf win; see `onConsoleLog` below for the
+    // actual fix.
     isolate: false,
+    // The real cause: every ApiStack test does a full CDK synth, and each
+    // synth bundles 6 Lambdas via esbuild (NodejsFunction), which
+    // console.logs 2 lines per Lambda ("Bundling asset..." / "Done in
+    // Xms"). Across 29 tests in api-stack.test.ts that's 1000+ lines of
+    // stdout, all relayed to the main thread over the same worker IPC
+    // channel vitest uses for its own "onTaskUpdate" progress heartbeat —
+    // on GitHub Actions' constrained runners that volume appears to be
+    // enough to starve the heartbeat past its 60s birpc timeout, even
+    // though every actual test passes (confirmed 108/108 green on all 3
+    // failed CI runs). `'passed-only'` drops a passing test's console
+    // output entirely but still prints it for a failing one, so debugging
+    // a real failure isn't affected.
+    silent: 'passed-only',
   },
 });
