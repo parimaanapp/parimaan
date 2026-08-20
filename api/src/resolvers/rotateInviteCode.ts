@@ -158,8 +158,15 @@ export const createRotateInviteCodeHandler =
 
         const household = await findHouseholdById(client, householdId);
         if (household === null) {
-          // Unreachable: membership rows FK-reference households, so
-          // requireHouseholdMember passing implies the row exists.
+          // Narrow, harmless TOCTOU window, not provably unreachable:
+          // withUserTransaction runs at Postgres's default READ COMMITTED,
+          // where each statement takes its own fresh snapshot — so a
+          // concurrent deleteHousehold could commit between the
+          // requireHouseholdMember check above and this lookup. The FK from
+          // household_memberships to households only guarantees existence at
+          // the moment requireHouseholdMember's own statement ran, not for
+          // the rest of this transaction. Falling through to NotFoundError
+          // here is the correct, safe response to that race, not a bug.
           throw new NotFoundError('Household not found.');
         }
 

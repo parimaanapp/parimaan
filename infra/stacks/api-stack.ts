@@ -126,6 +126,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'deleteHousehold',
   },
+  {
+    id: 'Household',
+    entryFile: 'household.ts',
+    typeName: 'Query',
+    fieldName: 'household',
+  },
 ];
 
 /**
@@ -153,13 +159,21 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   because "not a member" is its success state, not a denial;
  *   `deleteHousehold` is primary-only behind an exact-name confirmation and
  *   is the only path by which a household is ever destroyed.
+ * - `Query.household` — a member-gated, read-only hydration of a single
+ *   household's settings and full member list. Exists because
+ *   `me { households { household { members } } }` deliberately returns each
+ *   membership's household with an empty `members` list (a recursion
+ *   cutoff, not a bug) — the Members list screen and any poll-based refresh
+ *   (in lieu of the subscriptions below) need this instead. No rate
+ *   limiting: it's a plain authorized read, not a guessable-keyspace or
+ *   destructive-to-others action like the two `cacheTable` consumers above.
  *
  * The `onHouseholdChanged`/`onHouseholdSettingsChanged` subscriptions are
  * deliberately deferred to W12, when a connect-time authorizer Lambda exists
  * (SD §10.4) — no `Subscription` type exists in `shared/schema.graphql` yet.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the other
- * eight are VPC-attached, connecting to Aurora as the least-privileged
+ * nine are VPC-attached, connecting to Aurora as the least-privileged
  * `parimaan_app` role (never the cluster's admin credentials).
  */
 export class ApiStack extends cdk.Stack {

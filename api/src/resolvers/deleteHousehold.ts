@@ -81,8 +81,11 @@ export const createDeleteHouseholdHandler =
 
         const household = await findHouseholdById(client, householdId);
         if (household === null) {
-          // Unreachable: membership rows FK-reference households, so
-          // requireHouseholdMember passing implies the row exists.
+          // Narrow, harmless TOCTOU window, not provably unreachable — see
+          // the identical comment in rotateInviteCode.ts for the full
+          // reasoning (READ COMMITTED's per-statement snapshots mean the FK
+          // guarantee doesn't span the rest of this transaction). Falling
+          // through to NotFoundError here is the correct, safe response.
           throw new NotFoundError('Household not found.');
         }
 
