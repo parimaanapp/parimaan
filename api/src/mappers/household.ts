@@ -2,9 +2,11 @@ import type {
   HouseholdRole,
   HouseholdRow,
   MembershipWithHouseholdRow,
+  MembershipWithUserRow,
   SettingsRow,
   SubscriptionStatus,
 } from '../repositories/householdRepository.js';
+import { toGraphQLUser } from './user.js';
 import type { GraphQLUser } from './user.js';
 
 export interface GraphQLSettings {
@@ -90,6 +92,27 @@ export const toGraphQLMembership = (
   id: row.id,
   household: toGraphQLHousehold(row.household, [], row.settings),
   user,
+  role: row.role,
+  joinedAt: row.joinedAt.toISOString(),
+});
+
+/**
+ * Maps a `findMembersForHousehold` join row (which already carries its own
+ * `User`) to the GraphQL `HouseholdMembership` shape, given the single
+ * `household`/`settings` every member in that list shares — the "wrong
+ * shape" `toGraphQLMembership` above is documented against: that one takes
+ * an already-mapped `GraphQLUser` for a single (the caller's) membership,
+ * not N members each with their own row. Same empty-`members` recursion
+ * cutoff as `toGraphQLMembership`, for the same reason.
+ */
+export const toGraphQLHouseholdMember = (
+  row: MembershipWithUserRow,
+  household: HouseholdRow,
+  settings: SettingsRow,
+): GraphQLMembership => ({
+  id: row.id,
+  household: toGraphQLHousehold(household, [], settings),
+  user: toGraphQLUser(row.user),
   role: row.role,
   joinedAt: row.joinedAt.toISOString(),
 });

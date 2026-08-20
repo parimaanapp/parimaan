@@ -38,6 +38,24 @@ type Mutation {
   settings, and a generated invite code (SYSTEM_DESIGN.md §5.2).
   """
   createHousehold(name: String!): Household!
+
+  """
+  Joins the caller to a household by invite code, as a `member`. Idempotent:
+  re-joining a household the caller already belongs to succeeds without a
+  second membership row. Capped at 5 members per household
+  (HOUSEHOLD_FULL). Rate-limited per caller against guessed invite codes
+  (RATE_LIMITED). Deliberately has no membership-required authorization
+  check — the caller is by definition not yet a member.
+  """
+  joinHousehold(inviteCode: String!): Household!
+
+  """
+  Applies a partial patch to a household's settings — every `input` field is
+  optional, and an absent field leaves that column unchanged (an explicit
+  `null` is rejected). Requires the caller to already be a member of
+  `householdId`.
+  """
+  updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): HouseholdSettings!
 }
 
 type User {
@@ -112,4 +130,21 @@ enum DietaryTag {
   eggetarian
   gluten_free
   dairy_free
+}
+
+"""
+A partial patch for `Mutation.updateHouseholdSettings` — every field is
+optional (absent = "leave unchanged"). Sending an explicit `null` for any
+field is rejected server-side; clearing a field is not yet supported.
+`mealStructure`/`cuisineTier2Weights` are `AWSJSON` — see `HouseholdSettings`
+for their validated shapes.
+"""
+input HouseholdSettingsInput {
+  mealsEnabled: [MealType!]
+  mealStructure: AWSJSON
+  cuisineTier1: [CuisineTier1!]
+  cuisineTier2Weights: AWSJSON
+  dietaryTags: [DietaryTag!]
+  allergens: [String!]
+  skipIngredients: [String!]
 }

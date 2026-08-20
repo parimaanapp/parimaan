@@ -68,6 +68,7 @@ new ApiStack(app, `Parimaan-${envName}-Api`, {
   dbCluster: data.dbCluster,
   appRoleSecret: data.appRoleSecret,
   lambdaSecurityGroup: data.lambdaSecurityGroup,
+  cacheTable: data.cacheTable,
   description: `Parimaan ${envName} — AppSync GraphQL API + Lambda resolvers.`,
 });
 
