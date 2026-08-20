@@ -70,7 +70,25 @@ describe('ApiStack', () => {
     });
   };
 
-  const synth = (envName: 'dev' | 'prod'): Template => Template.fromStack(build(envName));
+  // Every assertion below reads the same immutable synthesized template —
+  // none of them mutate it — so memoizing by env turns ~22 independent
+  // `it()`-triggered full CDK synths (each one bundling 6 Lambdas via
+  // esbuild, ~3s apiece) into effectively 2. Not just a speed nicety: the
+  // unmemoized version was slow enough (~85s for this file alone) to
+  // starve the Vitest worker's own IPC heartbeat to the main thread and
+  // fail CI with "[vitest-worker]: Timeout calling 'onTaskUpdate'" —
+  // confirmed on PR #11, where three other mitigations (disabling file
+  // parallelism, disabling module isolation, silencing passing-test
+  // console output) each left this file's per-test synth cost unchanged
+  // and the failure recurred identically every time.
+  const templateCache = new Map<'dev' | 'prod', Template>();
+  const synth = (envName: 'dev' | 'prod'): Template => {
+    const cached = templateCache.get(envName);
+    if (cached) return cached;
+    const template = Template.fromStack(build(envName));
+    templateCache.set(envName, template);
+    return template;
+  };
 
   /**
    * All Lambda functions belonging to *this* stack's own template, minus
