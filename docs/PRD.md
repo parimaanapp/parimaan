@@ -140,7 +140,7 @@ Everything else in the app supports or extends this loop.
 - All pantry/recipe/plan/list data is scoped to `householdId`. No user-scoped data.
 
 **Household configuration (settings)**
-Set at household creation with sensible defaults, editable anytime by primary user:
+Set at household creation with sensible defaults, editable anytime by any member of the household (settings are not primary-only — the same "any member can do everything" trust model that governs invite-code rotation):
 - **Which meals to plan:** any subset of {Breakfast, Lunch, Snacks, Dinner}
 - **Meal structure per meal type:**
   - Breakfast = 1 recipe (a "breakfast" recipe may bundle its sides — Idli+Sambar+Chutney counts as one recipe)
