@@ -95,17 +95,6 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      # TEMPORARY (remove before merge): regenerate goldens on the exact CI
-      # runner so they're byte-portable, then upload for download — macOS-
-      # generated goldens have shown small pixel diffs against this runner.
-      - name: TEMP - regenerate goldens on CI runner
-        run: flutter test --update-goldens test/shared/ui/components/ || true
-      - name: TEMP - upload regenerated goldens
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-goldens
-          path: mobile/test/shared/ui/components/goldens/ci/*.png
-
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
