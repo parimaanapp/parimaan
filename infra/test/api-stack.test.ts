@@ -194,6 +194,14 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/households\s*:\s*\[HouseholdMembership!\]!/);
   });
 
+  it('the real schema file still declares the household lifecycle mutations', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/rotateInviteCode\(householdId:\s*ID!\)\s*:\s*Household!/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/leaveHousehold\(householdId:\s*ID!\)\s*:\s*Boolean!/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /deleteHousehold\(householdId:\s*ID!,\s*confirmationName:\s*String!\)\s*:\s*Boolean!/,
+    );
+  });
+
   it('the real schema file still declares joinHousehold and updateHouseholdSettings, and no Subscription type yet', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/joinHousehold\(inviteCode:\s*String!\)\s*:\s*Household!/);
     expect(REAL_SCHEMA_CONTENTS).toMatch(
@@ -206,9 +214,9 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).not.toMatch(/type Subscription/);
   });
 
-  it('declares exactly 6 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings)', () => {
+  it('declares exactly 9 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(6);
+    expect(ourFunctions(template)).toHaveLength(9);
   });
 
   it('declares the health Lambda outside the VPC, on the Node.js 24 runtime', () => {
@@ -221,10 +229,10 @@ describe('ApiStack', () => {
     expect(healthFn.Properties.Runtime).toBe('nodejs24.x');
   });
 
-  it('declares 5 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 8 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(5);
+    expect(vpcFunctions).toHaveLength(8);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -236,7 +244,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(5);
+    expect(vpcFunctions).toHaveLength(8);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -250,7 +258,7 @@ describe('ApiStack', () => {
     }
   });
 
-  it('sets CACHE_TABLE_NAME only on the joinHousehold Lambda (its rate limiter), never on the other resolvers', () => {
+  it('sets CACHE_TABLE_NAME only on the two rate-limited Lambdas (joinHousehold, rotateInviteCode), never on the other resolvers', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
     const withCacheTableEnv = vpcFunctions.filter(([, fn]) => {
@@ -258,32 +266,67 @@ describe('ApiStack', () => {
         .Properties.Environment.Variables;
       return env['CACHE_TABLE_NAME'] !== undefined;
     });
-    expect(withCacheTableEnv).toHaveLength(1);
-    const [joinHouseholdLogicalId] = withCacheTableEnv[0] as (typeof withCacheTableEnv)[0];
-    expect(joinHouseholdLogicalId).toMatch(/^JoinHouseholdFn/);
+    expect(withCacheTableEnv).toHaveLength(2);
+    const logicalIds = withCacheTableEnv.map(([logicalId]) => logicalId).sort();
+    expect(logicalIds[0]).toMatch(/^JoinHouseholdFn/);
+    expect(logicalIds[1]).toMatch(/^RotateInviteCodeFn/);
   });
 
-  it('grants the joinHousehold Lambda dynamodb:UpdateItem on the cache table only — no other DynamoDB action, never Resource: "*"', () => {
-    const template = synth('dev');
-    const policies = template.findResources('AWS::IAM::Policy');
-    const ddbStatements = Object.values(policies).flatMap(
-      (policy) =>
-        (
-          policy as {
-            Properties: {
-              PolicyDocument: { Statement: Array<{ Action: string | string[]; Resource: unknown }> };
-            };
-          }
-        ).Properties.PolicyDocument.Statement,
-    ).filter((statement) => {
-      const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
-      return actions.some((action) => typeof action === 'string' && action.startsWith('dynamodb:'));
+  /**
+   * Every `AWS::IAM::Policy` statement in this stack that names any
+   * `dynamodb:*` action, paired with the logical ids of the roles that policy
+   * is attached to — the shape both the positive grant assertions and the
+   * `LeaveHouseholdFn`/`DeleteHouseholdFn` negative assertion below need.
+   */
+  const ddbPolicyStatements = (
+    template: Template,
+  ): Array<{ statement: { Action: string | string[]; Resource: unknown }; roleRefs: string[] }> =>
+    Object.values(template.findResources('AWS::IAM::Policy')).flatMap((policy) => {
+      const typed = policy as {
+        Properties: {
+          PolicyDocument: { Statement: Array<{ Action: string | string[]; Resource: unknown }> };
+          Roles?: Array<{ Ref?: string }>;
+        };
+      };
+      const roleRefs = (typed.Properties.Roles ?? [])
+        .map((role) => role.Ref)
+        .filter((ref): ref is string => ref !== undefined);
+      return typed.Properties.PolicyDocument.Statement.filter((statement) => {
+        const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+        return actions.some((action) => typeof action === 'string' && action.startsWith('dynamodb:'));
+      }).map((statement) => ({ statement, roleRefs }));
     });
-    expect(ddbStatements).toHaveLength(1);
-    const [statement] = ddbStatements as [{ Action: string | string[]; Resource: unknown }];
-    const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
-    expect(actions).toEqual(['dynamodb:UpdateItem']);
-    expect(statement.Resource).not.toBe('*');
+
+  it('grants dynamodb:UpdateItem on the cache table to exactly the two rate-limited Lambdas — no other action, never Resource: "*"', () => {
+    const template = synth('dev');
+    const entries = ddbPolicyStatements(template);
+    expect(entries).toHaveLength(2);
+    for (const { statement } of entries) {
+      const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+      expect(actions).toEqual(['dynamodb:UpdateItem']);
+      expect(statement.Resource).not.toBe('*');
+    }
+    const grantedRoles = entries.flatMap((entry) => entry.roleRefs).join(' ');
+    expect(grantedRoles).toMatch(/JoinHouseholdFnServiceRole/);
+    expect(grantedRoles).toMatch(/RotateInviteCodeFnServiceRole/);
+  });
+
+  it('grants leaveHousehold and deleteHousehold NO DynamoDB access at all — no statement mentions either role', () => {
+    // Negative assertion, deliberately phrased as "these roles appear in zero
+    // DynamoDB statements" rather than "the count is 2": a future grant
+    // widened onto one of these Lambdas would still keep the count-based
+    // assertion above honest-looking, but must fail here.
+    const template = synth('dev');
+    const allDdbRoleRefs = ddbPolicyStatements(template).flatMap((entry) => entry.roleRefs);
+    expect(allDdbRoleRefs.filter((ref) => /^LeaveHouseholdFn/.test(ref))).toHaveLength(0);
+    expect(allDdbRoleRefs.filter((ref) => /^DeleteHouseholdFn/.test(ref))).toHaveLength(0);
+    // And the CACHE_TABLE_NAME env var never reaches them either.
+    for (const [logicalId, fn] of ourFunctions(template)) {
+      if (!/^(LeaveHousehold|DeleteHousehold)Fn/.test(logicalId)) continue;
+      const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
+        .Properties.Environment.Variables;
+      expect(env['CACHE_TABLE_NAME']).toBeUndefined();
+    }
   });
 
   it('grants each VPC-attached resolver Lambda secretsmanager:GetSecretValue scoped only to the app-role secret — never Resource: "*"', () => {
@@ -309,9 +352,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 6 AppSync Lambda data sources', () => {
+  it('declares exactly 9 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 6);
+    template.resourceCountIs('AWS::AppSync::DataSource', 9);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -368,9 +411,36 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 6 resolvers total', () => {
+  it('declares a resolver for Mutation.rotateInviteCode', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 6);
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'rotateInviteCode',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.leaveHousehold', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'leaveHousehold',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.deleteHousehold', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'deleteHousehold',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares exactly 9 resolvers total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::Resolver', 9);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

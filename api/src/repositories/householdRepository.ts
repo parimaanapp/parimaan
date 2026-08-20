@@ -257,6 +257,38 @@ export const findHouseholdById = async (
   return row === undefined ? null : mapHouseholdRow(row);
 };
 
+/**
+ * Replaces a household's `invite_code`, returning the updated row (or `null`
+ * if no row matched `householdId` — the same null-not-throw convention as
+ * `updateSettingsPartial`). Callers own the code generation and the
+ * `23505`-on-`households_invite_code_key` retry policy (see
+ * `domain/inviteCodeAttempts.ts`), exactly as `insertHousehold` does — this
+ * function performs one update attempt and nothing else.
+ *
+ * SECURITY: `households` has NO RLS policy. Unlike `updateSettingsPartial`,
+ * there is no layer-3 backstop here at all — the `WHERE id = $1` scope on
+ * this statement plus the calling resolver's own `requireHouseholdMember`
+ * gate are the ONLY protections. Calling this function without that gate in
+ * front of it lets any caller rotate any household's invite code (see this
+ * repository's own test proving exactly that). Enabling RLS on `households`
+ * is deliberately out of scope for this slice: its policy would have to
+ * permit `joinHousehold`'s `SELECT ... FOR UPDATE` on a household the caller
+ * is (by definition) not yet a member of, which the obvious member-only
+ * policy would break.
+ */
+export const updateInviteCode = async (
+  client: PoolClient,
+  householdId: string,
+  inviteCode: string,
+): Promise<HouseholdRow | null> => {
+  const result = await client.query<RawHouseholdRow>(
+    `UPDATE households SET invite_code = $2 WHERE id = $1 RETURNING *`,
+    [householdId, inviteCode],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapHouseholdRow(row);
+};
+
 export interface FindHouseholdByInviteCodeOptions {
   /**
    * When `true`, appends `FOR UPDATE` — locks the matched `households` row
@@ -333,6 +365,73 @@ export const insertMembershipWithinCap = async (
   );
   const row = result.rows[0];
   return row === undefined ? null : mapMembershipRow(row);
+};
+
+/**
+ * Deletes the caller's own non-`primary` membership row, returning the
+ * deleted row — or `null` if nothing matched, which covers three distinct
+ * situations this function deliberately cannot tell apart: the user was never
+ * a member, they already left, or they are the household's `primary` and the
+ * `role <> 'primary'` predicate refused the delete. Callers that need to
+ * distinguish those (to produce a `ForbiddenError` for the primary versus an
+ * idempotent success for a non-member) must pre-check with `findMembership`
+ * — this function is ONLY the guarded delete.
+ *
+ * SECURITY: this is the FIRST `DELETE` this codebase issues against
+ * `household_memberships`, and that table has NO RLS policy. All three
+ * predicates in the `WHERE` clause are load-bearing safety, not filtering
+ * convenience, and there is no layer-3 backstop behind any of them:
+ *   - `household_id = $1` scopes the delete to one household;
+ *   - `user_id = $2` is the only thing stopping a caller from deleting
+ *     someone else's membership (see this repository's own test proving a
+ *     mismatched `user_id` deletes zero rows);
+ *   - `role <> 'primary'` is the only thing stopping a household from
+ *     becoming primary-less, which nothing downstream is built to handle.
+ * Dropping any one of them is a privilege-escalation or data-integrity bug
+ * that no other layer will catch.
+ */
+export const deleteNonPrimaryMembership = async (
+  client: PoolClient,
+  householdId: string,
+  userId: string,
+): Promise<MembershipRow | null> => {
+  const result = await client.query<RawMembershipRow>(
+    `DELETE FROM household_memberships
+     WHERE household_id = $1 AND user_id = $2 AND role <> 'primary'
+     RETURNING *`,
+    [householdId, userId],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapMembershipRow(row);
+};
+
+/**
+ * Deletes a `households` row, returning it — or `null` if no row matched.
+ * The dependent `household_memberships` and `household_settings` rows are
+ * removed by Postgres itself: both tables FK-reference `households(id)` with
+ * `ON DELETE CASCADE` (verified against `migrations/
+ * 1787072268736_baseline-schema.ts`, not assumed), and referential-integrity
+ * actions bypass row security, so the cascade reaches RLS-protected
+ * `household_settings` too. No explicit child-row cleanup is needed here
+ * today — but any FUTURE household-scoped table that does not declare
+ * `ON DELETE CASCADE` must be deleted explicitly, before this call, in the
+ * same transaction.
+ *
+ * SECURITY: same caveat as `updateInviteCode` — `households` has NO RLS
+ * policy, so this statement's `WHERE id = $1` scope plus the calling
+ * resolver's own primary-only `requireHouseholdMember` gate are the ONLY
+ * protections against deleting an arbitrary household.
+ */
+export const deleteHousehold = async (
+  client: PoolClient,
+  householdId: string,
+): Promise<HouseholdRow | null> => {
+  const result = await client.query<RawHouseholdRow>(
+    `DELETE FROM households WHERE id = $1 RETURNING *`,
+    [householdId],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapHouseholdRow(row);
 };
 
 /**

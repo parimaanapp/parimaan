@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { householdIdSchema } from './householdId.js';
 
 // Mirrors `shared/schema.graphql`'s enum value names exactly — these are
 // TEXT-backed values persisted verbatim (see `householdRepository.ts`'s own
@@ -116,7 +117,7 @@ export const householdSettingsInputSchema = z
 export type HouseholdSettingsInput = z.infer<typeof householdSettingsInputSchema>;
 
 export const updateHouseholdSettingsArgsSchema = z.object({
-  householdId: z.string().uuid('householdId must be a valid UUID'),
+  householdId: householdIdSchema,
   input: householdSettingsInputSchema,
 });
 

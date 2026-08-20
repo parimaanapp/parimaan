@@ -1,5 +1,5 @@
 import type { AppSyncResolverEvent } from 'aws-lambda';
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import { extractCallerIdentity } from '../auth/identity.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
@@ -9,22 +9,15 @@ import {
   insertHousehold,
   insertMembership,
 } from '../repositories/householdRepository.js';
-import type { HouseholdRow, MembershipRow, SettingsRow } from '../repositories/householdRepository.js';
-import { generateInviteCode } from '../domain/inviteCode.js';
+import type { MembershipRow, SettingsRow } from '../repositories/householdRepository.js';
 import type { RandomIntFn } from '../domain/inviteCode.js';
+import { attemptWithFreshInviteCode } from '../domain/inviteCodeAttempts.js';
 import { toGraphQLHousehold, toGraphQLMembership } from '../mappers/household.js';
 import type { GraphQLHousehold } from '../mappers/household.js';
 import { toGraphQLUser } from '../mappers/user.js';
 import { createHouseholdArgsSchema } from '../validation/createHousehold.js';
 import { ValidationError } from '../errors.js';
-import { isUniqueViolationOnConstraint } from '../db/pgErrors.js';
 import { withErrorHandling } from './withErrorHandling.js';
-
-const INVITE_CODE_CONSTRAINT = 'households_invite_code_key';
-const MAX_INVITE_CODE_ATTEMPTS = 5;
-
-const isInviteCodeCollision = (error: unknown): boolean =>
-  isUniqueViolationOnConstraint(error, INVITE_CODE_CONSTRAINT);
 
 export interface CreateHouseholdResolverDeps {
   getPool: () => Promise<Pool>;
@@ -43,53 +36,6 @@ export interface CreateHouseholdResolverDeps {
 }
 
 export const productionDeps: CreateHouseholdResolverDeps = { getPool };
-
-/**
- * Inserts a `households` row, retrying with a freshly-generated invite code
- * (up to `MAX_INVITE_CODE_ATTEMPTS` total attempts) whenever the previous
- * attempt collided on `households_invite_code_key`. Generate-then-insert
- * (not generate-then-UPDATE): `invite_code` is `NOT NULL UNIQUE`, so it
- * cannot be inserted as null and updated afterward.
- */
-const INVITE_CODE_SAVEPOINT = 'invite_code_attempt';
-
-/**
- * A unique-violation aborts the *entire* enclosing Postgres transaction
- * (every subsequent statement fails with "current transaction is aborted"
- * until a `ROLLBACK`) — so a naive try/catch retry loop around
- * `insertHousehold` would poison the outer `withUserTransaction` after the
- * very first collision. Each attempt below runs inside its own
- * `SAVEPOINT`/`ROLLBACK TO SAVEPOINT` pair, which scopes that abort to just
- * the failed attempt and leaves the outer transaction (and anything already
- * inserted within it) intact for the next attempt or subsequent statements.
- */
-const insertHouseholdWithRetry = async (
-  client: PoolClient,
-  name: string,
-  primaryUserId: string,
-  randomInt: RandomIntFn | undefined,
-): Promise<HouseholdRow> => {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < MAX_INVITE_CODE_ATTEMPTS; attempt += 1) {
-    const inviteCode = generateInviteCode(randomInt);
-    await client.query(`SAVEPOINT ${INVITE_CODE_SAVEPOINT}`);
-    try {
-      const household = await insertHousehold(client, { name, inviteCode, primaryUserId });
-      await client.query(`RELEASE SAVEPOINT ${INVITE_CODE_SAVEPOINT}`);
-      return household;
-    } catch (error) {
-      await client.query(`ROLLBACK TO SAVEPOINT ${INVITE_CODE_SAVEPOINT}`);
-      if (!isInviteCodeCollision(error)) {
-        throw error;
-      }
-      lastError = error;
-    }
-  }
-  throw new Error(
-    `Failed to generate a unique household invite code after ${MAX_INVITE_CODE_ATTEMPTS} attempts.`,
-    { cause: lastError },
-  );
-};
 
 /**
  * Direct-Lambda resolver for `Mutation.createHousehold`. Flow: validate the
@@ -120,10 +66,13 @@ export const createCreateHouseholdHandler =
     return withUserTransaction(
       callerUser.id,
       async (txClient) => {
-        const household = await insertHouseholdWithRetry(
+        // Generate-then-insert (not generate-then-UPDATE): `invite_code` is
+        // `NOT NULL UNIQUE`, so it cannot be inserted as null and filled in
+        // afterward — the retry has to wrap the insert itself.
+        const household = await attemptWithFreshInviteCode(
           txClient,
-          name,
-          callerUser.id,
+          (inviteCode) =>
+            insertHousehold(txClient, { name, inviteCode, primaryUserId: callerUser.id }),
           deps.randomInt,
         );
 

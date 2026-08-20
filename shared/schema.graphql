@@ -56,6 +56,36 @@ type Mutation {
   `householdId`.
   """
   updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): HouseholdSettings!
+
+  """
+  Replaces a household's invite code with a freshly-generated one and returns
+  the updated household. Any member may rotate — there is deliberately no
+  role check. NOT idempotent: each successful call invalidates the previous
+  code for everyone holding it. Rate-limited per caller (RATE_LIMITED), more
+  tightly than `joinHousehold`, because rotating is destructive for
+  co-members. Requires the caller to already be a member of `householdId`.
+  """
+  rotateInviteCode(householdId: ID!): Household!
+
+  """
+  Removes the caller's own membership from a household. Idempotent and
+  deliberately gated differently from every other household-scoped mutation:
+  a caller who is not (or is no longer) a member returns `true` rather than a
+  denial, since "not a member" is exactly the state this mutation asks for.
+  The primary member cannot leave (FORBIDDEN) — in MVP the only exit for a
+  primary is `deleteHousehold`, as primary-role transfer is post-MVP.
+  """
+  leaveHousehold(householdId: ID!): Boolean!
+
+  """
+  Permanently deletes a household along with its memberships and settings.
+  Primary-only (FORBIDDEN for any other member, and for a non-member — which
+  is also what a nonexistent `householdId` returns, so this is never a
+  household-existence oracle). `confirmationName` must match the household's
+  current `name` exactly — case-sensitive, no trimming — or the mutation
+  fails (VALIDATION) without deleting anything. Irreversible.
+  """
+  deleteHousehold(householdId: ID!, confirmationName: String!): Boolean!
 }
 
 type User {

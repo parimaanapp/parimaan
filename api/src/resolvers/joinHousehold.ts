@@ -8,20 +8,18 @@ import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
 import {
   findHouseholdByInviteCode,
-  findMembersForHousehold,
   findMembership as findMembershipRepo,
-  findSettingsForHousehold,
   insertMembershipWithinCap as insertMembershipWithinCapRepo,
 } from '../repositories/householdRepository.js';
-import type { HouseholdRow } from '../repositories/householdRepository.js';
-import { toGraphQLHousehold, toGraphQLHouseholdMember } from '../mappers/household.js';
 import type { GraphQLHousehold } from '../mappers/household.js';
 import { joinHouseholdArgsSchema } from '../validation/joinHousehold.js';
 import { HouseholdFullError, NotFoundError, ValidationError } from '../errors.js';
 import { isUniqueViolationOnConstraint } from '../db/pgErrors.js';
+import { withSavepoint } from '../db/withSavepoint.js';
 import { HOUSEHOLD_MEMBER_CAP } from '../domain/householdLimits.js';
 import { checkAndIncrementJoinAttempts } from '../rateLimit/joinAttemptLimiter.js';
 import { loadCacheTableName } from '../rateLimit/config.js';
+import { buildGraphQLHousehold } from './householdView.js';
 import { withErrorHandling } from './withErrorHandling.js';
 
 /**
@@ -62,19 +60,6 @@ export const productionDeps: JoinHouseholdResolverDeps = {
   getCacheTableName: () => loadCacheTableName(),
 };
 
-const buildGraphQLHousehold = async (
-  client: PoolClient,
-  household: HouseholdRow,
-): Promise<GraphQLHousehold> => {
-  const settings = await findSettingsForHousehold(client, household.id);
-  if (settings === null) {
-    throw new NotFoundError('Household settings not found.');
-  }
-  const memberRows = await findMembersForHousehold(client, household.id);
-  const members = memberRows.map((row) => toGraphQLHouseholdMember(row, household, settings));
-  return toGraphQLHousehold(household, members, settings);
-};
-
 /**
  * Adds the caller as a `member`, treating "already a member" as an
  * idempotent no-op success rather than an error — a re-submitted
@@ -109,28 +94,28 @@ const joinAsMember = async (
   }
 
   // A unique-violation aborts the *entire* enclosing transaction (every
-  // subsequent statement fails until a ROLLBACK) — same hazard
-  // `createHousehold.ts`'s `insertHouseholdWithRetry` documents for its own
-  // invite-code collision retries. Wrapping just this insert attempt in a
-  // SAVEPOINT scopes that abort to the attempt itself, leaving the rest of
-  // this transaction (including the settings/members reads that follow)
-  // intact.
-  await client.query(`SAVEPOINT ${JOIN_INSERT_SAVEPOINT}`);
+  // subsequent statement fails until a ROLLBACK) — see `db/withSavepoint.ts`
+  // for the full rationale. Wrapping just this insert attempt in a savepoint
+  // scopes that abort to the attempt itself, leaving the rest of this
+  // transaction (including the settings/members reads that follow) intact.
+  // Unlike `createHousehold`, there is no invite code being retried here —
+  // just one insert attempt that needs its own abort boundary — so this uses
+  // `withSavepoint` directly rather than `attemptWithFreshInviteCode`.
   let inserted;
   try {
-    inserted = await insertMembershipWithinCap(
-      client,
-      { householdId, userId, role: 'member' },
-      HOUSEHOLD_MEMBER_CAP,
+    inserted = await withSavepoint(client, JOIN_INSERT_SAVEPOINT, () =>
+      insertMembershipWithinCap(
+        client,
+        { householdId, userId, role: 'member' },
+        HOUSEHOLD_MEMBER_CAP,
+      ),
     );
   } catch (error) {
-    await client.query(`ROLLBACK TO SAVEPOINT ${JOIN_INSERT_SAVEPOINT}`);
     if (isUniqueViolationOnConstraint(error, MEMBERSHIP_UNIQUE_CONSTRAINT)) {
       return;
     }
     throw error;
   }
-  await client.query(`RELEASE SAVEPOINT ${JOIN_INSERT_SAVEPOINT}`);
   if (inserted === null) {
     throw new HouseholdFullError();
   }

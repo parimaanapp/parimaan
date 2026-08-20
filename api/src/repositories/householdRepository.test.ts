@@ -7,6 +7,8 @@ import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from './userRepository.js';
 import {
+  deleteHousehold,
+  deleteNonPrimaryMembership,
   findHouseholdById,
   findHouseholdByInviteCode,
   findMembersForHousehold,
@@ -17,6 +19,7 @@ import {
   insertHousehold,
   insertMembership,
   insertMembershipWithinCap,
+  updateInviteCode,
   updateSettingsPartial,
 } from './householdRepository.js';
 import type { MembershipRow } from './householdRepository.js';
@@ -352,6 +355,193 @@ describe('householdRepository', () => {
         findSettingsForHousehold(client, householdBId),
       );
       expect(stillDefault?.allergens).toEqual([]);
+    });
+  });
+
+  describe('updateInviteCode', () => {
+    it('replaces the invite code and returns the updated row', async () => {
+      const owner = await createUser();
+      const householdId = await createFullHousehold(owner, 'ROT234');
+
+      const updated = await asUser(owner.id, (client) =>
+        updateInviteCode(client, householdId, 'ROT999'),
+      );
+
+      expect(updated).toMatchObject({ id: householdId, inviteCode: 'ROT999' });
+      const reread = await asUser(owner.id, (client) => findHouseholdById(client, householdId));
+      expect(reread?.inviteCode).toBe('ROT999');
+    });
+
+    it('returns null when no household matched the id', async () => {
+      const owner = await createUser();
+      const result = await asUser(owner.id, (client) =>
+        updateInviteCode(client, randomUUID(), 'NOP234'),
+      );
+      expect(result).toBeNull();
+    });
+
+    it('NO-RLS-BACKSTOP: a non-member calling this directly still rotates the code — the resolver gate is the only protection', async () => {
+      // The deliberate mirror image of `updateSettingsPartial`'s RLS-only
+      // regression test above. `household_settings` has an RLS policy, so
+      // that write is blocked at layer 3 even with no resolver gate in
+      // front of it. `households` has NO policy, so this one is NOT — which
+      // is precisely why `resolvers/rotateInviteCode.ts` must call
+      // `requireHouseholdMember` before ever reaching here. This test exists
+      // to make that dependency fail loudly the day someone adds a second
+      // caller without the gate.
+      const ownerA = await createUser();
+      const ownerB = await createUser();
+      const householdBId = await createFullHousehold(ownerB, 'RLS999');
+
+      const result = await asUser(ownerA.id, (client) =>
+        updateInviteCode(client, householdBId, 'PWN234'),
+      );
+
+      expect(result).toMatchObject({ id: householdBId, inviteCode: 'PWN234' });
+    });
+  });
+
+  describe('deleteNonPrimaryMembership', () => {
+    const addMember = async (householdId: string, member: UserRow): Promise<void> => {
+      await asUser(member.id, (client) =>
+        insertMembershipWithinCap(client, { householdId, userId: member.id, role: 'member' }, 5),
+      );
+    };
+
+    it("deletes and returns the caller's own member row", async () => {
+      const owner = await createUser();
+      const member = await createUser();
+      const householdId = await createFullHousehold(owner, 'LVE234');
+      await addMember(householdId, member);
+
+      const deleted = await asUser(member.id, (client) =>
+        deleteNonPrimaryMembership(client, householdId, member.id),
+      );
+
+      expect(deleted).toMatchObject({ householdId, userId: member.id, role: 'member' });
+      const remaining = await pool.query(
+        'SELECT count(*)::int AS n FROM household_memberships WHERE household_id = $1',
+        [householdId],
+      );
+      expect(remaining.rows[0].n).toBe(1);
+    });
+
+    it('returns null and deletes nothing when the user is not a member', async () => {
+      const owner = await createUser();
+      const stranger = await createUser();
+      const householdId = await createFullHousehold(owner, 'LVE235');
+
+      const deleted = await asUser(stranger.id, (client) =>
+        deleteNonPrimaryMembership(client, householdId, stranger.id),
+      );
+      expect(deleted).toBeNull();
+
+      const remaining = await pool.query(
+        'SELECT count(*)::int AS n FROM household_memberships WHERE household_id = $1',
+        [householdId],
+      );
+      expect(remaining.rows[0].n).toBe(1);
+    });
+
+    it("returns null and leaves the row intact for the household's primary — the role predicate refuses the delete", async () => {
+      const owner = await createUser();
+      const householdId = await createFullHousehold(owner, 'LVE236');
+
+      const deleted = await asUser(owner.id, (client) =>
+        deleteNonPrimaryMembership(client, householdId, owner.id),
+      );
+      expect(deleted).toBeNull();
+
+      const still = await asUser(owner.id, (client) => findMembership(client, householdId, owner.id));
+      expect(still).toMatchObject({ role: 'primary' });
+    });
+
+    it('PREDICATE-IS-THE-PROTECTION: a mismatched user_id deletes zero rows — you cannot delete a co-member with only the household_id right', async () => {
+      // `household_memberships` has no RLS policy, so the `user_id = $2`
+      // predicate is the ONLY thing standing between this statement and
+      // evicting someone else from their household. This test asserts the
+      // predicate actually protects, rather than trusting the doc comment.
+      const owner = await createUser();
+      const victim = await createUser();
+      const attacker = await createUser();
+      const householdId = await createFullHousehold(owner, 'LVE237');
+      await addMember(householdId, victim);
+      await addMember(householdId, attacker);
+
+      const deleted = await asUser(attacker.id, (client) =>
+        // Correct household_id, WRONG user_id: the attacker names themself
+        // while targeting the victim's household row.
+        deleteNonPrimaryMembership(client, householdId, attacker.id),
+      );
+      expect(deleted?.userId).toBe(attacker.id);
+
+      const victimStillThere = await asUser(victim.id, (client) =>
+        findMembership(client, householdId, victim.id),
+      );
+      expect(victimStillThere).toMatchObject({ userId: victim.id });
+
+      // And directly: naming the victim's household but a non-matching user
+      // deletes nothing at all.
+      const noop = await asUser(owner.id, (client) =>
+        deleteNonPrimaryMembership(client, householdId, randomUUID()),
+      );
+      expect(noop).toBeNull();
+      const stillTwo = await pool.query(
+        'SELECT count(*)::int AS n FROM household_memberships WHERE household_id = $1',
+        [householdId],
+      );
+      expect(stillTwo.rows[0].n).toBe(2);
+    });
+  });
+
+  describe('deleteHousehold', () => {
+    it('deletes the household row and cascades to its memberships and settings', async () => {
+      const owner = await createUser();
+      const member = await createUser();
+      const householdId = await createFullHousehold(owner, 'DEL234');
+      await asUser(member.id, (client) =>
+        insertMembershipWithinCap(client, { householdId, userId: member.id, role: 'member' }, 5),
+      );
+
+      const deleted = await asUser(owner.id, (client) => deleteHousehold(client, householdId));
+      expect(deleted).toMatchObject({ id: householdId, inviteCode: 'DEL234' });
+
+      const households = await pool.query('SELECT 1 FROM households WHERE id = $1', [householdId]);
+      expect(households.rows).toHaveLength(0);
+      const memberships = await pool.query(
+        'SELECT 1 FROM household_memberships WHERE household_id = $1',
+        [householdId],
+      );
+      expect(memberships.rows).toHaveLength(0);
+      // Read as the superuser: RLS would hide a surviving settings row from
+      // the app role, which would make this assertion pass for the wrong reason.
+      const settings = await db.adminClient.query(
+        'SELECT 1 FROM household_settings WHERE household_id = $1',
+        [householdId],
+      );
+      expect(settings.rows).toHaveLength(0);
+    });
+
+    it('returns null when no household matched the id', async () => {
+      const owner = await createUser();
+      const result = await asUser(owner.id, (client) => deleteHousehold(client, randomUUID()));
+      expect(result).toBeNull();
+    });
+
+    it("leaves an unrelated household completely intact", async () => {
+      const ownerA = await createUser();
+      const ownerB = await createUser();
+      const householdAId = await createFullHousehold(ownerA, 'DEL235');
+      const householdBId = await createFullHousehold(ownerB, 'DEL236');
+
+      await asUser(ownerA.id, (client) => deleteHousehold(client, householdAId));
+
+      const survivor = await asUser(ownerB.id, (client) => findHouseholdById(client, householdBId));
+      expect(survivor).toMatchObject({ id: householdBId });
+      const settings = await asUser(ownerB.id, (client) =>
+        findSettingsForHousehold(client, householdBId),
+      );
+      expect(settings).toMatchObject({ householdId: householdBId });
     });
   });
 
