@@ -6,6 +6,13 @@ import '../features/auth/domain/auth_session.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/state/auth_controller.dart';
+import '../features/household/presentation/create/cuisine_regions_screen.dart';
+import '../features/household/presentation/create/cuisine_sub_bias_screen.dart';
+import '../features/household/presentation/create/dietary_allergens_screen.dart';
+import '../features/household/presentation/create/invite_code_screen.dart';
+import '../features/household/presentation/create/meal_structure_screen.dart';
+import '../features/household/presentation/create/name_household_screen.dart';
+import '../features/household/presentation/create/which_meals_screen.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
@@ -21,6 +28,42 @@ abstract final class AppRoutes {
   /// the real screen is a one-line change — see
   /// [JoinHouseholdComingSoonScreen].
   static const String joinHousehold = '/join';
+
+  // ── The household setup wizard (wireframe flow 2) ────────────────────────
+  //
+  // Seven flat routes rather than a nested `ShellRoute`: the wizard has no
+  // persistent chrome to share (each screen owns its own `PTopBar`, and the
+  // step indicator differs per screen), so a shell would add a layer that
+  // renders nothing. Flat routes also keep every step independently
+  // addressable, which is what makes the back button and a deep link behave
+  // the same way.
+  //
+  // The steps are ordered but not *guarded* in sequence: a screen reached
+  // without a household renders its own honest empty/error state rather than
+  // redirecting, because a redirect at this depth would fight the user's own
+  // back navigation.
+
+  /// Wireframe 2.1. Where the household is actually created.
+  static const String createHouseholdName = '/household/create/name';
+
+  /// Wireframe 2.2 — step 1/4.
+  static const String createHouseholdMeals = '/household/create/meals';
+
+  /// Wireframe 2.3 — step 2/4.
+  static const String createHouseholdStructure = '/household/create/structure';
+
+  /// Wireframe 2.4 — step 3/4, first frame.
+  static const String createHouseholdCuisine = '/household/create/cuisine';
+
+  /// Wireframe 2.5 — step 3/4, second frame.
+  static const String createHouseholdCuisineBias =
+      '/household/create/cuisine-bias';
+
+  /// Wireframe 2.6 — step 4/4.
+  static const String createHouseholdDietary = '/household/create/dietary';
+
+  /// Wireframe 2.7 — the invite code, shown once setup finishes.
+  static const String createHouseholdInvite = '/household/create/invite';
 
   static const String home = '/home';
 }
@@ -68,6 +111,41 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.joinHousehold,
         builder: (BuildContext context, GoRouterState state) =>
             const JoinHouseholdComingSoonScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdName,
+        builder: (BuildContext context, GoRouterState state) =>
+            const NameHouseholdScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdMeals,
+        builder: (BuildContext context, GoRouterState state) =>
+            const WhichMealsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdStructure,
+        builder: (BuildContext context, GoRouterState state) =>
+            const MealStructureScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdCuisine,
+        builder: (BuildContext context, GoRouterState state) =>
+            const CuisineRegionsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdCuisineBias,
+        builder: (BuildContext context, GoRouterState state) =>
+            const CuisineSubBiasScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdDietary,
+        builder: (BuildContext context, GoRouterState state) =>
+            const DietaryAllergensScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdInvite,
+        builder: (BuildContext context, GoRouterState state) =>
+            const InviteCodeScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,

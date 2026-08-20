@@ -7,7 +7,11 @@ import '../../../shared/graphql/graphql_error_mapper.dart';
 import '../../../shared/graphql/operations/__generated__/create_household.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_household.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_household.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/update_household_settings.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/update_household_settings.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/update_household_settings.var.gql.dart';
 import '../domain/household.dart';
+import '../domain/household_settings_patch.dart';
 import 'household_mapper.dart';
 
 /// The app's household surface, GraphQL-free.
@@ -17,11 +21,11 @@ import 'household_mapper.dart';
 /// deserialization failure. Same contract, and same rationale, as
 /// `AuthRepository`'s with `AuthFailure`.
 ///
-/// Only `createHousehold` exists in this slice. `joinHousehold`,
-/// `updateHouseholdSettings`, `rotateInviteCode`, `leaveHousehold` and
-/// `deleteHousehold` are all implemented server-side already, but each needs
-/// its own operation document, mapping and tests, and adding stubs for them
-/// now would be five untested methods pretending to be a finished interface.
+/// `createHousehold` and `updateHouseholdSettings` exist so far.
+/// `joinHousehold`, `rotateInviteCode`, `leaveHousehold` and `deleteHousehold`
+/// are all implemented server-side already, but each needs its own operation
+/// document, mapping and tests, and adding stubs for them now would be four
+/// untested methods pretending to be a finished interface.
 abstract interface class HouseholdRepository {
   /// Creates a household named [name] with the caller as its `primary` member,
   /// and returns it fully populated (settings + members).
@@ -31,6 +35,22 @@ abstract interface class HouseholdRepository {
   /// `domain/household_name.dart` for why client validation is a presentation
   /// concern and never a substitute for the round trip.
   Future<Household> createHousehold(String name);
+
+  /// Applies [patch] to the settings of [householdId] and returns the
+  /// household's **whole** settings row — not just the patched fields, which
+  /// is what `Mutation.updateHouseholdSettings` returns.
+  ///
+  /// The patch is partial by construction: a `null` field on
+  /// [HouseholdSettingsPatch] is omitted from the request entirely, leaving
+  /// that column unchanged. See that type's doc for why `null`-means-absent is
+  /// sufficient here and a sentinel is not.
+  ///
+  /// Requires the caller to already be a member of [householdId]; a non-member
+  /// gets [ForbiddenError].
+  Future<HouseholdSettings> updateHouseholdSettings(
+    String householdId,
+    HouseholdSettingsPatch patch,
+  );
 }
 
 /// Ferry-backed [HouseholdRepository].
@@ -51,6 +71,23 @@ class FerryHouseholdRepository implements HouseholdRepository {
 
     final GCreateHouseholdData data = await _execute(request);
     return householdFromGraphQL(data.createHousehold);
+  }
+
+  @override
+  Future<HouseholdSettings> updateHouseholdSettings(
+    String householdId,
+    HouseholdSettingsPatch patch,
+  ) async {
+    final GUpdateHouseholdSettingsReq request = GUpdateHouseholdSettingsReq(
+      (GUpdateHouseholdSettingsReqBuilder b) =>
+          b
+            ..vars = (GUpdateHouseholdSettingsVarsBuilder()
+              ..householdId = householdId
+              ..input = householdSettingsInputFromPatch(patch).toBuilder()),
+    );
+
+    final GUpdateHouseholdSettingsData data = await _execute(request);
+    return householdSettingsFromGraphQL(data.updateHouseholdSettings);
   }
 
   /// Runs one operation and reduces ferry's stream-of-responses to a single

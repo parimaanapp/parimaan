@@ -3,114 +3,49 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
-import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
-import '../../household/domain/household.dart';
-import '../../household/domain/household_name.dart';
-import '../../household/state/create_household_controller.dart';
 
 /// The first thing a newly signed-in user sees: create a household, or join one
 /// somebody else already made.
 ///
-/// Both paths are on one screen rather than behind a chooser, because with
-/// exactly two options a chooser is a wasted tap and hides the fact that
-/// creating needs a name.
-class FirstRunChoosePathScreen extends ConsumerStatefulWidget {
+/// ## What changed here, and why
+///
+/// This screen used to own the household **name field** and call
+/// `createHousehold` itself. It no longer does: naming is wireframe screen
+/// 2.1, the first step of the setup wizard, and that is where the mutation now
+/// lives (`NameHouseholdScreen`).
+///
+/// The reconciliation was not optional. Leaving the create call here as well
+/// would give the app **two independent paths that create a household** — a
+/// user who typed a name here and then walked the wizard would end up with two
+/// households, the second one silently shadowing the first, and neither screen
+/// would be wrong on its own. Choosing one owner was the only correct
+/// resolution, and the wizard is the right owner: it is the screen the
+/// wireframe puts the field on, it is the screen that holds the resulting
+/// household for the five steps that follow, and it is where the ~30s Aurora
+/// cold-start wait belongs — behind a deliberate "Continue", not behind the
+/// first tap after sign-in.
+///
+/// What is left is what the wireframe (frame 1.3) actually draws: a chooser.
+/// Both options are on one screen rather than behind a further chooser,
+/// because with exactly two options a chooser is a wasted tap.
+///
+/// It is now a [ConsumerWidget] rather than a `ConsumerStatefulWidget`: with
+/// the text field and its validation gone, there is no local state left, and
+/// nothing on this screen is async any more — so there is also no loading
+/// state and no server-error line. Those moved to the wizard along with the
+/// mutation that produced them.
+class FirstRunChoosePathScreen extends ConsumerWidget {
   const FirstRunChoosePathScreen({super.key});
 
-  static const Key nameFieldKey = Key('first-run-household-name');
   static const Key createButtonKey = Key('first-run-create');
   static const Key joinButtonKey = Key('first-run-join');
 
-  /// Lets tests assert the *absence* of the server-error line, which
-  /// `find.text` cannot express for copy that is conditionally built. Same
-  /// trick as `SignInScreen.errorKey`.
-  static const Key serverErrorKey = Key('first-run-server-error');
-
-  /// The cold-start explanation, shown only while a create is in flight.
-  static const Key coldStartHintKey = Key('first-run-cold-start-hint');
-
-  /// Copy `PButton` swaps in for the label while loading. A constant so the
-  /// widget test asserts the same string the widget renders.
-  static const String createLoadingLabel = 'Setting up your kitchen…';
-
-  /// Shown under the button during the wait.
-  ///
-  /// Aurora Serverless v2 auto-pause (PRD §17.4 lever #2, "non-negotiable" for
-  /// cost) means the **first** request after a quiet period blocks for up to
-  /// ~30s while the cluster resumes — documented in `docs/RUNBOOK.md` and
-  /// `docs/SYSTEM_DESIGN.md`. A spinner alone reads as a hang at that
-  /// duration, and a user who force-quits mid-mutation is the worst outcome
-  /// available, so the wait is named rather than hidden.
-  static const String coldStartHint =
-      'This can take up to half a minute the first time — the kitchen is '
-      'waking up. Please keep the app open.';
-
   @override
-  ConsumerState<FirstRunChoosePathScreen> createState() =>
-      _FirstRunChoosePathScreenState();
-}
-
-class _FirstRunChoosePathScreenState
-    extends ConsumerState<FirstRunChoosePathScreen> {
-  final TextEditingController _name = TextEditingController();
-
-  /// The client-side validation message, or `null`. Set only on submit and
-  /// cleared on edit: validating on every keystroke would shout "must not be
-  /// empty" at someone who has simply not started typing.
-  String? _validationError;
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  void _onNameChanged(String _) {
-    if (_validationError != null) {
-      setState(() => _validationError = null);
-    }
-  }
-
-  Future<void> _create() async {
-    // Fast feedback only — the server is still the authority and still gets
-    // called for everything this does not catch. See `household_name.dart`.
-    final String? error = validateHouseholdName(_name.text);
-    if (error != null) {
-      setState(() => _validationError = error);
-      return;
-    }
-    setState(() => _validationError = null);
-
-    await ref
-        .read(createHouseholdControllerProvider.notifier)
-        .createHousehold(_name.text);
-
-    if (!mounted) {
-      return;
-    }
-    final AsyncValue<Household?> state = ref.read(
-      createHouseholdControllerProvider,
-    );
-    if (state.valueOrNull != null) {
-      // `/home` is still the placeholder from the auth slice; the real
-      // post-creation destination (the week plan) is a later slice, and
-      // routing there now would be routing at a screen that does not exist.
-      context.go(AppRoutes.home);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AsyncValue<Household?> state = ref.watch(
-      createHouseholdControllerProvider,
-    );
-    final bool isBusy = state.isLoading;
-    final String? serverError = _serverErrorMessage(state.error);
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.paper,
       body: SafeArea(
@@ -130,28 +65,26 @@ class _FirstRunChoosePathScreenState
                 style: AppTypography.body.copyWith(color: AppColors.inkSoft),
               ),
               const SizedBox(height: AppSpacing.s5),
-              _CreatePathCard(
-                nameController: _name,
-                validationError: _validationError,
-                isBusy: isBusy,
-                onNameChanged: _onNameChanged,
-                onSubmit: _create,
+              _PathCard(
+                buttonKey: createButtonKey,
+                title: 'Create a household',
+                body:
+                    "You'll be the primary member, and you'll get an invite "
+                    'code to share.',
+                actionLabel: 'Create a household',
+                variant: PButtonVariant.primary,
+                onPressed: () => context.go(AppRoutes.createHouseholdName),
               ),
-              if (serverError != null) ...<Widget>[
-                const SizedBox(height: AppSpacing.s3),
-                Text(
-                  serverError,
-                  key: FirstRunChoosePathScreen.serverErrorKey,
-                  style: AppTypography.label.copyWith(color: AppColors.danger),
-                ),
-              ],
               const SizedBox(height: AppSpacing.s5),
-              _JoinPathCard(
-                // Joining while a create is in flight would race two
-                // household states against each other.
-                onJoin: isBusy
-                    ? null
-                    : () => context.go(AppRoutes.joinHousehold),
+              _PathCard(
+                buttonKey: joinButtonKey,
+                title: 'Join a household',
+                body:
+                    'Someone in your family already set one up? Use their '
+                    'invite code.',
+                actionLabel: 'Join a household',
+                variant: PButtonVariant.secondary,
+                onPressed: () => context.go(AppRoutes.joinHousehold),
               ),
             ],
           ),
@@ -159,135 +92,53 @@ class _FirstRunChoosePathScreenState
       ),
     );
   }
-
-  /// Server-side failures rendered as themselves.
-  ///
-  /// Every branch is spelled out rather than collapsed into
-  /// `error.errorMessage`: the exhaustive `switch` is what makes the compiler
-  /// point here when `AppError` grows a variant, which is the entire reason
-  /// the taxonomy is sealed.
-  ///
-  /// [UnauthorizedError] is the one case worth handling rather than only
-  /// showing — `auth_link.dart` deliberately refuses to sign the user out from
-  /// inside the link and leaves it to the caller. This screen is that caller;
-  /// it currently only *explains* the state, because the sign-out is a
-  /// navigation side effect and doing it from a build method would be wrong.
-  /// Wiring it to `authController.signOut()` from an explicit "Sign in again"
-  /// action is the right next step and belongs with the join flow slice.
-  String? _serverErrorMessage(Object? error) => switch (error) {
-    null => null,
-    UnauthorizedError() => 'Your session has expired. Sign in again.',
-    ForbiddenError(:final String errorMessage) => errorMessage,
-    ValidationError(:final String errorMessage) => errorMessage,
-    ConflictError(:final String errorMessage) => errorMessage,
-    NotFoundError(:final String errorMessage) => errorMessage,
-    HouseholdFullError(:final String errorMessage) => errorMessage,
-    RateLimitedError(:final String errorMessage) => errorMessage,
-    InternalError(:final String errorMessage) => errorMessage,
-    // Not an `AppError` at all. `HouseholdRepository`'s contract says this
-    // cannot happen, so rather than render a Dart exception's `toString` at a
-    // user, fall back to the same generic copy the server uses.
-    _ => genericErrorMessage,
-  };
 }
 
-class _CreatePathCard extends StatelessWidget {
-  const _CreatePathCard({
-    required this.nameController,
-    required this.validationError,
-    required this.isBusy,
-    required this.onNameChanged,
-    required this.onSubmit,
+/// One of the two paths: a heading, a sentence, and the control that takes it.
+///
+/// The two cards were near-identical before and are now genuinely identical in
+/// shape, so they are one widget rather than two — which is also what keeps
+/// the "one primary button per screen" rule visible: the variant is a
+/// parameter, and there is exactly one `primary` at the call site above.
+class _PathCard extends StatelessWidget {
+  const _PathCard({
+    required this.buttonKey,
+    required this.title,
+    required this.body,
+    required this.actionLabel,
+    required this.variant,
+    required this.onPressed,
   });
 
-  final TextEditingController nameController;
-  final String? validationError;
-  final bool isBusy;
-  final ValueChanged<String> onNameChanged;
-  final Future<void> Function() onSubmit;
+  final Key buttonKey;
+  final String title;
+  final String body;
+  final String actionLabel;
+  final PButtonVariant variant;
+  final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    return PCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            'Create a household',
-            style: AppTypography.title.copyWith(color: AppColors.ink),
-          ),
-          const SizedBox(height: AppSpacing.s3),
-          PInput(
-            key: FirstRunChoosePathScreen.nameFieldKey,
-            label: 'Household name',
-            hintText: 'Kulkarni Kitchen',
-            helperText: 'You can change this later.',
-            errorText: validationError,
-            controller: nameController,
-            enabled: !isBusy,
-            textInputAction: TextInputAction.done,
-            onChanged: onNameChanged,
-            onSubmitted: (String _) => onSubmit(),
-          ),
-          const SizedBox(height: AppSpacing.s4),
-          PButton(
-            key: FirstRunChoosePathScreen.createButtonKey,
-            label: 'Create a household',
-            // `PButton`'s own loading affordance: it swaps the content for a
-            // spinner, shows `loadingLabel` instead of `label`, and makes
-            // itself inert. Reused rather than reinvented.
-            isLoading: isBusy,
-            loadingLabel: FirstRunChoosePathScreen.createLoadingLabel,
-            expand: true,
-            onPressed: () => onSubmit(),
-          ),
-          if (isBusy) ...<Widget>[
-            const SizedBox(height: AppSpacing.s3),
-            Text(
-              FirstRunChoosePathScreen.coldStartHint,
-              key: FirstRunChoosePathScreen.coldStartHintKey,
-              textAlign: TextAlign.center,
-              style: AppTypography.label.copyWith(color: AppColors.inkSoft),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _JoinPathCard extends StatelessWidget {
-  const _JoinPathCard({required this.onJoin});
-
-  final VoidCallback? onJoin;
-
-  @override
-  Widget build(BuildContext context) {
-    return PCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            'Join a household',
-            style: AppTypography.title.copyWith(color: AppColors.ink),
-          ),
-          const SizedBox(height: AppSpacing.s2),
-          Text(
-            'Someone in your family already set one up? Use their invite code.',
-            style: AppTypography.body.copyWith(color: AppColors.inkSoft),
-          ),
-          const SizedBox(height: AppSpacing.s4),
-          PButton(
-            key: FirstRunChoosePathScreen.joinButtonKey,
-            label: 'Join a household',
-            variant: PButtonVariant.secondary,
-            expand: true,
-            onPressed: onJoin,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => PCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(title, style: AppTypography.title.copyWith(color: AppColors.ink)),
+        const SizedBox(height: AppSpacing.s2),
+        Text(
+          body,
+          style: AppTypography.body.copyWith(color: AppColors.inkSoft),
+        ),
+        const SizedBox(height: AppSpacing.s4),
+        PButton(
+          key: buttonKey,
+          label: actionLabel,
+          variant: variant,
+          expand: true,
+          onPressed: onPressed,
+        ),
+      ],
+    ),
+  );
 }
 
 /// Placeholder for the join flow.
