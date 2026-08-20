@@ -271,6 +271,97 @@ describe('AuthStack', () => {
     expect(stack.webClient).toBeInstanceOf(UserPoolClient);
   });
 
+  // ---------------------------------------------------------------------
+  // CfnOutputs — the mobile app's build-time config (see docs/RUNBOOK.md).
+  // Every value below is public by design: the mobile app client is a public
+  // PKCE client (`generateSecret: false`, asserted above), so its client id,
+  // the pool id, and the hosted-UI domain all ship inside the mobile binary
+  // regardless. Exporting them is a convenience, not a disclosure.
+  // ---------------------------------------------------------------------
+
+  it('exports the user pool id as a CfnOutput named UserPoolId, env-scoped', () => {
+    synth('dev').hasOutput('UserPoolId', {
+      Value: Match.anyValue(),
+      Export: { Name: 'Parimaan-dev-UserPoolId' },
+    });
+  });
+
+  it('exports the MOBILE app client id as a CfnOutput named MobileClientId — a Ref to the public (secretless) client, never the web client', () => {
+    const template = synth('dev');
+    const mobileClientLogicalIds = Object.keys(
+      template.findResources('AWS::Cognito::UserPoolClient', {
+        Properties: { GenerateSecret: false },
+      }),
+    );
+    expect(mobileClientLogicalIds).toHaveLength(1);
+    template.hasOutput('MobileClientId', {
+      Value: { Ref: mobileClientLogicalIds[0] },
+      Export: { Name: 'Parimaan-dev-MobileClientId' },
+    });
+  });
+
+  it('does not export the confidential web client id — only the public mobile client is mobile-facing config', () => {
+    const template = synth('dev');
+    const webClientLogicalIds = Object.keys(
+      template.findResources('AWS::Cognito::UserPoolClient', {
+        Properties: { GenerateSecret: true },
+      }),
+    );
+    expect(webClientLogicalIds).toHaveLength(1);
+    const outputsJson = JSON.stringify((template.toJSON() as { Outputs?: unknown }).Outputs ?? {});
+    expect(outputsJson).not.toContain(webClientLogicalIds[0] as string);
+  });
+
+  it('exports the Cognito hosted-UI base URL as a CfnOutput named CognitoDomain', () => {
+    synth('dev').hasOutput('CognitoDomain', {
+      Value: Match.anyValue(),
+      Export: { Name: 'Parimaan-dev-CognitoDomain' },
+    });
+  });
+
+  it('exports the deploy region as a CfnOutput named Region, resolved from the AWS::Region pseudo-parameter — never a hardcoded literal', () => {
+    synth('dev').hasOutput('Region', {
+      Value: { Ref: 'AWS::Region' },
+      Export: { Name: 'Parimaan-dev-Region' },
+    });
+  });
+
+  it('env-scopes every export name so dev and prod can coexist in one account/region', () => {
+    // CloudFormation export names are unique per account+region — an
+    // unprefixed `UserPoolId` would make the second env's deploy fail.
+    const prodOutputs = (synth('prod').toJSON() as {
+      Outputs: Record<string, { Export?: { Name?: string } }>;
+    }).Outputs;
+    const exportNames = Object.values(prodOutputs).map((output) => output.Export?.Name);
+    expect(exportNames).toContain('Parimaan-prod-UserPoolId');
+    expect(exportNames).toContain('Parimaan-prod-MobileClientId');
+    expect(exportNames).toContain('Parimaan-prod-CognitoDomain');
+    expect(exportNames).toContain('Parimaan-prod-Region');
+  });
+
+  it('exports no secret-bearing value — the Google client secret dynamic reference never appears in Outputs', () => {
+    const outputsJson = JSON.stringify(
+      (synth('dev').toJSON() as { Outputs?: unknown }).Outputs ?? {},
+    );
+    expect(outputsJson).not.toContain('secretsmanager');
+  });
+
+  // Exact-match, not just "doesn't contain a known-bad substring" — the same
+  // strong form ApiStack's own "exports nothing but the GraphQL URL" test
+  // uses. A substring check only catches a specific already-anticipated leak
+  // shape; this fails CI the moment ANY new output is added to this stack,
+  // sensitive or not, forcing a review rather than trusting the diff to be
+  // caught by eye.
+  it('exports nothing but the four documented mobile-config values', () => {
+    const outputs = (synth('dev').toJSON() as { Outputs?: Record<string, unknown> }).Outputs ?? {};
+    expect(Object.keys(outputs).sort()).toEqual([
+      'CognitoDomain',
+      'MobileClientId',
+      'Region',
+      'UserPoolId',
+    ]);
+  });
+
   // Change-detector per DEV_WORKFLOW.md §3.4(c): fine-grained assertions above
   // are primary; this snapshot exists only to flag *any* unreviewed diff in
   // the synthesized template, not to encode intent on its own.

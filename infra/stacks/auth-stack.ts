@@ -96,8 +96,57 @@ export class AuthStack extends cdk.Stack {
       logoutUrls: [`https://${webDomain}`],
     });
 
-    this.userPool.addDomain('Domain', {
+    const domain = this.userPool.addDomain('Domain', {
       cognitoDomain: { domainPrefix: `parimaan-${envName}` },
+    });
+
+    this.exportMobileConfig(envName, domain.baseUrl());
+  }
+
+  /**
+   * CfnOutputs consumed by the Flutter mobile app's build-time config
+   * (`mobile/lib/app/config/dev_config.dart` — see docs/RUNBOOK.md for the
+   * transcription step).
+   *
+   * None of these are secrets, and that is by design rather than oversight:
+   * the mobile app client is a *public* PKCE client (`generateSecret: false`
+   * above), so its client id, the user pool id, and the hosted-UI domain all
+   * ship inside every mobile binary anyway — the same category as the Google
+   * OAuth Client ID already documented as non-sensitive on `AuthStackProps`.
+   * The confidential web client's id is deliberately NOT exported: it is not
+   * mobile-facing config, so it has no reason to be here.
+   *
+   * Export names are env-scoped because CloudFormation export names are
+   * unique per account+region — a bare `UserPoolId` would make the second
+   * environment's deploy fail against the first.
+   */
+  private exportMobileConfig(envName: 'dev' | 'prod', cognitoDomainUrl: string): void {
+    const exportName = (name: string): string => `Parimaan-${envName}-${name}`;
+
+    new cdk.CfnOutput(this, 'UserPoolId', {
+      value: this.userPool.userPoolId,
+      description: 'Cognito User Pool ID for the mobile app build-time config.',
+      exportName: exportName('UserPoolId'),
+    });
+
+    new cdk.CfnOutput(this, 'MobileClientId', {
+      value: this.mobileClient.userPoolClientId,
+      description: 'Public (PKCE, secretless) Cognito app client ID used by the mobile app.',
+      exportName: exportName('MobileClientId'),
+    });
+
+    new cdk.CfnOutput(this, 'CognitoDomain', {
+      value: cognitoDomainUrl,
+      description: 'Cognito Hosted UI base URL for the mobile OAuth flow.',
+      exportName: exportName('CognitoDomain'),
+    });
+
+    new cdk.CfnOutput(this, 'Region', {
+      // `this.region` resolves to the AWS::Region pseudo-parameter for an
+      // env-agnostic stack — never a hardcoded region literal.
+      value: this.region,
+      description: 'AWS region this environment is deployed to.',
+      exportName: exportName('Region'),
     });
   }
 
