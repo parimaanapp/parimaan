@@ -20,6 +20,25 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
+	<!-- Custom URL scheme for the Cognito Hosted UI redirect. Must match the
+	     `callbackUrls` (parimaan://auth) and `logoutUrls` (parimaan://logout)
+	     in infra/stacks/auth-stack.ts, and `signInRedirectUri` /
+	     `signOutRedirectUri` in
+	     lib/features/auth/data/amplify_auth_repository.dart. Only the scheme
+	     is registered here — iOS matches on scheme, not on the full URL. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>app.parimaan.mobile.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>parimaan</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>

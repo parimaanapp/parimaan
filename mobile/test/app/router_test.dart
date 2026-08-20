@@ -1,0 +1,128 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/router.dart';
+import 'package:mobile/features/auth/data/auth_repository.dart';
+import 'package:mobile/features/auth/domain/auth_session.dart';
+import 'package:mobile/features/auth/state/auth_controller.dart';
+import 'package:mobile/shared/ui/theme.dart';
+
+import '../support/fake_auth_repository.dart';
+
+String _location(GoRouter router) =>
+    router.routerDelegate.currentConfiguration.uri.toString();
+
+/// Boots the real router against a faked repository and waits for the auth
+/// controller to resolve, so assertions never race the splash redirect.
+Future<GoRouter> _pumpRouter(
+  WidgetTester tester, {
+  required AuthSession session,
+}) async {
+  final ProviderContainer container = ProviderContainer(
+    overrides: <Override>[
+      authRepositoryProvider.overrideWithValue(
+        stubbedAuthRepository(session: session),
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+
+  await container.read(authControllerProvider.future);
+  // The router is disposed by `goRouterProvider`'s own `ref.onDispose`, which
+  // the container tear-down above triggers — disposing it here too would throw.
+  final GoRouter router = container.read(goRouterProvider);
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(routerConfig: router, theme: parimaanTheme()),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return router;
+}
+
+void main() {
+  group('router redirect guard — signed out', () {
+    testWidgets('settles on /sign-in from the initial splash', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: const AuthSession.signedOut(),
+      );
+
+      expect(_location(router), AppRoutes.signIn);
+    });
+
+    testWidgets('deep navigation to /home is redirected to /sign-in', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: const AuthSession.signedOut(),
+      );
+
+      router.go(AppRoutes.home);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.signIn);
+    });
+
+    testWidgets('/sign-in is reachable and not redirected', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: const AuthSession.signedOut(),
+      );
+
+      router.go(AppRoutes.signIn);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.signIn);
+      expect(find.text('Continue with Google'), findsOneWidget);
+    });
+  });
+
+  group('router redirect guard — signed in', () {
+    testWidgets('settles on /home from the initial splash', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      expect(_location(router), AppRoutes.home);
+    });
+
+    testWidgets('navigation to /sign-in is redirected to /home', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.signIn);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.home);
+      expect(find.text('Signed in'), findsOneWidget);
+    });
+
+    testWidgets('/splash is redirected to /home', (WidgetTester tester) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.splash);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.home);
+    });
+  });
+}
