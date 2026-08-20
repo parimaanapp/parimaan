@@ -70,6 +70,34 @@ void main() {
       expect(_location(router), AppRoutes.signIn);
     });
 
+    testWidgets('deep navigation to /first-run is redirected to /sign-in', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: const AuthSession.signedOut(),
+      );
+
+      router.go(AppRoutes.firstRun);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.signIn);
+    });
+
+    testWidgets('deep navigation to /join is redirected to /sign-in', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: const AuthSession.signedOut(),
+      );
+
+      router.go(AppRoutes.joinHousehold);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.signIn);
+    });
+
     testWidgets('/sign-in is reachable and not redirected', (
       WidgetTester tester,
     ) async {
@@ -87,7 +115,7 @@ void main() {
   });
 
   group('router redirect guard — signed in', () {
-    testWidgets('settles on /home from the initial splash', (
+    testWidgets('settles on /first-run from the initial splash', (
       WidgetTester tester,
     ) async {
       final GoRouter router = await _pumpRouter(
@@ -95,10 +123,11 @@ void main() {
         session: testSignedInSession,
       );
 
-      expect(_location(router), AppRoutes.home);
+      expect(_location(router), AppRoutes.firstRun);
+      expect(find.text('Set up your kitchen'), findsOne);
     });
 
-    testWidgets('navigation to /sign-in is redirected to /home', (
+    testWidgets('navigation to /sign-in is redirected to /first-run', (
       WidgetTester tester,
     ) async {
       final GoRouter router = await _pumpRouter(
@@ -109,11 +138,12 @@ void main() {
       router.go(AppRoutes.signIn);
       await tester.pumpAndSettle();
 
-      expect(_location(router), AppRoutes.home);
-      expect(find.text('Signed in'), findsOneWidget);
+      expect(_location(router), AppRoutes.firstRun);
     });
 
-    testWidgets('/splash is redirected to /home', (WidgetTester tester) async {
+    testWidgets('/splash is redirected to /first-run', (
+      WidgetTester tester,
+    ) async {
       final GoRouter router = await _pumpRouter(
         tester,
         session: testSignedInSession,
@@ -122,7 +152,39 @@ void main() {
       router.go(AppRoutes.splash);
       await tester.pumpAndSettle();
 
+      expect(_location(router), AppRoutes.firstRun);
+    });
+
+    // The guard must not fight navigation *within* the signed-in area — this
+    // is what lets the first-run screen send the user onward after a
+    // successful create.
+    testWidgets('/home stays reachable and is not bounced back', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.home);
+      await tester.pumpAndSettle();
+
       expect(_location(router), AppRoutes.home);
+      expect(find.text('Signed in'), findsOne);
+    });
+
+    testWidgets('/join stays reachable and is not bounced back', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.joinHousehold);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.joinHousehold);
     });
   });
 }

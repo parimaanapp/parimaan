@@ -95,6 +95,24 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      # Ferry/built_value generated code (*.gql.dart, *.g.dart, ...) is
+      # gitignored by convention (see the repo root .gitignore's "Flutter —
+      # generated code" section) — nothing under lib/**/__generated__/ is
+      # committed, so it must exist before analyze/test can even resolve
+      # imports.
+      - name: Generate code (Ferry/built_value)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # The generator's own output isn't guaranteed to already be
+      # dart-format-clean (confirmed: 15 freshly generated files needed
+      # reformatting on this exact Flutter/Dart version). Formatting
+      # everything here — not just __generated__ — is simplest and safe:
+      # already-formatted hand-written files are a no-op. The check below
+      # then verifies nothing (generated or hand-written) needs a further
+      # change, rather than fighting the generator's own formatting.
+      - name: Format generated code
+        run: dart format .
+
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 

@@ -1,0 +1,41 @@
+# `Mutation.createHousehold` — creates a household with the caller as its
+# `primary` member, default settings, and a generated invite code.
+#
+# The full `Household` shape is requested (settings + members) because the
+# first-run flow lands the user straight into a household screen that needs
+# both, and a second round trip against a cold Aurora Serverless v2 instance is
+# the one thing worth avoiding here.
+#
+# `members[].household` is deliberately NOT expanded — see `me.graphql`'s note
+# on the `User <-> Membership <-> Household` cycle and the server's empty-list
+# recursion cutoff.
+mutation CreateHousehold($name: String!) {
+  createHousehold(name: $name) {
+    id
+    name
+    inviteCode
+    primaryUserId
+    subscriptionStatus
+    settings {
+      householdId
+      mealsEnabled
+      mealStructure
+      cuisineTier1
+      cuisineTier2Weights
+      dietaryTags
+      allergens
+      skipIngredients
+    }
+    members {
+      id
+      role
+      joinedAt
+      user {
+        id
+        email
+        displayName
+        avatarUrl
+      }
+    }
+  }
+}

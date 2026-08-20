@@ -1,0 +1,76 @@
+# `ferry_generator` + `built_value_generator` configuration.
+#
+# Run with:
+#   dart run build_runner build --delete-conflicting-outputs
+#
+# Inputs are `lib/shared/graphql/schema.graphql` (a COPY of the repo-root
+# `shared/schema.graphql` — see that file's header for the drift caveat) and
+# every `*.graphql` operation under `lib/shared/graphql/operations/`.
+# Outputs land in a sibling `__generated__/` directory of each input, which is
+# `ferry_generator`'s own default (`output_dir`) — not a path invented here.
+#
+# `ferry_generator` has two builders and `applies_builders` does NOT propagate
+# `options` between them, so the identical option block has to be given to both
+# — hence the YAML anchor. Without options, `serializer_builder` sees no
+# `schema` and silently emits nothing, and every generated file's import of
+# `__generated__/serializers.gql.dart` dangles.
+#
+# `lib/$lib$` in `sources` is likewise required: `serializer_builder` keys its
+# only output off that synthetic asset (see its `buildExtensions`), so omitting
+# it produces the same silent no-output failure.
+targets:
+  $default:
+    sources:
+      - lib/**
+      - lib/$lib$
+      - $package$
+    builders:
+      ferry_generator|serializer_builder:
+        enabled: true
+        options: &ferry_options
+          schema: mobile|lib/shared/graphql/schema.graphql
+
+          # AppSync's two custom scalars. Neither has a GraphQL-standard Dart
+          # representation, so both must be told to the generator explicitly.
+          #
+          #  * `AWSDateTime` is an ISO-8601 string on the wire; `built_value`'s
+          #    standard serializer set already knows how to (de)serialize `DateTime`,
+          #    so mapping it here gives the domain layer a real date type instead of a
+          #    string it has to parse itself.
+          #
+          #  * `AWSJSON` is a JSON *string*, not a nested object. Verified against
+          #    `api/src/mappers/household.ts`: `toGraphQLSettings` emits
+          #    `mealStructure: JSON.stringify(row.mealStructure)` and
+          #    `cuisineTier2Weights: JSON.stringify(...)`, so the wire value really is
+          #    a string. Mapping it to `String` (and letting the consumer `jsonDecode`
+          #    when it actually needs the structure) is the honest representation;
+          #    mapping it to a `Map` would fail to deserialize.
+          type_overrides:
+            AWSDateTime:
+              name: DateTime
+            AWSJSON:
+              name: String
+
+          # `built_value`'s standard `DateTime` serializer expects microseconds
+          # since the epoch as an int, and `AWSDateTime` is an ISO-8601 string —
+          # without this the whole response fails to deserialize, surfacing as
+          # an opaque `LinkException`. See `aws_date_time_serializer.dart`.
+          custom_serializers:
+            - name: AWSDateTimeSerializer
+              import: 'package:mobile/shared/graphql/aws_date_time_serializer.dart'
+
+          # Forward-compatibility: a server-side enum addition (a sixth
+          # `SubscriptionStatus`, say) must not make the whole response fail to
+          # deserialize on an already-shipped build. With this on, every generated enum
+          # gets a `gUnknownEnumValue` member that unrecognised wire values land on,
+          # which the domain mappers in
+          # `lib/features/household/domain/household.dart` translate to their own
+          # `unknown` member.
+          global_enum_fallbacks: true
+
+          # `add_typenames` (default true) is required by ferry's normalising cache to
+          # key entities; left at the default deliberately.
+
+      ferry_generator|graphql_builder:
+        enabled: true
+        options: *ferry_options

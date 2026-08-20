@@ -6,11 +6,22 @@ import '../features/auth/domain/auth_session.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/state/auth_controller.dart';
+import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
 abstract final class AppRoutes {
   static const String splash = '/splash';
   static const String signIn = '/sign-in';
+
+  /// The post-sign-in landing screen: create a household, or join one.
+  static const String firstRun = '/first-run';
+
+  /// Stub destination for the join flow, which is a later slice. It is a real
+  /// route rather than a dead button so the guard covers it and swapping in
+  /// the real screen is a one-line change — see
+  /// [JoinHouseholdComingSoonScreen].
+  static const String joinHousehold = '/join';
+
   static const String home = '/home';
 }
 
@@ -49,6 +60,16 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             const SignInScreen(),
       ),
       GoRoute(
+        path: AppRoutes.firstRun,
+        builder: (BuildContext context, GoRouterState state) =>
+            const FirstRunChoosePathScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.joinHousehold,
+        builder: (BuildContext context, GoRouterState state) =>
+            const JoinHouseholdComingSoonScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.home,
         builder: (BuildContext context, GoRouterState state) =>
             const _HomePlaceholderScreen(),
@@ -78,7 +99,20 @@ String? _redirect(Ref ref, GoRouterState state) {
   final bool isSignedIn = auth.valueOrNull?.isSignedIn ?? false;
 
   if (isSignedIn) {
-    return location == AppRoutes.home ? null : AppRoutes.home;
+    // A signed-in user arriving from splash or bouncing off /sign-in lands on
+    // the first-run screen, not /home. Note this is *unconditional* for now:
+    // deciding whether the user already has a household needs `Query.me`, and
+    // no controller reads it yet. The consequence is honest but temporary — a
+    // returning user with a household still sees the choose-path screen. The
+    // slice that adds a `me` controller should gate this on
+    // `households.isEmpty` rather than adding a second redirect.
+    //
+    // Every other signed-in location — /home, /join, /first-run itself — is
+    // left alone, so navigation *within* the signed-in area is not fought by
+    // the guard.
+    return location == AppRoutes.splash || location == AppRoutes.signIn
+        ? AppRoutes.firstRun
+        : null;
   }
   return location == AppRoutes.signIn ? null : AppRoutes.signIn;
 }

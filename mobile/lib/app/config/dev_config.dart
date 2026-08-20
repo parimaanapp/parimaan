@@ -16,6 +16,14 @@ import 'app_config.dart';
 /// then copy `UserPoolId`, `MobileClientId`, `CognitoDomain` and `Region` out
 /// of the `Outputs` block the CLI prints.
 ///
+/// `graphQlUrl` comes from a **second** stack — `Parimaan-dev-Api`'s
+/// `GraphQlUrl` output — so the transcription step has two deploys to read
+/// from, not one. It is listed in `placeholderFields` alongside the four
+/// Cognito values, which means `AmplifyAuthRepository` refuses to configure
+/// until the API endpoint is filled in too. That is deliberate: an app that
+/// can sign in but cannot reach the API is a worse failure than one that
+/// says up front which value is missing.
+///
 /// Re-run the transcription whenever the user pool or app client is *replaced*
 /// rather than updated (Cognito's `Schema` is immutable post-creation, so an
 /// attribute change replaces the pool and changes the pool id). A stale value
@@ -31,4 +39,5 @@ const AppConfig devConfig = AppConfig(
   mobileClientId: 'REPLACE_ME_MOBILE_CLIENT_ID',
   cognitoDomain: 'REPLACE_ME_COGNITO_DOMAIN',
   region: 'REPLACE_ME_REGION',
+  graphQlUrl: 'REPLACE_ME_GRAPHQL_URL',
 );

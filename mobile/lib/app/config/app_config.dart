@@ -6,7 +6,7 @@
 /// composition root (`main.dart`), and the concrete instances live next door
 /// (`dev_config.dart`).
 ///
-/// None of these four values is a secret. The mobile Cognito app client is a
+/// None of these five values is a secret. The mobile Cognito app client is a
 /// public PKCE client (`generateSecret: false` in `infra/stacks/auth-stack.ts`),
 /// so the pool id, client id and hosted-UI domain ship inside every binary
 /// regardless — see the CfnOutput doc comment in that stack.
@@ -16,6 +16,7 @@ class AppConfig {
     required this.mobileClientId,
     required this.cognitoDomain,
     required this.region,
+    required this.graphQlUrl,
   });
 
   /// Cognito User Pool ID, e.g. `ap-south-1_xxxxxxxxx`.
@@ -32,6 +33,15 @@ class AppConfig {
 
   /// AWS region the environment is deployed to. From the `Region` CfnOutput.
   final String region;
+
+  /// The AppSync GraphQL endpoint, e.g.
+  /// `https://xxxxxxxx.appsync-api.ap-south-1.amazonaws.com/graphql`.
+  /// From the `GraphQlUrl` CfnOutput of `ApiStack`.
+  ///
+  /// Not a secret either: the endpoint is useless without a Cognito id token
+  /// from the pool above, and the API's only authorization mode is
+  /// `AMAZON_COGNITO_USER_POOLS` (`infra/stacks/api-stack.ts`).
+  final String graphQlUrl;
 
   /// The Hosted UI domain with any URL scheme stripped.
   ///
@@ -52,6 +62,7 @@ class AppConfig {
     if (_isPlaceholder(mobileClientId)) 'mobileClientId',
     if (_isPlaceholder(cognitoDomain)) 'cognitoDomain',
     if (_isPlaceholder(region)) 'region',
+    if (_isPlaceholder(graphQlUrl)) 'graphQlUrl',
   ];
 
   bool get isPlaceholder => placeholderFields.isNotEmpty;
@@ -65,7 +76,8 @@ class AppConfig {
   @override
   String toString() =>
       'AppConfig(region: $region, userPoolId: $userPoolId, '
-      'mobileClientId: $mobileClientId, cognitoDomain: $cognitoDomain)';
+      'mobileClientId: $mobileClientId, cognitoDomain: $cognitoDomain, '
+      'graphQlUrl: $graphQlUrl)';
 
   @override
   bool operator ==(Object other) =>
@@ -74,9 +86,15 @@ class AppConfig {
           other.userPoolId == userPoolId &&
           other.mobileClientId == mobileClientId &&
           other.cognitoDomain == cognitoDomain &&
-          other.region == region;
+          other.region == region &&
+          other.graphQlUrl == graphQlUrl;
 
   @override
-  int get hashCode =>
-      Object.hash(userPoolId, mobileClientId, cognitoDomain, region);
+  int get hashCode => Object.hash(
+    userPoolId,
+    mobileClientId,
+    cognitoDomain,
+    region,
+    graphQlUrl,
+  );
 }
