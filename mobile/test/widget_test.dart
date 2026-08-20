@@ -1,30 +1,68 @@
-// This is a basic Flutter widget test.
+// Boot-level smoke test for the whole app shell.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Screen- and redirect-level behaviour is covered by `test/app/router_test.dart`
+// and the per-screen tests under `test/features/auth/presentation/`. What is
+// only testable here is that `ParimaanApp` itself wires ProviderScope, the
+// router and the theme together and reaches a real screen.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/app/app.dart';
+import 'package:mobile/features/auth/data/auth_repository.dart';
+import 'package:mobile/shared/ui/colors.dart';
 
-import 'package:mobile/main.dart';
+import 'support/fake_auth_repository.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('boots to the sign-in screen when signed out', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ParimaanApp(
+        overrides: <Override>[
+          authRepositoryProvider.overrideWithValue(stubbedAuthRepository()),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Continue with Google'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('boots to the home placeholder when already signed in', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ParimaanApp(
+        overrides: <Override>[
+          authRepositoryProvider.overrideWithValue(
+            stubbedAuthRepository(session: testSignedInSession),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Signed in'), findsOneWidget);
+  });
+
+  testWidgets('applies the Parimaan theme rather than the Material default', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ParimaanApp(
+        overrides: <Override>[
+          authRepositoryProvider.overrideWithValue(stubbedAuthRepository()),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final BuildContext context = tester.element(
+      find.text('Continue with Google'),
+    );
+    expect(Theme.of(context).colorScheme.primary, AppColors.terracotta);
+    expect(Theme.of(context).scaffoldBackgroundColor, AppColors.paper);
   });
 }

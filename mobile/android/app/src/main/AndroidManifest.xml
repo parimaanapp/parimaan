@@ -24,6 +24,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Cognito Hosted UI redirect. amplify_auth_cognito 2.x drives the
+                 flow through a Chrome Custom Tab and receives the result via
+                 this intent-filter on MainActivity (which is already
+                 launchMode="singleTop", as that plugin requires). This is NOT
+                 the v0 `appAuthRedirectScheme` manifestPlaceholder — v2 dropped
+                 AppAuth and that placeholder does nothing here.
+                 The scheme must match `callbackUrls` (parimaan://auth) and
+                 `logoutUrls` (parimaan://logout) in infra/stacks/auth-stack.ts. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="parimaan"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
