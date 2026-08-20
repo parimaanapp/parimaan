@@ -189,6 +189,21 @@ export class ApiStack extends cdk.Stack {
 
     this.createHealthResolver();
     this.createHouseholdResolvers(props);
+
+    // Build-time config for the Flutter mobile app
+    // (`mobile/lib/app/config/dev_config.dart` — see docs/RUNBOOK.md for the
+    // transcription step). Not a secret: every request to this endpoint is
+    // Cognito-authorized (`AuthorizationType.USER_POOL` above), so knowing
+    // the URL grants nothing on its own. Nothing else from this stack is
+    // exported — the Aurora endpoint, the app-role secret ARN, and the
+    // Lambda security group are all server-side and must stay unexported.
+    // Env-scoped because CloudFormation export names are unique per
+    // account+region.
+    new cdk.CfnOutput(this, 'GraphQlUrl', {
+      value: this.api.graphqlUrl,
+      description: 'AppSync GraphQL endpoint URL for the mobile app build-time config.',
+      exportName: `Parimaan-${envName}-GraphQlUrl`,
+    });
   }
 
   private createHealthResolver(): void {

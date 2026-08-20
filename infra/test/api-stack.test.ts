@@ -466,6 +466,33 @@ describe('ApiStack', () => {
     expect(stack.api).toBeInstanceOf(GraphqlApi);
   });
 
+  // ---------------------------------------------------------------------
+  // CfnOutputs — the mobile app's build-time config (see docs/RUNBOOK.md).
+  // The AppSync endpoint URL is not a secret: it is Cognito-authorized on
+  // every request (asserted above), so knowing the URL grants nothing.
+  // ---------------------------------------------------------------------
+
+  it('exports the AppSync GraphQL URL as a CfnOutput named GraphQlUrl, env-scoped', () => {
+    synth('dev').hasOutput('GraphQlUrl', {
+      Value: Match.anyValue(),
+      Export: { Name: 'Parimaan-dev-GraphQlUrl' },
+    });
+  });
+
+  it('env-scopes the GraphQlUrl export name so dev and prod can coexist in one account/region', () => {
+    synth('prod').hasOutput('GraphQlUrl', {
+      Export: { Name: 'Parimaan-prod-GraphQlUrl' },
+    });
+  });
+
+  it('exports nothing but the GraphQL URL — no Aurora endpoint, secret ARN, or security group id', () => {
+    const outputs = (synth('dev').toJSON() as { Outputs?: Record<string, unknown> }).Outputs ?? {};
+    expect(Object.keys(outputs)).toEqual(['GraphQlUrl']);
+    const outputsJson = JSON.stringify(outputs);
+    expect(outputsJson).not.toContain('secretsmanager');
+    expect(outputsJson).not.toMatch(/DB_HOST|ClusterEndpoint|SecurityGroup/);
+  });
+
   // Change-detector per DEV_WORKFLOW.md §3.4(c): fine-grained assertions above
   // are primary; this snapshot exists only to flag *any* unreviewed diff in
   // the synthesized template, not to encode intent on its own.

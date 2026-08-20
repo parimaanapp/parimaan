@@ -2,6 +2,57 @@
 
 exports[`AuthStack > matches the known-good synthesized template snapshot (dev) 1`] = `
 {
+  "Outputs": {
+    "CognitoDomain": {
+      "Description": "Cognito Hosted UI base URL for the mobile OAuth flow.",
+      "Export": {
+        "Name": "Parimaan-dev-CognitoDomain",
+      },
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "UserPoolDomainD0EA232A",
+            },
+            ".auth.",
+            {
+              "Ref": "AWS::Region",
+            },
+            ".amazoncognito.com",
+          ],
+        ],
+      },
+    },
+    "MobileClientId": {
+      "Description": "Public (PKCE, secretless) Cognito app client ID used by the mobile app.",
+      "Export": {
+        "Name": "Parimaan-dev-MobileClientId",
+      },
+      "Value": {
+        "Ref": "UserPoolMobileClient046093C2",
+      },
+    },
+    "Region": {
+      "Description": "AWS region this environment is deployed to.",
+      "Export": {
+        "Name": "Parimaan-dev-Region",
+      },
+      "Value": {
+        "Ref": "AWS::Region",
+      },
+    },
+    "UserPoolId": {
+      "Description": "Cognito User Pool ID for the mobile app build-time config.",
+      "Export": {
+        "Name": "Parimaan-dev-UserPoolId",
+      },
+      "Value": {
+        "Ref": "UserPool6BA7E5F2",
+      },
+    },
+  },
   "Parameters": {
     "BootstrapVersion": {
       "Default": "/cdk-bootstrap/hnb659fds/version",
