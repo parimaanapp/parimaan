@@ -28,5 +28,10 @@ abstract final class AppSizing {
   static const double icon32 = 32;
 
   /// The full icon ramp, in the JSON's order.
-  static const List<double> iconSizes = <double>[icon16, icon20, icon24, icon32];
+  static const List<double> iconSizes = <double>[
+    icon16,
+    icon20,
+    icon24,
+    icon32,
+  ];
 }

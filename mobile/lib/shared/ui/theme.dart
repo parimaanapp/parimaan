@@ -88,10 +88,7 @@ const ButtonStyle _buttonBase = ButtonStyle(
     Size(AppSizing.minTouchTargetWidth, AppSizing.buttonMinHeight),
   ),
   padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-    EdgeInsets.symmetric(
-      horizontal: AppSpacing.s4,
-      vertical: AppSpacing.s2,
-    ),
+    EdgeInsets.symmetric(horizontal: AppSpacing.s4, vertical: AppSpacing.s2),
   ),
   shape: WidgetStatePropertyAll<OutlinedBorder>(
     RoundedRectangleBorder(borderRadius: AppRadius.borderM),

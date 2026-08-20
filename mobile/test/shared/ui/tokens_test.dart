@@ -56,9 +56,7 @@ List<double> parseCubicBezier(String css) {
   if (m == null) {
     throw FormatException('Unparseable easing in design-tokens.json', css);
   }
-  return <double>[
-    for (int i = 1; i <= 4; i++) double.parse(m.group(i)!),
-  ];
+  return <double>[for (int i = 1; i <= 4; i++) double.parse(m.group(i)!)];
 }
 
 void expectShadowMatches(BoxShadow actual, String css, String label) {
@@ -83,7 +81,8 @@ void main() {
     expect(
       file.existsSync(),
       isTrue,
-      reason: 'design-tokens.json not found at $kTokensJsonPath '
+      reason:
+          'design-tokens.json not found at $kTokensJsonPath '
           '(CWD is ${Directory.current.path})',
     );
     tokens = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
@@ -126,8 +125,9 @@ void main() {
 
     test('brand.cardamomSoft.foreground', () {
       final String hex =
-          (colorGroup('brand')['cardamomSoft'] as Map<String, dynamic>)[
-              'foreground'] as String;
+          (colorGroup('brand')['cardamomSoft']
+                  as Map<String, dynamic>)['foreground']
+              as String;
       expect(AppColors.cardamomSoftForeground.toARGB32(), argbFromHex(hex));
     });
 
@@ -154,8 +154,8 @@ void main() {
     setUpAll(() {
       jsonSpacing = <String, double>{
         for (final dynamic e in section('spacing')['scale'] as List<dynamic>)
-          (e as Map<String, dynamic>)['name'] as String:
-              (e['px'] as num).toDouble(),
+          (e as Map<String, dynamic>)['name'] as String: (e['px'] as num)
+              .toDouble(),
       };
       dartSpacing = const <String, double>{
         's0': AppSpacing.s0,
@@ -188,8 +188,8 @@ void main() {
     setUpAll(() {
       jsonRadius = <String, double>{
         for (final dynamic e in section('radius')['scale'] as List<dynamic>)
-          (e as Map<String, dynamic>)['name'] as String:
-              (e['px'] as num).toDouble(),
+          (e as Map<String, dynamic>)['name'] as String: (e['px'] as num)
+              .toDouble(),
       };
       dartRadius = const <String, double>{
         'r-xs': AppRadius.xs,
@@ -211,7 +211,10 @@ void main() {
       expect(AppRadius.borderM, BorderRadius.circular(jsonRadius['r-m']!));
       expect(AppRadius.borderL, BorderRadius.circular(jsonRadius['r-l']!));
       expect(AppRadius.borderXl, BorderRadius.circular(jsonRadius['r-xl']!));
-      expect(AppRadius.borderFull, BorderRadius.circular(jsonRadius['r-full']!));
+      expect(
+        AppRadius.borderFull,
+        BorderRadius.circular(jsonRadius['r-full']!),
+      );
     });
   });
 
@@ -227,8 +230,9 @@ void main() {
     });
 
     test('e1 matches its shadow spec', () {
-      final List<String> specs =
-          splitShadowList(level('e1')['shadow'] as String);
+      final List<String> specs = splitShadowList(
+        level('e1')['shadow'] as String,
+      );
       expect(AppElevation.e1, hasLength(specs.length));
       for (int i = 0; i < specs.length; i++) {
         expectShadowMatches(AppElevation.e1[i], specs[i], 'e1[$i]');
@@ -236,8 +240,9 @@ void main() {
     });
 
     test('e2 matches its shadow spec', () {
-      final List<String> specs =
-          splitShadowList(level('e2')['shadow'] as String);
+      final List<String> specs = splitShadowList(
+        level('e2')['shadow'] as String,
+      );
       expect(AppElevation.e2, hasLength(specs.length));
       for (int i = 0; i < specs.length; i++) {
         expectShadowMatches(AppElevation.e2[i], specs[i], 'e2[$i]');
@@ -336,10 +341,7 @@ void main() {
     expectStyle('mono', AppTypography.mono);
 
     test('every scale entry in the JSON has a Dart counterpart', () {
-      expect(
-        AppTypography.byName.keys.toSet(),
-        jsonScale.keys.toSet(),
-      );
+      expect(AppTypography.byName.keys.toSet(), jsonScale.keys.toSet());
     });
 
     test('font families match typography.families', () {
@@ -362,34 +364,30 @@ void main() {
 
     test('focus ring widths', () {
       final String spec = section('accessibility')['focusRing'] as String;
-      final List<RegExpMatch> px =
-          RegExp(r'(\d+)px').allMatches(spec).toList();
+      final List<RegExpMatch> px = RegExp(r'(\d+)px').allMatches(spec).toList();
       expect(px, hasLength(2));
-      expect(
-        AppSizing.focusRingWidth,
-        double.parse(px[0].group(1)!),
-      );
-      expect(
-        AppSizing.focusRingSpacer,
-        double.parse(px[1].group(1)!),
-      );
+      expect(AppSizing.focusRingWidth, double.parse(px[0].group(1)!));
+      expect(AppSizing.focusRingSpacer, double.parse(px[1].group(1)!));
     });
 
     test('button minimum height', () {
       expect(
         AppSizing.buttonMinHeight,
         ((section('componentRules')['buttons']
-                as Map<String, dynamic>)['minHeight'] as num)
+                    as Map<String, dynamic>)['minHeight']
+                as num)
             .toDouble(),
       );
     });
 
     test('icon sizes', () {
-      final List<double> json = (section('iconography')['sizes'] as List<
-              dynamic>)
-          .map((dynamic e) =>
-              double.parse((e as Map<String, dynamic>)['name'] as String))
-          .toList();
+      final List<double> json =
+          (section('iconography')['sizes'] as List<dynamic>)
+              .map(
+                (dynamic e) =>
+                    double.parse((e as Map<String, dynamic>)['name'] as String),
+              )
+              .toList();
       expect(AppSizing.iconSizes, json);
     });
   });
@@ -416,13 +414,19 @@ void main() {
         expect(actual?.fontSize, want.fontSize, reason: '$slot size');
         expect(actual?.height, want.height, reason: '$slot height');
         expect(actual?.fontWeight, want.fontWeight, reason: '$slot weight');
-        expect(actual?.letterSpacing, want.letterSpacing,
-            reason: '$slot letterSpacing');
+        expect(
+          actual?.letterSpacing,
+          want.letterSpacing,
+          reason: '$slot letterSpacing',
+        );
         expect(actual?.color, isNotNull, reason: '$slot colour');
       }
 
       expectSlot(
-          theme.textTheme.displayLarge, AppTypography.displayXl, 'displayLarge');
+        theme.textTheme.displayLarge,
+        AppTypography.displayXl,
+        'displayLarge',
+      );
       expectSlot(theme.textTheme.titleLarge, AppTypography.title, 'titleLarge');
       expectSlot(theme.textTheme.bodyMedium, AppTypography.body, 'bodyMedium');
       expectSlot(theme.textTheme.labelSmall, AppTypography.meta, 'labelSmall');

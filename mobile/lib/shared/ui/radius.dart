@@ -35,5 +35,7 @@ abstract final class AppRadius {
   static const BorderRadius borderXl = BorderRadius.all(Radius.circular(xl));
 
   /// Pill / circle. Flutter clamps an over-large radius to the shape's bounds.
-  static const BorderRadius borderFull = BorderRadius.all(Radius.circular(full));
+  static const BorderRadius borderFull = BorderRadius.all(
+    Radius.circular(full),
+  );
 }
