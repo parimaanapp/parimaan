@@ -1,0 +1,6 @@
+# Declares the `golden` tag alchemist applies to every goldenTest — without
+# this, `flutter test` prints an "unspecified tag" warning on every golden
+# test file, which is exactly the kind of repeated CI noise that eventually
+# hides a real warning.
+tags:
+  golden:
