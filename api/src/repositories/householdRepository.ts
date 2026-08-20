@@ -8,6 +8,7 @@ import {
   DEFAULT_MEAL_STRUCTURE,
   DEFAULT_SKIP_INGREDIENTS,
 } from '../domain/householdDefaults.js';
+import type { UserRow } from './userRepository.js';
 
 export type SubscriptionStatus = 'free' | 'trial' | 'active' | 'past_due' | 'cancelled';
 export type HouseholdRole = 'primary' | 'member';
@@ -254,4 +255,217 @@ export const findHouseholdById = async (
   ]);
   const row = result.rows[0];
   return row === undefined ? null : mapHouseholdRow(row);
+};
+
+export interface FindHouseholdByInviteCodeOptions {
+  /**
+   * When `true`, appends `FOR UPDATE` — locks the matched `households` row
+   * for the remainder of the enclosing transaction. This is `joinHousehold`'s
+   * primary concurrency guard against the 5-member cap: two concurrent
+   * transactions joining via the same invite code serialize on this lock,
+   * so the second one's later cap check always sees the first one's
+   * already-committed insert rather than a stale count. See
+   * `resolvers/joinHousehold.ts` and `insertMembershipWithinCap` below.
+   */
+  forUpdate?: boolean;
+}
+
+export const findHouseholdByInviteCode = async (
+  client: PoolClient,
+  inviteCode: string,
+  opts: FindHouseholdByInviteCodeOptions = {},
+): Promise<HouseholdRow | null> => {
+  const forUpdateClause = opts.forUpdate === true ? ' FOR UPDATE' : '';
+  const result = await client.query<RawHouseholdRow>(
+    `SELECT * FROM households WHERE invite_code = $1${forUpdateClause}`,
+    [inviteCode],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapHouseholdRow(row);
+};
+
+/**
+ * Looks up a single `household_memberships` row for `(householdId, userId)`,
+ * or `null` if the caller isn't a member (or the household doesn't exist —
+ * this function deliberately can't tell the two apart, which is exactly what
+ * `auth/requireHouseholdMember.ts` relies on to avoid becoming a
+ * household-existence oracle). Also used by `joinHousehold`'s idempotent
+ * re-join pre-check.
+ */
+export const findMembership = async (
+  client: PoolClient,
+  householdId: string,
+  userId: string,
+): Promise<MembershipRow | null> => {
+  const result = await client.query<RawMembershipRow>(
+    `SELECT * FROM household_memberships WHERE household_id = $1 AND user_id = $2`,
+    [householdId, userId],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapMembershipRow(row);
+};
+
+/**
+ * Conditionally inserts a `household_memberships` row only if the
+ * household's current membership count is still below `cap` at the moment
+ * this statement runs, via a single `INSERT ... SELECT ... WHERE` — not a
+ * separate `SELECT count(*)` followed by an `INSERT`, which would leave a
+ * check-then-act race window under READ COMMITTED. Returns `null` (not a
+ * thrown error) when the cap was already reached, so callers can distinguish
+ * "cap breach" from every other failure.
+ *
+ * This is defense-in-depth: `joinHousehold`'s `SELECT ... FOR UPDATE` row
+ * lock on the household (see `findHouseholdByInviteCode`) is the primary
+ * guard that makes the cap check race-free even under concurrent joins —
+ * this conditional insert still holds even if that lock were ever removed.
+ */
+export const insertMembershipWithinCap = async (
+  client: PoolClient,
+  input: InsertMembershipInput,
+  cap: number,
+): Promise<MembershipRow | null> => {
+  const result = await client.query<RawMembershipRow>(
+    `INSERT INTO household_memberships (household_id, user_id, role)
+     SELECT $1, $2, $3
+     WHERE (SELECT count(*) FROM household_memberships WHERE household_id = $1) < $4
+     RETURNING *`,
+    [input.householdId, input.userId, input.role, cap],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapMembershipRow(row);
+};
+
+/**
+ * A partial patch for `household_settings` — every field optional, mirroring
+ * `validation/updateHouseholdSettings.ts`'s `HouseholdSettingsInput` schema
+ * exactly (absent field = "leave unchanged", never "clear this field"; that
+ * distinction is enforced at the Zod boundary before it ever reaches here).
+ */
+export interface SettingsPatch {
+  mealsEnabled?: readonly string[];
+  mealStructure?: Record<string, unknown>;
+  cuisineTier1?: readonly string[];
+  cuisineTier2Weights?: Record<string, unknown>;
+  dietaryTags?: readonly string[];
+  allergens?: readonly string[];
+  skipIngredients?: readonly string[];
+}
+
+/**
+ * Applies `patch` to a single `household_settings` row via one `UPDATE ...
+ * SET col = COALESCE($n::jsonb, col), ...` statement — an absent patch field
+ * binds SQL `null`, and `COALESCE` keeps that column's existing value
+ * unchanged, the same pattern `userRepository.ts`'s `upsertUserByCognitoSub`
+ * already uses for its own optional fields. Returns `null` (not a thrown
+ * error) if no row matched `householdId`, so callers can turn that into a
+ * `NotFoundError` themselves.
+ *
+ * Subject to `household_settings`'s own RLS policy (member-only) — must run
+ * inside a `withUserTransaction(userId, ...)` scope. `updateHouseholdSettings`
+ * additionally gates on `requireHouseholdMember` *before* calling this as its
+ * primary authorization layer; RLS here is defense-in-depth, not the only
+ * check (see `repositories/householdRepository.test.ts`'s
+ * `updateSettingsPartial` RLS-only regression test, which calls this function
+ * directly, bypassing that resolver-level gate entirely).
+ */
+export const updateSettingsPartial = async (
+  client: PoolClient,
+  householdId: string,
+  patch: SettingsPatch,
+): Promise<SettingsRow | null> => {
+  const toJsonParam = (value: unknown): string | null =>
+    value === undefined ? null : JSON.stringify(value);
+
+  const result = await client.query<RawSettingsRow>(
+    `UPDATE household_settings SET
+       meals_enabled = COALESCE($2::jsonb, meals_enabled),
+       meal_structure = COALESCE($3::jsonb, meal_structure),
+       cuisine_tier1 = COALESCE($4::jsonb, cuisine_tier1),
+       cuisine_tier2_weights = COALESCE($5::jsonb, cuisine_tier2_weights),
+       dietary_tags = COALESCE($6::jsonb, dietary_tags),
+       allergens = COALESCE($7::jsonb, allergens),
+       skip_ingredients = COALESCE($8::jsonb, skip_ingredients),
+       updated_at = NOW()
+     WHERE household_id = $1
+     RETURNING *`,
+    [
+      householdId,
+      toJsonParam(patch.mealsEnabled),
+      toJsonParam(patch.mealStructure),
+      toJsonParam(patch.cuisineTier1),
+      toJsonParam(patch.cuisineTier2Weights),
+      toJsonParam(patch.dietaryTags),
+      toJsonParam(patch.allergens),
+      toJsonParam(patch.skipIngredients),
+    ],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapSettingsRow(row);
+};
+
+export const findSettingsForHousehold = async (
+  client: PoolClient,
+  householdId: string,
+): Promise<SettingsRow | null> => {
+  const result = await client.query<RawSettingsRow>(
+    `SELECT * FROM household_settings WHERE household_id = $1`,
+    [householdId],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapSettingsRow(row);
+};
+
+interface RawUserRow {
+  id: string;
+  cognito_sub: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: Date;
+}
+
+/**
+ * Mirrors `userRepository.ts`'s own (unexported) row mapper — duplicated
+ * rather than imported because that module doesn't export its raw-row
+ * mapping function, and this repository never opens its own connection to
+ * `users` outside of a join like the one below.
+ */
+const mapUserRow = (row: RawUserRow): UserRow => ({
+  id: row.id,
+  cognitoSub: row.cognito_sub,
+  email: row.email,
+  displayName: row.display_name,
+  avatarUrl: row.avatar_url,
+  createdAt: row.created_at,
+});
+
+export interface MembershipWithUserRow extends MembershipRow {
+  user: UserRow;
+}
+
+/**
+ * Returns every `household_memberships` row for `householdId`, joined to
+ * each member's own `users` row — used to populate `Household.members` for
+ * `joinHousehold`'s response, where (unlike `findMembershipsForUser`) the
+ * caller needs N different members' `User`s, not just their own.
+ */
+export const findMembersForHousehold = async (
+  client: PoolClient,
+  householdId: string,
+): Promise<MembershipWithUserRow[]> => {
+  const result = await client.query<RawMembershipRow & { user: RawUserRow }>(
+    `SELECT
+       m.id, m.household_id, m.user_id, m.role, m.joined_at,
+       row_to_json(u.*) AS user
+     FROM household_memberships m
+     JOIN users u ON u.id = m.user_id
+     WHERE m.household_id = $1
+     ORDER BY m.joined_at ASC`,
+    [householdId],
+  );
+
+  return result.rows.map((row) => ({
+    ...mapMembershipRow(row),
+    user: mapUserRow(row.user),
+  }));
 };

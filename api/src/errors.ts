@@ -45,6 +45,29 @@ export class NotFoundError extends AppError {
   }
 }
 
+/**
+ * Thrown when `joinHousehold` would push a household's membership count past
+ * `domain/householdLimits.ts`'s `HOUSEHOLD_MEMBER_CAP`. See
+ * `repositories/householdRepository.ts`'s `insertMembershipWithinCap` for the
+ * concurrency-safe guard that produces this.
+ */
+export class HouseholdFullError extends AppError {
+  constructor(message = 'This household already has the maximum number of members.') {
+    super('HOUSEHOLD_FULL', message);
+  }
+}
+
+/**
+ * Thrown by `rateLimit/joinAttemptLimiter.ts` when a caller has exceeded
+ * `MAX_JOIN_ATTEMPTS_PER_DAY` — the invite code is a guessable, unrate-limited
+ * credential otherwise (see `domain/inviteCode.ts`'s own comment on this).
+ */
+export class RateLimitedError extends AppError {
+  constructor(message = 'Too many join attempts. Try again tomorrow.') {
+    super('RATE_LIMITED', message);
+  }
+}
+
 export interface ClientError {
   errorType: string;
   errorMessage: string;

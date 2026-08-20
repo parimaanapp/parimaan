@@ -13,6 +13,7 @@ import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import type { Construct } from 'constructs';
 
 export interface ApiStackProps extends cdk.StackProps {
@@ -38,6 +39,14 @@ export interface ApiStackProps extends cdk.StackProps {
   readonly appRoleSecret: Secret;
   /** Shared security group for VPC-attached Lambdas reaching Aurora, from DataStack. */
   readonly lambdaSecurityGroup: ISecurityGroup;
+  /**
+   * DynamoDB cache/rate-limit table from DataStack. Only `joinHousehold`
+   * uses it (per-caller daily join-attempt counter, guarding the invite
+   * code's ~887M-code keyspace against a scripted guessing script — see
+   * `api/src/rateLimit/joinAttemptLimiter.ts`) — granted to that one
+   * Lambda specifically, not the other resolvers.
+   */
+  readonly cacheTable: Table;
 }
 
 /**
@@ -50,9 +59,20 @@ export interface ApiStackProps extends cdk.StackProps {
  *   (rather than `me` returning a hydrated tree) specifically to avoid the
  *   User↔HouseholdMembership↔User schema cycle failing on a non-null field
  *   at arbitrary query depth.
+ * - `Mutation.joinHousehold`, `Mutation.updateHouseholdSettings` — the rest
+ *   of the W4 milestone. `joinHousehold` deliberately has no
+ *   `requireHouseholdMember` gate (the caller isn't a member yet — that's
+ *   the point) and is rate-limited via DynamoDB (`cacheTable`) against its
+ *   guessable invite-code keyspace; `updateHouseholdSettings` is the first
+ *   resolver in this codebase gated by `requireHouseholdMember` (SD §6.2
+ *   layer 2), with RLS on `household_settings` as layer-3 defense-in-depth
+ *   behind it. The `onHouseholdChanged`/`onHouseholdSettingsChanged`
+ *   subscriptions are deliberately deferred to W12, when a connect-time
+ *   authorizer Lambda exists (SD §10.4) — no `Subscription` type exists in
+ *   `shared/schema.graphql` yet.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the other
- * three are VPC-attached, connecting to Aurora as the least-privileged
+ * five are VPC-attached, connecting to Aurora as the least-privileged
  * `parimaan_app` role (never the cluster's admin credentials).
  */
 export class ApiStack extends cdk.Stack {
@@ -104,50 +124,56 @@ export class ApiStack extends cdk.Stack {
   }
 
   private createHouseholdResolvers(props: ApiStackProps): void {
-    const { dbCluster, appRoleSecret, lambdaSecurityGroup } = props;
+    const { dbCluster, appRoleSecret, lambdaSecurityGroup, cacheTable } = props;
     // Same `exactOptionalPropertyTypes` quirk as data-stack.ts's `vpc` cast —
     // `Vpc` implements every member `IVpc` needs at runtime.
     const vpc = props.vpc as IVpc;
+    const dbDeps = { vpc, dbCluster, appRoleSecret, lambdaSecurityGroup };
 
-    const meFn = this.createDbResolverFunction('MeFn', 'me.ts', {
-      vpc,
-      dbCluster,
-      appRoleSecret,
-      lambdaSecurityGroup,
-    });
-    const createHouseholdFn = this.createDbResolverFunction('CreateHouseholdFn', 'createHousehold.ts', {
-      vpc,
-      dbCluster,
-      appRoleSecret,
-      lambdaSecurityGroup,
-    });
-    const userHouseholdsFn = this.createDbResolverFunction('UserHouseholdsFn', 'userHouseholds.ts', {
-      vpc,
-      dbCluster,
-      appRoleSecret,
-      lambdaSecurityGroup,
-    });
-
-    const meDataSource = this.api.addLambdaDataSource('MeDataSource', meFn);
-    meDataSource.createResolver('MeResolver', { typeName: 'Query', fieldName: 'me' });
-
-    const createHouseholdDataSource = this.api.addLambdaDataSource(
-      'CreateHouseholdDataSource',
-      createHouseholdFn,
+    const meFn = this.createDbResolverFunction('MeFn', 'me.ts', dbDeps);
+    const createHouseholdFn = this.createDbResolverFunction(
+      'CreateHouseholdFn',
+      'createHousehold.ts',
+      dbDeps,
     );
-    createHouseholdDataSource.createResolver('CreateHouseholdResolver', {
-      typeName: 'Mutation',
-      fieldName: 'createHousehold',
-    });
-
-    const userHouseholdsDataSource = this.api.addLambdaDataSource(
-      'UserHouseholdsDataSource',
-      userHouseholdsFn,
+    const userHouseholdsFn = this.createDbResolverFunction(
+      'UserHouseholdsFn',
+      'userHouseholds.ts',
+      dbDeps,
     );
-    userHouseholdsDataSource.createResolver('UserHouseholdsResolver', {
-      typeName: 'User',
-      fieldName: 'households',
-    });
+    const joinHouseholdFn = this.createDbResolverFunction('JoinHouseholdFn', 'joinHousehold.ts', dbDeps);
+    const updateHouseholdSettingsFn = this.createDbResolverFunction(
+      'UpdateHouseholdSettingsFn',
+      'updateHouseholdSettings.ts',
+      dbDeps,
+    );
+
+    // Only joinHousehold needs the cache table (its per-caller daily
+    // join-attempt rate limiter — api/src/rateLimit/joinAttemptLimiter.ts).
+    // Granted narrowly to `dynamodb:UpdateItem` only — that's the only
+    // DynamoDB action the limiter's code ever calls (a single atomic
+    // increment-with-cap), not the broader `grantWriteData`/`grantReadData`
+    // CDK convenience grants, which would include Put/Delete/BatchWrite/
+    // Query/Scan this Lambda never uses.
+    joinHouseholdFn.addEnvironment('CACHE_TABLE_NAME', cacheTable.tableName);
+    cacheTable.grant(joinHouseholdFn, 'dynamodb:UpdateItem');
+
+    this.wireResolver('Me', meFn, 'Query', 'me');
+    this.wireResolver('CreateHousehold', createHouseholdFn, 'Mutation', 'createHousehold');
+    this.wireResolver('UserHouseholds', userHouseholdsFn, 'User', 'households');
+    this.wireResolver('JoinHousehold', joinHouseholdFn, 'Mutation', 'joinHousehold');
+    this.wireResolver(
+      'UpdateHouseholdSettings',
+      updateHouseholdSettingsFn,
+      'Mutation',
+      'updateHouseholdSettings',
+    );
+  }
+
+  /** Adds a Lambda data source and its resolver for one GraphQL field, sharing the `<Name>DataSource`/`<Name>Resolver` logical-id convention every resolver in this stack already follows. */
+  private wireResolver(name: string, fn: NodejsFunction, typeName: string, fieldName: string): void {
+    const dataSource = this.api.addLambdaDataSource(`${name}DataSource`, fn);
+    dataSource.createResolver(`${name}Resolver`, { typeName, fieldName });
   }
 
   /**

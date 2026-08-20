@@ -66,6 +66,7 @@ describe('ApiStack', () => {
       dbCluster: data.dbCluster,
       appRoleSecret: data.appRoleSecret,
       lambdaSecurityGroup: data.lambdaSecurityGroup,
+      cacheTable: data.cacheTable,
     });
   };
 
@@ -131,6 +132,7 @@ describe('ApiStack', () => {
       dbCluster: data.dbCluster,
       appRoleSecret: data.appRoleSecret,
       lambdaSecurityGroup: data.lambdaSecurityGroup,
+      cacheTable: data.cacheTable,
     });
     const template = Template.fromStack(stack);
 
@@ -174,9 +176,21 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/households\s*:\s*\[HouseholdMembership!\]!/);
   });
 
-  it('declares exactly 4 resolver Lambda functions (health + me + createHousehold + userHouseholds)', () => {
+  it('the real schema file still declares joinHousehold and updateHouseholdSettings, and no Subscription type yet', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/joinHousehold\(inviteCode:\s*String!\)\s*:\s*Household!/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /updateHouseholdSettings\(householdId:\s*ID!,\s*input:\s*HouseholdSettingsInput!\)\s*:\s*HouseholdSettings!/,
+    );
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/input HouseholdSettingsInput/);
+    // Subscriptions are deliberately deferred to W12 (connect-time authorizer
+    // Lambda, SD §10.4) — this guards against a future edit silently adding
+    // one without the CDK/security work that must accompany it.
+    expect(REAL_SCHEMA_CONTENTS).not.toMatch(/type Subscription/);
+  });
+
+  it('declares exactly 6 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(4);
+    expect(ourFunctions(template)).toHaveLength(6);
   });
 
   it('declares the health Lambda outside the VPC, on the Node.js 24 runtime', () => {
@@ -189,10 +203,10 @@ describe('ApiStack', () => {
     expect(healthFn.Properties.Runtime).toBe('nodejs24.x');
   });
 
-  it('declares 3 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 5 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(3);
+    expect(vpcFunctions).toHaveLength(5);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -204,7 +218,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(3);
+    expect(vpcFunctions).toHaveLength(5);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -216,6 +230,42 @@ describe('ApiStack', () => {
       // by these resolver Lambdas — they connect as parimaan_app only.
       expect(env['DB_SECRET_ARN']).toBeUndefined();
     }
+  });
+
+  it('sets CACHE_TABLE_NAME only on the joinHousehold Lambda (its rate limiter), never on the other resolvers', () => {
+    const template = synth('dev');
+    const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
+    const withCacheTableEnv = vpcFunctions.filter(([, fn]) => {
+      const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
+        .Properties.Environment.Variables;
+      return env['CACHE_TABLE_NAME'] !== undefined;
+    });
+    expect(withCacheTableEnv).toHaveLength(1);
+    const [joinHouseholdLogicalId] = withCacheTableEnv[0] as (typeof withCacheTableEnv)[0];
+    expect(joinHouseholdLogicalId).toMatch(/^JoinHouseholdFn/);
+  });
+
+  it('grants the joinHousehold Lambda dynamodb:UpdateItem on the cache table only — no other DynamoDB action, never Resource: "*"', () => {
+    const template = synth('dev');
+    const policies = template.findResources('AWS::IAM::Policy');
+    const ddbStatements = Object.values(policies).flatMap(
+      (policy) =>
+        (
+          policy as {
+            Properties: {
+              PolicyDocument: { Statement: Array<{ Action: string | string[]; Resource: unknown }> };
+            };
+          }
+        ).Properties.PolicyDocument.Statement,
+    ).filter((statement) => {
+      const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+      return actions.some((action) => typeof action === 'string' && action.startsWith('dynamodb:'));
+    });
+    expect(ddbStatements).toHaveLength(1);
+    const [statement] = ddbStatements as [{ Action: string | string[]; Resource: unknown }];
+    const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+    expect(actions).toEqual(['dynamodb:UpdateItem']);
+    expect(statement.Resource).not.toBe('*');
   });
 
   it('grants each VPC-attached resolver Lambda secretsmanager:GetSecretValue scoped only to the app-role secret — never Resource: "*"', () => {
@@ -241,9 +291,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 4 AppSync Lambda data sources', () => {
+  it('declares exactly 6 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 4);
+    template.resourceCountIs('AWS::AppSync::DataSource', 6);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -282,9 +332,27 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 4 resolvers total', () => {
+  it('declares a resolver for Mutation.joinHousehold', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 4);
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'joinHousehold',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.updateHouseholdSettings', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'updateHouseholdSettings',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares exactly 6 resolvers total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::Resolver', 6);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

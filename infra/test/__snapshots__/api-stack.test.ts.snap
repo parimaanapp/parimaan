@@ -277,6 +277,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiJoinHouseholdDataSource78F51A4F": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "JoinHouseholdFn6EF88BE1",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "JoinHouseholdDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiJoinHouseholdDataSourceServiceRoleD2E09A79",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiJoinHouseholdDataSourceServiceRoleD2E09A79": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiJoinHouseholdDataSourceServiceRoleDefaultPolicyF99A7786": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "JoinHouseholdFn6EF88BE1",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "JoinHouseholdFn6EF88BE1",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiJoinHouseholdDataSourceServiceRoleDefaultPolicyF99A7786",
+        "Roles": [
+          {
+            "Ref": "ApiJoinHouseholdDataSourceServiceRoleD2E09A79",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiJoinHouseholdResolver93AD1137": {
+      "DependsOn": [
+        "ApiJoinHouseholdDataSource78F51A4F",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "JoinHouseholdDataSource",
+        "FieldName": "joinHousehold",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiLogRetention94272E33": {
       "Properties": {
         "LogGroupName": {
@@ -455,6 +560,24 @@ type Mutation {
   settings, and a generated invite code (SYSTEM_DESIGN.md §5.2).
   """
   createHousehold(name: String!): Household!
+
+  """
+  Joins the caller to a household by invite code, as a \`member\`. Idempotent:
+  re-joining a household the caller already belongs to succeeds without a
+  second membership row. Capped at 5 members per household
+  (HOUSEHOLD_FULL). Rate-limited per caller against guessed invite codes
+  (RATE_LIMITED). Deliberately has no membership-required authorization
+  check — the caller is by definition not yet a member.
+  """
+  joinHousehold(inviteCode: String!): Household!
+
+  """
+  Applies a partial patch to a household's settings — every \`input\` field is
+  optional, and an absent field leaves that column unchanged (an explicit
+  \`null\` is rejected). Requires the caller to already be a member of
+  \`householdId\`.
+  """
+  updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): HouseholdSettings!
 }
 
 type User {
@@ -530,9 +653,131 @@ enum DietaryTag {
   gluten_free
   dairy_free
 }
+
+"""
+A partial patch for \`Mutation.updateHouseholdSettings\` — every field is
+optional (absent = "leave unchanged"). Sending an explicit \`null\` for any
+field is rejected server-side; clearing a field is not yet supported.
+\`mealStructure\`/\`cuisineTier2Weights\` are \`AWSJSON\` — see \`HouseholdSettings\`
+for their validated shapes.
+"""
+input HouseholdSettingsInput {
+  mealsEnabled: [MealType!]
+  mealStructure: AWSJSON
+  cuisineTier1: [CuisineTier1!]
+  cuisineTier2Weights: AWSJSON
+  dietaryTags: [DietaryTag!]
+  allergens: [String!]
+  skipIngredients: [String!]
+}
 ",
       },
       "Type": "AWS::AppSync::GraphQLSchema",
+    },
+    "ApiUpdateHouseholdSettingsDataSource04EA87FF": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "UpdateHouseholdSettingsFnFDC1560F",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "UpdateHouseholdSettingsDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiUpdateHouseholdSettingsDataSourceServiceRole8B7838E9",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiUpdateHouseholdSettingsDataSourceServiceRole8B7838E9": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiUpdateHouseholdSettingsDataSourceServiceRoleDefaultPolicy9D78A5D6": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "UpdateHouseholdSettingsFnFDC1560F",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "UpdateHouseholdSettingsFnFDC1560F",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiUpdateHouseholdSettingsDataSourceServiceRoleDefaultPolicy9D78A5D6",
+        "Roles": [
+          {
+            "Ref": "ApiUpdateHouseholdSettingsDataSourceServiceRole8B7838E9",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiUpdateHouseholdSettingsResolverDB7D6A53": {
+      "DependsOn": [
+        "ApiSchema510EECD7",
+        "ApiUpdateHouseholdSettingsDataSource04EA87FF",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "UpdateHouseholdSettingsDataSource",
+        "FieldName": "updateHouseholdSettings",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
     },
     "ApiUserHouseholdsDataSource680E540C": {
       "Properties": {
@@ -826,6 +1071,152 @@ enum DietaryTag {
       },
       "Type": "AWS::IAM::Role",
     },
+    "JoinHouseholdFn6EF88BE1": {
+      "DependsOn": [
+        "JoinHouseholdFnServiceRoleDefaultPolicy454D7EC9",
+        "JoinHouseholdFnServiceRole79D94D35",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "CACHE_TABLE_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefCacheTableC1E6DF7EB68DF245",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "JoinHouseholdFnServiceRole79D94D35",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "JoinHouseholdFnServiceRole79D94D35": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "JoinHouseholdFnServiceRoleDefaultPolicy454D7EC9": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+            {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttCacheTableC1E6DF7EArn8EF20E10",
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "JoinHouseholdFnServiceRoleDefaultPolicy454D7EC9",
+        "Roles": [
+          {
+            "Ref": "JoinHouseholdFnServiceRole79D94D35",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A": {
       "DependsOn": [
         "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
@@ -997,6 +1388,140 @@ enum DietaryTag {
       "Type": "AWS::IAM::Policy",
     },
     "MeFnServiceRoleF49756FA": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "UpdateHouseholdSettingsFnFDC1560F": {
+      "DependsOn": [
+        "UpdateHouseholdSettingsFnServiceRoleDefaultPolicy1B01ABE6",
+        "UpdateHouseholdSettingsFnServiceRoleEA713A64",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "UpdateHouseholdSettingsFnServiceRoleEA713A64",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "UpdateHouseholdSettingsFnServiceRoleDefaultPolicy1B01ABE6": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "UpdateHouseholdSettingsFnServiceRoleDefaultPolicy1B01ABE6",
+        "Roles": [
+          {
+            "Ref": "UpdateHouseholdSettingsFnServiceRoleEA713A64",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "UpdateHouseholdSettingsFnServiceRoleEA713A64": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
