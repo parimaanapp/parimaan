@@ -10,14 +10,18 @@ export default defineConfig({
     // synth calls in the same worker are fast (modules already loaded), so
     // this is a one-time-per-worker cost, not a sign anything is slow.
     testTimeout: 15_000,
-    // Running all test files' workers in parallel means every one pays the
-    // jsii/aws-cdk-lib cold-start cost at the same time. On GitHub Actions'
-    // 2-core shared runners that CPU contention is severe enough that the
-    // worker's IPC heartbeat back to the main thread ("onTaskUpdate") can
-    // itself time out — even though every individual test still passes well
-    // within testTimeout (confirmed on PR #11: 108/108 tests green, but the
-    // run still failed with "[vitest-worker]: Timeout calling
-    // 'onTaskUpdate'"). Running test files sequentially avoids the pile-up.
-    fileParallelism: false,
+    // Vitest's default `isolate: true` gives every test FILE a fresh module
+    // registry, so each of our 5 files re-pays the jsii/aws-cdk-lib
+    // cold-start cost independently — even with fileParallelism disabled
+    // (tried first; didn't help, since the cost is per-file, not just
+    // per-parallel-worker). That repeated heavy synchronous synth work is
+    // what starves the event loop long enough for the worker's IPC
+    // heartbeat back to the main thread ("onTaskUpdate", 60s birpc default)
+    // to time out — even though every individual test still passes well
+    // within testTimeout (confirmed on PR #11: 108/108 tests green twice,
+    // but the run still failed both times with "[vitest-worker]: Timeout
+    // calling 'onTaskUpdate'"). Sharing one module registry across files in
+    // the same worker means the cold start is paid once, not 5 times.
+    isolate: false,
   },
 });
