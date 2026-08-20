@@ -19,6 +19,22 @@ abstract interface class AuthRepository {
   /// resulting session. Throws [AuthCancelled] if the user backs out.
   Future<AuthSession> signInWithGoogle();
 
+  /// The current Cognito **id token**, or `null` when there is no session.
+  ///
+  /// This is the one credential the GraphQL layer needs (AppSync's
+  /// `AMAZON_COGNITO_USER_POOLS` authorization mode reads it from
+  /// `Authorization`), and it lives here rather than on [AuthSession] on
+  /// purpose: `auth_session.dart` deliberately carries no tokens, because app
+  /// state ends up in logs and crash reports. Exposing it as a *call* keeps
+  /// the token in Amplify's secure storage and lets Amplify refresh it, while
+  /// still giving `shared/graphql/auth_link.dart` a vendor-free seam to fetch
+  /// it through — see that file's `IdTokenProvider`.
+  ///
+  /// Returns `null` rather than throwing for the ordinary signed-out case.
+  /// Genuine failures still throw an [AuthFailure], like every other method
+  /// here.
+  Future<String?> currentIdToken();
+
   /// Clears the local session (and the hosted-UI session where the platform
   /// supports it). Completing normally always leaves the app signed out.
   Future<void> signOut();

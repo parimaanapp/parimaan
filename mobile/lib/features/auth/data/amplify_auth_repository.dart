@@ -72,6 +72,21 @@ class AmplifyAuthRepository implements AuthRepository {
   });
 
   @override
+  Future<String?> currentIdToken() => _guard(() async {
+    await _ensureConfigured();
+    // Type deliberately inferred, for the same reason as `currentSession()`:
+    // naming it would require un-hiding Amplify's own `AuthSession`.
+    final cognitoSession = await _amplify.Auth.fetchAuthSession();
+    if (cognitoSession is! CognitoAuthSession || !cognitoSession.isSignedIn) {
+      return null;
+    }
+    // `.valueOrNull` rather than `.value`: an unauthenticated (or
+    // partially-resolved) session throws from `.value`, and "no token" is a
+    // normal state here, not a failure.
+    return cognitoSession.userPoolTokensResult.valueOrNull?.idToken.raw;
+  });
+
+  @override
   Future<void> signOut() => _guard(() async {
     await _ensureConfigured();
     final SignOutResult result = await _amplify.Auth.signOut();

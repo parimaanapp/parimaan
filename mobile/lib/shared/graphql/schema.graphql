@@ -1,0 +1,202 @@
+# !!! COPY — NOT THE SOURCE OF TRUTH !!!
+#
+# This file is a hand-made, point-in-time copy of `shared/schema.graphql`
+# (repo root). `mobile/` is a Flutter peer directory, deliberately outside the
+# pnpm workspace (E2E_MVP_PLAN.md locked decision Q13), so it cannot depend on
+# `shared/` as a package and `ferry_generator` needs the SDL inside this
+# package's own `lib/`.
+#
+# **This copy can silently drift from the source.** There is no automated sync
+# in this slice. Whoever changes `shared/schema.graphql` must re-run:
+#
+#   cp shared/schema.graphql mobile/lib/shared/graphql/schema.graphql
+#   # (re-add this header)
+#   cd mobile && dart run build_runner build --delete-conflicting-outputs
+#
+# Automating the copy (a build step, a codegen pre-hook, or a CI dirty-tree
+# check like the one `pr.yml` already runs for the TS clients) is deliberately
+# out of scope here and is the right fix before the next schema-consuming
+# slice.
+#
+# ---------------------------------------------------------------------------
+#
+# Parimaan GraphQL schema — SINGLE SOURCE OF TRUTH.
+#
+# This file feeds four consumers:
+#   1. ferry_generator      → Dart types for mobile/
+#   2. graphql-codegen      → TypeScript types for api/ and web/
+#   3. urql                 → web/ client operations
+#   4. Zod schema authoring → server-side validation in api/
+#
+# Never hand-edit a generated artifact. Edit this file, regenerate, commit both.
+# Any change here is a `doc-updater` trigger: re-sync SYSTEM_DESIGN.md §6.1.
+#
+# The real schema (SYSTEM_DESIGN.md §6.1 — households, recipes, pantry, etc.)
+# lands incrementally starting W1, alongside the resolvers that implement each
+# field. `_health` was the W1 placeholder (AppSync → Lambda → response
+# pipeline). `me` / `createHousehold` / `User.households` are the first real
+# slice (SYSTEM_DESIGN.md §5.1, §5.2), landing W3/W4 per E2E_MVP_PLAN.md §4.
+
+scalar AWSDateTime
+scalar AWSJSON
+
+type Query {
+  """Health-check field. Proves the AppSync → Lambda → response pipeline works."""
+  _health: String!
+
+  """
+  Returns the authenticated caller, upserting their `users` row on first
+  login (SYSTEM_DESIGN.md §5.1). Does not include `households` — see the
+  separate `User.households` field resolver, which exists specifically to
+  break the User↔HouseholdMembership↔User type cycle at arbitrary query
+  depth (a single flat resolver on `me` cannot terminate that cycle).
+  """
+  me: User!
+}
+
+type Mutation {
+  """
+  Creates a household with the caller as its `primary` member, default
+  settings, and a generated invite code (SYSTEM_DESIGN.md §5.2).
+  """
+  createHousehold(name: String!): Household!
+
+  """
+  Joins the caller to a household by invite code, as a `member`. Idempotent:
+  re-joining a household the caller already belongs to succeeds without a
+  second membership row. Capped at 5 members per household
+  (HOUSEHOLD_FULL). Rate-limited per caller against guessed invite codes
+  (RATE_LIMITED). Deliberately has no membership-required authorization
+  check — the caller is by definition not yet a member.
+  """
+  joinHousehold(inviteCode: String!): Household!
+
+  """
+  Applies a partial patch to a household's settings — every `input` field is
+  optional, and an absent field leaves that column unchanged (an explicit
+  `null` is rejected). Requires the caller to already be a member of
+  `householdId`.
+  """
+  updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): HouseholdSettings!
+
+  """
+  Replaces a household's invite code with a freshly-generated one and returns
+  the updated household. Any member may rotate — there is deliberately no
+  role check. NOT idempotent: each successful call invalidates the previous
+  code for everyone holding it. Rate-limited per caller (RATE_LIMITED), more
+  tightly than `joinHousehold`, because rotating is destructive for
+  co-members. Requires the caller to already be a member of `householdId`.
+  """
+  rotateInviteCode(householdId: ID!): Household!
+
+  """
+  Removes the caller's own membership from a household. Idempotent and
+  deliberately gated differently from every other household-scoped mutation:
+  a caller who is not (or is no longer) a member returns `true` rather than a
+  denial, since "not a member" is exactly the state this mutation asks for.
+  The primary member cannot leave (FORBIDDEN) — in MVP the only exit for a
+  primary is `deleteHousehold`, as primary-role transfer is post-MVP.
+  """
+  leaveHousehold(householdId: ID!): Boolean!
+
+  """
+  Permanently deletes a household along with its memberships and settings.
+  Primary-only (FORBIDDEN for any other member, and for a non-member — which
+  is also what a nonexistent `householdId` returns, so this is never a
+  household-existence oracle). `confirmationName` must match the household's
+  current `name` exactly — case-sensitive, no trimming — or the mutation
+  fails (VALIDATION) without deleting anything. Irreversible.
+  """
+  deleteHousehold(householdId: ID!, confirmationName: String!): Boolean!
+}
+
+type User {
+  id: ID!
+  email: String!
+  displayName: String
+  avatarUrl: String
+  households: [HouseholdMembership!]!
+}
+
+type Household {
+  id: ID!
+  name: String!
+  inviteCode: String!
+  primaryUserId: ID!
+  members: [HouseholdMembership!]!
+  settings: HouseholdSettings!
+  subscriptionStatus: SubscriptionStatus!
+}
+
+type HouseholdMembership {
+  id: ID!
+  household: Household!
+  user: User!
+  role: HouseholdRole!
+  joinedAt: AWSDateTime!
+}
+
+enum HouseholdRole {
+  primary
+  member
+}
+
+enum SubscriptionStatus {
+  free
+  trial
+  active
+  past_due
+  cancelled
+}
+
+type HouseholdSettings {
+  householdId: ID!
+  mealsEnabled: [MealType!]!
+  mealStructure: AWSJSON!
+  cuisineTier1: [CuisineTier1!]!
+  cuisineTier2Weights: AWSJSON!
+  dietaryTags: [DietaryTag!]!
+  allergens: [String!]!
+  skipIngredients: [String!]!
+}
+
+enum MealType {
+  breakfast
+  lunch
+  snacks
+  dinner
+}
+
+enum CuisineTier1 {
+  north_indian
+  south_indian
+  pan_india
+  indo_chinese
+  continental
+}
+
+enum DietaryTag {
+  veg
+  vegan
+  jain
+  eggetarian
+  gluten_free
+  dairy_free
+}
+
+"""
+A partial patch for `Mutation.updateHouseholdSettings` — every field is
+optional (absent = "leave unchanged"). Sending an explicit `null` for any
+field is rejected server-side; clearing a field is not yet supported.
+`mealStructure`/`cuisineTier2Weights` are `AWSJSON` — see `HouseholdSettings`
+for their validated shapes.
+"""
+input HouseholdSettingsInput {
+  mealsEnabled: [MealType!]
+  mealStructure: AWSJSON
+  cuisineTier1: [CuisineTier1!]
+  cuisineTier2Weights: AWSJSON
+  dietaryTags: [DietaryTag!]
+  allergens: [String!]
+  skipIngredients: [String!]
+}

@@ -95,6 +95,14 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      # Ferry/built_value generated code (*.gql.dart, *.g.dart, ...) is
+      # gitignored by convention (see the repo root .gitignore's "Flutter —
+      # generated code" section) — nothing under lib/**/__generated__/ is
+      # committed, so it must exist before analyze/test can even resolve
+      # imports.
+      - name: Generate code (Ferry/built_value)
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 

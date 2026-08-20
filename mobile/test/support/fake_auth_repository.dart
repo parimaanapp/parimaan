@@ -22,8 +22,15 @@ MockAuthRepository stubbedAuthRepository({
   when(repository.sessionChanges)
       .thenAnswer((_) => const Stream<AuthSession>.empty());
   when(repository.signOut).thenAnswer((_) async {});
+  when(repository.currentIdToken)
+      .thenAnswer((_) async => session.isSignedIn ? testIdToken : null);
   return repository;
 }
+
+/// The id token `stubbedAuthRepository` hands back for a signed-in session.
+/// Not a real JWT — nothing in the app parses it; it is passed straight to the
+/// `Authorization` header.
+const String testIdToken = 'test-id-token';
 
 /// The signed-in session used across tests, so assertions stay comparable.
 const AuthSession testSignedInSession = AuthSession.signedIn(

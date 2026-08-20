@@ -30,7 +30,7 @@ void main() {
     expect(find.text('Continue with Google'), findsOneWidget);
   });
 
-  testWidgets('boots to the home placeholder when already signed in', (
+  testWidgets('boots to the first-run screen when already signed in', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -44,7 +44,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Signed in'), findsOneWidget);
+    expect(find.text('Set up your kitchen'), findsOneWidget);
   });
 
   testWidgets('applies the Parimaan theme rather than the Material default', (

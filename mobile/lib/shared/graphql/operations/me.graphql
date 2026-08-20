@@ -1,0 +1,38 @@
+# `Query.me` — the authenticated caller, upserted server-side on first login.
+#
+# `households` is requested here (it is a separate field resolver server-side,
+# see the SDL comment on `Query.me`) but each membership's `household` is NOT
+# expanded: `User -> HouseholdMembership -> Household -> members -> User` is a
+# cycle, and the server deliberately returns an empty `members` list for a
+# membership's own household (`api/src/mappers/household.ts`
+# `toGraphQLMembership`). Asking for more here would buy nothing and add depth.
+query Me {
+  me {
+    id
+    email
+    displayName
+    avatarUrl
+    households {
+      id
+      role
+      joinedAt
+      household {
+        id
+        name
+        inviteCode
+        primaryUserId
+        subscriptionStatus
+        settings {
+          householdId
+          mealsEnabled
+          mealStructure
+          cuisineTier1
+          cuisineTier2Weights
+          dietaryTags
+          allergens
+          skipIngredients
+        }
+      }
+    }
+  }
+}
