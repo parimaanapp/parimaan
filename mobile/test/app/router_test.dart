@@ -187,4 +187,53 @@ void main() {
       expect(_location(router), AppRoutes.joinHousehold);
     });
   });
+
+  group('router — the household setup wizard', () {
+    /// Every wizard step, in the order the user walks them.
+    const List<String> wizardRoutes = <String>[
+      AppRoutes.createHouseholdName,
+      AppRoutes.createHouseholdMeals,
+      AppRoutes.createHouseholdStructure,
+      AppRoutes.createHouseholdCuisine,
+      AppRoutes.createHouseholdCuisineBias,
+      AppRoutes.createHouseholdDietary,
+      AppRoutes.createHouseholdInvite,
+    ];
+
+    for (final String route in wizardRoutes) {
+      testWidgets('$route is registered and reachable when signed in', (
+        WidgetTester tester,
+      ) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(route);
+        await tester.pumpAndSettle();
+
+        // Reachable *and* not bounced: the guard must not fight navigation
+        // within the signed-in area, which is what the whole wizard is.
+        expect(_location(router), route);
+      });
+
+      testWidgets('$route is guarded when signed out', (
+        WidgetTester tester,
+      ) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(route);
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.signIn);
+      });
+    }
+
+    testWidgets('every wizard path is distinct', (WidgetTester tester) async {
+      expect(wizardRoutes.toSet(), hasLength(wizardRoutes.length));
+    });
+  });
 }

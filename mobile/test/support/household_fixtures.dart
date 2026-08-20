@@ -52,6 +52,36 @@ Map<String, dynamic> createHouseholdWireData({
   },
 };
 
+/// The exact JSON AppSync returns for the `UpdateHouseholdSettings` operation
+/// defined in `lib/shared/graphql/operations/update_household_settings.graphql`.
+///
+/// The mutation returns `HouseholdSettings!` — the *whole* settings object,
+/// not just the patched fields — so this fixture is a complete settings row,
+/// and the two `AWSJSON` fields are JSON **strings** for the same reason
+/// [createHouseholdWireData]'s are.
+Map<String, dynamic> updateHouseholdSettingsWireData({
+  String householdId = 'household-1',
+  List<String> mealsEnabled = const <String>['breakfast', 'lunch', 'dinner'],
+  String mealStructure = '{"lunch":{"carb":2,"sabzi_dal":2,"accompaniment":1}}',
+  List<String> cuisineTier1 = const <String>['north_indian', 'south_indian'],
+  String cuisineTier2Weights = '{"punjabi":"more","marathi":"normal"}',
+  List<String> dietaryTags = const <String>['veg', 'eggetarian'],
+  List<String> allergens = const <String>['peanut'],
+  List<String> skipIngredients = const <String>['mustard oil'],
+}) => <String, dynamic>{
+  'updateHouseholdSettings': <String, dynamic>{
+    '__typename': 'HouseholdSettings',
+    'householdId': householdId,
+    'mealsEnabled': mealsEnabled,
+    'mealStructure': mealStructure,
+    'cuisineTier1': cuisineTier1,
+    'cuisineTier2Weights': cuisineTier2Weights,
+    'dietaryTags': dietaryTags,
+    'allergens': allergens,
+    'skipIngredients': skipIngredients,
+  },
+};
+
 /// A ready-made domain [Household] for tests that only need *a* household and
 /// do not care about the wire round trip.
 final Household testHousehold = Household(
@@ -82,4 +112,17 @@ final Household testHousehold = Household(
       ),
     ),
   ],
+);
+
+/// The domain [HouseholdSettings] matching [updateHouseholdSettingsWireData]'s
+/// defaults, for tests that need a settings value without a wire round trip.
+const HouseholdSettings testHouseholdSettings = HouseholdSettings(
+  householdId: 'household-1',
+  mealsEnabled: <String>['breakfast', 'lunch', 'dinner'],
+  mealStructureJson: '{"lunch":{"carb":2,"sabzi_dal":2,"accompaniment":1}}',
+  cuisineTier1: <String>['north_indian', 'south_indian'],
+  cuisineTier2WeightsJson: '{"punjabi":"more","marathi":"normal"}',
+  dietaryTags: <String>['veg', 'eggetarian'],
+  allergens: <String>['peanut'],
+  skipIngredients: <String>['mustard oil'],
 );

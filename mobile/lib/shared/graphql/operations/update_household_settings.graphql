@@ -1,0 +1,34 @@
+# `Mutation.updateHouseholdSettings` — applies a PARTIAL patch to one
+# household's settings.
+#
+# Every field of `HouseholdSettingsInput` is optional and an absent field
+# leaves that column unchanged; an explicit `null` is rejected server-side
+# (`api/src/validation/updateHouseholdSettings.ts`). A patch with every field
+# absent is rejected too — there is nothing for the resolver to do with it.
+#
+# The setup wizard calls this once per step ("patch per step"), so most calls
+# carry exactly one field.
+#
+# Unlike `create_household.graphql` this selects only `HouseholdSettings` —
+# that is the mutation's whole return type. Nothing about the household's
+# identity, invite code or membership can change through this path, so there
+# is no wider shape to re-fetch.
+#
+# `mealStructure` and `cuisineTier2Weights` are `AWSJSON`: JSON **strings** on
+# the wire in both directions, never nested objects. `build.yaml` maps the
+# scalar to Dart `String` for exactly that reason.
+mutation UpdateHouseholdSettings(
+  $householdId: ID!
+  $input: HouseholdSettingsInput!
+) {
+  updateHouseholdSettings(householdId: $householdId, input: $input) {
+    householdId
+    mealsEnabled
+    mealStructure
+    cuisineTier1
+    cuisineTier2Weights
+    dietaryTags
+    allergens
+    skipIngredients
+  }
+}
