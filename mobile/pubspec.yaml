@@ -57,33 +57,54 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # Attribution + summary (not the full licence text — see assets/licenses/
+  # OFL.txt and ICONS.txt for what's actually bundled vs. linked) is here so
+  # the About screen can render it from the app itself.
+  assets:
+    - assets/licenses/
 
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
+  # Fonts are EMBEDDED, never fetched from Google Fonts at runtime.
+  # Family names and weights come from shared/design-tokens.json ->
+  # `typography.families` and `fonts.families`; the family strings below must
+  # stay identical to AppFontFamily in lib/shared/ui/typography.dart.
+  # All four families are SIL OFL 1.1 — see assets/licenses/OFL.txt.
+  fonts:
+    - family: Instrument Serif
+      fonts:
+        - asset: assets/fonts/InstrumentSerif-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/InstrumentSerif-Italic.ttf
+          weight: 400
+          style: italic
 
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/DMSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/DMSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans-Bold.ttf
+          weight: 700
 
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
+
+    # Wordmark only ("परिमाण"), plus one appearance on the About screen.
+    - family: Noto Serif Devanagari
+      fonts:
+        - asset: assets/fonts/NotoSerifDevanagari-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSerifDevanagari-Bold.ttf
+          weight: 700
+
+    # Phosphor Icons, Regular (1.5px stroke) — MIT, see assets/licenses/ICONS.txt.
+    - family: Phosphor
+      fonts:
+        - asset: assets/icons/Phosphor-Regular.ttf
+          weight: 400

@@ -1,0 +1,21 @@
+Parimaan — bundled icon font attribution
+========================================
+
+  Phosphor Icons — Regular weight (1.5px stroke)
+    Copyright (c) 2023 Phosphor Icons
+    https://github.com/phosphor-icons/web
+    Licence: MIT
+
+    Bundled file: assets/icons/Phosphor-Regular.ttf, taken verbatim from
+    `src/regular/Phosphor.ttf` in the repository above.
+
+Design-system rules for this font (shared/design-tokens.json -> iconography):
+  * Regular weight only. Duotone is allowed in exactly one place: the
+    tab-bar active state.
+  * Never mix icon libraries.
+  * Sizes: 16 inline, 20 UI default, 24 nav, 32 empty states
+    (see AppSizing.iconSizes).
+
+The MIT licence permits use, copying, modification and distribution
+provided the copyright notice above and the permission notice are kept with
+the software. Full text: https://github.com/phosphor-icons/web/blob/master/LICENSE

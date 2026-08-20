@@ -1,0 +1,159 @@
+{
+  "$schema": "Parimaan design tokens — source of truth for mobile/lib/shared/ui/tokens.dart. Extracted verbatim from 'Parimaan Design System.dc.html' v0.1 (July 2026), Direction A 'Haldi & Terracotta'. Names here are the names used in code — never hardcode a hex/px value that has a name here.",
+  "direction": "Haldi & Terracotta",
+  "color": {
+    "neutral": {
+      "paper": { "hex": "#FBF6EE", "usage": "app background" },
+      "paper2": { "hex": "#F5EFE4", "usage": "canvas / sections" },
+      "card": { "hex": "#FFFFFF", "usage": "raised surfaces" },
+      "inkSoft": { "hex": "#5A4F42", "usage": "secondary text" },
+      "inkMid": { "hex": "#8B7C6B", "usage": "meta / hints" },
+      "ink": { "hex": "#1F1A15", "usage": "primary text" }
+    },
+    "brand": {
+      "haldiSoft": { "hex": "#F5DEA3", "usage": "warm surface" },
+      "haldi": { "hex": "#E8B961", "usage": "accent, focus rings" },
+      "terracotta": { "hex": "#C25A2B", "usage": "primary action" },
+      "terracottaDeep": { "hex": "#A64420", "usage": "pressed / links" },
+      "cardamom": { "hex": "#4F6B4A", "usage": "affirmative" },
+      "cardamomSoft": { "hex": "#DDE5D8", "foreground": "#3A5236", "usage": "veg tag bg" }
+    },
+    "semantic": {
+      "success": { "hex": "#4F6B4A", "usage": "have-it, bought" },
+      "warning": { "hex": "#E8B961", "usage": "AI proposals, expiry" },
+      "danger": { "hex": "#9E2A2B", "usage": "destructive, errors" },
+      "info": { "hex": "#3A5A7C", "usage": "activity, notices" }
+    },
+    "contrastPairs": [
+      { "label": "ink on paper", "fg": "#1F1A15", "bg": "#FBF6EE", "ratio": "16.9:1", "level": "AAA" },
+      { "label": "ink-soft on paper", "fg": "#5A4F42", "bg": "#FBF6EE", "ratio": "7.4:1", "level": "AAA" },
+      { "label": "ink-mid on paper", "fg": "#8B7C6B", "bg": "#FBF6EE", "ratio": "3.6:1", "level": "AA large" },
+      { "label": "paper on terracotta", "fg": "#FBF6EE", "bg": "#C25A2B", "ratio": "4.9:1", "level": "AA" },
+      { "label": "paper on cardamom", "fg": "#FBF6EE", "bg": "#4F6B4A", "ratio": "5.6:1", "level": "AA" },
+      { "label": "terracotta on paper", "fg": "#A64420", "bg": "#FBF6EE", "ratio": "5.9:1", "level": "AA" }
+    ]
+  },
+  "typography": {
+    "families": {
+      "display": "Instrument Serif",
+      "ui": "DM Sans",
+      "wordmark": "Noto Serif Devanagari",
+      "mono": "JetBrains Mono"
+    },
+    "rules": [
+      "Serif for titles; sans everywhere else",
+      "Italic serif = warmth, use sparingly (greetings, section intros)",
+      "Never mix serif + sans in the same phrase",
+      "Never all-caps except tiny meta labels",
+      "Wordmark font used ONLY in the wordmark itself and once on the About screen — never for UI copy",
+      "Mono used for invite codes, dense quantities, timestamps — never body"
+    ],
+    "scale": [
+      { "name": "display-xl", "size": 56, "lineHeight": 60, "family": "Instrument Serif", "weight": 400, "usage": "Onboarding hero" },
+      { "name": "display-l", "size": 40, "lineHeight": 44, "family": "Instrument Serif", "weight": 400, "usage": "Screen hero" },
+      { "name": "display-m", "size": 28, "lineHeight": 32, "family": "Instrument Serif", "weight": 400, "usage": "Screen title" },
+      { "name": "title", "size": 20, "lineHeight": 26, "family": "Instrument Serif", "weight": 400, "usage": "Section title" },
+      { "name": "body-lg", "size": 16, "lineHeight": 24, "family": "DM Sans", "weight": 400, "usage": "Long-form" },
+      { "name": "body", "size": 15, "lineHeight": 22, "family": "DM Sans", "weight": 400, "usage": "Default body" },
+      { "name": "body-strong", "size": 15, "lineHeight": 22, "family": "DM Sans", "weight": 600, "usage": "Emphasis" },
+      { "name": "label", "size": 13, "lineHeight": 18, "family": "DM Sans", "weight": 500, "usage": "Field labels, chips" },
+      { "name": "meta", "size": 11, "lineHeight": 14, "family": "DM Sans", "weight": 600, "letterSpacing": 0.14, "transform": "uppercase", "usage": "ALL CAPS META" },
+      { "name": "mono", "size": 13, "lineHeight": 18, "family": "JetBrains Mono", "weight": 500, "usage": "Codes, quantities" }
+    ]
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "scale": [
+      { "name": "s0", "px": 4 },
+      { "name": "s1", "px": 8 },
+      { "name": "s2", "px": 12 },
+      { "name": "s3", "px": 16 },
+      { "name": "s4", "px": 24 },
+      { "name": "s5", "px": 32 },
+      { "name": "s6", "px": 48 },
+      { "name": "s7", "px": 64 }
+    ],
+    "note": "Only these values — no in-betweens."
+  },
+  "radius": {
+    "scale": [
+      { "name": "r-xs", "px": 4, "usage": "chips, small tags" },
+      { "name": "r-s", "px": 8, "usage": "buttons small, inputs meta" },
+      { "name": "r-m", "px": 12, "usage": "buttons, inputs" },
+      { "name": "r-l", "px": 16, "usage": "cards, sheets" },
+      { "name": "r-xl", "px": 20, "usage": "modals" },
+      { "name": "r-full", "px": 999, "usage": "pills, avatars" }
+    ]
+  },
+  "elevation": {
+    "levels": [
+      { "name": "e0", "label": "flat", "shadow": "border only", "usage": "list rows, cards" },
+      { "name": "e1", "label": "resting", "shadow": "0 1px 2px rgba(31,26,21,0.04), 0 4px 12px rgba(31,26,21,0.06)", "usage": "bottom sheets, popovers" },
+      { "name": "e2", "label": "lifted", "shadow": "0 2px 4px rgba(31,26,21,0.06), 0 12px 32px rgba(31,26,21,0.12)", "usage": "modals, dragged items" }
+    ],
+    "note": "No colored shadows."
+  },
+  "motion": {
+    "duration": {
+      "instant": 80,
+      "quick": 160,
+      "standard": 240,
+      "gentle": 360
+    },
+    "easing": {
+      "standard": "cubic-bezier(0.2, 0, 0, 1)",
+      "emphasized": "cubic-bezier(0.3, 0, 0, 1)",
+      "exit": "cubic-bezier(0.4, 0, 1, 1)"
+    },
+    "rules": [
+      "No parallax",
+      "No page transitions that block interaction",
+      "No motion running longer than 400ms on a primary interaction",
+      "No spring bounces on anything the user might redo repeatedly (e.g. checking off a list)",
+      "Respect prefers-reduced-motion / OS reduce-motion — all 'signature' animations become cross-fades"
+    ]
+  },
+  "iconography": {
+    "library": "Phosphor Icons",
+    "weight": "Regular (1.5px stroke)",
+    "duotoneAllowedOnlyIn": "tab-bar active state",
+    "rule": "Never mix icon libraries",
+    "sizes": [
+      { "name": "16", "usage": "inline" },
+      { "name": "20", "usage": "UI default" },
+      { "name": "24", "usage": "nav" },
+      { "name": "32", "usage": "empty states" }
+    ]
+  },
+  "imagery": {
+    "recipeCards": "Solid color tiles + recipe name in Instrument Serif italic — not photos, not emoji, not illustrations. Tile background is a fixed 6-color palette hashed off the recipe title (same recipe = same color always). Photos are user-provided in v1.1."
+  },
+  "accessibility": {
+    "minTouchTarget": { "width": 44, "height": 44, "unit": "pt" },
+    "focusRing": "3px haldi outline + 2px paper spacer — never a browser/OS default outline",
+    "rules": [
+      "List rows are one big tap target — no nested links inside a row (swipe actions instead)",
+      "Never rely on color alone — pair every color state with an icon or text",
+      "Meta labels (11-12px uppercase, tracked) use inkMid minimum; body copy uses ink or inkSoft"
+    ]
+  },
+  "componentRules": {
+    "buttons": {
+      "minHeight": 44,
+      "variants": ["primary", "secondary", "ghost", "affirmative", "destructive"],
+      "rule": "One primary per screen. Affirmative (cardamom green) reserved for 'Have it / Bought / Made' — actions that move the core loop forward. Destructive is always outlined, never filled."
+    },
+    "chips": {
+      "rule": "Filter chips, role chips, dietary tags only. Never a chip for a primary action."
+    }
+  },
+  "fonts": {
+    "license": "SIL OFL 1.1 — all four families confirmed embeddable",
+    "families": [
+      { "name": "Instrument Serif", "weights": ["400 italic", "400 roman"] },
+      { "name": "DM Sans", "weights": [400, 500, 600, 700] },
+      { "name": "JetBrains Mono", "weights": [400, 500] },
+      { "name": "Noto Serif Devanagari", "weights": [500, 700] }
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+Parimaan — bundled font attribution
+===================================
+
+Parimaan embeds four typefaces. All four are released under the
+SIL Open Font License, Version 1.1 (SIL OFL 1.1), which permits bundling,
+embedding and redistribution inside an application, including a commercial
+one, provided the fonts are not sold on their own and this notice is kept.
+
+  Instrument Serif
+    Copyright (c) The Instrument Serif Project Authors
+    https://github.com/Instrument/instrument-serif
+    Bundled: Regular 400, Italic 400
+    Used for: display / titles. The italic cut carries warmth in greetings
+    and section intros.
+
+  DM Sans
+    Copyright (c) The DM Sans Project Authors (Colophon Foundry,
+    Jonny Pinhorn, Indian Type Foundry)
+    https://github.com/googlefonts/dm-fonts
+    Bundled: 400, 500, 600, 700
+    Used for: all UI and body copy.
+
+  JetBrains Mono
+    Copyright (c) JetBrains s.r.o.
+    https://github.com/JetBrains/JetBrainsMono
+    Bundled: 400, 500
+    Used for: invite codes, quantities, timestamps.
+
+  Noto Serif Devanagari
+    Copyright (c) The Noto Project Authors
+    https://github.com/notofonts/devanagari
+    Bundled: 500, 700
+    Used for: the wordmark "परिमाण" only, plus a single appearance on the
+    About screen. Never for UI copy.
+
+Provenance
+----------
+The .ttf files in `assets/fonts/` were taken from the Google Fonts
+repository (https://github.com/google/fonts, `ofl/<family>/`). DM Sans,
+JetBrains Mono and Noto Serif Devanagari ship there only as variable fonts;
+the static weights bundled here were produced from those variable sources
+with `fontTools.varLib.instancer` (pinning `wght`, and `opsz=14` / `wdth=100`
+where those axes exist). No glyph outlines were modified.
+
+Fonts are bundled as application assets and are never fetched over the
+network at runtime.
+
+Full licence text (linked, not reproduced here)
+-------------------------------------------------
+This file is an attribution summary, not the licence itself — SIL OFL 1.1
+does not require the full text to be embedded in-app, only that this
+copyright/attribution notice accompany the fonts. The complete text is
+identical for all four families and is reproduced verbatim in each
+family's own `OFL.txt` upstream:
+
+  https://openfontlicense.org/
+  https://github.com/google/fonts/blob/main/ofl/instrumentserif/OFL.txt
+  https://github.com/google/fonts/blob/main/ofl/dmsans/OFL.txt
+  https://github.com/google/fonts/blob/main/ofl/jetbrainsmono/OFL.txt
+  https://github.com/google/fonts/blob/main/ofl/notoserifdevanagari/OFL.txt
+
+Summary of the obligations Parimaan must meet (not a substitute for the
+text above): the fonts may be embedded and redistributed as part of this
+app; they may not be sold by themselves; this copyright and licence notice
+must accompany them; and any modified version may not use the Reserved Font
+Names.
