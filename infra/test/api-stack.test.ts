@@ -202,6 +202,10 @@ describe('ApiStack', () => {
     );
   });
 
+  it('the real schema file still declares Query.household', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/household\(householdId:\s*ID!\)\s*:\s*Household!/);
+  });
+
   it('the real schema file still declares joinHousehold and updateHouseholdSettings, and no Subscription type yet', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/joinHousehold\(inviteCode:\s*String!\)\s*:\s*Household!/);
     expect(REAL_SCHEMA_CONTENTS).toMatch(
@@ -214,9 +218,9 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).not.toMatch(/type Subscription/);
   });
 
-  it('declares exactly 9 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold)', () => {
+  it('declares exactly 10 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(9);
+    expect(ourFunctions(template)).toHaveLength(10);
   });
 
   it('declares the health Lambda outside the VPC, on the Node.js 24 runtime', () => {
@@ -229,10 +233,10 @@ describe('ApiStack', () => {
     expect(healthFn.Properties.Runtime).toBe('nodejs24.x');
   });
 
-  it('declares 8 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 9 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(8);
+    expect(vpcFunctions).toHaveLength(9);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -244,7 +248,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(8);
+    expect(vpcFunctions).toHaveLength(9);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -352,9 +356,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 9 AppSync Lambda data sources', () => {
+  it('declares exactly 10 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 9);
+    template.resourceCountIs('AWS::AppSync::DataSource', 10);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -438,9 +442,18 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 9 resolvers total', () => {
+  it('declares a resolver for Query.household', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 9);
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Query',
+      FieldName: 'household',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares exactly 10 resolvers total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::Resolver', 10);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

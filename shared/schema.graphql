@@ -30,6 +30,17 @@ type Query {
   depth (a single flat resolver on `me` cannot terminate that cycle).
   """
   me: User!
+
+  """
+  Returns a single household, fully hydrated with its settings and every
+  member. Exists because `me { households { household { members } } }`
+  deliberately returns each membership's household with an empty `members`
+  list (a recursion cutoff, not a bug) — the Members list screen and any
+  poll-based refresh need this instead. Any member may read; a non-member
+  or a nonexistent householdId both deny identically (never an existence
+  oracle).
+  """
+  household(householdId: ID!): Household!
 }
 
 type Mutation {
