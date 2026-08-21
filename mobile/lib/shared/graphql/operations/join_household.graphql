@@ -1,0 +1,25 @@
+#import "./household_fields.graphql"
+
+# `Mutation.joinHousehold` — joins the caller to a household by invite code,
+# as a `member`.
+#
+# The full `Household` shape is requested because **this response is the only
+# thing the client will ever know about the household before it is inside it**.
+# The schema has no "preview a household by invite code" query — deliberately,
+# since that would be an unauthenticated oracle over other people's
+# households — so screen 3.2's summary line ("4 members · veg · North + South
+# Indian") can only be built from this payload, after the join. See
+# `presentation/join/confirm_join_screen.dart` for the full design note.
+#
+# Idempotent server-side: re-joining a household the caller already belongs to
+# succeeds without a second membership row, and returns the same household.
+#
+# Three failures are specific to this mutation and all three are rendered
+# differently: `HOUSEHOLD_FULL` (the 5-member cap — routes to its own screen),
+# `NOT_FOUND` (no household has that code) and `RATE_LIMITED` (too many
+# guesses today).
+mutation JoinHousehold($inviteCode: String!) {
+  joinHousehold(inviteCode: $inviteCode) {
+    ...HouseholdFields
+  }
+}

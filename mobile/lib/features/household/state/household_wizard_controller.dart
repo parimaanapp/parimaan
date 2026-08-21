@@ -9,6 +9,7 @@ import '../domain/household_settings_patch.dart';
 import '../domain/meal_structure.dart';
 import '../domain/meal_type.dart';
 import 'household_wizard_data.dart';
+import 'household_wizard_hydration.dart';
 
 export 'household_wizard_data.dart';
 
@@ -81,6 +82,23 @@ class HouseholdWizardController extends AsyncNotifier<HouseholdWizardData> {
   /// between the two.
   void adoptHousehold(Household household) =>
       _updateDraft((HouseholdWizardData d) => d.copyWith(household: household));
+
+  /// Replaces the whole draft with [household]'s **stored** settings.
+  ///
+  /// The Settings edit flow's entry point, and the mirror image of
+  /// [adoptHousehold]: that one keeps the in-progress draft and attaches a
+  /// household to it, this one throws the draft away and rebuilds it from the
+  /// server's row.
+  ///
+  /// Replacing rather than merging is required, not merely simpler. Every
+  /// patch this controller sends is a **whole-list replacement** — see
+  /// `HouseholdSettingsPatch.meals` and friends — so a draft holding wizard
+  /// defaults for the five fields the user did not come here to edit would
+  /// silently reset them the moment Save was pressed on the sixth.
+  ///
+  /// Decoding is defensive throughout; see `household_wizard_hydration.dart`.
+  void hydrateFrom(Household household) => state =
+      AsyncData<HouseholdWizardData>(wizardDataFromHousehold(household));
 
   // ── Screen 2.2 — which meals ──────────────────────────────────────────────
 

@@ -1,0 +1,18 @@
+#import "./household_fields.graphql"
+
+# `Mutation.rotateInviteCode` — replaces a household's invite code with a
+# freshly-generated one.
+#
+# Returns the whole household rather than just the new code: the screens that
+# rotate (Settings → Members, and the invite-code screen) are already rendering
+# a household, and re-selecting it here means the rotation and the member list
+# can never be one round trip out of step.
+#
+# **NOT idempotent.** Each successful call invalidates the previous code for
+# everyone already holding it, which is why the UI confirms before calling and
+# why the server rate-limits this more tightly than `joinHousehold`.
+mutation RotateInviteCode($householdId: ID!) {
+  rotateInviteCode(householdId: $householdId) {
+    ...HouseholdFields
+  }
+}

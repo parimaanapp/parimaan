@@ -10,6 +10,7 @@ import '../../../../shared/ui/typography.dart';
 import '../../domain/cuisine_taxonomy.dart';
 import '../../state/household_wizard_controller.dart';
 import 'wizard_error_copy.dart';
+import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
 import 'wizard_step_submit.dart';
 
@@ -25,7 +26,15 @@ import 'wizard_step_submit.dart';
 /// invented) — so a household that picked only those sees the empty state
 /// below rather than a blank screen.
 class CuisineSubBiasScreen extends ConsumerWidget {
-  const CuisineSubBiasScreen({super.key});
+  const CuisineSubBiasScreen({
+    super.key,
+    this.flow = const WizardFlowContext.create(),
+  });
+
+  /// Whether this screen is a wizard step or a Settings edit. See
+  /// `wizard_flow.dart` — defaults to the create wizard, so the wizard's
+  /// own routes are unchanged.
+  final WizardFlowContext flow;
 
   static const Key continueButtonKey = Key('cuisine-bias-continue');
   static const Key emptyStateKey = Key('cuisine-bias-empty');
@@ -46,15 +55,19 @@ class CuisineSubBiasScreen extends ConsumerWidget {
     final bool isBusy = state.isLoading;
 
     return WizardStepScaffold(
-      stepIndicator: stepIndicator,
+      stepIndicator: flow.stepIndicator(stepIndicator),
       heading: heading,
       hint: hint,
-      onBack: () => context.go(AppRoutes.createHouseholdCuisine),
-      backSemanticLabel: 'Back to the cuisine regions',
+      onBack: () => context.go(
+        flow.backDestination(whenCreating: AppRoutes.createHouseholdCuisine),
+      ),
+      backSemanticLabel: flow.backSemanticLabel(
+        whenCreating: 'Back to the cuisine regions',
+      ),
       errorMessage: wizardErrorMessage(state.error),
       action: PButton(
         key: continueButtonKey,
-        label: 'Continue',
+        label: flow.actionLabel,
         isLoading: isBusy,
         expand: true,
         onPressed: draft == null
@@ -64,7 +77,9 @@ class CuisineSubBiasScreen extends ConsumerWidget {
                 context: context,
                 submit: (HouseholdWizardController c) =>
                     c.submitCuisineSubAndBias(),
-                nextRoute: AppRoutes.createHouseholdDietary,
+                nextRoute: flow.destination(
+                  whenCreating: AppRoutes.createHouseholdDietary,
+                ),
               ),
       ),
       children: draft == null

@@ -1,0 +1,18 @@
+#import "./household_fields.graphql"
+
+# `Query.household` — one household, fully hydrated with settings and every
+# member.
+#
+# Exists because `me { households { household { members } } }` deliberately
+# returns each membership's household with an **empty** `members` list (a
+# recursion cutoff, not a bug — see `api/src/mappers/household.ts`). The
+# Members list screen and `HouseholdSyncPolicy`'s poll both need the real
+# membership list, so they read this instead.
+#
+# Any member may read. A non-member and a nonexistent `householdId` deny
+# identically, so this is never an existence oracle.
+query Household($householdId: ID!) {
+  household(householdId: $householdId) {
+    ...HouseholdFields
+  }
+}

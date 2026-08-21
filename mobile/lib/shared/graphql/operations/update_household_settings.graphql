@@ -1,3 +1,5 @@
+#import "./household_fields.graphql"
+
 # `Mutation.updateHouseholdSettings` — applies a PARTIAL patch to one
 # household's settings.
 #
@@ -12,23 +14,13 @@
 # Unlike `create_household.graphql` this selects only `HouseholdSettings` —
 # that is the mutation's whole return type. Nothing about the household's
 # identity, invite code or membership can change through this path, so there
-# is no wider shape to re-fetch.
-#
-# `mealStructure` and `cuisineTier2Weights` are `AWSJSON`: JSON **strings** on
-# the wire in both directions, never nested objects. `build.yaml` maps the
-# scalar to Dart `String` for exactly that reason.
+# is no wider shape to re-fetch. It shares `HouseholdSettingsFields` with
+# `HouseholdFields`, which is exactly why that fragment is split out from it.
 mutation UpdateHouseholdSettings(
   $householdId: ID!
   $input: HouseholdSettingsInput!
 ) {
   updateHouseholdSettings(householdId: $householdId, input: $input) {
-    householdId
-    mealsEnabled
-    mealStructure
-    cuisineTier1
-    cuisineTier2Weights
-    dietaryTags
-    allergens
-    skipIngredients
+    ...HouseholdSettingsFields
   }
 }

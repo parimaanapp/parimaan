@@ -1,8 +1,7 @@
 import 'package:built_collection/built_collection.dart';
 
 import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
-import '../../../shared/graphql/operations/__generated__/create_household.data.gql.dart';
-import '../../../shared/graphql/operations/__generated__/update_household_settings.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/household_fields.data.gql.dart';
 import '../domain/cuisine_taxonomy.dart';
 import '../domain/dietary_tag.dart';
 import '../domain/household.dart';
@@ -33,42 +32,36 @@ import '../domain/meal_type.dart';
 /// so it is establishing the pattern rather than following one. The precedent
 /// it does follow is `auth_session.dart`'s: degrade a field, never fail the
 /// whole object.
-Household householdFromGraphQL(GCreateHouseholdData_createHousehold data) =>
-    Household(
-      id: data.id,
-      name: data.name,
-      inviteCode: data.inviteCode,
-      primaryUserId: data.primaryUserId,
-      subscriptionStatus: subscriptionStatusFromGraphQL(
-        data.subscriptionStatus,
-      ),
-      settings: _settingsFromGraphQL(data.settings),
-      members: data.members.map(_membershipFromGraphQL).toList(growable: false),
-    );
-
-HouseholdSettings _settingsFromGraphQL(
-  GCreateHouseholdData_createHousehold_settings settings,
-) => HouseholdSettings(
-  householdId: settings.householdId,
-  mealsEnabled: settings.mealsEnabled
-      .map((GMealType value) => value.name)
-      .toList(growable: false),
-  // `AWSJSON` — already a JSON string on the wire, kept as one. See
-  // `HouseholdSettings`' class doc and `api/src/mappers/household.ts`.
-  mealStructureJson: settings.mealStructure,
-  cuisineTier1: settings.cuisineTier1
-      .map((GCuisineTier1 value) => value.name)
-      .toList(growable: false),
-  cuisineTier2WeightsJson: settings.cuisineTier2Weights,
-  dietaryTags: settings.dietaryTags
-      .map((GDietaryTag value) => value.name)
-      .toList(growable: false),
-  allergens: settings.allergens.toList(growable: false),
-  skipIngredients: settings.skipIngredients.toList(growable: false),
+///
+/// ## One mapper for four operations
+///
+/// The parameter type is the **fragment** interface `GHouseholdFields`, not
+/// any one operation's data class. `createHousehold`, `joinHousehold`,
+/// `rotateInviteCode` and `Query.household` all spread
+/// `...HouseholdFields`, and ferry makes each of their generated data classes
+/// `implements GHouseholdFields` — so all four map through this single
+/// function.
+///
+/// That is a change from the previous shape, which took
+/// `GCreateHouseholdData_createHousehold` directly and had a hand-duplicated
+/// twin for `updateHouseholdSettings` (this file's own comment called that
+/// duplication deliberate-but-unhappy, because ferry generates a
+/// *structurally identical but nominally distinct* class per operation and
+/// there was no shared supertype to program against). A fragment **is** that
+/// shared supertype, so the duplication is now gone rather than merely
+/// justified.
+Household householdFromGraphQL(GHouseholdFields data) => Household(
+  id: data.id,
+  name: data.name,
+  inviteCode: data.inviteCode,
+  primaryUserId: data.primaryUserId,
+  subscriptionStatus: subscriptionStatusFromGraphQL(data.subscriptionStatus),
+  settings: householdSettingsFromGraphQL(data.settings),
+  members: data.members.map(_membershipFromGraphQL).toList(growable: false),
 );
 
 HouseholdMembership _membershipFromGraphQL(
-  GCreateHouseholdData_createHousehold_members membership,
+  GHouseholdFields_members membership,
 ) => HouseholdMembership(
   id: membership.id,
   role: householdRoleFromGraphQL(membership.role),
@@ -103,21 +96,23 @@ SubscriptionStatus subscriptionStatusFromGraphQL(GSubscriptionStatus status) =>
       _ => SubscriptionStatus.unknown,
     };
 
-/// Maps the `UpdateHouseholdSettings` payload to the domain [HouseholdSettings].
+/// Maps any `HouseholdSettings` payload to the domain [HouseholdSettings].
 ///
-/// A second function rather than a reuse of `_settingsFromGraphQL`: ferry
-/// generates a *structurally identical but nominally distinct* data class per
-/// operation, and there is no shared supertype to program against. Making
-/// `_settingsFromGraphQL` generic would mean accepting `dynamic` and losing
-/// exactly the compile-time coupling this file exists to provide, so the
-/// duplication is deliberate and confined to this one boundary file.
+/// Takes the `HouseholdSettingsFields` fragment interface, so the one function
+/// serves both consumers: `updateHouseholdSettings` (which returns
+/// `HouseholdSettings!` on its own) and the `settings` field nested inside
+/// `HouseholdFields`. That is precisely why the settings selection is a
+/// fragment of its own rather than inlined into `HouseholdFields`.
 ///
 /// `mealsEnabled` / `cuisineTier1` / `dietaryTags` are carried through as the
 /// server's own enum value **names**, per `HouseholdSettings`' class doc —
 /// including `gUnknownEnumValue`'s name for a value this build predates, which
 /// degrades one list entry instead of failing the whole response.
+///
+/// The two `AWSJSON` fields stay raw JSON strings. See [HouseholdSettings]'
+/// class doc and `api/src/mappers/household.ts`.
 HouseholdSettings householdSettingsFromGraphQL(
-  GUpdateHouseholdSettingsData_updateHouseholdSettings settings,
+  GHouseholdSettingsFields settings,
 ) => HouseholdSettings(
   householdId: settings.householdId,
   mealsEnabled: settings.mealsEnabled
