@@ -11,6 +11,7 @@ import '../../domain/meal_structure.dart';
 import '../../state/household_wizard_controller.dart';
 import 'slot_stepper.dart';
 import 'wizard_error_copy.dart';
+import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
 import 'wizard_step_submit.dart';
 
@@ -21,7 +22,15 @@ import 'wizard_step_submit.dart';
 /// patch this builds carries exactly one `lunch` key — see
 /// `LunchMealStructure`'s doc.
 class MealStructureScreen extends ConsumerWidget {
-  const MealStructureScreen({super.key});
+  const MealStructureScreen({
+    super.key,
+    this.flow = const WizardFlowContext.create(),
+  });
+
+  /// Whether this screen is a wizard step or a Settings edit. See
+  /// `wizard_flow.dart` — defaults to the create wizard, so the wizard's
+  /// own routes are unchanged.
+  final WizardFlowContext flow;
 
   static const Key continueButtonKey = Key('meal-structure-continue');
 
@@ -47,15 +56,19 @@ class MealStructureScreen extends ConsumerWidget {
         draft?.lunchStructure ?? LunchMealStructure.defaults;
 
     return WizardStepScaffold(
-      stepIndicator: stepIndicator,
+      stepIndicator: flow.stepIndicator(stepIndicator),
       heading: heading,
       hint: hint,
-      onBack: () => context.go(AppRoutes.createHouseholdMeals),
-      backSemanticLabel: 'Back to which meals to plan',
+      onBack: () => context.go(
+        flow.backDestination(whenCreating: AppRoutes.createHouseholdMeals),
+      ),
+      backSemanticLabel: flow.backSemanticLabel(
+        whenCreating: 'Back to which meals to plan',
+      ),
       errorMessage: wizardErrorMessage(state.error),
       action: PButton(
         key: continueButtonKey,
-        label: 'Continue',
+        label: flow.actionLabel,
         isLoading: isBusy,
         expand: true,
         onPressed: draft == null
@@ -65,7 +78,9 @@ class MealStructureScreen extends ConsumerWidget {
                 context: context,
                 submit: (HouseholdWizardController c) =>
                     c.submitMealStructure(),
-                nextRoute: AppRoutes.createHouseholdCuisine,
+                nextRoute: flow.destination(
+                  whenCreating: AppRoutes.createHouseholdCuisine,
+                ),
               ),
       ),
       children: <Widget>[

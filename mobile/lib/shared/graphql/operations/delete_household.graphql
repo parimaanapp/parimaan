@@ -1,0 +1,13 @@
+# `Mutation.deleteHousehold` — permanently deletes a household with its
+# memberships and settings. Primary-only, irreversible.
+#
+# `confirmationName` must match the household's current `name` **exactly** —
+# case-sensitive, no trimming, no normalisation (`api/src/resolvers/
+# deleteHousehold.ts` compares with `!==` against the stored name). The client
+# therefore sends the user's typed string byte-for-byte: trimming or
+# lower-casing it here could turn a legitimate exact match into a `VALIDATION`
+# failure, or — worse — turn a genuine mismatch into a match the user did not
+# actually type.
+mutation DeleteHousehold($householdId: ID!, $confirmationName: String!) {
+  deleteHousehold(householdId: $householdId, confirmationName: $confirmationName)
+}

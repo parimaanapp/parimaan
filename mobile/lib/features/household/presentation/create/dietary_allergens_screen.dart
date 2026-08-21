@@ -8,6 +8,7 @@ import '../../../../shared/ui/spacing.dart';
 import '../../domain/dietary_tag.dart';
 import '../../state/household_wizard_controller.dart';
 import 'wizard_error_copy.dart';
+import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
 import 'wizard_step_submit.dart';
 
@@ -23,7 +24,15 @@ import 'wizard_step_submit.dart';
 /// (`[String!]`, no enum server-side), which is why they get an input and
 /// removable chips rather than a fixed chip set.
 class DietaryAllergensScreen extends ConsumerStatefulWidget {
-  const DietaryAllergensScreen({super.key});
+  const DietaryAllergensScreen({
+    super.key,
+    this.flow = const WizardFlowContext.create(),
+  });
+
+  /// Whether this screen is a wizard step or a Settings edit. See
+  /// `wizard_flow.dart` — defaults to the create wizard, so the wizard's
+  /// own routes are unchanged.
+  final WizardFlowContext flow;
 
   static const Key finishButtonKey = Key('dietary-finish');
   static const Key allergenFieldKey = Key('dietary-allergen-field');
@@ -85,13 +94,23 @@ class _DietaryAllergensScreenState
     final bool isBusy = state.isLoading;
 
     return WizardStepScaffold(
-      stepIndicator: DietaryAllergensScreen.stepIndicator,
-      onBack: () => context.go(AppRoutes.createHouseholdCuisineBias),
-      backSemanticLabel: 'Back to the sub-cuisine mix',
+      stepIndicator: widget.flow.stepIndicator(
+        DietaryAllergensScreen.stepIndicator,
+      ),
+      onBack: () => context.go(
+        widget.flow.backDestination(
+          whenCreating: AppRoutes.createHouseholdCuisineBias,
+        ),
+      ),
+      backSemanticLabel: widget.flow.backSemanticLabel(
+        whenCreating: 'Back to the sub-cuisine mix',
+      ),
       errorMessage: wizardErrorMessage(state.error),
       action: PButton(
         key: DietaryAllergensScreen.finishButtonKey,
-        label: DietaryAllergensScreen.finishLabel,
+        label: widget.flow.isEditing
+            ? widget.flow.actionLabel
+            : DietaryAllergensScreen.finishLabel,
         isLoading: isBusy,
         expand: true,
         onPressed: draft == null
@@ -101,7 +120,9 @@ class _DietaryAllergensScreenState
                 context: context,
                 submit: (HouseholdWizardController c) =>
                     c.submitDietaryAndAllergens(),
-                nextRoute: AppRoutes.createHouseholdInvite,
+                nextRoute: widget.flow.destination(
+                  whenCreating: AppRoutes.createHouseholdInvite,
+                ),
               ),
       ),
       children: <Widget>[

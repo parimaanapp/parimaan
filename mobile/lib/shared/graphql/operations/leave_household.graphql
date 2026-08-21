@@ -1,0 +1,16 @@
+# `Mutation.leaveHousehold` — removes the caller's own membership.
+#
+# Returns a bare `Boolean!`, and there is nothing else to select: the household
+# the caller just left is, by definition, no longer readable by them.
+#
+# Idempotent and deliberately un-gated server-side — a caller who is not (or is
+# no longer) a member gets `true` rather than a denial, since "not a member" is
+# exactly the state this mutation asks for. A nonexistent `householdId` is
+# indistinguishable from that and equally successful.
+#
+# The one refusal is the **primary** leaving (`FORBIDDEN`) — in MVP the only
+# exit for a primary is `deleteHousehold`. The Settings hub does not offer the
+# affordance at all to a primary rather than offering one guaranteed to fail.
+mutation LeaveHousehold($householdId: ID!) {
+  leaveHousehold(householdId: $householdId)
+}

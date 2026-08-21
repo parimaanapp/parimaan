@@ -1,3 +1,5 @@
+#import "./household_fields.graphql"
+
 # `Mutation.createHousehold` — creates a household with the caller as its
 # `primary` member, default settings, and a generated invite code.
 #
@@ -6,36 +8,11 @@
 # both, and a second round trip against a cold Aurora Serverless v2 instance is
 # the one thing worth avoiding here.
 #
-# `members[].household` is deliberately NOT expanded — see `me.graphql`'s note
-# on the `User <-> Membership <-> Household` cycle and the server's empty-list
-# recursion cutoff.
+# The selection set moved into the shared `HouseholdFields` fragment when
+# `joinHousehold` / `rotateInviteCode` / `Query.household` landed — see that
+# file for why. Nothing about what is requested changed.
 mutation CreateHousehold($name: String!) {
   createHousehold(name: $name) {
-    id
-    name
-    inviteCode
-    primaryUserId
-    subscriptionStatus
-    settings {
-      householdId
-      mealsEnabled
-      mealStructure
-      cuisineTier1
-      cuisineTier2Weights
-      dietaryTags
-      allergens
-      skipIngredients
-    }
-    members {
-      id
-      role
-      joinedAt
-      user {
-        id
-        email
-        displayName
-        avatarUrl
-      }
-    }
+    ...HouseholdFields
   }
 }

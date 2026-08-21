@@ -10,6 +10,7 @@ import '../../../../shared/ui/typography.dart';
 import '../../domain/cuisine_taxonomy.dart';
 import '../../state/household_wizard_controller.dart';
 import 'wizard_error_copy.dart';
+import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
 import 'wizard_step_submit.dart';
 
@@ -19,7 +20,15 @@ import 'wizard_step_submit.dart';
 /// sixth, **East**, which is not a schema enum value and therefore has no chip
 /// here — see `CuisineRegion`'s doc for the full reasoning.
 class CuisineRegionsScreen extends ConsumerWidget {
-  const CuisineRegionsScreen({super.key});
+  const CuisineRegionsScreen({
+    super.key,
+    this.flow = const WizardFlowContext.create(),
+  });
+
+  /// Whether this screen is a wizard step or a Settings edit. See
+  /// `wizard_flow.dart` — defaults to the create wizard, so the wizard's
+  /// own routes are unchanged.
+  final WizardFlowContext flow;
 
   static const Key continueButtonKey = Key('cuisine-regions-continue');
 
@@ -45,15 +54,19 @@ class CuisineRegionsScreen extends ConsumerWidget {
     final bool isBusy = state.isLoading;
 
     return WizardStepScaffold(
-      stepIndicator: stepIndicator,
+      stepIndicator: flow.stepIndicator(stepIndicator),
       heading: heading,
       hint: hint,
-      onBack: () => context.go(AppRoutes.createHouseholdStructure),
-      backSemanticLabel: 'Back to the lunch structure',
+      onBack: () => context.go(
+        flow.backDestination(whenCreating: AppRoutes.createHouseholdStructure),
+      ),
+      backSemanticLabel: flow.backSemanticLabel(
+        whenCreating: 'Back to the lunch structure',
+      ),
       errorMessage: wizardErrorMessage(state.error),
       action: PButton(
         key: continueButtonKey,
-        label: 'Continue',
+        label: flow.actionLabel,
         isLoading: isBusy,
         expand: true,
         onPressed: draft == null
@@ -63,7 +76,9 @@ class CuisineRegionsScreen extends ConsumerWidget {
                 context: context,
                 submit: (HouseholdWizardController c) =>
                     c.submitCuisineRegions(),
-                nextRoute: AppRoutes.createHouseholdCuisineBias,
+                nextRoute: flow.destination(
+                  whenCreating: AppRoutes.createHouseholdCuisineBias,
+                ),
               ),
       ),
       children: <Widget>[

@@ -6,7 +6,9 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
+import 'package:mobile/features/household/presentation/join/enter_code_screen.dart';
 import 'package:mobile/features/onboarding/presentation/first_run_choose_path_screen.dart';
+import 'package:mobile/shared/ui/components/components.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../../../support/fake_auth_repository.dart';
@@ -96,7 +98,11 @@ void main() {
       expect(_location(subject.router), AppRoutes.joinHousehold);
     });
 
-    testWidgets('the join route is an explicit not-built-yet state', (
+    // The join route used to be a "coming soon" placeholder. It is now the
+    // real Enter-code screen (wireframe 3.1), so these two tests assert the
+    // same two properties — the route renders its screen, and it has a way
+    // back — against the screen that actually shipped.
+    testWidgets('the join route renders the invite-code entry', (
       WidgetTester tester,
     ) async {
       final subject = await _pumpScreen(tester);
@@ -104,17 +110,18 @@ void main() {
       subject.router.go(AppRoutes.joinHousehold);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(JoinHouseholdComingSoonScreen.bodyKey), findsOne);
+      expect(find.text(EnterCodeScreen.heading), findsOne);
+      expect(find.byKey(EnterCodeScreen.joinButtonKey), findsOne);
     });
 
-    testWidgets('the join placeholder can get back to the chooser', (
+    testWidgets('the join screen can get back to the chooser', (
       WidgetTester tester,
     ) async {
       final subject = await _pumpScreen(tester);
       subject.router.go(AppRoutes.joinHousehold);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Go back'));
+      await tester.tap(find.byType(PTopBarBackButton));
       await tester.pumpAndSettle();
 
       expect(_location(subject.router), AppRoutes.firstRun);

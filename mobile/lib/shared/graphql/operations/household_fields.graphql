@@ -1,0 +1,60 @@
+# The one canonical `Household` selection set, shared by every operation that
+# returns a whole household.
+#
+# Four operations now return `Household!` — `createHousehold`, `joinHousehold`,
+# `rotateInviteCode` and `Query.household`. Written out longhand that would be
+# four byte-identical 25-line selection sets and, worse, four *nominally
+# distinct* generated data classes, forcing four structurally identical mapper
+# functions in `household_mapper.dart` (that file's own comment already names
+# this duplication as deliberate-but-unhappy for the two operations that
+# existed before this slice).
+#
+# A fragment fixes both halves: one selection set to keep in sync, and one
+# generated `GHouseholdFieldsData` interface that every operation's data class
+# implements — so `householdFromGraphQL` takes the fragment type and there is
+# exactly one mapper for all four.
+#
+# `members[].household` is deliberately NOT expanded — see `me.graphql`'s note
+# on the `User <-> Membership <-> Household` cycle and the server's empty-list
+# recursion cutoff.
+fragment HouseholdFields on Household {
+  id
+  name
+  inviteCode
+  primaryUserId
+  subscriptionStatus
+  settings {
+    ...HouseholdSettingsFields
+  }
+  members {
+    id
+    role
+    joinedAt
+    user {
+      id
+      email
+      displayName
+      avatarUrl
+    }
+  }
+}
+
+# The whole `HouseholdSettings` row.
+#
+# Split out from `HouseholdFields` because `updateHouseholdSettings` returns
+# `HouseholdSettings!` on its own — that mutation has no household around it,
+# so it needs this half and only this half.
+#
+# `mealStructure` and `cuisineTier2Weights` are `AWSJSON`: JSON **strings** on
+# the wire in both directions, never nested objects. `build.yaml` maps the
+# scalar to Dart `String` for exactly that reason.
+fragment HouseholdSettingsFields on HouseholdSettings {
+  householdId
+  mealsEnabled
+  mealStructure
+  cuisineTier1
+  cuisineTier2Weights
+  dietaryTags
+  allergens
+  skipIngredients
+}

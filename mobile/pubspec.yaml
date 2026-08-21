@@ -45,6 +45,13 @@ dependencies:
   gql_exec: ^1.1.1-alpha+1699813812660
   built_value: ^8.12.7
   built_collection: ^5.1.1
+  # Delivers the `parimaan://join?code=XXXXXX` invite deep link. Chosen over
+  # `uni_links` (unmaintained since 2023) and over a hand-rolled platform
+  # channel: this is one plugin for two platforms' link plumbing, and hand-
+  # rolling it would be more native code to maintain for no behavioural gain.
+  # The link payload is untrusted input — `join_deep_link.dart` validates its
+  # shape and NEVER auto-joins; see that file.
+  app_links: ^6.4.0
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +65,11 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   mocktail: ^1.0.5
   alchemist: ^0.14.0
+  # `HouseholdSyncPolicy` is timer-driven, and a poll cadence tested with real
+  # `Future.delayed`s would make the suite take minutes and be flaky. Declared
+  # explicitly rather than relied on as a `flutter_test` transitive, per
+  # `depend_on_referenced_packages`.
+  fake_async: ^1.3.1
   build_runner: ^2.15.1
   ferry_generator: ^0.12.0+5
   built_value_generator: ^8.12.5

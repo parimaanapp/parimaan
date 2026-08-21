@@ -13,7 +13,21 @@ import '../features/household/presentation/create/invite_code_screen.dart';
 import '../features/household/presentation/create/meal_structure_screen.dart';
 import '../features/household/presentation/create/name_household_screen.dart';
 import '../features/household/presentation/create/which_meals_screen.dart';
+import '../features/household/presentation/create/wizard_flow.dart';
+import '../features/household/presentation/join/confirm_join_screen.dart';
+import '../features/household/presentation/join/enter_code_screen.dart';
+import '../features/household/presentation/join/household_full_screen.dart';
+import '../features/household/presentation/settings/household_edit_entry.dart';
+import '../features/household/presentation/settings/members_list_screen.dart';
+import '../features/household/presentation/settings/settings_hub_screen.dart';
+import '../features/household/presentation/settings/settings_placeholder_screen.dart';
+import '../features/household/state/current_household_controller.dart';
+import '../features/household/state/pending_join_code_controller.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
+import '../features/household/domain/household.dart';
+import '../shared/ui/colors.dart';
+import '../shared/ui/components/components.dart';
+import '../shared/ui/spacing.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
 abstract final class AppRoutes {
@@ -23,11 +37,23 @@ abstract final class AppRoutes {
   /// The post-sign-in landing screen: create a household, or join one.
   static const String firstRun = '/first-run';
 
-  /// Stub destination for the join flow, which is a later slice. It is a real
-  /// route rather than a dead button so the guard covers it and swapping in
-  /// the real screen is a one-line change — see
-  /// [JoinHouseholdComingSoonScreen].
+  // ── The join flow (wireframe flow 3) ──────────────────────────────────────
+
+  /// Wireframe 3.1 — the six-box invite code entry. Also where a
+  /// `parimaan://join?code=` deep link lands, with the code prefilled and an
+  /// explicit tap still required — but the code itself is carried by
+  /// `pendingJoinCodeControllerProvider`, not this route's URL. The redirect
+  /// that resumes a deep link after a sign-in bounce lives in `_redirect`
+  /// below, inside its already-signed-in branch; see that provider's own doc
+  /// comment for the full mechanism.
   static const String joinHousehold = '/join';
+
+  /// Wireframe 3.2 — the post-join confirmation. See `EnterCodeScreen`'s doc
+  /// for why the join has already happened by the time this renders.
+  static const String joinConfirm = '/join/confirm';
+
+  /// Wireframe 3.3 — the 5-member cap.
+  static const String joinHouseholdFull = '/join/full';
 
   // ── The household setup wizard (wireframe flow 2) ────────────────────────
   //
@@ -65,6 +91,52 @@ abstract final class AppRoutes {
   /// Wireframe 2.7 — the invite code, shown once setup finishes.
   static const String createHouseholdInvite = '/household/create/invite';
 
+  // ── Settings (wireframe flow 4) ───────────────────────────────────────────
+  //
+  // Household-scoped and therefore parameterised by id, unlike the wizard's
+  // flat paths: `CurrentHouseholdController` is a family keyed on the id, and
+  // putting the id in the path is what makes these screens addressable and
+  // testable without any ambient "which household am I in" state.
+
+  /// The path pattern go_router matches. [settingsHub] builds a concrete one.
+  static const String settingsHubPattern = '/household/:householdId/settings';
+  static const String membersPattern = '/household/:householdId/members';
+  static const String settingsNotificationsPattern =
+      '/household/:householdId/settings/notifications';
+  static const String settingsAboutPattern =
+      '/household/:householdId/settings/about';
+
+  /// The four Settings rows that reuse the wizard's own screens in edit mode.
+  /// See `presentation/create/wizard_flow.dart`.
+  static const String editMealStructurePattern =
+      '/household/:householdId/settings/meal-structure';
+  static const String editCuisinePattern =
+      '/household/:householdId/settings/cuisine';
+  static const String editCuisineBiasPattern =
+      '/household/:householdId/settings/cuisine-bias';
+  static const String editDietaryPattern =
+      '/household/:householdId/settings/dietary';
+
+  /// The path parameter every settings route carries.
+  static const String householdIdParameter = 'householdId';
+
+  static String settingsHub(String householdId) =>
+      '/household/$householdId/settings';
+  static String members(String householdId) =>
+      '/household/$householdId/members';
+  static String settingsNotifications(String householdId) =>
+      '/household/$householdId/settings/notifications';
+  static String settingsAbout(String householdId) =>
+      '/household/$householdId/settings/about';
+  static String editMealStructure(String householdId) =>
+      '/household/$householdId/settings/meal-structure';
+  static String editCuisine(String householdId) =>
+      '/household/$householdId/settings/cuisine';
+  static String editCuisineBias(String householdId) =>
+      '/household/$householdId/settings/cuisine-bias';
+  static String editDietary(String householdId) =>
+      '/household/$householdId/settings/dietary';
+
   static const String home = '/home';
 }
 
@@ -84,6 +156,14 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
     authControllerProvider,
     (AsyncValue<AuthSession>? _, AsyncValue<AuthSession> _) => refresh.value++,
     fireImmediately: true,
+  );
+
+  // A pending deep-linked invite code also has to re-run the guard: it arrives
+  // asynchronously, possibly while the user is sitting on /sign-in, and the
+  // resume in `_redirect` cannot fire without a refresh to trigger it.
+  ref.listen<String?>(
+    pendingJoinCodeControllerProvider,
+    (String? _, String? _) => refresh.value++,
   );
 
   final GoRouter router = GoRouter(
@@ -110,7 +190,17 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.joinHousehold,
         builder: (BuildContext context, GoRouterState state) =>
-            const JoinHouseholdComingSoonScreen(),
+            const EnterCodeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.joinConfirm,
+        builder: (BuildContext context, GoRouterState state) =>
+            const ConfirmJoinScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.joinHouseholdFull,
+        builder: (BuildContext context, GoRouterState state) =>
+            const HouseholdFullScreen(),
       ),
       GoRoute(
         path: AppRoutes.createHouseholdName,
@@ -148,6 +238,67 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             const InviteCodeScreen(),
       ),
       GoRoute(
+        path: AppRoutes.settingsHubPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            SettingsHubScreen(householdId: _householdId(state)),
+      ),
+      GoRoute(
+        path: AppRoutes.membersPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            MembersListScreen(householdId: _householdId(state)),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsNotificationsPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            SettingsPlaceholderScreen.notifications(
+              householdId: _householdId(state),
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsAboutPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            SettingsPlaceholderScreen.about(householdId: _householdId(state)),
+      ),
+      // The four edit routes. Each is the *same widget* the create wizard
+      // renders, wrapped in the entry point that loads the household and seeds
+      // the draft from it. See `household_edit_entry.dart`.
+      GoRoute(
+        path: AppRoutes.editMealStructurePattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            HouseholdEditEntry(
+              householdId: _householdId(state),
+              builder: (WizardFlowContext flow) =>
+                  MealStructureScreen(flow: flow),
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.editCuisinePattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            HouseholdEditEntry(
+              householdId: _householdId(state),
+              builder: (WizardFlowContext flow) =>
+                  CuisineRegionsScreen(flow: flow),
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.editCuisineBiasPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            HouseholdEditEntry(
+              householdId: _householdId(state),
+              builder: (WizardFlowContext flow) =>
+                  CuisineSubBiasScreen(flow: flow),
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.editDietaryPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            HouseholdEditEntry(
+              householdId: _householdId(state),
+              builder: (WizardFlowContext flow) =>
+                  DietaryAllergensScreen(flow: flow),
+            ),
+      ),
+      GoRoute(
         path: AppRoutes.home,
         builder: (BuildContext context, GoRouterState state) =>
             const _HomePlaceholderScreen(),
@@ -157,6 +308,15 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// The `:householdId` path parameter, or the empty string.
+///
+/// Empty rather than a throw: an id-less settings URL is a malformed deep link,
+/// and the screens already render an honest "could not load this household"
+/// state for an id the server rejects. Crashing the route builder would turn a
+/// bad link into a redscreen.
+String _householdId(GoRouterState state) =>
+    state.pathParameters[AppRoutes.householdIdParameter] ?? '';
 
 /// Returns the path to move to, or `null` to stay put.
 ///
@@ -177,6 +337,24 @@ String? _redirect(Ref ref, GoRouterState state) {
   final bool isSignedIn = auth.valueOrNull?.isSignedIn ?? false;
 
   if (isSignedIn) {
+    // A deep-linked invite code that was interrupted by the sign-in bounce
+    // resumes here, and *only* here — after authentication has already been
+    // established by the branch above. This is deliberately a resume, not a
+    // bypass: an unauthenticated deep link still falls through to the signed-
+    // out branch below and still lands on /sign-in, exactly as before. The
+    // code survives that bounce because it lives in
+    // `pendingJoinCodeControllerProvider` rather than in the URL — see that
+    // class's doc.
+    //
+    // `read`, not `take`: the code is consumed by `EnterCodeScreen` when it
+    // prefills the field. Consuming it here would clear it before the screen
+    // that needs it has been built.
+    final bool hasPendingCode =
+        ref.read(pendingJoinCodeControllerProvider) != null;
+    if (hasPendingCode && location != AppRoutes.joinHousehold) {
+      return AppRoutes.joinHousehold;
+    }
+
     // A signed-in user arriving from splash or bouncing off /sign-in lands on
     // the first-run screen, not /home. Note this is *unconditional* for now:
     // deciding whether the user already has a household needs `Query.me`, and
@@ -185,9 +363,8 @@ String? _redirect(Ref ref, GoRouterState state) {
     // slice that adds a `me` controller should gate this on
     // `households.isEmpty` rather than adding a second redirect.
     //
-    // Every other signed-in location — /home, /join, /first-run itself — is
-    // left alone, so navigation *within* the signed-in area is not fought by
-    // the guard.
+    // Every other signed-in location is left alone, so navigation *within* the
+    // signed-in area is not fought by the guard.
     return location == AppRoutes.splash || location == AppRoutes.signIn
         ? AppRoutes.firstRun
         : null;
@@ -195,12 +372,54 @@ String? _redirect(Ref ref, GoRouterState state) {
   return location == AppRoutes.signIn ? null : AppRoutes.signIn;
 }
 
-/// Stand-in for the real first-run / home screen, which is a later slice.
-class _HomePlaceholderScreen extends StatelessWidget {
+/// Stand-in for the real home screen, which is a later slice.
+///
+/// ## Deliberately still a placeholder
+///
+/// The week plan that belongs at `/home` is Phase 2 work. What this slice adds
+/// is the **minimum affordance needed to reach Settings and Members at all** —
+/// without it the two screens this slice builds would be reachable only by
+/// typing a URL, and no manual verification of them would be possible.
+///
+/// So: one button, shown only when `activeHouseholdProvider` knows of a
+/// household (see that provider's doc — it is itself a documented stopgap for
+/// the missing `Query.me` controller). Nothing else about home is built here.
+/// When the real home screen lands it should replace this file outright rather
+/// than growing from it.
+class _HomePlaceholderScreen extends ConsumerWidget {
   const _HomePlaceholderScreen();
 
+  static const Key settingsButtonKey = Key('home-settings');
+
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Signed in')));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Household? household = ref.watch(activeHouseholdProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.paper,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.s3),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Text('Signed in'),
+                if (household != null) ...<Widget>[
+                  const SizedBox(height: AppSpacing.s3),
+                  PButton(
+                    key: settingsButtonKey,
+                    label: 'Household settings',
+                    variant: PButtonVariant.secondary,
+                    onPressed: () =>
+                        context.go(AppRoutes.settingsHub(household.id)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
