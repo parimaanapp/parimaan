@@ -2,6 +2,8 @@ import 'package:built_collection/built_collection.dart';
 
 import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
 import '../../../shared/graphql/operations/__generated__/household_fields.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/household_settings_fields.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/me.data.gql.dart';
 import '../domain/cuisine_taxonomy.dart';
 import '../domain/dietary_tag.dart';
 import '../domain/household.dart';
@@ -59,6 +61,27 @@ Household householdFromGraphQL(GHouseholdFields data) => Household(
   settings: householdSettingsFromGraphQL(data.settings),
   members: data.members.map(_membershipFromGraphQL).toList(growable: false),
 );
+
+/// Maps `Query.me`'s `households[].household` — the same fields as
+/// [householdFromGraphQL], minus `members`, which `me.graphql` deliberately
+/// does not request (see that file's doc for the cycle this avoids).
+///
+/// `members` is `const []` here for the same reason the doc on that field's
+/// call sites already gives: the server itself returns an empty list for a
+/// membership's own household when asked, so an empty list is not a lie of
+/// omission — it is what the server would say anyway.
+Household meHouseholdFromGraphQL(GMeData_me_households_household data) =>
+    Household(
+      id: data.id,
+      name: data.name,
+      inviteCode: data.inviteCode,
+      primaryUserId: data.primaryUserId,
+      subscriptionStatus: subscriptionStatusFromGraphQL(
+        data.subscriptionStatus,
+      ),
+      settings: householdSettingsFromGraphQL(data.settings),
+      members: const <HouseholdMembership>[],
+    );
 
 HouseholdMembership _membershipFromGraphQL(
   GHouseholdFields_members membership,

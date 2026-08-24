@@ -2,6 +2,7 @@ import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-sec
 import { Pool } from 'pg';
 import type { DbConfig } from './config.js';
 import { loadDbConfig } from './config.js';
+import { RDS_GLOBAL_BUNDLE_CA } from './rdsGlobalBundleCa.js';
 
 const APP_ROLE_USER = 'parimaan_app';
 
@@ -67,10 +68,22 @@ const buildPool = async (options: GetPoolOptions): Promise<Pool> => {
     database: config.dbName,
     user: APP_ROLE_USER,
     password,
-    ssl: { rejectUnauthorized: true },
+    // `ca` is not optional here: without it, Node has no way to verify
+    // Amazon's RDS-issued server certificate against `rejectUnauthorized:
+    // true`, and every connection fails with `unable to get local issuer
+    // certificate` — see `rdsGlobalBundleCa.ts`'s doc.
+    ssl: { rejectUnauthorized: true, ca: RDS_GLOBAL_BUNDLE_CA },
     max: 2,
     idleTimeoutMillis: 10_000,
-    connectionTimeoutMillis: 5_000,
+    // Aurora Serverless v2's auto-pause resume can take up to ~30s (the
+    // mobile app's own cold-start copy promises exactly that) — 5s here
+    // reliably timed out on every genuine cold start well before the
+    // resolver Lambda's own 45s function timeout (`api-stack.ts`'s
+    // `createDbResolverFunction`) ever became the limiting factor. Left
+    // below that function timeout so the pool times out first, with a real
+    // `Error: Connection terminated due to connection timeout` a resolver
+    // can log — a bare Lambda timeout kill gives no such message.
+    connectionTimeoutMillis: 35_000,
     allowExitOnIdle: true,
   });
 

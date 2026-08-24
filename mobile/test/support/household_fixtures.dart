@@ -154,6 +154,50 @@ Map<String, dynamic> rotateInviteCodeWireData({
   'rotateInviteCode': householdWireNode(id: id, inviteCode: inviteCode),
 };
 
+/// One `Query.me.households[]` node, matching `me.graphql`'s selection: the
+/// nested `household` carries no `members` (see that file's doc for the
+/// cycle this avoids), so [householdWireNode]'s `members` key is stripped
+/// rather than defaulted — a wire node with a `members` field would silently
+/// pass a shape `me.graphql` cannot actually produce.
+Map<String, dynamic> meHouseholdMembershipWireNode({
+  String membershipId = 'membership-1',
+  String role = 'primary',
+  String joinedAt = '2026-08-20T09:30:00.000Z',
+  String id = 'household-1',
+  String name = 'Kulkarni Kitchen',
+  String inviteCode = 'ABC123',
+}) {
+  final Map<String, dynamic> household = householdWireNode(
+    id: id,
+    name: name,
+    inviteCode: inviteCode,
+  )..remove('members');
+  return <String, dynamic>{
+    '__typename': 'HouseholdMembership',
+    'id': membershipId,
+    'role': role,
+    'joinedAt': joinedAt,
+    'household': household,
+  };
+}
+
+/// The exact JSON AppSync returns for the `Me` query.
+Map<String, dynamic> meWireData({
+  String userId = 'user-1',
+  String email = 'asha@example.com',
+  String? displayName = 'Asha',
+  List<Map<String, dynamic>> households = const <Map<String, dynamic>>[],
+}) => <String, dynamic>{
+  'me': <String, dynamic>{
+    '__typename': 'User',
+    'id': userId,
+    'email': email,
+    'displayName': displayName,
+    'avatarUrl': null,
+    'households': households,
+  },
+};
+
 /// `Mutation.leaveHousehold`'s bare `Boolean!` payload.
 Map<String, dynamic> leaveHouseholdWireData({bool result = true}) =>
     <String, dynamic>{'leaveHousehold': result};

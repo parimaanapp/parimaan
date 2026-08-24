@@ -1,3 +1,5 @@
+#import "./household_settings_fields.graphql"
+
 # `Query.me` — the authenticated caller, upserted server-side on first login.
 #
 # `households` is requested here (it is a separate field resolver server-side,
@@ -6,6 +8,15 @@
 # cycle, and the server deliberately returns an empty `members` list for a
 # membership's own household (`api/src/mappers/household.ts`
 # `toGraphQLMembership`). Asking for more here would buy nothing and add depth.
+# `settings` reuses `HouseholdSettingsFields` — the same fragment
+# `updateHouseholdSettings` and (transitively, via `HouseholdFields`) every
+# other household operation share — so `household_mapper.dart`'s settings
+# mapper serves this operation too rather than growing a fifth copy. Imports
+# `household_settings_fields.graphql` directly, not `household_fields.graphql`
+# — the latter also defines `HouseholdFields`, which this query never
+# spreads, and a real GraphQL server rejects a document that defines a
+# fragment it never uses (see that file's doc for the concrete error this
+# produced).
 query Me {
   me {
     id
@@ -23,14 +34,7 @@ query Me {
         primaryUserId
         subscriptionStatus
         settings {
-          householdId
-          mealsEnabled
-          mealStructure
-          cuisineTier1
-          cuisineTier2Weights
-          dietaryTags
-          allergens
-          skipIngredients
+          ...HouseholdSettingsFields
         }
       }
     }

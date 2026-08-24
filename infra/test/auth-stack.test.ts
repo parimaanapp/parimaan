@@ -164,6 +164,20 @@ describe('AuthStack', () => {
     });
   });
 
+  // `aws.cognito.signin.user.admin` (`OAuthScope.COGNITO_ADMIN`) is not
+  // optional: Amplify's `getCurrentUser()`/`fetchUserAttributes()`, called on
+  // every sign-in, call Cognito's `GetUser` API directly with the access
+  // token and are rejected without it — Hosted UI sign-in itself succeeds,
+  // every session then immediately fails to resolve. Caught only by a real
+  // device sign-in, not by any test before this one existed.
+  it('grants the mobile client the aws.cognito.signin.user.admin scope — required for Amplify to resolve the session after Hosted UI sign-in', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+      GenerateSecret: false,
+      AllowedOAuthScopes: Match.arrayWith(['aws.cognito.signin.user.admin']),
+    });
+  });
+
   it('configures the mobile client token validities (1h access, 30d refresh)', () => {
     const template = synth('dev');
     // CDK's default CFN unit for both AccessTokenValidity and RefreshTokenValidity

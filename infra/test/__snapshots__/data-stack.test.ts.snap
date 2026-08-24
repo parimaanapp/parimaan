@@ -10,6 +10,12 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
     },
   },
   "Resources": {
+    "AlertsTopic3414BE91": {
+      "Properties": {
+        "TopicName": "parimaan-dev-alerts",
+      },
+      "Type": "AWS::SNS::Topic",
+    },
     "AppRoleSecretA2E93149": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -35,7 +41,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
         },
         "DatabaseName": "parimaan",
         "Engine": "aurora-postgresql",
-        "EngineVersion": "16.4",
+        "EngineVersion": "16.13",
         "MasterUserPassword": {
           "Fn::Join": [
             "",
@@ -52,7 +58,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
         "Port": 5432,
         "ServerlessV2ScalingConfiguration": {
           "MaxCapacity": 2,
-          "MinCapacity": 0.5,
+          "MinCapacity": 0,
           "SecondsUntilAutoPause": 300,
         },
         "StorageEncrypted": true,
@@ -107,6 +113,60 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
       },
       "Type": "AWS::RDS::DBInstance",
       "UpdateReplacePolicy": "Delete",
+    },
+    "AuroraConnectionsAlarm320D1F2B": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertsTopic3414BE91",
+          },
+        ],
+        "AlarmDescription": "Aurora Serverless v2 connection count approaching a leak, not just load (parimaan-dev/prod)",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "DBClusterIdentifier",
+            "Value": {
+              "Ref": "AuroraCluster23D869C0",
+            },
+          },
+        ],
+        "EvaluationPeriods": 2,
+        "MetricName": "DatabaseConnections",
+        "Namespace": "AWS/RDS",
+        "Period": 300,
+        "Statistic": "Average",
+        "Threshold": 60,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "AuroraCpuAlarm999C031F": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertsTopic3414BE91",
+          },
+        ],
+        "AlarmDescription": "Aurora Serverless v2 sustained high CPU (parimaan-dev/prod)",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "DBClusterIdentifier",
+            "Value": {
+              "Ref": "AuroraCluster23D869C0",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/RDS",
+        "Period": 300,
+        "Statistic": "Average",
+        "Threshold": 80,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
     },
     "CacheTableC1E6DF7E": {
       "DeletionPolicy": "Delete",
@@ -506,6 +566,13 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
     },
     "MigrationRunnerTrigger": {
       "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "AuroraCluster23D869C0",
+        "AuroraClusterSecretAttachmentDB8032DA",
+        "ParimaandevDataAuroraClusterSecretE0EC3F773fdaad7efa858a3daf9490cf0a702aeb",
+        "AuroraClusterSubnetsF3E9E6AD",
+        "AuroraClusterWriterAA1AB06C",
+      ],
       "Properties": {
         "MigrationsHash": "3c84fb79aee5a9b5088ea412e58df1ee76754b38e62678fdaeec30d085a8d36c",
         "ServiceToken": {

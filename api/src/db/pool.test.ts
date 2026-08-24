@@ -31,6 +31,22 @@ describe('getPool', () => {
     expect(fetchAppRolePassword).toHaveBeenCalledTimes(1);
   });
 
+  // Aurora Serverless v2's auto-pause resume can take up to ~30s (the mobile
+  // app's own cold-start copy promises exactly that) — a shorter connection
+  // timeout here reliably fails every genuine cold start with `Connection
+  // terminated due to connection timeout`, well before the resolver
+  // Lambda's own function timeout (`api-stack.ts`) is ever the limiting
+  // factor. Caught only by a real cold Aurora invocation, not by anything
+  // synth-time or unit-tested — this test exists so the two numbers
+  // (function timeout, connection timeout) can't silently drift back apart.
+  it('sets connectionTimeoutMillis long enough to survive an Aurora Serverless v2 auto-pause resume (~30s)', async () => {
+    const fetchAppRolePassword = vi.fn().mockResolvedValue('test-password');
+
+    const pool = await getPool({ config: testConfig, fetchAppRolePassword });
+
+    expect(pool.options.connectionTimeoutMillis).toBeGreaterThanOrEqual(30_000);
+  });
+
   it('memoizes: a second call returns the identical Pool instance without re-fetching the password', async () => {
     const fetchAppRolePassword = vi.fn().mockResolvedValue('test-password');
 
