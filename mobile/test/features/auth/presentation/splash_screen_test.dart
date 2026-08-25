@@ -42,6 +42,29 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('renders the Parimaan mark above the wordmark', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: <Override>[
+            authRepositoryProvider.overrideWithValue(stubbedAuthRepository()),
+          ],
+          child: const MaterialApp(home: SplashScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(SplashScreen.markKey), findsOneWidget);
+      final Offset markCenter = tester.getCenter(
+        find.byKey(SplashScreen.markKey),
+      );
+      final Offset wordmarkCenter = tester.getCenter(
+        find.text(SplashScreen.wordmark),
+      );
+      expect(markCenter.dy, lessThan(wordmarkCenter.dy));
+    });
+
     testWidgets('sits on the paper background', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
