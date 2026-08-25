@@ -179,6 +179,8 @@ Six phases mapped to the 26-week runway.
 
 **Verification:** all 49 mobile wireframe screens are mapped. Sum by flow: Flow 1 = 4 (W2, W4, W22), Flow 2 = 7 (W4), Flow 3 = 3 (W4), Flow 4 = 3 (W4, W8), Flow 5 = 2 (W9), Flow 6 = 7 (W9, W10, W11, W12), Flow 7 = 3 (W6), Flow 8 = 5 (W7), Flow 9 = 4 (W5, W18), Flow 10 = 5 (W11, W12, W15), Flow 11 = 3 (W19), Flow 12 = 3 (W7, W12, W20) = **49 total, all accounted for**.
 
+**Detailed plan for W5:** see §11 for the full slice breakdown, conflicts/gaps found in the locked docs, sequencing, risks, and exit criteria — the first week-level plan written before implementation, and folded directly into this document rather than a separate file, per the standing convention locked in §11.7.
+
 ---
 
 ## 5. Dependencies
@@ -335,3 +337,279 @@ All 15 decisions below are final. This plan is locked and ready for W0 to begin.
 ---
 
 **PLAN LOCKED — v2.0.** All 15 decisions above are final. W0 (Prerequisites) can begin immediately: register the sole proprietorship, open both AWS accounts under one Organization, create the `parimaan@` Google account, buy domains, and apply for AWS Activate once entity registration confirms. `TECHNICAL_IMPLEMENTATION_PLAN.md` v0.1 is superseded by this document and should be treated as historical reference only.
+
+---
+
+## 11. W5 detailed plan — Pantry CRUD + Drift cache
+
+**Status:** LOCKED — all decisions below are final, sign-off given 2026-08-25. Written by the **planner** agent before any W5 implementation started, then walked through six open decisions with the founder one at a time (§11.7). This section was originally drafted as a standalone `docs/plans/W5-pantry-crud-drift.md`; per the convention locked in §11.7 Q6, it is folded in here instead, and that file has been removed — **all future week-level plans, including ones with genuinely novel infrastructure, fold into this document** rather than spawning a new `docs/plans/` file.
+
+**Budget:** originally ~10 hrs against Phase 2's ~40 hrs / 4 weeks (§7). §11.7 Q5 accepts this will run closer to ~18 hrs — see §11.5.1.
+**Pipeline:** `DEV_WORKFLOW.md` §2.1 applies unmodified to every slice below. This section adds *slicing and sequencing* on top of that pipeline, not a new process.
+
+### 11.1 What W5 is locked to deliver
+
+| Focus | Screens | Backend/infra | DoD gate |
+|---|---|---|---|
+| Pantry CRUD + Drift cache | Pantry List, Add choose method, Manual add (18/49) | pantry resolvers; `onPantryChanged` sub; Drift local schema; PantryRow widget | Two-device pantry edit <5s sync |
+
+**Added to W5 by this plan** (not in the §4 locked row): a minimal real navigation shell (Home + Pantry tabs) replacing `router.dart`'s `_HomePlaceholderScreen`. The Pantry List has nowhere to be reached from otherwise, and `PTabBar` has been built and unused since W2. Deliberately **two tabs only** — Recipes (W6), Plan (W9), List (W11) are not built here.
+
+**Out of scope** (tracked, not forgotten): Lambda concurrency quota increase (filed, pending AWS); secret rotation; invite-code Sybil hardening; `CuisineTier1` East gap; Snacks UI unreachability; the router's unconditional `/first-run` redirect; photo-pantry AI (W18); `markMade` deduction (W12); `haveIt`/`markPurchased` (W11/W12); subscription reconnect backoff + refetch-on-reconnect (**W8**, see §11.5.2).
+
+### 11.2 Conflicts and gaps found in the locked docs
+
+Items marked **DECIDED** were one of the six decisions walked through with the founder (§11.7) and are final. Items marked **CALL** are judgment calls implemented as stated unless later overridden. Items marked **NOTE** are informational.
+
+#### 11.2.1 CRITICAL, DECIDED — the locked SDL's `onPantryChanged` cannot compile as written
+
+`SYSTEM_DESIGN.md` §6.1 lines 526–530 subscribe `onPantryChanged: PantryItem` to six mutations. AppSync requires each `@aws_subscribe`d mutation's return type to be a superset of the subscription's. Three violate it:
+
+| Mutation | Returns | Problem |
+|---|---|---|
+| `bulkAddPantryItems` | `[PantryItem!]!` | A list cannot fan out to a single `PantryItem` payload. |
+| `deletePantryItem` | `Boolean!` | No `PantryItem` payload exists — subscribers never learn *which* item vanished. |
+| `haveIt` / `markPurchased` | `ShoppingListItem!` | Different type; also W11/W12 mutations that don't exist yet. |
+
+(The original task brief said "those four mutations" — the doc actually lists six. Neither count works as-is.)
+
+**DECIDED** (§11.7 Q2, changes locked SDL):
+1. `deletePantryItem(id: ID!): PantryItem!` — returns the deleted row. Smallest change that makes deletion observable to other devices, which the DoD gate requires if "edit" includes delete.
+2. `bulkAddPantryItems` dropped from `@aws_subscribe` in W5 — it has no W5 caller. W18 either adds `onPantryBulkChanged: [PantryItem!]` or refetches. Recorded as a W18 open item.
+3. `haveIt`/`markPurchased` not listed (don't exist yet). **W11/W12 will hit the same type mismatch** — flagged forward now.
+
+W5 ships: `onPantryChanged(householdId: ID!): PantryItem @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])`. This is a `doc-updater` §4.1 trigger.
+
+#### 11.2.2 CRITICAL — the locked RLS policy does not protect `INSERT`
+
+`SYSTEM_DESIGN.md` §7.1's example is `USING (...)` only. In Postgres, `USING` governs `SELECT`/`UPDATE`/`DELETE` row visibility; **`INSERT` is governed by `WITH CHECK`**. The existing `household_settings` policy in `api/migrations/1787072268736_baseline-schema.ts` (lines 62–68) has the same shape and has never been exercised by an insert-into-someone-else's-household test.
+
+`pantry_items` gets `CREATE POLICY ... FOR ALL USING (<membership>) WITH CHECK (<membership>)` — explicit on both sides — plus `FORCE ROW LEVEL SECURITY` per the `1787124517648_app-role.ts` precedent. RED tests include cross-household insert *and* update, not just read. Auditing `household_settings` for the same gap is separate backlog, not W5.
+
+#### 11.2.3 CRITICAL — `parimaan_app` has no grants on new tables
+
+`api/migrations/1787124517648_app-role.ts` grants CRUD on an explicit `BASELINE_TABLES` list; there is no `ALTER DEFAULT PRIVILEGES`. The pantry migration must carry its own `GRANT SELECT, INSERT, UPDATE, DELETE ON pantry_items TO parimaan_app`. Easy to forget; fails at runtime in dev AWS, not at synth or in unit tests.
+
+#### 11.2.4 DECIDED — `unit` and `category` value sets
+
+`PantryItem.unit: String!` / `category: String` are free text in SDL and `TEXT` in SQL, with no defined value set in any locked doc. This bites later: Phase 3 DoD requires staples exclusion by "tsp/tbsp/`is_staple`/spice-oil-salt **categories**" — impossible against free text — and W12 pantry deduction can't match "kg" against "Kg".
+
+**DECIDED (§11.7 Q1):** Option C — free-text column + server-side canonicalisation (`api/src/domain/pantryUnits.ts`, `pantryCategories.ts`): a known-value list, case/whitespace normalisation, pass-through for unrecognised values. Column stays open (a user typing "पाव" isn't rejected) while later weeks get a real set; the list is editable without a migration. Founder-approved condition: units/categories must be extensible later without much more effort — Option C satisfies this since it's a normalisation layer, not a schema-level enum.
+
+Starting sets: units `g, kg, ml, l, piece, packet, bunch, tsp, tbsp, cup`; categories `dal, spice, dairy, produce, dry_goods, grain, oil, condiment, frozen, other`. Both are guesses from `PRD.md` §7.1 and deserve ten minutes against a real kitchen before S2 starts.
+
+#### 11.2.5 DECIDED — `expiryDate` type mismatch
+
+SQL: `expiry_date DATE`. SDL: `expiryDate: AWSDateTime`. A date-only column round-tripped through a timestamp acquires a spurious time-of-day and a timezone the user never chose — and "expires tomorrow" notifications then depend on which timezone the Lambda thinks it's in.
+
+**DECIDED (§11.7 Q3):** keep SQL as `DATE`, change the SDL field to `AWSDate` (natively supported).
+
+#### 11.2.6 CALL — `lowThreshold` semantics
+
+`PRD.md` §7.1 offers two definitions ("user-set threshold, **or** quantity < 20% of a user-defined 'typical'"); only the first has a column. **Call:** absolute quantity in the item's own unit; running-low is `lowThreshold != null && quantity <= lowThreshold`. The 20%-of-typical variant needs a `typical_quantity` column that doesn't exist. Predicate lives in `features/pantry/domain/` as pure Dart (§3.3's push-logic-out-of-widgets rule), duplicated server-side only when W11 needs it.
+
+#### 11.2.7 CALL — where edit and delete live (only 3 screens budgeted)
+
+The W5 row budgets three wireframes, none an edit screen, yet `updatePantryItem`/`deletePantryItem` are W5 resolvers and the gate says "pantry **edit**". **Call:** Manual add is reused in edit mode with a seeded form — exact precedent of `household_edit_entry.dart` reusing wizard screens for the four Settings edit rows. Delete is a row action → confirm dialog (precedent `delete_household_dialog.dart`), not a fourth screen. Count stays 18/49.
+
+#### 11.2.8 CALL — "Add choose method" offers a method that doesn't exist yet
+
+Wireframe 9.2's whole purpose is Manual vs Photo AI; Photo is W18. **Call:** render the photo option present but disabled with a "Coming soon" `PBadge`, rather than a one-option chooser (a screen that shouldn't exist) or a live dead-end button. Same honesty posture as `settings_placeholder_screen.dart`.
+
+#### 11.2.9 DECIDED — subscription authorization mechanism
+
+SD §10.4 specifies a "Lambda authorizer on subscription connect". In AppSync, `AWS_LAMBDA` is an **API-level auth mode** — adopting it literally means adding a second auth mode to a currently pure-Cognito API, and the authorizer then runs on *every* request, not just subscribe.
+
+**DECIDED (§11.7 Q4):** a **Lambda resolver on the `Subscription.onPantryChanged` field**, invoked at subscribe time, able to throw `ForbiddenError`, reusing `api/src/auth/requireHouseholdMember.ts` unchanged with RLS still behind it. Cognito stays sole auth mode. Chosen over the API-level authorizer for the same security property with far less machinery (no new IAM role/authorizer contract, no per-request invocation across unrelated fields). This is a deviation from SD §10.4's stated mechanism → both an `architect` step-2b invocation and a `doc-updater` §4.1 trigger (append SD §18). Deviation is allowed; *silent* deviation is not.
+
+#### 11.2.10 NOTE — the codebase currently says subscriptions are W12
+
+Three places assert it: `infra/stacks/api-stack.ts` (lines 171–173), `mobile/lib/features/household/state/household_sync_policy.dart` (lines 11–13 and its whole "belongs to W12" list). The locked plan puts `onHouseholdChanged` at **W4** (deferred — real and accepted) and `onPantryChanged` at **W5**. These three comments become wrong the moment S8 merges and must be corrected in the same PR. `onHouseholdChanged` stays deferred; retrofitting it is a natural W8 follow-on once the WebSocket link exists, and `HouseholdSyncPolicy` polling stays until then.
+
+#### 11.2.11 NOTE — reaching `/home` at all
+
+`_redirect` sends every signed-in user from splash to `/first-run` unconditionally (documented stopgap, out of scope). Consequence for the DoD demo: **both devices must reach the pantry within the session in which they created/joined** — a cold restart lands back on first-run. Enough to demonstrate the gate, but it makes the two-device test feel more fragile than the sync actually is. Fixing the redirect is the natural first slice of W8.
+
+### 11.3 Slice breakdown
+
+Nine slices, one PR each — matching the W1–W4 shape (`#17` client + first mutation + screen; `#18` one resolver; `#19` seven wizard screens; `#20` join flow + settings + members + sync policy), i.e. coherent verticals, not one-file commits. Sizes include strict-TDD overhead (§6a: +25–40%).
+
+#### S1 — `pantry_items` migration, RLS, grants
+- **Delivers:** table per SD §7.1 DDL, both indexes, `ENABLE`+`FORCE` RLS, `FOR ALL USING ... WITH CHECK ...` membership policy (§11.2.2), explicit `parimaan_app` grants (§11.2.3). No GraphQL, no app code.
+- **Files:** `api/migrations/<ts>_pantry-items.ts` (new). Put grants in the *new* migration — do not edit the applied `1787124517648_app-role.ts`.
+- **Depends on:** nothing. **Can start immediately.**
+- **Size / Risk:** ~1.5 hrs / **Medium** — risk is entirely RLS correctness, and it's the highest-value test surface of the week.
+- **Agents:** `tdd-guide` → `database-reviewer` (mandatory on every migration) → `security-reviewer` (**fires**: SQL migration + RLS policy) → `code-reviewer`.
+- **RED tests** (real Testcontainers Postgres — mocked `pg` cannot exercise RLS, §3.2): member SELECTs only own-household rows; non-member SELECT returns zero rows not an error; **non-member INSERT rejected** (the §11.2.2 gap); non-member UPDATE/DELETE affect zero rows; `parimaan_app` can CRUD at all (the §11.2.3 grant); `down()` clean and re-runnable; `infra/lib/hashMigrationsDir.ts` asset test still passes.
+- **Gate:** all green; both reviewers clean; deployed to dev AWS and the migration runner ran it.
+
+#### S2 — SDL + `Query.pantry` + `addPantryItem`
+- **Delivers:** `PantryItem`, `PantryItemInput`, `Query.pantry(householdId, search, category)`, `Mutation.addPantryItem` in `shared/schema.graphql`; repository, mapper, Zod validation, resolvers; two `DB_RESOLVERS` entries. Applies §11.2.4 and §11.2.5 decisions.
+- **Files:** `shared/schema.graphql`; `api/src/repositories/pantryRepository.ts`; `api/src/mappers/pantryItem.ts`; `api/src/validation/{pantry,addPantryItem}.ts`; `api/src/domain/pantryUnits.ts`+`pantryCategories.ts`; `api/src/resolvers/{pantry,addPantryItem}.ts`; `infra/stacks/api-stack.ts`.
+- **Depends on:** **S1**.
+- **Size / Risk:** ~2 hrs / **Low-Medium** — well-worn W3/W4 path; only `search`/`category` filtering is new.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**fires**: new Lambda resolvers + SQL construction) → `code-reviewer` → `doc-updater` (SDL change → re-sync SD §6.1).
+- **RED tests** (§3.2's mandated order): non-member → `ForbiddenError` on both fields; Zod rejections (blank name, negative/NaN quantity, missing unit, over-long strings, unknown category if closed); happy path; `search` is a parameterised `LOWER(name) LIKE` using `idx_pantry_household_name` and **injection-proof** (a `search` of `%' OR '1'='1` returns zero rows, not the table); `search`+`category` combined; `addedBy` taken from verified caller identity, never from input.
+- **Gate:** ≥80% coverage; `pnpm -r` regenerates Ferry/TS clients with a clean tree (§6d SDL-drift guard).
+
+#### S3 — `updatePantryItem`, `deletePantryItem`, `bulkAddPantryItems`
+- **Delivers:** remaining three mutations incl. the §11.2.1 `deletePantryItem: PantryItem!` change. `bulkAddPantryItems` is built (it's a locked W5 deliverable) but has **no W5 client** and is **not** on `@aws_subscribe`.
+- **Depends on:** **S2**.
+- **Size / Risk:** ~1.5 hrs / **Low-Medium**. Risk concentrates in `bulkAddPantryItems`: needs a transaction and a bound on `items.length` — an unbounded list is trivially-exploitable resource exhaustion on a VPC Lambda with a 45s timeout and no RDS Proxy.
+- **RED tests:** update/delete in another household denied, **identically to a nonexistent id** (never an existence oracle — the convention `household.ts` already sets); `updatePantryItem` is a partial patch (absent = unchanged, explicit `null` rejected — matching `updateHouseholdSettings`'s locked semantics); `updated_at` actually moves; `deletePantryItem` returns the deleted row and second call denies; bulk over cap → `VALIDATION`; bulk rolls back entirely when item *k* fails (§3.2's mandated rollback test).
+
+#### S4 — Navigation shell (Home + Pantry tabs)
+- **Delivers:** a real `StatefulShellRoute` at `/home` with two branches rendered through the existing `PTabBar`. `_HomePlaceholderScreen` is **deleted, not grown** (its own doc comment asks for exactly this). Home branch keeps the "Household settings" affordance so nothing regresses. Pantry branch renders an empty scaffold S5 fills.
+- **Files:** `mobile/lib/app/router.dart` (+ `AppRoutes.pantry`); `mobile/lib/features/shell/presentation/app_shell.dart` (new); `mobile/lib/features/home/presentation/home_screen.dart` (new, minimal); `mobile/test/app/router_test.dart`.
+- **Depends on:** **nothing.** Fully parallel with S1–S3 — the one slice workable while backend slices are in review.
+- **Size / Risk:** ~1.5 hrs / **Low-Medium**. Risk is shell-route mechanics vs `_redirect`: a `StatefulShellRoute` changes what `state.matchedLocation` reports for branch routes, and the redirect's "leave every other signed-in location alone" branch must keep behaving.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` **skips** (§2.3 — pure navigation/presentation; redirect logic itself unchanged).
+- **RED tests:** `/home` renders a two-item `PTabBar`; tapping Pantry switches branch and **preserves Home branch state** (the point of a stateful shell); deep-link to `/home/pantry` while signed out still bounces to `/sign-in`; existing router tests pass unmodified. No golden — goldens are design-system-only (§3.3), and `PTabBar` already has its own.
+
+#### S5 — Pantry read path: Ferry ops, domain model, repository, `PantryRow`, Pantry List
+- **Delivers:** wireframe 9.1 against the network only — no cache, no subscription yet. `PantryRow` (the W5-named domain widget), search field + category chips driving the **server-side** `search`/`category` params, empty/loading/error states via `PEmptyState`.
+- **Files:** `mobile/lib/shared/graphql/operations/pantry.graphql` + regenerated `__generated__/`; `mobile/lib/features/pantry/domain/{pantry_item,pantry_unit,pantry_category,running_low}.dart`; `.../data/{pantry_repository,pantry_mapper}.dart`; `.../state/pantry_controller.dart`; `.../presentation/{pantry_list_screen,pantry_row}.dart`.
+- **Depends on:** **S2** and **S4**.
+- **Size / Risk:** ~2.5 hrs / **Medium** — largest Flutter slice; mitigated by following the `household` feature's existing repository/controller/mapper layering rather than inventing one.
+- **RED tests:** *Domain* — running-low predicate incl. null threshold, equal-to-threshold boundary, zero quantity. *State* — family provider scoped by `householdId` emits `loading → data`; errors surface as `AppError` via `graphql_error_mapper.dart`; search input **debounced** so typing doesn't produce a request per keystroke against a cold Aurora. *Widget* — empty state before data; error state on repo throw; `PantryRow` renders quantity+unit, staple badge, running-low affordance, expiry.
+
+#### S6 — Add-item choose-method + Manual add (+ edit + delete)
+- **Delivers:** wireframes 9.2 and 9.3. Manual add → `addPantryItem`; same screen in edit mode (§11.2.7) → `updatePantryItem`; row delete with confirm → `deletePantryItem`. Photo option present-but-disabled (§11.2.8).
+- **Files:** `mobile/lib/features/pantry/presentation/{add_method_screen,manual_add_screen,pantry_item_edit_entry,delete_pantry_item_dialog}.dart`; `.../state/pantry_form_controller.dart`; routes in `router.dart`.
+- **Depends on:** **S3** and **S5**.
+- **Size / Risk:** ~2.5 hrs / **Medium**. Risk is validation duplication — S2's Zod rules mirrored in Dart without drifting. Mitigation: pure-Dart validators in `features/pantry/domain/`, unit-tested against the *same case table* as the Vitest suite, and treat a server `VALIDATION` error as a legitimate render path rather than assuming client validation suffices.
+- **RED tests:** submit disabled until name+quantity+unit valid; server `VALIDATION` renders inline; success pops back and the list contains the item; edit mode seeded from the existing item and **unchanged fields are not sent** (partial patch); cancel mutates nothing; delete requires confirm, cancel is a no-op; the photo option is disabled and announces itself as such to screen readers.
+
+#### S7 — Drift local read cache *(new infrastructure — full pipeline)*
+
+First local database in this codebase; own design decision per §2.2 step 2b of the pipeline. **Ships within W5, not deferred** — §11.7 Q5 decided to accept a two-week W5 with full scope rather than pushing this to W8.
+
+| # | Step | Agent | Concrete action | Gate |
+|---|---|---|---|---|
+| 1 | Research & Reuse | *none* | **Mandatory.** `gh search code "drift" riverpod cache`; Drift docs via Context7 for the current codegen story and its interaction with the existing `ferry_generator`+`built_value_generator` pipeline (three generators in one `build.yaml` is where this slice actually breaks). pub.dev versions of `drift`/`sqlite3_flutter_libs`/`path_provider` against Flutter SDK `^3.13.0`. Explicitly evaluate the cheaper alternative: **ferry's own persisted (Hive) store**, for which `client.dart` already has a hook (it takes an optional `Cache`). | Adopt-vs-alternative decision written down. |
+| 2 | Plan (novel arch) | `architect` | Record: (a) Drift vs persisted ferry cache — SD §9.1 says Drift, so choosing otherwise is a locked-decision deviation needing §4.1 treatment; (b) **read cache only** — mutations go straight to network, no offline queue (SD §9.1); (c) staleness — hydrate-then-fetch, network result overwrites wholesale, no merge; (d) **eviction on household switch and on sign-out** — a pantry cache surviving sign-out on a shared family phone is a privacy leak, and it's the same concern `client.dart` already names as why its ferry cache is in-memory. | Decision in SD §18 via `doc-updater`. |
+| 3 | RED | `tdd-guide` | `NativeDatabase.memory()` for tests; schema round-trips every field incl. nulls and `DATE`; controller emits `cached → fresh` in that order; a network failure **after** a successful hydrate leaves cached rows visible with an error banner, not an empty screen (the whole value of the cache); sign-out clears the table; a v1→v2 schema migration runs (proves the path exists before it's needed in anger). | Failures shown. |
+| 4 | GREEN | *none* | `mobile/lib/shared/storage/{app_database.dart,tables/pantry_items_table.dart,daos/pantry_dao.dart}` — `shared/storage/` is already the path SD §9.1's tree specifies. Wire hydrate-then-fetch into `pantry_controller.dart`. | Tests pass. |
+| 5 | REFACTOR | `tdd-guide` | Generated Drift code excluded from coverage and lint; no file >400 lines; the DAO is the only thing touching the DB (no Drift types leak into `presentation/`). | Clean. |
+| 6 | Domain review | `flutter-reviewer` | — | Addressed. |
+| 7 | Security | `security-reviewer` | **FIRES** — new third-party SDK (§2.3's "third-party SDK addition of any kind") **and** a new at-rest store of household data on device. Check: DB file in app-private storage not shared/external; no tokens or PII beyond pantry contents; cleared on sign-out; not backed up to iCloud/Google Drive unless deliberate. | No CRITICAL/HIGH. |
+| 8 | General | `code-reviewer` | — | Clean. |
+| 9 | Docs | `doc-updater` | SD §9.1 confirmed-or-amended; new dependency noted. | Synced. |
+
+**Depends on:** S5. **Size / Risk:** ~2.5 hrs / **High** — three code generators in one `build_runner` pipeline is the single most likely place this week burns an unplanned hour (`build-error-resolver` on standby).
+
+#### S8 — `onPantryChanged` subscription *(new infrastructure — full pipeline)*
+
+First subscription in the app. This is the slice the DoD gate actually measures.
+
+| # | Step | Agent | Concrete action | Gate |
+|---|---|---|---|---|
+| 1 | Research & Reuse | *none* | **Mandatory.** AppSync's real-time protocol is *not* plain `graphql-ws` — it's AWS's own protocol over a `wss://...appsync-realtime-api...` URL with a base64'd `header` query param carrying auth. Ferry ships no AppSync transport. `gh search code "appsync" dart websocket link`; check pub.dev for an existing `gql_websocket_link`-on-AppSync adapter **before** hand-rolling. Hand-rolling the handshake from AWS docs is a multi-hour task and there is prior art. | Adopt-vs-hand-roll decision written down, package named (or its absence). |
+| 2 | Plan (novel arch) | `architect` | Record: (a) the §11.2.9 subscription-resolver-vs-API-auth-mode decision and its SD §10.4 deviation; (b) **one WebSocket link for the whole app**, multiplexed (SD §9.1) — so it belongs in `shared/graphql/` alongside `AuthLink`, not in `features/pantry/`; (c) token refresh mid-connection — the ID token is 1-hour (SD §10.2) and a WebSocket outlives it, so reconnect must fetch a fresh token, not replay the connect-time one; (d) **W5 ships subscribe-on-foreground / unsubscribe-on-background and nothing more** — backoff 1s→2s→5s→15s→60s and invalidate-and-refetch-on-reconnect are explicitly the **W8** row's deliverables, and pulling them forward is how W5 overruns further. | Decisions in SD §18. |
+| 3 | RED | `tdd-guide` | *Backend (Vitest):* non-member subscribe → `ForbiddenError`; member → authorized; nonexistent householdId denies identically. *CDK (`assertions`, fine-grained before snapshot, §3.4):* `Subscription.onPantryChanged` resolver exists and is Lambda-backed; that Lambda is VPC-attached with the shared security group; API auth mode is **still** user-pool-only. *Flutter:* add-event inserts, update-event replaces in place, delete-event removes; an event for a **different** `householdId` is ignored; an event for an item already present (the local device's own mutation echoing back) does not duplicate the row. | Failures shown. |
+| 4 | GREEN | *none* | SDL `Subscription` type (§11.2.1's trimmed list); `api/src/resolvers/onPantryChanged.ts`; `api-stack.ts` entry (the existing `DB_RESOLVERS` loop already generalises to `typeName: 'Subscription'`); `mobile/lib/shared/graphql/{appsync_websocket_link,subscription_client}.dart`; wire into `pantry_controller.dart`. | Tests pass. |
+| 5 | REFACTOR | `tdd-guide` | The WebSocket link is generic over any subscription, not pantry-shaped — W8/W11/W12 add three more topics. | Clean. |
+| 6 | Domain review | `flutter-reviewer` + `typescript-reviewer` **in parallel** (§6b) | — | Addressed. |
+| 7 | Security | `security-reviewer` | **FIRES** — subscription authorizer path, new resolver, token handling over a long-lived connection, CDK/IAM change. Specifically: the ID token is not logged; a token expiring mid-connection does not silently keep an unauthorized subscriber attached; `householdId` from the subscribe request is validated, not trusted. | No CRITICAL/HIGH. |
+| 8 | General | `code-reviewer` | SDL↔Ferry↔Zod contract drift (§6d). | Clean. |
+| 9 | Docs | `doc-updater` | SD §6.1 re-sync; SD §10.4 deviation; **correct the three stale "subscriptions are W12" comments** (§11.2.10). | Synced. |
+
+**Depends on:** S3 and S5. S7 is **not** a dependency — cache and subscription are independent. **Size / Risk:** ~3 hrs / **High** — highest-risk slice, and the one the DoD gate depends on.
+
+#### S9 — Two-device verification, weekly doc pass
+- **Delivers:** the DoD gate measured — two real devices, two Google accounts, one household; add/edit/delete on A appears on B, **timed**, target <5s. Result written with the actual number, not "felt fast". Plus §4.2's mandatory weekly pass: actual-vs-planned hours into this document's §4 W5 row.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 W5 actuals + this §11); `docs/RUNBOOK.md` (two-device verification procedure — it gets re-run at W8, W11, W12).
+- **Depends on:** S6 + S8 + S7 (all three — no slice is deferred out of W5, per §11.7 Q5).
+- **Size / Risk:** ~1 hr / **Low** risk but **non-optional**: §6d says a week isn't done until its §4 row has actuals, and §6a's W8 checkpoint has nothing to measure without it.
+- **Agents:** `doc-updater`. No `security-reviewer` phase sweep — that's a W8 boundary obligation (§2.3 exception 1), not W5's.
+
+### 11.4 Sequencing
+
+```
+        can start immediately, in parallel
+        ┌──────────────────────────────────────────┐
+   ┌────▼────┐                              ┌──────▼──────┐
+   │ S1 mig  │                              │ S4 nav shell│
+   │ + RLS   │                              │  (Flutter)  │
+   └────┬────┘                              └──────┬──────┘
+   ┌────▼──────────────┐                           │
+   │ S2 SDL + pantry   │                           │
+   │    + addPantryItem│                           │
+   └────┬──────────────┘                           │
+   ┌────▼──────────────┐                           │
+   │ S3 update/delete/ │                           │
+   │    bulk           │                           │
+   └────┬──────────────┘                           │
+        │              ┌───────────────────────────┘
+        │        ┌─────▼─────────────────┐
+        └───────►│ S5 read path + list   │
+                 │    + PantryRow        │
+                 └──┬─────────────┬──────┘
+          ┌─────────▼──┐   ┌──────▼───────────┐
+          │ S6 add/    │   │ S7 Drift cache   │  (independent of each other AND
+          │    edit/del│   │                  │   of S8 — but both ship in W5)
+          └─────────┬──┘   └──────┬───────────┘
+          ┌─────────▼─────────────▼──┐
+          │ S8 onPantryChanged sub   │  (needs S3 + S5; NOT S7)
+          └─────────────┬────────────┘
+                 ┌──────▼───────┐
+                 │ S9 verify+docs│
+                 └───────────────┘
+```
+
+**Working order: S4 → S1 → S2 → S3 → S5 → S6 → S8 → S7 → S9.**
+
+Two non-obvious choices, with rationale:
+- **S4 first, not last.** Only zero-dependency Flutter slice; deletes a known stopgap; de-risks go_router shell mechanics *before* a real screen depends on it. Starting with a small merged PR also gives the §6a hours log something honest to measure early.
+- **S8 before S7.** S8 is the DoD gate; S7 is not. Doing the gate-measured slice first means the two-device timing number exists well before the week ends, even though (per §11.7 Q5) S7 is no longer being cut if the week runs long.
+
+### 11.5 Risks
+
+#### 11.5.1 The week does not fit in 10 hours — DECIDED
+
+| Slice | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | **Total** |
+|---|---|---|---|---|---|---|---|---|---|---|
+| hrs | 1.5 | 2.0 | 1.5 | 1.5 | 2.5 | 2.5 | 2.5 | 3.0 | 1.0 | **18.0** |
+
+Against ~10 hrs, that's a **~80% overrun before any surprise**. Not padding: W5 contains two greenfield infrastructure pieces, five backend resolvers, three screens, a nav shell, and full strict TDD at 80% on all of it. The W1–W4 weeks that shipped comparable volume were single-concern.
+
+**DECIDED (§11.7 Q5): accept a two-week W5.** All nine slices ship, full scope, no deferrals. This was decided against the planner's original recommendation (defer S7 to W8) — the founder chose to keep the Drift cache in W5 rather than let it drift (no pun intended) into the "Sync polish" week. Consequence: W5 spends roughly 8 hrs of the §7 20-hr buffer and W6 slides by about the same amount. Phase 2's overall exit line ("Drift local read-cache hydrates offline") stays a **W5** deliverable, not a Phase-2-wide one.
+
+#### 11.5.2 Subscription reliability is not fully solved in W5, by design
+W5 ships subscribe/unsubscribe and fanout. Backoff, refetch-on-reconnect, and 5-concurrent-client load are W8 and W11 (risk R3). A two-device demo on good wifi will pass while the mechanism is still fragile on a subway. **Do not let S9's green light read as "sync is done"** — record the gap so W8 inherits it explicitly.
+
+#### 11.5.3 The three-generator `build_runner` pipeline (S7)
+`ferry_generator` + `built_value_generator` + `drift_dev` in one `build.yaml` is the concrete failure mode most likely to eat an hour. Contained entirely within S7.
+
+#### 11.5.4 Real-AWS verification cost
+Every backend slice needs a real dev deploy to be honestly verified (the W4 commit established this repo verifies against real AWS, not synth). With Aurora auto-pause (non-negotiable cost lever, `PRD.md` §17.4) the first request after a pause can take ~30s — budget for it and don't mistake a cold start for a broken resolver. The Lambda concurrency quota increase is filed and pending; nothing in W5 depends on it landing.
+
+### 11.6 W5 exit criteria
+
+- [ ] `pantry_items` on dev with RLS **enabled and forced**, policy covering `USING` **and** `WITH CHECK`, `parimaan_app` grants — verified by wrong-household tests for read, insert, update, delete
+- [ ] All five pantry resolvers live on dev, each member-gated, each with a non-member denial test
+- [ ] `search` parameterised and proven injection-safe
+- [ ] `shared/schema.graphql` re-synced into SD §6.1, incl. §11.2.1 `deletePantryItem` and §11.2.5 `AWSDate` with rationale
+- [ ] `_HomePlaceholderScreen` deleted; `/home` is a real two-tab shell using `PTabBar`
+- [ ] Wireframes 9.1, 9.2, 9.3 shipped → **18/49**
+- [ ] `PantryRow` built and covered
+- [ ] `onPantryChanged` fans out add/update/delete across two devices, **timed <5s**, number recorded
+- [ ] Subscription connect is membership-authorized; a non-member's subscribe is rejected (test, not inspection)
+- [ ] Drift read cache hydrates before the network responds — ships in W5, not deferred (§11.5.1)
+- [ ] Coverage: Lambda ≥80%, Flutter domain+state ≥80% (§0 amendment)
+- [ ] `security-reviewer` clean on S1, S2, S3, S7, S8 (skips S4 only)
+- [ ] This document's §4 W5 row has actual hours and carry-over
+- [ ] The three stale "subscriptions are W12" comments corrected
+
+### 11.7 W5 planning decisions (final, locked 2026-08-25)
+
+| # | Question | **Locked decision** |
+|---|---|---|
+| Q1 | §11.2.4 — `unit`/`category`: free text, closed enums, or canonicalisation? | **Option C** — free text + server-side canonicalisation, condition on remaining easily extensible later. |
+| Q2 | §11.2.1 — `deletePantryItem` returns `PantryItem!`? (locked-SDL change) | **Yes** — delete is otherwise invisible to other devices. |
+| Q3 | §11.2.5 — `expiryDate` → `AWSDate`? (locked-SDL change) | **Yes.** |
+| Q4 | §11.2.9 — subscription-field resolver instead of SD §10.4's API-level Lambda authorizer? | **Yes, per-field resolver** — same security property, far less machinery, Cognito stays sole auth mode. Chosen after a clarifying discussion of complexity/response-time/cost tradeoffs against the API-level authorizer alternative. |
+| Q5 | §11.5.1 — how to absorb the ~18 hr vs 10 hr gap? | **Accept a two-week W5.** Full 9-slice scope, no deferrals — chosen over the planner's recommendation to defer S7 (Drift) to W8. |
+| Q6 | Is `docs/plans/W<n>-<slug>.md` the convention, or fold into this document? | **Fold into `E2E_MVP_PLAN.md`.** This is a standing convention, not a one-off: every future week's plan — including weeks with novel infrastructure — folds into this document rather than a separate file. `docs/plans/W5-pantry-crud-drift.md` has been removed; this §11 is its sole remaining copy. |
+
+---
