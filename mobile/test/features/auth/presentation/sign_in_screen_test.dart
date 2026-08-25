@@ -44,6 +44,19 @@ void main() {
       expect(find.byType(ElevatedButton), findsOneWidget);
     });
 
+    testWidgets('renders the Parimaan mark above the wordmark', (
+      WidgetTester tester,
+    ) async {
+      await _pumpSignIn(tester, stubbedAuthRepository());
+
+      expect(find.byKey(SignInScreen.markKey), findsOneWidget);
+      final Offset markCenter = tester.getCenter(
+        find.byKey(SignInScreen.markKey),
+      );
+      final Offset wordmarkCenter = tester.getCenter(find.text('परिमाण'));
+      expect(markCenter.dy, lessThan(wordmarkCenter.dy));
+    });
+
     testWidgets('tapping the button calls the repository sign-in', (
       WidgetTester tester,
     ) async {

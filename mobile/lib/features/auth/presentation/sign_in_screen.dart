@@ -18,6 +18,9 @@ class SignInScreen extends ConsumerWidget {
   /// cannot express for copy that is conditionally built.
   static const Key errorKey = Key('sign-in-error');
 
+  /// The mark (green square, प glyph) above the wordmark below it.
+  static const Key markKey = Key('sign-in-mark');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<AuthSession> auth = ref.watch(authControllerProvider);
@@ -33,6 +36,13 @@ class SignInScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              Image.asset(
+                'assets/branding/parimaan-mark-1024.png',
+                key: SignInScreen.markKey,
+                width: 72,
+                height: 72,
+              ),
+              const SizedBox(height: AppSpacing.s4),
               Text(
                 SignInScreen._wordmark,
                 textAlign: TextAlign.center,

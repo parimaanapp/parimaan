@@ -1,4 +1,4 @@
-# Parimaan · परिमाण
+<img src="./branding/parimaan-lockup.png" alt="Parimaan" width="280" />
 
 **Parimaan** is a household-shared, mobile-first meal planning and pantry app built for Indian kitchens.
 
