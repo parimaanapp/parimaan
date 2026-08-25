@@ -24,7 +24,7 @@ import '../features/household/presentation/settings/settings_placeholder_screen.
 import '../features/household/state/pending_join_code_controller.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
-import '../features/pantry/presentation/pantry_placeholder_screen.dart';
+import '../features/pantry/presentation/pantry_list_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
@@ -323,7 +323,7 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
               GoRoute(
                 path: AppRoutes.pantry,
                 builder: (BuildContext context, GoRouterState state) =>
-                    const PantryPlaceholderScreen(),
+                    const PantryListScreen(),
               ),
             ],
           ),

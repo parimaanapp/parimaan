@@ -1,0 +1,17 @@
+#import "./pantry_item_fields.graphql"
+
+# `Query.pantry` — a household's pantry items, optionally filtered by a
+# case-insensitive substring `search` against `name` and/or an exact
+# `category` match. Both filters are applied server-side (see
+# `api/src/repositories/pantryRepository.ts`) — this client sends the raw
+# search text and lets the server do the matching, rather than filtering a
+# fetched-once list locally, so the result set stays correct as the pantry
+# grows past what any one client screen has already loaded.
+#
+# Any member may read. A non-member and a nonexistent `householdId` deny
+# identically (see `Query.household`'s doc for the same convention).
+query Pantry($householdId: ID!, $search: String, $category: String) {
+  pantry(householdId: $householdId, search: $search, category: $category) {
+    ...PantryItemFields
+  }
+}

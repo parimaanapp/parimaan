@@ -213,7 +213,12 @@ void main() {
       );
 
       router.go(AppRoutes.pantry);
-      await tester.pumpAndSettle();
+      // Not `pumpAndSettle`: `PantryListScreen` shows a `CircularProgressIndicator`
+      // while `activeHouseholdProvider` resolves, and this harness (unlike
+      // `household_route_harness.dart`) stubs no household data at all — an
+      // indefinite spinner never settles. A location/route assertion doesn't
+      // need the fetch to finish.
+      await tester.pump();
 
       expect(_location(router), AppRoutes.pantry);
     });
@@ -232,7 +237,9 @@ void main() {
         expect(_location(router), AppRoutes.home);
 
         await tester.tap(find.text('Pantry'));
-        await tester.pumpAndSettle();
+        // Same reason as the test above: PantryListScreen's spinner never
+        // settles with no household data stubbed in this harness.
+        await tester.pump();
         expect(_location(router), AppRoutes.pantry);
 
         // A StatefulShellRoute keeps every branch's widget tree alive in an
