@@ -117,6 +117,40 @@ type Mutation {
   it is always the verified caller, taken from their authenticated identity.
   """
   addPantryItem(householdId: ID!, input: PantryItemInput!): PantryItem!
+
+  """
+  Applies a partial patch to a pantry item — every `input` field is
+  optional, and an absent field leaves that column unchanged (an explicit
+  `null` is rejected), the same semantics as `updateHouseholdSettings`.
+  Takes no `householdId`: the item's household is looked up from `id`
+  itself, and RLS is what actually enforces "your own household's items
+  only" here — a caller who isn't a member of the item's household gets
+  the identical NOT_FOUND response as a nonexistent `id`, never a separate
+  "forbidden" signal that would leak which case it was.
+  """
+  updatePantryItem(id: ID!, input: PantryItemPatchInput!): PantryItem!
+
+  """
+  Deletes a pantry item and returns the row that was deleted, so other
+  devices' `onPantryChanged` subscription (a later slice) can learn which
+  item vanished. Same `id`-only membership resolution as `updatePantryItem`.
+  A second call for the same `id` denies identically to the first call ever
+  having been for a nonexistent item — deletion is not itself observable
+  through the error shape.
+  """
+  deletePantryItem(id: ID!): PantryItem!
+
+  """
+  Adds up to 50 pantry items in one call, in a single transaction — either
+  all items are added or none are (a failure partway through rolls back the
+  whole batch, not just the failed item). Requires the caller to already be
+  a member of `householdId`. The 50-item cap exists purely to bound the
+  request; there is no cap on how many pantry items a household can have in
+  total. Has no W5 caller (photo-pantry, W18, is its first real one) and is
+  deliberately not on `onPantryChanged`'s mutation list — a list-shaped
+  payload can't fan out to that subscription's single-`PantryItem` shape.
+  """
+  bulkAddPantryItems(householdId: ID!, items: [PantryItemInput!]!): [PantryItem!]!
 }
 
 type User {
@@ -242,6 +276,25 @@ input PantryItemInput {
   name: String!
   quantity: Float!
   unit: String!
+  category: String
+  isStaple: Boolean
+  expiryDate: AWSDate
+  lowThreshold: Float
+}
+
+"""
+A partial patch for `Mutation.updatePantryItem` — every field is optional
+(absent = "leave unchanged"). Sending an explicit `null` for any field is
+rejected server-side; clearing a field is not yet supported. Same shape and
+semantics as `HouseholdSettingsInput`, deliberately a separate type from
+`PantryItemInput` rather than reusing it — `PantryItemInput`'s `name`/
+`quantity`/`unit` are required, which is correct for a create but wrong for
+a patch.
+"""
+input PantryItemPatchInput {
+  name: String
+  quantity: Float
+  unit: String
   category: String
   isStaple: Boolean
   expiryDate: AWSDate

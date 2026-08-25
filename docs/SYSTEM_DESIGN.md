@@ -500,8 +500,15 @@ type Mutation {
   # Pantry
   addPantryItem(householdId: ID!, input: PantryItemInput!): PantryItem!
   bulkAddPantryItems(householdId: ID!, items: [PantryItemInput!]!): [PantryItem!]!
-  updatePantryItem(id: ID!, input: PantryItemInput!): PantryItem!
-  deletePantryItem(id: ID!): Boolean!
+  # PantryItemPatchInput (not PantryItemInput — its fields are all required,
+  # wrong for a partial patch), and returns PantryItem!, not Boolean!
+  # (W5 S3, E2E_MVP_PLAN.md §11.2.1) — a future onPantryChanged subscriber
+  # needs to know *which* item vanished on delete, not just that a delete
+  # happened somewhere. Neither mutation takes householdId; the item's
+  # household is discovered from `id` via a query already RLS-scoped to the
+  # caller's own households (see api/src/resolvers/updatePantryItem.ts).
+  updatePantryItem(id: ID!, input: PantryItemPatchInput!): PantryItem!
+  deletePantryItem(id: ID!): PantryItem!
 
   # Recipes
   createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
@@ -540,11 +547,18 @@ type PresignedUpload {
 # ---------- Subscriptions ----------
 
 type Subscription {
+  # This list was originally 6 mutations, 3 of which can't compile as an
+  # AppSync subscription: a subscribed mutation's return type must be a
+  # supertype of the subscription payload, and `bulkAddPantryItems` returns
+  # `[PantryItem!]!` (a list can't fan out to one `PantryItem`), while
+  # `haveIt`/`markPurchased` return `ShoppingListItem!` (wrong type, and
+  # don't exist yet — W11/W12). Corrected per E2E_MVP_PLAN.md §11.2.1;
+  # `bulkAddPantryItems`' own subscription coverage (`onPantryBulkChanged`
+  # or a refetch) is an open W18 item, not solved here. `Subscription`
+  # itself is still not implemented (W8) — this type declaration is
+  # aspirational until then, same as the rest of this section.
   onPantryChanged(householdId: ID!): PantryItem
-    @aws_subscribe(mutations: [
-      "addPantryItem", "bulkAddPantryItems", "updatePantryItem",
-      "deletePantryItem", "haveIt", "markPurchased"
-    ])
+    @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])
 
   onMenuChanged(householdId: ID!): Menu
     @aws_subscribe(mutations: [
