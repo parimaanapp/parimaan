@@ -68,11 +68,21 @@ describe('generateInviteCode', () => {
     }
   });
 
-  it('produces no duplicates across 10,000 generations (smoke test)', () => {
+  // 2,000 draws against the 31^6 (~887M) code space keeps the expected
+  // collision count (birthday approximation: n^2 / 2N) around 0.0023 — a
+  // false failure roughly once per ~440 runs. The original 10,000-draw
+  // version put that figure around 5.6%, which is what was actually firing
+  // in CI: two different real runs failed on two different flaky tests in
+  // this file's neighbourhood, and this was the reproducible one. Fewer
+  // draws is the fix, not a larger alphabet or a fixed seed — the alphabet
+  // and length are locked product decisions, and the point of a *real* RNG
+  // smoke test is to catch an actual bug in `generateInviteCode`, which a
+  // seeded fake can't do.
+  it('produces no duplicates across 2,000 generations (smoke test)', () => {
     const seen = new Set<string>();
-    for (let i = 0; i < 10_000; i += 1) {
+    for (let i = 0; i < 2_000; i += 1) {
       seen.add(generateInviteCode());
     }
-    expect(seen.size).toBe(10_000);
+    expect(seen.size).toBe(2_000);
   });
 });
