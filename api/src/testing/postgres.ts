@@ -62,13 +62,15 @@ export const startTestDatabase = async (): Promise<TestDatabase> => {
 };
 
 /**
- * Clears every baseline table between tests within a shared container, via
- * `RESTART IDENTITY CASCADE` — same statement `db/migrations.test.ts`
- * already uses in its `beforeEach` hooks, reused here rather than
- * reinvented.
+ * Clears every table this test harness knows about between tests within a
+ * shared container, via `RESTART IDENTITY CASCADE` — same statement
+ * `db/migrations.test.ts` already uses in its `beforeEach` hooks, reused
+ * here rather than reinvented. Every migration that adds a new table must
+ * add it here too, or a later slice's tests will see leftover rows from an
+ * earlier one.
  */
 export const truncateAll = async (client: Client): Promise<void> => {
   await client.query(
-    'TRUNCATE TABLE household_memberships, household_settings, households, users RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE pantry_items, household_memberships, household_settings, households, users RESTART IDENTITY CASCADE',
   );
 };
