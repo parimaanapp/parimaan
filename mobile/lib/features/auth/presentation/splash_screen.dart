@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/ui/colors.dart';
+import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../state/auth_controller.dart';
 
@@ -20,24 +21,40 @@ class SplashScreen extends ConsumerWidget {
   /// besides one appearance on the About screen.
   static const String wordmark = 'परिमाण';
 
+  /// The mark (green square, प glyph) above the wordmark below it — same
+  /// treatment as `SignInScreen.markKey`.
+  static const Key markKey = Key('splash-mark');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watched, not read: dropping the subscription would let Riverpod dispose
     // the controller mid-resolution while this is the only screen mounted.
     ref.watch(authControllerProvider);
 
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.paper,
       body: Center(
-        child: Text(
-          wordmark,
-          style: TextStyle(
-            fontFamily: AppFontFamily.wordmark,
-            fontSize: 40,
-            height: 44 / 40,
-            fontWeight: FontWeight.w500,
-            color: AppColors.ink,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Image.asset(
+              'assets/branding/parimaan-mark-1024.png',
+              key: markKey,
+              width: 72,
+              height: 72,
+            ),
+            const SizedBox(height: AppSpacing.s4),
+            const Text(
+              wordmark,
+              style: TextStyle(
+                fontFamily: AppFontFamily.wordmark,
+                fontSize: 40,
+                height: 44 / 40,
+                fontWeight: FontWeight.w500,
+                color: AppColors.ink,
+              ),
+            ),
+          ],
         ),
       ),
     );
