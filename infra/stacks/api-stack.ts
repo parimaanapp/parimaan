@@ -144,6 +144,24 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'addPantryItem',
   },
+  {
+    id: 'UpdatePantryItem',
+    entryFile: 'updatePantryItem.ts',
+    typeName: 'Mutation',
+    fieldName: 'updatePantryItem',
+  },
+  {
+    id: 'DeletePantryItem',
+    entryFile: 'deletePantryItem.ts',
+    typeName: 'Mutation',
+    fieldName: 'deletePantryItem',
+  },
+  {
+    id: 'BulkAddPantryItems',
+    entryFile: 'bulkAddPantryItems.ts',
+    typeName: 'Mutation',
+    fieldName: 'bulkAddPantryItems',
+  },
 ];
 
 /**
@@ -183,7 +201,16 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   (E2E_MVP_PLAN.md §11.3). Both member-gated the same way as
  *   `Query.household`/`updateHouseholdSettings`, with `pantry_items`'
  *   `FOR ALL USING (...) WITH CHECK (...)` RLS policy (S1) as layer-3
- *   defense-in-depth behind them. `onPantryChanged` is S8, not yet wired.
+ *   defense-in-depth behind them.
+ * - `Mutation.updatePantryItem`, `Mutation.deletePantryItem`,
+ *   `Mutation.bulkAddPantryItems` — W5 slice S3. The first two take only
+ *   `id` (no `householdId`), so unlike every resolver above there is no
+ *   `requireHouseholdMember` pre-check possible — RLS alone gates them,
+ *   and a nonexistent id or one in another household both surface as the
+ *   identical `NOT_FOUND` (see `resolvers/updatePantryItem.ts`'s doc).
+ *   `bulkAddPantryItems` IS `householdId`-gated like `addPantryItem`, and
+ *   is capped at 50 items per call. `onPantryChanged` is S8, not yet
+ *   wired.
  *
  * The `onHouseholdChanged`/`onHouseholdSettingsChanged` subscriptions are
  * deliberately deferred to W12, when a connect-time authorizer Lambda exists

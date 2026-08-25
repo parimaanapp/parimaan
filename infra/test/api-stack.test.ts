@@ -218,9 +218,29 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).not.toMatch(/type Subscription/);
   });
 
-  it('declares exactly 12 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem)', () => {
+  it('the real schema file still declares the pantry query and mutations (W5 S2/S3)', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /pantry\(householdId:\s*ID!,\s*search:\s*String,\s*category:\s*String\)\s*:\s*\[PantryItem!\]!/,
+    );
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /addPantryItem\(householdId:\s*ID!,\s*input:\s*PantryItemInput!\)\s*:\s*PantryItem!/,
+    );
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /updatePantryItem\(id:\s*ID!,\s*input:\s*PantryItemPatchInput!\)\s*:\s*PantryItem!/,
+    );
+    // deletePantryItem returns PantryItem!, not Boolean! — a deliberate
+    // deviation from SYSTEM_DESIGN.md's original aspirational signature
+    // (E2E_MVP_PLAN.md §11.2.1), so a future edit reverting it silently
+    // would fail here.
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/deletePantryItem\(id:\s*ID!\)\s*:\s*PantryItem!/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /bulkAddPantryItems\(householdId:\s*ID!,\s*items:\s*\[PantryItemInput!\]!\)\s*:\s*\[PantryItem!\]!/,
+    );
+  });
+
+  it('declares exactly 15 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(12);
+    expect(ourFunctions(template)).toHaveLength(15);
   });
 
   it('declares the health Lambda outside the VPC, on the Node.js 24 runtime', () => {
@@ -233,10 +253,10 @@ describe('ApiStack', () => {
     expect(healthFn.Properties.Runtime).toBe('nodejs24.x');
   });
 
-  it('declares 11 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 14 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(11);
+    expect(vpcFunctions).toHaveLength(14);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -254,7 +274,7 @@ describe('ApiStack', () => {
   it('gives every VPC-attached resolver Lambda enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(11);
+    expect(vpcFunctions).toHaveLength(14);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
@@ -264,7 +284,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(11);
+    expect(vpcFunctions).toHaveLength(14);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -386,9 +406,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 12 AppSync Lambda data sources', () => {
+  it('declares exactly 15 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 12);
+    template.resourceCountIs('AWS::AppSync::DataSource', 15);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -481,9 +501,54 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 12 resolvers total', () => {
+  it('declares a resolver for Query.pantry', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 12);
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Query',
+      FieldName: 'pantry',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.addPantryItem', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'addPantryItem',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.updatePantryItem', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'updatePantryItem',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.deletePantryItem', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'deletePantryItem',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.bulkAddPantryItems', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'bulkAddPantryItems',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares exactly 15 resolvers total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::Resolver', 15);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {
