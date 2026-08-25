@@ -6,6 +6,7 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
+import 'package:mobile/shared/ui/components/p_tab_bar.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../support/fake_auth_repository.dart';
@@ -65,6 +66,20 @@ void main() {
       );
 
       router.go(AppRoutes.home);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.signIn);
+    });
+
+    testWidgets('deep navigation to /home/pantry is redirected to /sign-in', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: const AuthSession.signedOut(),
+      );
+
+      router.go(AppRoutes.pantry);
       await tester.pumpAndSettle();
 
       expect(_location(router), AppRoutes.signIn);
@@ -172,6 +187,71 @@ void main() {
       expect(_location(router), AppRoutes.home);
       expect(find.text('Signed in'), findsOne);
     });
+
+    testWidgets('/home renders a two-item PTabBar', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.home);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PTabBar), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Pantry'), findsOneWidget);
+    });
+
+    testWidgets('/home/pantry stays reachable and is not bounced back', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.pantry);
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.pantry);
+    });
+
+    testWidgets(
+      'tapping the Pantry tab switches branch and preserves Home '
+      'branch state',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.home);
+        await tester.pumpAndSettle();
+        expect(_location(router), AppRoutes.home);
+
+        await tester.tap(find.text('Pantry'));
+        await tester.pumpAndSettle();
+        expect(_location(router), AppRoutes.pantry);
+
+        // A StatefulShellRoute keeps every branch's widget tree alive in an
+        // IndexedStack rather than disposing it on switch — this is the
+        // property that makes the shell "stateful" rather than a plain
+        // rebuild-per-tab layout. `skipOffstage: false` because the whole
+        // point of the assertion is that Home's tree survives while it is
+        // the *unpainted* branch — the default `find.text` would only prove
+        // the opposite.
+        expect(
+          find.text('Signed in', skipOffstage: false),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Home'));
+        await tester.pumpAndSettle();
+        expect(_location(router), AppRoutes.home);
+      },
+    );
 
     testWidgets('/join stays reachable and is not bounced back', (
       WidgetTester tester,
