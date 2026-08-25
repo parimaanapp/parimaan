@@ -132,6 +132,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Query',
     fieldName: 'household',
   },
+  {
+    id: 'Pantry',
+    entryFile: 'pantry.ts',
+    typeName: 'Query',
+    fieldName: 'pantry',
+  },
+  {
+    id: 'AddPantryItem',
+    entryFile: 'addPantryItem.ts',
+    typeName: 'Mutation',
+    fieldName: 'addPantryItem',
+  },
 ];
 
 /**
@@ -167,14 +179,19 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   (in lieu of the subscriptions below) need this instead. No rate
  *   limiting: it's a plain authorized read, not a guessable-keyspace or
  *   destructive-to-others action like the two `cacheTable` consumers above.
+ * - `Query.pantry`, `Mutation.addPantryItem` — W5 slice S2
+ *   (E2E_MVP_PLAN.md §11.3). Both member-gated the same way as
+ *   `Query.household`/`updateHouseholdSettings`, with `pantry_items`'
+ *   `FOR ALL USING (...) WITH CHECK (...)` RLS policy (S1) as layer-3
+ *   defense-in-depth behind them. `onPantryChanged` is S8, not yet wired.
  *
  * The `onHouseholdChanged`/`onHouseholdSettingsChanged` subscriptions are
  * deliberately deferred to W12, when a connect-time authorizer Lambda exists
  * (SD §10.4) — no `Subscription` type exists in `shared/schema.graphql` yet.
  *
- * Only `_health` stays out of the VPC (no DB access needed) — the other
- * nine are VPC-attached, connecting to Aurora as the least-privileged
- * `parimaan_app` role (never the cluster's admin credentials).
+ * Only `_health` stays out of the VPC (no DB access needed) — the rest are
+ * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`
+ * role (never the cluster's admin credentials).
  */
 export class ApiStack extends cdk.Stack {
   public readonly api: GraphqlApi;

@@ -324,6 +324,7 @@ sequenceDiagram
 ```graphql
 scalar AWSDateTime
 scalar AWSJSON
+scalar AWSDate
 
 # ---------- Types ----------
 
@@ -411,10 +412,26 @@ type PantryItem {
   unit: String!
   category: String
   isStaple: Boolean!
-  expiryDate: AWSDateTime
+  # AWSDate, not AWSDateTime (deviation, W5 S2 — E2E_MVP_PLAN.md §11.2.5):
+  # the underlying column is a plain SQL DATE, and AWSDateTime would attach
+  # a spurious time-of-day and timezone no user chose.
+  expiryDate: AWSDate
   lowThreshold: Float
   addedBy: ID!
+  addedAt: AWSDateTime!
   updatedAt: AWSDateTime!
+}
+
+# No `addedBy` field — always the verified caller, never client-supplied
+# (W5 S2).
+input PantryItemInput {
+  name: String!
+  quantity: Float!
+  unit: String!
+  category: String
+  isStaple: Boolean
+  expiryDate: AWSDate
+  lowThreshold: Float
 }
 
 type Menu {
