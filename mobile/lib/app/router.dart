@@ -21,13 +21,11 @@ import '../features/household/presentation/settings/household_edit_entry.dart';
 import '../features/household/presentation/settings/members_list_screen.dart';
 import '../features/household/presentation/settings/settings_hub_screen.dart';
 import '../features/household/presentation/settings/settings_placeholder_screen.dart';
-import '../features/household/state/current_household_controller.dart';
 import '../features/household/state/pending_join_code_controller.dart';
+import '../features/home/presentation/home_screen.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
-import '../features/household/domain/household.dart';
-import '../shared/ui/colors.dart';
-import '../shared/ui/components/components.dart';
-import '../shared/ui/spacing.dart';
+import '../features/pantry/presentation/pantry_placeholder_screen.dart';
+import '../features/shell/presentation/app_shell.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
 abstract final class AppRoutes {
@@ -138,6 +136,11 @@ abstract final class AppRoutes {
       '/household/$householdId/settings/dietary';
 
   static const String home = '/home';
+
+  /// The Pantry tab of the signed-in shell — a sibling branch of [home], not
+  /// a child route, even though the path nests under it. See the
+  /// `StatefulShellRoute` in [goRouterProvider].
+  static const String pantry = '/home/pantry';
 }
 
 /// The app's route table plus its auth guard.
@@ -298,10 +301,33 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
                   DietaryAllergensScreen(flow: flow),
             ),
       ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (BuildContext context, GoRouterState state) =>
-            const _HomePlaceholderScreen(),
+      StatefulShellRoute.indexedStack(
+        builder:
+            (
+              BuildContext context,
+              GoRouterState state,
+              StatefulNavigationShell navigationShell,
+            ) => AppShell(navigationShell: navigationShell),
+        branches: <StatefulShellBranch>[
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (BuildContext context, GoRouterState state) =>
+                    const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.pantry,
+                builder: (BuildContext context, GoRouterState state) =>
+                    const PantryPlaceholderScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
@@ -374,56 +400,4 @@ String? _redirect(Ref ref, GoRouterState state) {
         : null;
   }
   return location == AppRoutes.signIn ? null : AppRoutes.signIn;
-}
-
-/// Stand-in for the real home screen, which is a later slice.
-///
-/// ## Deliberately still a placeholder
-///
-/// The week plan that belongs at `/home` is Phase 2 work. What this slice adds
-/// is the **minimum affordance needed to reach Settings and Members at all** —
-/// without it the two screens this slice builds would be reachable only by
-/// typing a URL, and no manual verification of them would be possible.
-///
-/// So: one button, shown only when `activeHouseholdProvider` knows of a
-/// household (see that provider's doc for how it combines this session's own
-/// create/join state with `Query.me`). Nothing else about home is built here.
-/// When the real home screen lands it should replace this file outright rather
-/// than growing from it.
-class _HomePlaceholderScreen extends ConsumerWidget {
-  const _HomePlaceholderScreen();
-
-  static const Key settingsButtonKey = Key('home-settings');
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final Household? household = ref.watch(activeHouseholdProvider);
-
-    return Scaffold(
-      backgroundColor: AppColors.paper,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.s3),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const Text('Signed in'),
-                if (household != null) ...<Widget>[
-                  const SizedBox(height: AppSpacing.s3),
-                  PButton(
-                    key: settingsButtonKey,
-                    label: 'Household settings',
-                    variant: PButtonVariant.secondary,
-                    onPressed: () =>
-                        context.go(AppRoutes.settingsHub(household.id)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
