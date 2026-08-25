@@ -144,3 +144,100 @@ export const findPantryItems = async (
   );
   return result.rows.map(mapPantryItemRow);
 };
+
+/**
+ * Looks up a single pantry item by id, with no `householdId` to check
+ * against — `updatePantryItem`/`deletePantryItem` take only `id` (see
+ * `shared/schema.graphql`'s doc on both), so there is no client-supplied
+ * household context to gate on *before* this query the way
+ * `requireHouseholdMember` does for every other household-scoped resolver.
+ * RLS is therefore the only thing standing between a caller and an item
+ * belonging to someone else's household here — a non-member's query for a
+ * real item in another household returns `null`, indistinguishable from
+ * the item simply not existing (see `resolvers/updatePantryItem.ts`'s doc
+ * for how that collapses into one denial response).
+ */
+export const findPantryItemById = async (
+  client: PoolClient,
+  id: string,
+): Promise<PantryItemRow | null> => {
+  const result = await client.query<RawPantryItemRow>(`SELECT * FROM pantry_items WHERE id = $1`, [
+    id,
+  ]);
+  const row = result.rows[0];
+  return row === undefined ? null : mapPantryItemRow(row);
+};
+
+export interface PantryItemPatch {
+  name?: string;
+  quantity?: number;
+  unit?: string;
+  category?: string;
+  isStaple?: boolean;
+  /** `YYYY-MM-DD`. */
+  expiryDate?: string;
+  lowThreshold?: number;
+}
+
+/**
+ * Applies `patch` to a single `pantry_items` row via one `UPDATE ... SET
+ * col = COALESCE($n, col), ...` statement — identical pattern to
+ * `householdRepository.ts`'s `updateSettingsPartial`: an absent patch field
+ * binds SQL `null`, and `COALESCE` keeps that column's existing value
+ * unchanged. Returns `null` if no row matched `id` — either it doesn't
+ * exist, or (via RLS's `USING` clause) it belongs to a household the caller
+ * isn't a member of; see `findPantryItemById`'s doc for why those two cases
+ * are indistinguishable by design here.
+ */
+export const updatePantryItemPartial = async (
+  client: PoolClient,
+  id: string,
+  patch: PantryItemPatch,
+): Promise<PantryItemRow | null> => {
+  const result = await client.query<RawPantryItemRow>(
+    `UPDATE pantry_items SET
+       name = COALESCE($2::text, name),
+       quantity = COALESCE($3::numeric, quantity),
+       unit = COALESCE($4::text, unit),
+       category = COALESCE($5::text, category),
+       is_staple = COALESCE($6::boolean, is_staple),
+       expiry_date = COALESCE($7::date, expiry_date),
+       low_threshold = COALESCE($8::numeric, low_threshold),
+       updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      id,
+      patch.name ?? null,
+      patch.quantity ?? null,
+      patch.unit ?? null,
+      patch.category ?? null,
+      patch.isStaple ?? null,
+      patch.expiryDate ?? null,
+      patch.lowThreshold ?? null,
+    ],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapPantryItemRow(row);
+};
+
+/**
+ * Deletes a single pantry item by id and returns the row that was deleted
+ * (`null` if none matched — same indistinguishable not-found-vs-not-mine
+ * reasoning as `findPantryItemById`). Returning the deleted row rather than
+ * a boolean is what lets `Mutation.deletePantryItem` report `PantryItem!`
+ * instead of `Boolean!` (§11.2.1) — a future `onPantryChanged` subscriber
+ * needs to know *which* item vanished, not just that a delete happened
+ * somewhere.
+ */
+export const deletePantryItemById = async (
+  client: PoolClient,
+  id: string,
+): Promise<PantryItemRow | null> => {
+  const result = await client.query<RawPantryItemRow>(
+    `DELETE FROM pantry_items WHERE id = $1 RETURNING *`,
+    [id],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapPantryItemRow(row);
+};

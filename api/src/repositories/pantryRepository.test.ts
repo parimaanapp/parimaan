@@ -7,7 +7,13 @@ import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from './userRepository.js';
 import { insertHousehold, insertMembership } from './householdRepository.js';
-import { findPantryItems, insertPantryItem } from './pantryRepository.js';
+import {
+  deletePantryItemById,
+  findPantryItemById,
+  findPantryItems,
+  insertPantryItem,
+  updatePantryItemPartial,
+} from './pantryRepository.js';
 import type { UserRow } from './userRepository.js';
 
 describe('pantryRepository', () => {
@@ -295,5 +301,206 @@ describe('pantryRepository', () => {
       findPantryItems(client, householdId, { search: 'dal', category: 'dal' }),
     );
     expect(results.map((item) => item.name)).toEqual(['Toor Dal']);
+  });
+
+  describe('findPantryItemById', () => {
+    it('finds an item belonging to the caller\'s own household', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Toor Dal',
+          quantity: 1,
+          unit: 'kg',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      const found = await asUser(owner.id, (client) => findPantryItemById(client, item.id));
+      expect(found?.id).toBe(item.id);
+    });
+
+    it('returns null for a nonexistent id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+      const found = await asUser(owner.id, (client) => findPantryItemById(client, randomUUID()));
+      expect(found).toBeNull();
+    });
+
+    // RLS-only regression: this repository function is called directly here,
+    // bypassing any resolver-level membership gate entirely — same
+    // "repository test doubles as an RLS-only test" convention as
+    // `householdRepository.test.ts`'s `updateSettingsPartial` coverage.
+    it('returns null for an item belonging to a household the caller is not a member of (RLS)', async () => {
+      const owner = await createUser();
+      const outsider = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Toor Dal',
+          quantity: 1,
+          unit: 'kg',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      const found = await asUser(outsider.id, (client) => findPantryItemById(client, item.id));
+      expect(found).toBeNull();
+    });
+  });
+
+  describe('updatePantryItemPartial', () => {
+    const insertItem = (
+      owner: UserRow,
+      householdId: string,
+    ): ReturnType<typeof insertPantryItem> =>
+      asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Toor Dal',
+          quantity: 1,
+          unit: 'kg',
+          category: 'dal',
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+    it('updates only the provided fields, leaving the rest unchanged', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await insertItem(owner, householdId);
+
+      const updated = await asUser(owner.id, (client) =>
+        updatePantryItemPartial(client, item.id, { quantity: 5 }),
+      );
+
+      expect(updated?.quantity).toBe(5);
+      expect(updated?.name).toBe('Toor Dal');
+      expect(updated?.unit).toBe('kg');
+      expect(updated?.category).toBe('dal');
+    });
+
+    it('moves updatedAt forward', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await insertItem(owner, householdId);
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const updated = await asUser(owner.id, (client) =>
+        updatePantryItemPartial(client, item.id, { quantity: 5 }),
+      );
+
+      expect(updated?.updatedAt.getTime()).toBeGreaterThan(item.updatedAt.getTime());
+    });
+
+    it('returns null for a nonexistent id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+      const updated = await asUser(owner.id, (client) =>
+        updatePantryItemPartial(client, randomUUID(), { quantity: 5 }),
+      );
+      expect(updated).toBeNull();
+    });
+
+    it('returns null (updates nothing) for an item in another household — RLS', async () => {
+      const owner = await createUser();
+      const outsider = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await insertItem(owner, householdId);
+
+      const updated = await asUser(outsider.id, (client) =>
+        updatePantryItemPartial(client, item.id, { quantity: 999 }),
+      );
+      expect(updated).toBeNull();
+
+      const stillOriginal = await asUser(owner.id, (client) => findPantryItemById(client, item.id));
+      expect(stillOriginal?.quantity).toBe(1);
+    });
+  });
+
+  describe('deletePantryItemById', () => {
+    it('deletes the item and returns the deleted row', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Toor Dal',
+          quantity: 1,
+          unit: 'kg',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      const deleted = await asUser(owner.id, (client) => deletePantryItemById(client, item.id));
+      expect(deleted?.id).toBe(item.id);
+
+      const stillThere = await asUser(owner.id, (client) => findPantryItemById(client, item.id));
+      expect(stillThere).toBeNull();
+    });
+
+    it('a second delete of the same id returns null, not an error', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Toor Dal',
+          quantity: 1,
+          unit: 'kg',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      await asUser(owner.id, (client) => deletePantryItemById(client, item.id));
+      const secondDelete = await asUser(owner.id, (client) => deletePantryItemById(client, item.id));
+      expect(secondDelete).toBeNull();
+    });
+
+    it('returns null (deletes nothing) for an item in another household — RLS', async () => {
+      const owner = await createUser();
+      const outsider = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Toor Dal',
+          quantity: 1,
+          unit: 'kg',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      const deleted = await asUser(outsider.id, (client) => deletePantryItemById(client, item.id));
+      expect(deleted).toBeNull();
+
+      const stillThere = await asUser(owner.id, (client) => findPantryItemById(client, item.id));
+      expect(stillThere?.id).toBe(item.id);
+    });
   });
 });
