@@ -333,7 +333,26 @@ String buildAmplifyConfig(AppConfig config) {
                 'AppClientId': config.mobileClientId,
                 'SignInRedirectURI': signInRedirectUri,
                 'SignOutRedirectURI': signOutRedirectUri,
-                'Scopes': <String>['email', 'openid', 'profile'],
+                // `aws.cognito.signin.user.admin` is not optional: it's what
+                // `_readSignedInUser`'s `getCurrentUser()`/
+                // `fetchUserAttributes()` calls need on the access token to
+                // call Cognito's `GetUser` API after Hosted UI sign-in — the
+                // Cognito app client itself already *allows* this scope
+                // (`OAUTH_SCOPES` in `infra/stacks/auth-stack.ts`), but a
+                // client only ever gets a token carrying the scopes it
+                // actually *requests* here, so this list has to match that
+                // one. Omitting it here (as an earlier version of this file
+                // did) produces a token that Cognito's own app-client config
+                // would have permitted, but that Amplify's own post-sign-in
+                // calls then reject as insufficiently scoped — a real device
+                // sign-in is the only thing that exercises the actual
+                // authorize-request scope list end to end.
+                'Scopes': <String>[
+                  'email',
+                  'openid',
+                  'profile',
+                  'aws.cognito.signin.user.admin',
+                ],
               },
             },
           },

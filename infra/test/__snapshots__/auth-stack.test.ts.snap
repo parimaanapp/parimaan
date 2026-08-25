@@ -158,6 +158,7 @@ exports[`AuthStack > matches the known-good synthesized template snapshot (dev) 
           "email",
           "openid",
           "profile",
+          "aws.cognito.signin.user.admin",
         ],
         "CallbackURLs": [
           "parimaan://auth",
@@ -197,6 +198,7 @@ exports[`AuthStack > matches the known-good synthesized template snapshot (dev) 
           "email",
           "openid",
           "profile",
+          "aws.cognito.signin.user.admin",
         ],
         "CallbackURLs": [
           "https://dev.parimaan.app/api/auth/callback/cognito",

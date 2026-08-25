@@ -5,6 +5,7 @@ import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/household/state/current_household_controller.dart';
 import 'package:mobile/features/household/state/household_wizard_controller.dart';
 import 'package:mobile/features/household/state/join_household_controller.dart';
+import 'package:mobile/features/household/state/me_households_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 
 import '../../../support/fake_household_repository.dart';
@@ -155,14 +156,21 @@ void main() {
     );
   });
 
-  group('activeHouseholdProvider — the Query.me stopgap', () {
-    test('is null when nothing has been created or joined this session', () {
-      final ProviderContainer container = _container(
-        FakeHouseholdRepository(result: testHousehold),
-      );
+  group('activeHouseholdProvider', () {
+    test(
+      'is null when nothing has been created or joined this session and '
+      '`Query.me` reports no households',
+      () {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            result: testHousehold,
+            myHouseholdsResult: const <Household>[],
+          ),
+        );
 
-      expect(container.read(activeHouseholdProvider), isNull);
-    });
+        expect(container.read(activeHouseholdProvider), isNull);
+      },
+    );
 
     test('reports the household the wizard created', () async {
       final ProviderContainer container = _container(
@@ -210,5 +218,63 @@ void main() {
       // may be a half-finished household the user walked away from.
       expect(container.read(activeHouseholdProvider), testHouseholdWithMembers);
     });
+
+    test(
+      'falls back to `Query.me`\'s first household when nothing was created '
+      'or joined this session — the returning-user, cold-start case',
+      () async {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            result: testHousehold,
+            myHouseholdsResult: <Household>[
+              testHousehold,
+              testHouseholdWithMembers,
+            ],
+          ),
+        );
+
+        await container.read(meHouseholdsControllerProvider.future);
+
+        expect(container.read(activeHouseholdProvider), testHousehold);
+      },
+    );
+
+    test(
+      'prefers this session\'s created/joined household over `Query.me`\'s '
+      'list — the list may still be last launch\'s, stale by definition the '
+      'moment a create or join succeeds',
+      () async {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            joinResult: testHouseholdWithMembers,
+            myHouseholdsResult: <Household>[testHousehold],
+          ),
+        );
+        await container.read(meHouseholdsControllerProvider.future);
+        await container.read(joinHouseholdControllerProvider.future);
+
+        await container
+            .read(joinHouseholdControllerProvider.notifier)
+            .join('K4M9PQ');
+
+        expect(container.read(activeHouseholdProvider), testHouseholdWithMembers);
+      },
+    );
+
+    test(
+      'is null while `Query.me` is still loading and nothing session-scoped '
+      'is available yet — never a stale answer',
+      () {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            result: testHousehold,
+            myHouseholdsResult: <Household>[testHousehold],
+            delay: const Duration(milliseconds: 50),
+          ),
+        );
+
+        expect(container.read(activeHouseholdProvider), isNull);
+      },
+    );
   });
 }

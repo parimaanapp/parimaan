@@ -357,11 +357,15 @@ String? _redirect(Ref ref, GoRouterState state) {
 
     // A signed-in user arriving from splash or bouncing off /sign-in lands on
     // the first-run screen, not /home. Note this is *unconditional* for now:
-    // deciding whether the user already has a household needs `Query.me`, and
-    // no controller reads it yet. The consequence is honest but temporary — a
-    // returning user with a household still sees the choose-path screen. The
-    // slice that adds a `me` controller should gate this on
-    // `households.isEmpty` rather than adding a second redirect.
+    // `MeHouseholdsController` exists and `activeHouseholdProvider` reads it,
+    // but gating *this* redirect on it is deliberately deferred — every other
+    // test in this file boots the router with no `householdRepositoryProvider`
+    // override, and reading the me controller here would turn every one of
+    // them into a network-dependent test for a guard they are not exercising.
+    // The consequence is honest but temporary — a returning user with a
+    // household still sees the choose-path screen. Wiring this in belongs to
+    // a slice that also updates the router test harness to supply a fake
+    // household repository, not this one.
     //
     // Every other signed-in location is left alone, so navigation *within* the
     // signed-in area is not fought by the guard.
@@ -382,8 +386,8 @@ String? _redirect(Ref ref, GoRouterState state) {
 /// typing a URL, and no manual verification of them would be possible.
 ///
 /// So: one button, shown only when `activeHouseholdProvider` knows of a
-/// household (see that provider's doc — it is itself a documented stopgap for
-/// the missing `Query.me` controller). Nothing else about home is built here.
+/// household (see that provider's doc for how it combines this session's own
+/// create/join state with `Query.me`). Nothing else about home is built here.
 /// When the real home screen lands it should replace this file outright rather
 /// than growing from it.
 class _HomePlaceholderScreen extends ConsumerWidget {

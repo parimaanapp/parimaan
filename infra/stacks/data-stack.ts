@@ -1,5 +1,8 @@
-import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import * as cdk from 'aws-cdk-lib';
+import { Alarm, ComparisonOperator, TreatMissingData } from 'aws-cdk-lib/aws-cloudwatch';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import type { IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Port, SecurityGroup, SubnetType } from 'aws-cdk-lib/aws-ec2';
 import {
@@ -20,24 +23,93 @@ import {
 import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
 import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { Topic } from 'aws-cdk-lib/aws-sns';
 import { Provider } from 'aws-cdk-lib/custom-resources';
 import type { Construct } from 'constructs';
 import { hashMigrationsDir } from '../lib/hashMigrationsDir';
 
 /**
- * Resolves the real, already-installed `node-pg-migrate` package directory
- * from `api/`'s own dependencies (not `infra/`'s — `node-pg-migrate` is an
- * `api` dependency; pnpm's strict per-package linking means a bare
- * `require.resolve('node-pg-migrate')` from `infra/` wouldn't find it).
+ * Resolves `pkgName`'s real, on-disk package directory from `fromDir`,
+ * without going through `require.resolve('<pkgName>/package.json')` — several
+ * packages in this closure (`lru-cache`, pulled in via `glob`) declare a
+ * strict `exports` map that does not list `./package.json` as a permitted
+ * subpath, which makes that form throw `ERR_PACKAGE_PATH_NOT_EXPORTED`
+ * even though the package resolves and loads completely normally otherwise.
+ * Resolving the package's actual entry point instead (which every package
+ * must expose, by definition, to be `require`-able at all) and then locating
+ * the last `/node_modules/<pkgName>/` segment in that resolved path sidesteps
+ * the restriction entirely — it never asks for a subpath the package didn't
+ * choose to export.
  */
-const resolveNodePgMigrateDir = (): string => {
-  const apiPackageDir = join(__dirname, '../../api');
+const resolvePackageDir = (pkgName: string, fromDir: string): string => {
   // Synth-time-only filesystem lookup (CDK synth runs as CommonJS per
   // infra/tsconfig.json) — not part of the deployed Lambda bundle.
-  const packageJsonPath = require.resolve('node-pg-migrate/package.json', {
-    paths: [apiPackageDir],
-  });
-  return dirname(packageJsonPath);
+  const entryPath = require.resolve(pkgName, { paths: [fromDir] });
+  const marker = `/node_modules/${pkgName}/`;
+  const markerIndex = entryPath.lastIndexOf(marker);
+  if (markerIndex === -1) {
+    throw new Error(
+      `Could not locate a "${marker}" segment in "${pkgName}"'s resolved entry point ` +
+        `("${entryPath}") — this package's on-disk layout doesn't match the pnpm ` +
+        'structure this resolver assumes.',
+    );
+  }
+  return entryPath.slice(0, markerIndex + marker.length - 1);
+};
+
+/**
+ * Resolves `pkgName`'s real, already-installed directory, plus every runtime
+ * (`dependencies`, never `devDependencies`) dependency it transitively pulls
+ * in — recursively, to whatever depth the graph actually goes.
+ *
+ * This exists because pnpm's isolated `node_modules` layout nests nothing: a
+ * package's own dependencies are never inside that package's directory, only
+ * as **sibling** symlinks in the parent `.pnpm/<pkg>@<version>/node_modules/`
+ * snapshot directory the package itself lives in. That is true of
+ * `node-pg-migrate` (whose siblings are `glob`, `jiti`, `yargs`) and equally
+ * true one level down of `pg` (whose siblings are `pg-connection-string`,
+ * `pg-pool`, `pg-protocol`, `pg-types`, `pgpass`) — a first version of this
+ * function copied only `node-pg-migrate`'s own siblings and missed `pg`'s,
+ * which failed at Lambda cold start with `Cannot find module 'pg-types'`, one
+ * dependency deeper than the version before *that* had failed on `glob`. Both
+ * were the same bug at a different depth, caught only by a real deploy —
+ * nothing here or in CI ever invokes this Lambda.
+ *
+ * The fix generalises instead of patching one more depth: walk the real
+ * `package.json` "dependencies" field of every package encountered, resolved
+ * from *that package's own directory* (not `api/`'s) so a transitive
+ * dependency's own transitive dependencies resolve correctly too, and return
+ * the flattened `{ name -> realDirectory }` map. `resolved` is the
+ * caller-shared accumulator/seen-set — recursion stops at an already-visited
+ * package name rather than re-walking a diamond dependency.
+ *
+ * **`peerDependencies` are not walked** — that field means "the consumer
+ * supplies this", not "this package brings it along", so a generic walk has
+ * no way to know whether a given peer is actually needed at runtime by the
+ * one entry point being bundled. `pg` is exactly this shape for
+ * `node-pg-migrate` (a `peerDependency`, needed because `node-pg-migrate`
+ * really does `require('pg')` internally) — see the caller, which resolves
+ * `pg` as its own explicit second root into the same closure rather than
+ * teaching this function to guess which peers matter.
+ */
+const resolveDependencyClosure = (
+  pkgName: string,
+  fromDir: string,
+  resolved: Map<string, string> = new Map(),
+): Map<string, string> => {
+  if (resolved.has(pkgName)) {
+    return resolved;
+  }
+  const pkgDir = resolvePackageDir(pkgName, fromDir);
+  resolved.set(pkgName, pkgDir);
+
+  const packageJson = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')) as {
+    dependencies?: Record<string, string>;
+  };
+  for (const depName of Object.keys(packageJson.dependencies ?? {})) {
+    resolveDependencyClosure(depName, pkgDir, resolved);
+  }
+  return resolved;
 };
 
 /**
@@ -55,26 +127,49 @@ const resolveNodePgMigrateDir = (): string => {
  * *inside the ephemeral bundling temp directory* — this proved flaky in CI:
  * a bare `CommandExitedWithNonZeroStatus ... exited with status 1` with no
  * further detail, passing consistently in local dev but failing every run
- * on GitHub Actions), the already-installed package is copied directly from
- * this repo's own `node_modules` via `cp -RL`, which dereferences pnpm's
- * symlinked `.pnpm` store layout recursively — including the package's own
- * nested dependencies (`jiti`, etc.) — producing a fully self-contained
- * copy with no network call or package-manager invocation at bundle time.
- * Both CI and local dev already run the one `pnpm install --frozen-lockfile`
- * this depends on being present.
+ * on GitHub Actions), every package in `node-pg-migrate`'s full transitive
+ * runtime dependency closure (see [resolveDependencyClosure]) is copied
+ * directly from this repo's own `node_modules`, via `cp -RL` per package —
+ * `-L` dereferences pnpm's symlinked `.pnpm` store layout into real files,
+ * and each package lands **flat**, directly under the bundle's own
+ * `node_modules/<name>`, which is what makes Node's own upward-walking
+ * module resolution find every one of them from any depth in the bundle.
+ *
+ * `pg` is resolved as its own second root, merged into the same closure —
+ * see [resolveDependencyClosure]'s doc on why a `peerDependency` needs an
+ * explicit root rather than a generic walk.
+ *
+ * `banner` patches in a real `require` for the ESM output esbuild produces.
+ * `loadProductionDeps.ts` reads the DB secret via `@aws-sdk/client-secrets-
+ * manager`, whose transitive `@smithy/node-http-handler` calls Node's own
+ * `require('node:https')` at runtime rather than a static top-level import
+ * (its own way of deferring the choice between `http` and `https`). esbuild
+ * cannot see through that, so under `OutputFormat.ESM` it replaces the
+ * `require` calls it cannot statically resolve with a shim that throws
+ * `Dynamic require of "..." is not supported` — real behavior only a live
+ * invocation exercises, not synth or any test. The fix is the standard one
+ * for esbuild-bundled ESM Lambdas that need CJS-style `require` at runtime:
+ * inject a real one via `createRequire(import.meta.url)`, which Node.js
+ * itself provides for exactly this purpose.
  */
 const createMigrationRunnerBundlingOptions = (migrationsSourceDir: string): BundlingOptions => {
-  const nodePgMigrateDir = resolveNodePgMigrateDir();
+  const apiPackageDir = join(__dirname, '../../api');
+  const closure = resolveDependencyClosure('node-pg-migrate', apiPackageDir);
+  resolveDependencyClosure('pg', apiPackageDir, closure);
+
   return {
     format: OutputFormat.ESM,
     externalModules: ['node-pg-migrate'],
+    banner: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
     commandHooks: {
       beforeBundling: (): string[] => [],
       beforeInstall: (): string[] => [],
       afterBundling: (_inputDir: string, outputDir: string): string[] => [
         `cp -r "${migrationsSourceDir}" "${outputDir}/migrations"`,
         `mkdir -p "${outputDir}/node_modules"`,
-        `cp -RL "${nodePgMigrateDir}" "${outputDir}/node_modules/node-pg-migrate"`,
+        ...Array.from(closure.entries()).map(
+          ([name, dir]) => `cp -RL "${dir}" "${outputDir}/node_modules/${name}"`,
+        ),
       ],
     },
   };
@@ -121,6 +216,14 @@ export class DataStack extends cdk.Stack {
   public readonly lambdaSecurityGroup: SecurityGroup;
   /** Login password for the `parimaan_app` Postgres role (see the app-role migration). */
   public readonly appRoleSecret: Secret;
+  /**
+   * Where Aurora's own CloudWatch alarms publish. Public so a later slice
+   * (Lambda error-rate alarms, say) can reuse the same topic rather than
+   * standing up a second one — nothing in this stack requires that reuse
+   * today. No subscription is created here: that is a "notify a real person"
+   * decision this stack should not make silently on someone's behalf.
+   */
+  public readonly alertsTopic: Topic;
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
@@ -140,6 +243,11 @@ export class DataStack extends cdk.Stack {
 
     const { dbCluster, dbSecret } = this.createAuroraCluster(vpc, dbSecurityGroup);
     this.dbCluster = dbCluster;
+
+    this.alertsTopic = new Topic(this, 'AlertsTopic', {
+      topicName: `parimaan-${envName}-alerts`,
+    });
+    this.createAuroraAlarms(dbCluster, this.alertsTopic);
 
     this.appRoleSecret = this.createAppRoleSecret();
 
@@ -234,13 +342,15 @@ export class DataStack extends cdk.Stack {
   ): { dbCluster: DatabaseCluster; dbSecret: ISecret } {
     const dbCluster = new DatabaseCluster(this, 'AuroraCluster', {
       engine: DatabaseClusterEngine.auroraPostgres({
-        version: AuroraPostgresEngineVersion.VER_16_4,
+        version: AuroraPostgresEngineVersion.VER_16_13,
       }),
       vpc,
       vpcSubnets: { subnetType: SubnetType.PRIVATE_ISOLATED },
       securityGroups: [dbSecurityGroup],
       writer: ClusterInstance.serverlessV2('Writer'),
-      serverlessV2MinCapacity: 0.5,
+      // AWS only allows `serverlessV2AutoPauseDuration` when the minimum is
+      // 0 — a non-zero minimum (e.g. 0.5) rejects auto-pause outright.
+      serverlessV2MinCapacity: 0,
       serverlessV2MaxCapacity: 2,
       // Minimum allowed value (300s = 5 min) — cost discipline is the
       // explicit priority (PRD.md §17.4 lever #2, "non-negotiable"), so pause
@@ -263,6 +373,65 @@ export class DataStack extends cdk.Stack {
       );
     }
     return { dbCluster, dbSecret };
+  }
+
+  /**
+   * Two alarms, both against the whole cluster (there is exactly one
+   * `serverlessV2` writer instance — see `createAuroraCluster` — so a
+   * cluster-level metric and an instance-level one are the same number here).
+   *
+   * **CPUUtilization** catches a resolver stuck in a hot loop or a query
+   * missing an index — sustained high CPU with the low query volume this
+   * app has pre-launch is itself the anomaly worth paging on, independent of
+   * whether it ever causes a user-visible failure.
+   *
+   * **DatabaseConnections** exists specifically because there is no RDS
+   * Proxy (locked decision, `SYSTEM_DESIGN.md` §7.1/E2E_MVP_PLAN.md §10 Q1):
+   * every resolver Lambda opens its own connection, so nothing but the
+   * connection ceiling itself limits how many can be open at once. The
+   * threshold, 60, is chosen against `api-stack.ts`'s intended
+   * `reservedConcurrentExecutions` (5 per DB-backed resolver Lambda × up to
+   * 10 such resolvers = 50 possible concurrent connections at that cap) —
+   * so 60 fires only if something is holding connections open longer than a
+   * single invocation should (a leak), not from ordinary concurrent traffic
+   * at the capacity those reservations already allow. It is deliberately
+   * *not* set near Aurora's actual connection ceiling (~90 at the 2-ACU
+   * `serverlessV2MaxCapacity` above): waiting for the hard ceiling would mean
+   * this alarm and a user-visible `too many connections` failure fire at
+   * roughly the same moment, which defeats the point of an early warning.
+   *
+   * Those reservations are not actually applied yet (see
+   * `createDbResolverFunction`'s comment in api-stack.ts: today's account
+   * concurrency quota is too low to accept any) — so this threshold is
+   * currently sized for a ceiling the account can't reach anyway, not for
+   * today's real (lower, quota-bounded) one. Left as-is rather than
+   * temporarily lowered: the two are meant to be re-added together, and a
+   * threshold that has to be remembered to change back is worse than one
+   * that is simply inert for a while.
+   */
+  private createAuroraAlarms(dbCluster: DatabaseCluster, alertsTopic: Topic): void {
+    const alarmAction = new SnsAction(alertsTopic);
+
+    new Alarm(this, 'AuroraCpuAlarm', {
+      alarmDescription: 'Aurora Serverless v2 sustained high CPU (parimaan-dev/prod)',
+      metric: dbCluster.metricCPUUtilization({ period: cdk.Duration.minutes(5) }),
+      threshold: 80,
+      evaluationPeriods: 3,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+      // A paused (0-ACU, auto-paused) cluster reports no CPU datapoints at
+      // all, not zero — treating that as breaching would page on ordinary
+      // idle-then-pause behavior, which is the opposite of an anomaly.
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(alarmAction);
+
+    new Alarm(this, 'AuroraConnectionsAlarm', {
+      alarmDescription: 'Aurora Serverless v2 connection count approaching a leak, not just load (parimaan-dev/prod)',
+      metric: dbCluster.metricDatabaseConnections({ period: cdk.Duration.minutes(5) }),
+      threshold: 60,
+      evaluationPeriods: 2,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(alarmAction);
   }
 
   /**
@@ -335,7 +504,7 @@ export class DataStack extends cdk.Stack {
       onEventHandler: migrationRunnerFn,
     });
 
-    new cdk.CustomResource(this, 'MigrationRunnerTrigger', {
+    const migrationTrigger = new cdk.CustomResource(this, 'MigrationRunnerTrigger', {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Forces CloudFormation to re-invoke the migration runner whenever
@@ -344,5 +513,21 @@ export class DataStack extends cdk.Stack {
         MigrationsHash: hashMigrationsDir(migrationsSourceDir),
       },
     });
+
+    // `dbCluster.clusterEndpoint.hostname` only makes CloudFormation wait on
+    // the `AWS::RDS::DBCluster` resource — the cluster endpoint's DNS record
+    // is not guaranteed resolvable until the writer *instance*
+    // (`AWS::RDS::DBInstance`, a separate resource `ClusterInstance
+    // .serverlessV2('Writer')` creates as a child of `dbCluster`) has also
+    // finished. Without this, the trigger can fire the moment the DBCluster
+    // resource alone reports complete, invoking the migration Lambda before
+    // the endpoint resolves at all: `getaddrinfo ENOTFOUND
+    // <cluster>.cluster-....rds.amazonaws.com`, caught only by a real
+    // deploy — no test exercises actual DNS resolution timing.
+    // `addDependency` on the whole `dbCluster` construct (not just its top-
+    // level DBCluster resource) walks its entire construct subtree and adds
+    // a CloudFormation `DependsOn` for every resource found there, which is
+    // what pulls the writer instance into the wait.
+    migrationTrigger.node.addDependency(dbCluster);
   }
 }

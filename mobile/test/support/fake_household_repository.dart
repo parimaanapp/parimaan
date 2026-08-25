@@ -31,6 +31,8 @@ class FakeHouseholdRepository implements HouseholdRepository {
     this.joinError,
     this.fetchResult,
     this.fetchError,
+    this.myHouseholdsResult,
+    this.myHouseholdsError,
     this.rotateResult,
     this.rotateError,
     this.leaveResult = true,
@@ -91,6 +93,18 @@ class FakeHouseholdRepository implements HouseholdRepository {
   /// Every household id [fetchHousehold] was called with, in order. This is
   /// what `HouseholdSyncPolicy`'s tests count to assert a poll cadence.
   final List<String> fetchCalls = <String>[];
+
+  // ── fetchMyHouseholds ──────────────────────────────────────────────────────
+
+  /// Returned by [fetchMyHouseholds]. No fallback to [result] — an empty list
+  /// (the "no households yet" case) is a real, common answer here, and
+  /// defaulting to `[result]` would make that case impossible to express.
+  List<Household>? myHouseholdsResult;
+  Object? myHouseholdsError;
+
+  /// How many times [fetchMyHouseholds] was called — this method takes no
+  /// arguments, so a count is all there is to assert.
+  int myHouseholdsCallCount = 0;
 
   // ── rotateInviteCode ───────────────────────────────────────────────────────
 
@@ -165,6 +179,16 @@ class FakeHouseholdRepository implements HouseholdRepository {
   Future<Household> fetchHousehold(String householdId) {
     fetchCalls.add(householdId);
     return _answer<Household>(fetchError, fetchResult ?? result, 'fetchResult');
+  }
+
+  @override
+  Future<List<Household>> fetchMyHouseholds() {
+    myHouseholdsCallCount++;
+    return _answer<List<Household>>(
+      myHouseholdsError,
+      myHouseholdsResult,
+      'myHouseholdsResult',
+    );
   }
 
   @override

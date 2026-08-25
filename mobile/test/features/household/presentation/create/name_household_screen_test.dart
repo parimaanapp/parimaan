@@ -10,6 +10,7 @@ import 'package:mobile/shared/errors/app_error.dart';
 
 import '../../../../support/fake_household_repository.dart';
 import '../../../../support/household_fixtures.dart';
+import '../../../../support/household_route_harness.dart';
 import '../../../../support/wizard_harness.dart';
 
 Future<WizardHarness> _pump(
@@ -134,6 +135,39 @@ void main() {
         'household-1',
       );
     });
+
+    testWidgets(
+      'hands the created household to the wizard even on the wizard '
+      "provider's genuinely first-ever touch — `pumpWizardRoute` (used by "
+      'every other test in this file) pre-awaits that provider before the '
+      'screen mounts, which happens to mask a real async-build race a cold '
+      'app session hits: `HouseholdWizardController.build()` is `async` and '
+      'has not resolved yet on its first read, so an unawaited '
+      "`adoptHousehold` lands on a still-`AsyncLoading` state and silently "
+      'no-ops. `pumpHouseholdRoute` boots the real router without ever '
+      'touching the wizard provider, so this test — and only this one — can '
+      'actually catch that regression.',
+      (WidgetTester tester) async {
+        final HouseholdHarness subject = await pumpHouseholdRoute(
+          tester,
+          AppRoutes.createHouseholdName,
+          repository: FakeHouseholdRepository(result: testHousehold),
+        );
+
+        await _enterName(tester, 'Kulkarni Kitchen');
+        await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(location(subject.router), AppRoutes.createHouseholdMeals);
+        expect(
+          subject.container
+              .read(householdWizardControllerProvider)
+              .requireValue
+              .householdId,
+          'household-1',
+        );
+      },
+    );
   });
 
   group('NameHouseholdScreen — the Aurora cold start', () {

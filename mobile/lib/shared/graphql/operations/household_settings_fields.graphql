@@ -1,0 +1,29 @@
+# The whole `HouseholdSettings` row.
+#
+# Split into its own file rather than living inside `household_fields.graphql`
+# (where it originated) because `#import` pulls in every fragment a file
+# defines, not just the one a caller asks for. `updateHouseholdSettings` and
+# `Query.me` each need only this fragment, never `HouseholdFields` — but while
+# both fragments lived in the same file, importing it for `HouseholdSettingsFields`
+# alone still pulled `HouseholdFields` into the operation's document, and a real
+# GraphQL server (unlike anything this codebase's own tests exercised) rejects
+# that outright: `Validation error of type UnusedFragment: Unused fragment
+# HouseholdFields`. Caught only by a real mutation against live AppSync — every
+# existing test stubs at the `FakeLink` layer, which never runs GraphQL's own
+# document validation. `household_fields.graphql` now imports *this* file for
+# its own nested `...HouseholdSettingsFields` use, rather than defining it
+# inline, so there is exactly one copy either way.
+#
+# `mealStructure` and `cuisineTier2Weights` are `AWSJSON`: JSON **strings** on
+# the wire in both directions, never nested objects. `build.yaml` maps the
+# scalar to Dart `String` for exactly that reason.
+fragment HouseholdSettingsFields on HouseholdSettings {
+  householdId
+  mealsEnabled
+  mealStructure
+  cuisineTier1
+  cuisineTier2Weights
+  dietaryTags
+  allergens
+  skipIngredients
+}

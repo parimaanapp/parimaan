@@ -103,6 +103,21 @@ class _NameHouseholdScreenState extends ConsumerState<NameHouseholdScreen> {
       return;
     }
 
+    // Awaited before adopting: `HouseholdWizardController.build()` is
+    // `async`, so on this screen's first-ever touch of the provider (this is
+    // the only place in the whole screen that reads it) its `state` is still
+    // `AsyncLoading` for at least one microtask — and `adoptHousehold`'s
+    // `_updateDraft` silently no-ops against a `null` current draft. Calling
+    // `adoptHousehold` before that microtask turn has passed drops the
+    // household on the floor: the wizard's own default `build()` result
+    // then lands moments later and becomes the state instead, leaving every
+    // later step's `_submit` with no `householdId` to patch — exactly the
+    // failure `HouseholdEditEntry.hydrateFrom` already guards against with
+    // this same await; this is the second call site that needed it.
+    await ref.read(householdWizardControllerProvider.future);
+    if (!mounted) {
+      return;
+    }
     ref
         .read(householdWizardControllerProvider.notifier)
         .adoptHousehold(created);

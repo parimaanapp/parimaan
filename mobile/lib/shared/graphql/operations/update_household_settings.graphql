@@ -1,4 +1,4 @@
-#import "./household_fields.graphql"
+#import "./household_settings_fields.graphql"
 
 # `Mutation.updateHouseholdSettings` — applies a PARTIAL patch to one
 # household's settings.
@@ -14,8 +14,11 @@
 # Unlike `create_household.graphql` this selects only `HouseholdSettings` —
 # that is the mutation's whole return type. Nothing about the household's
 # identity, invite code or membership can change through this path, so there
-# is no wider shape to re-fetch. It shares `HouseholdSettingsFields` with
-# `HouseholdFields`, which is exactly why that fragment is split out from it.
+# is no wider shape to re-fetch. Imports `household_settings_fields.graphql`
+# directly, not `household_fields.graphql` — the latter also defines
+# `HouseholdFields`, which this operation never spreads, and a real GraphQL
+# server rejects a document that defines a fragment it never uses (see that
+# file's doc for the concrete error this produced).
 mutation UpdateHouseholdSettings(
   $householdId: ID!
   $input: HouseholdSettingsInput!

@@ -245,6 +245,22 @@ describe('ApiStack', () => {
     }
   });
 
+  // Aurora Serverless v2's auto-pause resume can take up to ~30s, and
+  // connecting is only the first part of an invocation that then still has
+  // to run the actual query — a function timeout with no headroom past that
+  // 30s leaves a genuine cold start no time to ever succeed. Caught only by
+  // a real cold Aurora invocation; this test exists so the margin can't
+  // silently shrink back to nothing.
+  it('gives every VPC-attached resolver Lambda enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
+    const template = synth('dev');
+    const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
+    expect(vpcFunctions).toHaveLength(9);
+    for (const [, fn] of vpcFunctions) {
+      const properties = fn.Properties as unknown as { Timeout: number };
+      expect(properties.Timeout).toBeGreaterThan(30);
+    }
+  });
+
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
@@ -259,6 +275,20 @@ describe('ApiStack', () => {
       // The cluster's own admin-credentials secret must never be referenced
       // by these resolver Lambdas — they connect as parimaan_app only.
       expect(env['DB_SECRET_ARN']).toBeUndefined();
+    }
+  });
+
+  // No resolver Lambda sets `reservedConcurrentExecutions` right now — see
+  // `createDbResolverFunction`'s comment in api-stack.ts: this AWS account's
+  // current Lambda concurrency quota (10 total) is too low for any per-
+  // function reservation to be accepted at all. This is a change-detector,
+  // not an intent assertion — it should fail loudly (and be updated
+  // alongside the code comment) the day a reservation is reintroduced.
+  it('sets no ReservedConcurrentExecutions on any function — today\'s account quota rejects any nonzero reservation (see the code comment; revisit once the quota is raised)', () => {
+    const template = synth('dev');
+    for (const [, fn] of ourFunctions(template)) {
+      const properties = fn.Properties as unknown as { ReservedConcurrentExecutions?: number };
+      expect(properties.ReservedConcurrentExecutions).toBeUndefined();
     }
   });
 

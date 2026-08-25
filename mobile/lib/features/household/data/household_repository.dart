@@ -19,6 +19,8 @@ import '../../../shared/graphql/operations/__generated__/join_household.var.gql.
 import '../../../shared/graphql/operations/__generated__/leave_household.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/leave_household.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/leave_household.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/me.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/me.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.var.gql.dart';
@@ -92,6 +94,20 @@ abstract interface class HouseholdRepository {
   /// A non-member and a nonexistent [householdId] both raise the identical
   /// [ForbiddenError], so this is never an existence oracle.
   Future<Household> fetchHousehold(String householdId);
+
+  /// Reads every household the caller belongs to, via `Query.me`.
+  ///
+  /// This is the real source for "which household is this session's", meant
+  /// to back [activeHouseholdProvider] — see that provider's doc for why it
+  /// existed as a session-only stopgap until this landed.
+  ///
+  /// Each returned [Household] carries an empty `members` list: the nested
+  /// selection under `Query.me.households[].household` deliberately does not
+  /// request members (see `me.graphql`'s doc for the cycle this avoids), so
+  /// there is nothing to map. A screen that needs the roster calls
+  /// [fetchHousehold] with the id from here, same as every other consumer of
+  /// a household id.
+  Future<List<Household>> fetchMyHouseholds();
 
   /// Replaces [householdId]'s invite code with a freshly-generated one and
   /// returns the updated household.
@@ -202,6 +218,15 @@ class FerryHouseholdRepository implements HouseholdRepository {
 
     final GHouseholdData data = await _execute(request);
     return householdFromGraphQL(data.household);
+  }
+
+  @override
+  Future<List<Household>> fetchMyHouseholds() async {
+    final GMeReq request = GMeReq();
+    final GMeData data = await _execute(request);
+    return data.me.households
+        .map((GMeData_me_households m) => meHouseholdFromGraphQL(m.household))
+        .toList(growable: false);
   }
 
   @override

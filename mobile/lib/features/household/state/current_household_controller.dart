@@ -4,6 +4,7 @@ import '../data/household_repository.dart';
 import '../domain/household.dart';
 import 'household_wizard_controller.dart';
 import 'join_household_controller.dart';
+import 'me_households_controller.dart';
 
 /// The server-backed read of one household, keyed by its id.
 ///
@@ -55,28 +56,34 @@ currentHouseholdControllerProvider =
       CurrentHouseholdController.new,
     );
 
-/// The household this session is working with, if any — a **stopgap**.
+/// The household this session is working with, if any.
 ///
-/// ## Why this is not a real answer
+/// ## Two tiers, not a stopgap layered onto a stopgap
 ///
-/// The right source for "which household does this user belong to" is
-/// `Query.me`, whose `households` field exists in the schema and in
-/// `me.graphql`, but which no controller reads yet — `router.dart`'s redirect
-/// says the same thing about its own unconditional first-run bounce. Until a
-/// `me` controller lands, the only households this app knows about are the ones
-/// it just watched the user create or join, in this session, in memory.
+/// This used to report only what the wizard or join flow had just done *in
+/// memory, this session* — there was no other source, because nothing read
+/// `Query.me`. [MeHouseholdsController] is that source now, so this provider's
+/// body is the real answer: the session's own just-created or just-joined
+/// household when there is one (an immediate, round-trip-free answer for the
+/// screen the user is already on), falling through to the server's list of
+/// every household this user belongs to (what makes Settings and Members
+/// reachable again after an app restart, which the old session-only version
+/// could never do).
 ///
-/// So that is exactly what this reports, and nothing more: the wizard's created
-/// household, else the join flow's joined household, else `null`. It is
-/// deliberately **not** persisted and deliberately not fetched — inventing a
-/// local cache of household membership now would be a second source of truth to
-/// reconcile against `Query.me` the moment that lands.
+/// The session-scoped checks stay first rather than being deleted now that a
+/// real source exists, because they answer a question `Query.me` cannot:
+/// immediately after a create or join succeeds, [MeHouseholdsController] has
+/// not refetched (see its own doc for why it does not need to push itself),
+/// so it would still show *last* launch's list for the rest of this session.
+/// The household just created or joined is the obviously-correct answer in
+/// that moment, and asking the server to confirm what it was just told would
+/// be pure latency.
 ///
-/// The visible consequence is honest and temporary: a returning user who
-/// restarts the app has no active household until they create or join one
-/// again, so Settings and Members are unreachable from a cold start. The slice
-/// that adds a `me` controller should replace this provider's body outright
-/// rather than layering another fallback onto it.
+/// [MeHouseholdsController.build] fetches every household this user belongs
+/// to; this provider takes the first. Multiple households per user is real in
+/// the schema but not yet a chosen-household concept anywhere in the product,
+/// so "first" is the only order-independent answer available until a real
+/// household switcher exists.
 final Provider<Household?> activeHouseholdProvider = Provider<Household?>((
   Ref ref,
 ) {
@@ -86,5 +93,17 @@ final Provider<Household?> activeHouseholdProvider = Provider<Household?>((
   if (joined != null) {
     return joined;
   }
-  return ref.watch(householdWizardControllerProvider).valueOrNull?.household;
+
+  final Household? created = ref
+      .watch(householdWizardControllerProvider)
+      .valueOrNull
+      ?.household;
+  if (created != null) {
+    return created;
+  }
+
+  final List<Household>? households = ref
+      .watch(meHouseholdsControllerProvider)
+      .valueOrNull;
+  return households == null || households.isEmpty ? null : households.first;
 });

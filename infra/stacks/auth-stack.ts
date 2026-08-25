@@ -22,7 +22,22 @@ const GOOGLE_ONLY_AUTH_FLOWS = {
   custom: false,
 };
 
-const OAUTH_SCOPES = [OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE];
+// `COGNITO_ADMIN` (`aws.cognito.signin.user.admin`) is not optional: Amplify's
+// `getCurrentUser()`/`fetchUserAttributes()` — called on every sign-in to
+// build the app's `AuthSession` (`amplify_auth_repository.dart`'s
+// `_readSignedInUser`) — call Cognito's `GetUser` API directly with the
+// access token, which Cognito rejects with `NotAuthorizedException: Access
+// Token does not have required scopes` unless this scope was granted at
+// token-issue time. Without it, Hosted UI sign-in itself succeeds (Cognito
+// issues tokens) but every session immediately fails to resolve afterward —
+// caught only by a real device/simulator sign-in, since nothing else in this
+// codebase drives an actual OAuth round trip.
+const OAUTH_SCOPES = [
+  OAuthScope.EMAIL,
+  OAuthScope.OPENID,
+  OAuthScope.PROFILE,
+  OAuthScope.COGNITO_ADMIN,
+];
 
 export interface AuthStackProps extends cdk.StackProps {
   /** Deployment environment name, supplied via CDK context. */

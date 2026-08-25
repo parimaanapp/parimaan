@@ -77,11 +77,11 @@ describe('DataStack', () => {
       }
     });
 
-    it('sets Aurora Serverless v2 min/max capacity to 0.5/2 ACU', () => {
+    it('sets Aurora Serverless v2 min/max capacity to 0/2 ACU', () => {
       const template = synth('dev');
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         ServerlessV2ScalingConfiguration: Match.objectLike({
-          MinCapacity: 0.5,
+          MinCapacity: 0,
           MaxCapacity: 2,
         }),
       });
@@ -304,6 +304,22 @@ describe('DataStack', () => {
       expect(resource.Properties.MigrationsHash).toMatch(/^[0-9a-f]{64}$/);
     });
 
+    it('waits on the Aurora writer instance, not just the cluster resource, before invoking — the cluster endpoint is not guaranteed resolvable until the instance is also up', () => {
+      const template = synth('dev').toJSON() as {
+        Resources: Record<string, { Type: string; DependsOn?: string[] }>;
+      };
+      const [triggerId, trigger] = Object.entries(template.Resources).find(
+        ([, r]) => r.Type === 'AWS::CloudFormation::CustomResource',
+      )!;
+      expect(trigger.DependsOn ?? []).toContain(
+        Object.entries(template.Resources).find(
+          ([, r]) => r.Type === 'AWS::RDS::DBInstance',
+        )![0],
+      );
+      // Sanity that we found the right resource, not some other id typo.
+      expect(triggerId).toBe('MigrationRunnerTrigger');
+    });
+
     it('does not embed the app-role secret ARN or DB secret ARN as a literal string outside a Ref/Fn::GetAtt', () => {
       // Loose but useful guard: environment variable values for secret ARNs
       // must be CFN intrinsic references (tokens), never resolved literals,
@@ -482,6 +498,52 @@ describe('DataStack', () => {
     expect(stack.exportsBucket).toBeInstanceOf(Bucket);
     expect(stack.cacheTable).toBeDefined();
     expect(stack.cacheTable).toBeInstanceOf(Table);
+  });
+
+  describe('Aurora alarms', () => {
+    it('declares exactly one SNS topic, named per-environment, and exposes it as alertsTopic', () => {
+      const stack = build('dev');
+      const template = Template.fromStack(stack);
+      template.resourceCountIs('AWS::SNS::Topic', 1);
+      template.hasResourceProperties('AWS::SNS::Topic', { TopicName: 'parimaan-dev-alerts' });
+      expect(stack.alertsTopic).toBeDefined();
+    });
+
+    it('creates no subscriptions on the alerts topic — wiring a real notification target is a separate, explicit decision', () => {
+      const template = synth('dev');
+      template.resourceCountIs('AWS::SNS::Subscription', 0);
+    });
+
+    it('declares exactly one CPUUtilization alarm and one DatabaseConnections alarm, both against the Aurora cluster, both actioned to the alerts topic', () => {
+      const template = synth('dev');
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 2);
+
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        Namespace: 'AWS/RDS',
+        MetricName: 'CPUUtilization',
+        Threshold: 80,
+        ComparisonOperator: 'GreaterThanThreshold',
+        AlarmActions: Match.arrayWith([Match.objectLike({ Ref: Match.stringLikeRegexp('AlertsTopic') })]),
+      });
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        Namespace: 'AWS/RDS',
+        MetricName: 'DatabaseConnections',
+        Threshold: 60,
+        ComparisonOperator: 'GreaterThanThreshold',
+        AlarmActions: Match.arrayWith([Match.objectLike({ Ref: Match.stringLikeRegexp('AlertsTopic') })]),
+      });
+    });
+
+    it('treats missing datapoints as not breaching on both alarms — a paused (0-ACU) cluster reports no datapoints, not a zero, and that must not page', () => {
+      const template = synth('dev');
+      const alarms = Object.values(template.findResources('AWS::CloudWatch::Alarm'));
+      expect(alarms).toHaveLength(2);
+      for (const alarm of alarms) {
+        expect((alarm as { Properties: { TreatMissingData: string } }).Properties.TreatMissingData).toBe(
+          'notBreaching',
+        );
+      }
+    });
   });
 
   // Change-detector per DEV_WORKFLOW.md §3.4(c): fine-grained assertions above

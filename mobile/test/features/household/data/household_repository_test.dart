@@ -248,6 +248,100 @@ void main() {
       );
     });
   });
+
+  group('FerryHouseholdRepository.fetchMyHouseholds', () {
+    test('sends the Me operation and maps each household', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': meWireData(
+            households: <Map<String, dynamic>>[
+              meHouseholdMembershipWireNode(),
+              meHouseholdMembershipWireNode(
+                membershipId: 'membership-2',
+                id: 'household-2',
+                name: 'Deshpande Kitchen',
+                inviteCode: 'XYZ789',
+                role: 'member',
+              ),
+            ],
+          ),
+        },
+      );
+
+      final List<Household> households = await subject.repository
+          .fetchMyHouseholds();
+
+      expect(subject.link.requests.single.operation.operationName, 'Me');
+      expect(households, hasLength(2));
+      expect(households[0].id, 'household-1');
+      expect(households[0].name, 'Kulkarni Kitchen');
+      expect(households[1].id, 'household-2');
+      expect(households[1].name, 'Deshpande Kitchen');
+    });
+
+    test('every mapped household has an empty member list — `me.graphql` '
+        'never requests members', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': meWireData(
+            households: <Map<String, dynamic>>[meHouseholdMembershipWireNode()],
+          ),
+        },
+      );
+
+      final List<Household> households = await subject.repository
+          .fetchMyHouseholds();
+
+      expect(households.single.members, isEmpty);
+    });
+
+    test('maps settings via the shared HouseholdSettingsFields mapping', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': meWireData(
+            households: <Map<String, dynamic>>[meHouseholdMembershipWireNode()],
+          ),
+        },
+      );
+
+      final List<Household> households = await subject.repository
+          .fetchMyHouseholds();
+
+      expect(households.single.settings.householdId, 'household-1');
+      expect(
+        households.single.settings.mealStructureJson,
+        '{"breakfast":{"items":2}}',
+      );
+    });
+
+    test('an empty households list maps to an empty list, not an error', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': meWireData()},
+      );
+
+      expect(await subject.repository.fetchMyHouseholds(), isEmpty);
+    });
+
+    test('an unrecognised errorType falls back to InternalError', () {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': null,
+          'errors': <dynamic>[
+            <String, dynamic>{
+              'path': <String>['me'],
+              'errorType': 'SOME_FUTURE_ERROR',
+              'message': 'from a newer server',
+            },
+          ],
+        },
+      );
+
+      expect(
+        subject.repository.fetchMyHouseholds(),
+        throwsA(isA<InternalError>()),
+      );
+    });
+  });
 }
 
 class _TransportFailure implements Exception {

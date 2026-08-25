@@ -35,9 +35,9 @@ import 'app_config.dart';
 /// deployed; there is deliberately no `prod` placeholder yet, because an
 /// unfilled prod config is worse than an absent one.
 const AppConfig devConfig = AppConfig(
-  userPoolId: 'REPLACE_ME_USER_POOL_ID',
-  mobileClientId: 'REPLACE_ME_MOBILE_CLIENT_ID',
-  cognitoDomain: 'REPLACE_ME_COGNITO_DOMAIN',
-  region: 'REPLACE_ME_REGION',
-  graphQlUrl: 'REPLACE_ME_GRAPHQL_URL',
+  userPoolId: 'ap-south-1_86KBFEDF9',
+  mobileClientId: '5uo71gs1auratk3ik3qghome48',
+  cognitoDomain: 'https://parimaan-dev.auth.ap-south-1.amazoncognito.com',
+  region: 'ap-south-1',
+  graphQlUrl: 'https://vtcratz73bcb7dryrnktaaiupe.appsync-api.ap-south-1.amazonaws.com/graphql',
 );

@@ -1394,7 +1394,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -1528,7 +1528,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -1715,7 +1715,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -1852,7 +1852,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -1995,7 +1995,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -2208,7 +2208,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -2345,7 +2345,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -2488,7 +2488,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
@@ -2622,7 +2622,7 @@ input HouseholdSettingsInput {
           ],
         },
         "Runtime": "nodejs24.x",
-        "Timeout": 30,
+        "Timeout": 45,
         "TracingConfig": {
           "Mode": "Active",
         },
