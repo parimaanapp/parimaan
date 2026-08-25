@@ -1,0 +1,20 @@
+# The one canonical `PantryItem` selection set, shared by every operation
+# that returns a pantry item.
+#
+# `expiryDate` is `AWSDate` on the wire (see `shared/schema.graphql`'s own
+# doc on that field) — Ferry generates it as a plain `String` field the same
+# way it does `AWSDateTime`, since neither scalar has a bespoke Dart type.
+fragment PantryItemFields on PantryItem {
+  id
+  householdId
+  name
+  quantity
+  unit
+  category
+  isStaple
+  expiryDate
+  lowThreshold
+  addedBy
+  addedAt
+  updatedAt
+}
