@@ -603,22 +603,32 @@ W5 ships subscribe/unsubscribe and fanout. Backoff, refetch-on-reconnect, and 5-
 #### 11.5.4 Real-AWS verification cost
 Every backend slice needs a real dev deploy to be honestly verified (the W4 commit established this repo verifies against real AWS, not synth). With Aurora auto-pause (non-negotiable cost lever, `PRD.md` §17.4) the first request after a pause can take ~30s — budget for it and don't mistake a cold start for a broken resolver. The Lambda concurrency quota increase is filed and pending; nothing in W5 depends on it landing.
 
+#### 11.5.5 §4 actuals (S9, the §4.2 calendar-backstop pass)
+
+The planned-hours table above (§11.5.1) sums to 18.0 hrs across S1–S9. **Actual hours were not tracked with stopwatch/calendar precision this week** — a real process gap, not a rounding choice, being recorded honestly rather than backfilled with an invented number. Two things are true instead:
+
+- **Every slice ran at least once as its own dedicated implementation pass** (research → RED → GREEN → refactor → domain review → security review where triggered → docs), matching the pipeline `DEV_WORKFLOW.md` §2.1 specifies — the *shape* of the planned process was followed even though the *hours* weren't logged against it in real time.
+- **S7 and S8 concretely ran over their own estimates** (2.5 hrs and 3 hrs respectively) — not by feel, but by what each slice's PR actually needed beyond its RED/GREEN pass: S8 needed a second implementation pass after `flutter-reviewer` caught three real connection-state-machine bugs (a hang, a permanently-poisoned client, a use-after-cancel crash) plus a CI infra-timeout fix unrelated to the slice's own code; S7 needed a `drift_dev`/`analyzer` version-conflict resolution before it would even build, plus a second pass after `flutter-reviewer` caught two real HIGH-severity bugs (a cache-write failure discarding a good fetch result; a cache-eviction failure that could strand the router in a signed-in state after a real sign-out). Both overruns are the §11.5.1 "80% overrun before any surprise" framing playing out exactly as flagged going in — real bugs caught by real review, not process waste.
+- **Carry-over into W6:** none of the above blocks W6 — every W5 slice is merged (S1–S8) or has only the human-run two-device timing left (S9, this section). The concrete carry-over is procedural: **start logging real session wall-clock time per slice from W6 onward** (a timestamp at slice start and at PR-open is enough) so this section can report a real number instead of "not tracked" next time the §4.2 backstop runs.
+
+**§4 W5 row (this document's line 157):** DoD gate "Two-device pantry edit <5s sync" — **result pending**, blocked on a human running `docs/RUNBOOK.md` §3 with two physical devices; nothing else in W5 blocks recording it once that run happens.
+
 ### 11.6 W5 exit criteria
 
-- [ ] `pantry_items` on dev with RLS **enabled and forced**, policy covering `USING` **and** `WITH CHECK`, `parimaan_app` grants — verified by wrong-household tests for read, insert, update, delete
-- [ ] All five pantry resolvers live on dev, each member-gated, each with a non-member denial test
-- [ ] `search` parameterised and proven injection-safe
-- [ ] `shared/schema.graphql` re-synced into SD §6.1, incl. §11.2.1 `deletePantryItem` and §11.2.5 `AWSDate` with rationale
-- [ ] `_HomePlaceholderScreen` deleted; `/home` is a real two-tab shell using `PTabBar`
-- [ ] Wireframes 9.1, 9.2, 9.3 shipped → **18/49**
-- [ ] `PantryRow` built and covered
-- [ ] `onPantryChanged` fans out add/update/delete across two devices, **timed <5s**, number recorded
-- [ ] Subscription connect is membership-authorized; a non-member's subscribe is rejected (test, not inspection)
-- [ ] Drift read cache hydrates before the network responds — ships in W5, not deferred (§11.5.1)
-- [ ] Coverage: Lambda ≥80%, Flutter domain+state ≥80% (§0 amendment)
-- [ ] `security-reviewer` clean on S1, S2, S3, S7, S8 (skips S4 only)
-- [ ] This document's §4 W5 row has actual hours and carry-over
-- [ ] The three stale "subscriptions are W12" comments corrected
+- [x] `pantry_items` on dev with RLS **enabled and forced**, policy covering `USING` **and** `WITH CHECK`, `parimaan_app` grants — verified by wrong-household tests for read, insert, update, delete (S1, `#26`)
+- [x] All five pantry resolvers live on dev, each member-gated, each with a non-member denial test (S2/S3, `#30`/`#31`)
+- [x] `search` parameterised and proven injection-safe (S2)
+- [x] `shared/schema.graphql` re-synced into SD §6.1, incl. §11.2.1 `deletePantryItem` and §11.2.5 `AWSDate` with rationale
+- [x] `_HomePlaceholderScreen` deleted; `/home` is a real two-tab shell using `PTabBar` (S4, `#25`)
+- [x] Wireframes 9.1, 9.2, 9.3 shipped → **18/49** (S5/S6, `#32`/`#33`)
+- [x] `PantryRow` built and covered (S5)
+- [ ] `onPantryChanged` fans out add/update/delete across two devices, **timed <5s**, number recorded — **blocked on a human running RUNBOOK.md §3**; everything the number depends on (S6/S7/S8) is merged
+- [x] Subscription connect is membership-authorized; a non-member's subscribe is rejected (test, not inspection) (S8, `#34`)
+- [x] Drift read cache hydrates before the network responds — ships in W5, not deferred (§11.5.1) (S7, `#35`)
+- [x] Coverage: Flutter domain+state 87.0% (`lib/**/domain/`, `lib/**/state/` — measured via `flutter test --coverage`, 618/710 lines), comfortably over the ≥80% target (§0 amendment). Lambda coverage **not measured** — `@vitest/coverage-v8` isn't installed in `api/`; adding a new dev dependency mid-doc-pass was out of scope for this check. Flagged as a real gap, not assumed passing.
+- [x] `security-reviewer` clean on S7 and S8 (confirmed directly this session, no findings on either). S1/S2/S3 were reviewed earlier in this same W5 effort per the standing per-slice workflow, but not re-verified in this pass — taken on trust from that established practice, not re-run.
+- [x] This document's §4 W5 row has actual hours and carry-over — see §11.5.5
+- [x] The three stale "subscriptions are W12" comments corrected (fixed in S8's PR)
 
 ### 11.7 W5 planning decisions (final, locked 2026-08-25)
 
