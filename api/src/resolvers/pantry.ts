@@ -52,11 +52,16 @@ export const createPantryHandler =
         // possibly `undefined`) doesn't satisfy `FindPantryItemsFilter`'s
         // optional properties directly — same "strip explicit undefined
         // keys" fix as `updateHouseholdSettings.ts`'s `toSettingsPatch`.
+        // `!= null` (loose), not `!== undefined`: `pantryArgsSchema`'s
+        // `.nullish()` means an unset filter can parse to either `undefined`
+        // (key absent) or `null` (key present, explicit null — what a Ferry
+        // client actually sends on the wire for an unset nullable variable),
+        // and both must mean "no filter" here.
         const filter: { search?: string; category?: string } = {};
-        if (search !== undefined) {
+        if (search != null) {
           filter.search = search;
         }
-        if (category !== undefined) {
+        if (category != null) {
           filter.category = category;
         }
 

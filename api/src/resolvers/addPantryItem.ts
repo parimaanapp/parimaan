@@ -61,7 +61,7 @@ export const createAddPantryItemHandler =
           name: input.name,
           quantity: input.quantity,
           unit: canonicalizePantryUnit(input.unit),
-          category: input.category === undefined ? null : canonicalizePantryCategory(input.category),
+          category: input.category == null ? null : canonicalizePantryCategory(input.category),
           isStaple: input.isStaple ?? false,
           expiryDate: input.expiryDate ?? null,
           lowThreshold: input.lowThreshold ?? null,
