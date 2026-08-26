@@ -974,7 +974,9 @@ lib/
 
 **Local persistence:**
 - `flutter_secure_storage` for Cognito tokens.
-- `Drift` for structured read cache of pantry, recipes, current week's menu, current shopping list.
+- `Drift` for structured read cache of pantry, recipes, current week's menu, current shopping list. **Confirmed, not deviated** (W5 S7 step 1 research, E2E_MVP_PLAN.md §11.3): `drift`/`drift_flutter`/`sqlite3_flutter_libs` are current and compatible with this app's `^3.13.0` SDK constraint; the cheaper alternative this step is required to evaluate — Ferry's own persisted (Hive) `Cache` store — is unmaintained (`hive`/`hive_flutter` last published 2021–2022, predates today's SDK) and was ruled out on that basis alone. `mobile/lib/shared/storage/` holds `app_database.dart`, `tables/pantry_items_table.dart`, `daos/pantry_dao.dart` — the DAO is the only thing that touches the DB; no Drift type leaks past it.
+- **Read cache only** — mutations still go straight to network, no offline queue (below). Staleness policy is hydrate-then-fetch: `PantryController` emits the cached rows first (if any), then the network result overwrites wholesale — no field-level merge.
+- **Eviction:** the pantry cache is cleared on sign-out (a cache surviving sign-out on a shared family phone is a privacy leak — the same concern that already keeps the in-memory Ferry cache from being persisted). Per-household eviction (`PantryDao.clearHousehold`) exists but has no caller yet — there is no household-switcher UI in the app today (`activeHouseholdProvider`'s own doc), so there is nothing to switch away from; every cache read is already `householdId`-scoped regardless, so this is a storage-hygiene gap, not a correctness one.
 - On app start: hydrate UI from Drift, then fetch fresh via GraphQL.
 - Mutations go straight to network (no offline queue in MVP).
 
@@ -1291,6 +1293,8 @@ Design-level, ranked by decision urgency:
 > - DB: ~~accessed via RDS Proxy~~ → **Q1 (locked):** direct Postgres connections first; RDS Proxy added only if the W3/W11 connection-load spikes show failures, not a guaranteed component.
 
 > **Amended 2026-08-26** (W5 S8, during `onPantryChanged` subscription implementation): §10.4 said subscription authorization is "a Lambda authorizer on subscription connect" — an API-level `AWS_LAMBDA` auth mode. **Deviation (E2E_MVP_PLAN.md §11.2.9, locked as §11.7 Q4):** a Lambda **resolver** on the `Subscription.onPantryChanged` field instead, invoked once at subscribe time, reusing `requireHouseholdMember` unchanged. Same security property — a non-member is denied before the connection is ever accepted — for far less machinery: no second API auth mode, no per-request invocation on unrelated fields, Cognito stays the API's sole `AuthenticationType`. Chosen after an explicit complexity/response-time/cost comparison against the API-level authorizer. Applies to every future subscription field the same way; §10.4's original wording is superseded, not just for `onPantryChanged`.
+
+> **Amended 2026-08-26** (W5 S7, during the Drift local read-cache implementation): §9.1's `Drift` choice is **confirmed, not deviated** — the step-1 research this slice's own plan entry requires (E2E_MVP_PLAN.md §11.3 S7) evaluated `drift`/`drift_flutter`/`sqlite3_flutter_libs` against this app's `^3.13.0` SDK constraint (all current/compatible) and against the cheaper alternative Ferry's `Cache` hook already supports — a persisted Hive store — which turned out to be unmaintained (`hive`/`hive_flutter` last published 2021–2022, predates the app's SDK floor) and was ruled out on that basis alone. §9.1 above is updated in place with the confirmed dependency set, cache scope (read-only, no offline queue), staleness policy (hydrate-then-fetch, wholesale overwrite, no merge), and eviction triggers (sign-out, household switch).
 
 - Region: `ap-south-1` (Mumbai) primary; `us-east-1` fallback for Bedrock only if needed.
 - Backend runtime: Node.js 20 + TypeScript on Lambda.

@@ -1,3 +1,4 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,7 @@ import 'package:mobile/features/pantry/data/pantry_repository.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/presentation/pantry_list_screen.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/storage/app_database.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../../../support/fake_household_repository.dart';
@@ -31,15 +33,18 @@ Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required FakePantryRepository pantryRepository,
 }) async {
+  final AppDatabase db = AppDatabase(NativeDatabase.memory());
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
       householdRepositoryProvider.overrideWithValue(
         FakeHouseholdRepository(myHouseholdsResult: <Household>[testHousehold]),
       ),
       pantryRepositoryProvider.overrideWithValue(pantryRepository),
+      appDatabaseProvider.overrideWithValue(db),
     ],
   );
   addTearDown(container.dispose);
+  addTearDown(db.close);
   // Same "await the household source before pumping" step
   // `current_household_controller_test.dart`'s `activeHouseholdProvider`
   // tests use — otherwise the screen's first build races `Query.me`.

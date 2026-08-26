@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/storage/app_database.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_session.dart';
 
@@ -52,8 +53,28 @@ class AuthController extends AsyncNotifier<AuthSession> {
   Future<void> signInWithGoogle() => _run(() => _repository.signInWithGoogle());
 
   /// Signs out locally and remotely. Never throws.
+  ///
+  /// Also evicts the entire pantry read cache (W5 S7) — a household's
+  /// pantry surviving sign-out on a shared family phone would let the next
+  /// person to sign in read the previous user's data straight off disk,
+  /// before ever making a network request. Cleared unconditionally
+  /// (`clearAll`, not scoped to one household) since [signOut] has no
+  /// reliable "whose data was this" to scope narrower than that.
+  ///
+  /// The cache clear is deliberately isolated from `_repository.signOut()`'s
+  /// own error handling: `_run` treats any thrown error as "signOut failed,"
+  /// which routes through `copyWithPrevious` and leaves `state.valueOrNull`
+  /// at the *previous, signed-in* session — `app/router.dart`'s redirect
+  /// gate reads exactly that. A local-storage failure here must not masquerade
+  /// as a failed account sign-out and strand the router believing the user
+  /// is still authenticated after Cognito has already signed them out.
   Future<void> signOut() => _run(() async {
     await _repository.signOut();
+    try {
+      await ref.read(appDatabaseProvider).pantryDao.clearAll();
+    } on Object {
+      // Best-effort — see the method doc above.
+    }
     return const AuthSession.signedOut();
   });
 

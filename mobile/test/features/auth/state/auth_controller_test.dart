@@ -1,20 +1,28 @@
 import 'dart:async';
 
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/auth_failure.dart';
 import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
+import 'package:mobile/features/pantry/domain/pantry_item.dart';
+import 'package:mobile/shared/storage/app_database.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../support/fake_auth_repository.dart';
 
 ProviderContainer _containerWith(MockAuthRepository repository) {
+  final AppDatabase db = AppDatabase(NativeDatabase.memory());
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[authRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      authRepositoryProvider.overrideWithValue(repository),
+      appDatabaseProvider.overrideWithValue(db),
+    ],
   );
   addTearDown(container.dispose);
+  addTearDown(db.close);
   return container;
 }
 
@@ -150,6 +158,74 @@ void main() {
       );
       verify(repository.signOut).called(1);
     });
+
+    test('evicts the entire pantry read cache — a shared-phone privacy leak otherwise', () async {
+      final MockAuthRepository repository = stubbedAuthRepository(
+        session: testSignedInSession,
+      );
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.pantryDao.replaceAll('household-1', <PantryItem>[
+        PantryItem(
+          id: 'item-1',
+          householdId: 'household-1',
+          name: 'Toor Dal',
+          quantity: 2,
+          unit: 'kg',
+          isStaple: false,
+          addedBy: 'user-1',
+          addedAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        ),
+      ]);
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          authRepositoryProvider.overrideWithValue(repository),
+          appDatabaseProvider.overrideWithValue(db),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(authControllerProvider.future);
+
+      await container.read(authControllerProvider.notifier).signOut();
+
+      expect(await db.pantryDao.readPantryItems('household-1'), isEmpty);
+    });
+
+    test(
+      'still transitions to signed-out even if the pantry cache eviction fails',
+      () async {
+        final MockAuthRepository repository = stubbedAuthRepository(
+          session: testSignedInSession,
+        );
+        final AppDatabase db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        // Breaks `clearAll()` (a DELETE against a table that no longer
+        // exists) without needing a fakeable DAO seam — the closest this
+        // harness can get to a real on-device storage failure.
+        await db.customStatement('DROP TABLE pantry_items_table');
+
+        final ProviderContainer container = ProviderContainer(
+          overrides: <Override>[
+            authRepositoryProvider.overrideWithValue(repository),
+            appDatabaseProvider.overrideWithValue(db),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(authControllerProvider.future);
+
+        await container.read(authControllerProvider.notifier).signOut();
+
+        // A broken local cache must never masquerade as a failed account
+        // sign-out — Cognito sign-out already succeeded (the fake
+        // repository never fails), so the router-facing state must reflect
+        // that, not get stranded on the previous signed-in session.
+        expect(
+          container.read(authControllerProvider).value,
+          const AuthSession.signedOut(),
+        );
+      },
+    );
   });
 
   group('AuthController session stream', () {

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/storage/app_database.dart';
+import '../../../shared/storage/daos/pantry_dao.dart';
 import '../data/pantry_repository.dart';
 import '../domain/pantry_item.dart';
 import 'search_debouncer.dart';
@@ -20,6 +22,7 @@ import 'search_debouncer.dart';
 /// coalesce).
 class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
   PantryRepository get _repository => ref.read(pantryRepositoryProvider);
+  PantryDao get _dao => ref.read(appDatabaseProvider).pantryDao;
 
   String? _search;
   String? _category;
@@ -68,7 +71,71 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
         .listen((_) => unawaited(_refetch()), onError: (Object _) {});
     ref.onDispose(() => unawaited(_changeSubscription?.cancel()));
 
-    return _repository.fetchPantry(householdId);
+    return _hydrateThenFetch(householdId);
+  }
+
+  /// Hydrate-then-fetch (W5 S7, SD §9.1): shows whatever is cached for
+  /// [householdId] immediately (if anything), then fetches fresh from the
+  /// network and overwrites the cache wholesale — no field-level merge, the
+  /// server's answer always wins outright.
+  ///
+  /// Only the plain, unfiltered fetch below ever writes to the cache.
+  /// [_refetch] (search/category changes, and every live-update-triggered
+  /// refetch) deliberately does not: it can run with an active `search`/
+  /// `category` filter, and writing a filtered subset through
+  /// [PantryDao.replaceAll] — a per-household *wholesale* overwrite — would
+  /// silently evict every cached row the filter excluded. The `assert`
+  /// below is a debug-build guard against that invariant ever regressing
+  /// silently, since nothing else in the type system enforces it.
+  Future<List<PantryItem>> _hydrateThenFetch(String householdId) async {
+    final List<PantryItem> cached = await _readCachedSafely(householdId);
+    if (cached.isNotEmpty) {
+      state = AsyncData<List<PantryItem>>(cached);
+    }
+
+    final List<PantryItem> fresh;
+    try {
+      fresh = await _repository.fetchPantry(householdId);
+    } on Object catch (error, stackTrace) {
+      if (cached.isEmpty) {
+        rethrow;
+      }
+      // The whole value of the cache: a network failure after a successful
+      // hydrate leaves the cached rows visible (with the error attached),
+      // not an empty screen. `copyWithPrevious` is what keeps `state.value`
+      // populated alongside `state.error` — confirmed this survives
+      // `AsyncNotifier`'s own build-failure handling rather than being
+      // clobbered by it (see `pantry_controller_test.dart`).
+      state = AsyncError<List<PantryItem>>(
+        error,
+        stackTrace,
+      ).copyWithPrevious(AsyncData<List<PantryItem>>(cached));
+      rethrow;
+    }
+
+    assert(
+      _search == null && _category == null,
+      'only the unfiltered build()-time fetch may write to the cache — a '
+      'filtered replaceAll would evict rows the filter excludes',
+    );
+    try {
+      await _dao.replaceAll(householdId, fresh);
+    } on Object {
+      // Best-effort: a local cache-write failure must never discard an
+      // already-successful network result — the whole point of `fresh`
+      // reaching the caller is to show the user real, current data.
+    }
+    return fresh;
+  }
+
+  /// The hydrate step is best-effort — a broken local cache must degrade to
+  /// "skip it, fetch from network" rather than failing the whole screen.
+  Future<List<PantryItem>> _readCachedSafely(String householdId) async {
+    try {
+      return await _dao.readPantryItems(householdId);
+    } on Object {
+      return const <PantryItem>[];
+    }
   }
 
   /// Records new search text. Coalesced via [SearchDebouncer] — typing does

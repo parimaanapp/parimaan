@@ -7,6 +7,7 @@ import 'app/config/dev_config.dart';
 import 'features/auth/data/amplify_auth_repository.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'shared/graphql/client.dart';
+import 'shared/storage/app_database.dart';
 
 /// Composition root. The only place that decides which [AppConfig], which
 /// [AuthRepository] implementation, and which GraphQL client the app runs
@@ -30,6 +31,7 @@ void main() {
         // overridden after it — Riverpod resolves lazily, but keeping the
         // order readable matters more than the mechanics here.
         ferryClientOverride(config),
+        appDatabaseOverride(),
       ],
     ),
   );

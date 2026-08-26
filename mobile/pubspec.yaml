@@ -62,10 +62,31 @@ dependencies:
   # The link payload is untrusted input — `join_deep_link.dart` validates its
   # shape and NEVER auto-joins; see that file.
   app_links: ^6.4.0
+  # W5 S7 — the local pantry read cache (E2E_MVP_PLAN.md §11.3 S7 step 1).
+  # Confirmed against the SD §9.1-locked choice, not deviated: the required
+  # cheaper-alternative check (Ferry's own persisted Hive `Cache`, which
+  # client.dart already has a hook for) was ruled out — hive/hive_flutter
+  # are unmaintained, last published 2021-2022, targeting a pre-null-safety
+  # SDK range. `drift_flutter` is the current official convenience package
+  # for wiring a native/web-portable sqlite3 database; `sqlite3_flutter_libs`
+  # bundles the native binaries it needs (its `+eol` version suffix is that
+  # package's own current pin, not a deprecation of this dependency).
+  drift: ^2.34.3
+  drift_flutter: ^0.3.1
+  sqlite3_flutter_libs: ^0.6.0
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Pinned below 2.34.1, NOT `^2.34.5` (latest): 2.34.1+ requires
+  # `analyzer ^13.0.0`, which conflicts with `built_value_generator`/
+  # `ferry_generator`'s `analyzer <13.0.0` ceiling — exactly the
+  # three-generators-in-one-pipeline risk E2E_MVP_PLAN.md §11.3 S7 flagged
+  # as the most likely place this slice burns unplanned time. `2.34.0`
+  # supports `analyzer >=10.0.0 <13.0.0`, which the already-resolved
+  # `analyzer 12.1.0` satisfies for every generator at once.
+  drift_dev: ">=2.33.0 <2.34.1"
 
   # FakeWebSocketChannel (test/support/) mixes in StreamChannelMixin directly,
   # rather than transitively through web_socket_channel.

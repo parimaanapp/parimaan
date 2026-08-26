@@ -1,3 +1,4 @@
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
@@ -7,6 +8,7 @@ import 'package:mobile/features/pantry/domain/pantry_item_patch.dart';
 import 'package:mobile/features/pantry/state/pantry_controller.dart';
 import 'package:mobile/features/pantry/state/pantry_form_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/storage/app_database.dart';
 
 import '../../../support/fake_pantry_repository.dart';
 
@@ -29,10 +31,15 @@ const PantryItemDraft _draft = PantryItemDraft(
 );
 
 ProviderContainer _container(FakePantryRepository repository) {
+  final AppDatabase db = AppDatabase(NativeDatabase.memory());
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[pantryRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      pantryRepositoryProvider.overrideWithValue(repository),
+      appDatabaseProvider.overrideWithValue(db),
+    ],
   );
   addTearDown(container.dispose);
+  addTearDown(db.close);
   return container;
 }
 
