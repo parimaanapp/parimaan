@@ -9,7 +9,13 @@ export default defineConfig({
     // `synthesizes without error` test timed out at exactly 5000ms. Later
     // synth calls in the same worker are fast (modules already loaded), so
     // this is a one-time-per-worker cost, not a sign anything is slow.
-    testTimeout: 15_000,
+    // Bumped again 15_000 → 25_000 (W5 S8): api-stack.test.ts's own resolver
+    // count has grown from 6 to 16 Lambdas since the comment below was
+    // written, each bundled via esbuild on every synth call — CI reproduced
+    // a "synthesizes without error for dev" timeout at 15_000ms twice in a
+    // row on PR #34 (not a one-off; a rerun didn't fix it), immediately
+    // after "for prod" alone had already taken 8.7s on that runner.
+    testTimeout: 25_000,
     // Cuts per-file cold start (each file no longer re-pays the
     // jsii/aws-cdk-lib module-load cost), a genuine local speedup, but did
     // NOT fix the CI-only "[vitest-worker]: Timeout calling 'onTaskUpdate'"
@@ -19,9 +25,10 @@ export default defineConfig({
     // actual fix.
     isolate: false,
     // The real cause: every ApiStack test does a full CDK synth, and each
-    // synth bundles 6 Lambdas via esbuild (NodejsFunction), which
-    // console.logs 2 lines per Lambda ("Bundling asset..." / "Done in
-    // Xms"). Across 29 tests in api-stack.test.ts that's 1000+ lines of
+    // synth bundles every resolver Lambda via esbuild (NodejsFunction, 6 at
+    // the time this was written, 16 as of W5 S8), which console.logs 2
+    // lines per Lambda ("Bundling asset..." / "Done in Xms"). Across the
+    // many tests in api-stack.test.ts that's 1000+ lines of
     // stdout, all relayed to the main thread over the same worker IPC
     // channel vitest uses for its own "onTaskUpdate" progress heartbeat —
     // on GitHub Actions' constrained runners that volume appears to be
