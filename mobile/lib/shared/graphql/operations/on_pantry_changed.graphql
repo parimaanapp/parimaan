@@ -1,0 +1,11 @@
+#import "./pantry_item_fields.graphql"
+
+# `Subscription.onPantryChanged` — pushed whenever another device adds,
+# updates, or deletes a pantry item in `householdId` (W5 slice S8). Not
+# wired to `bulkAddPantryItems`: see `PantryItemFields`'s own schema doc for
+# why a list payload can't fan out to this single-item shape.
+subscription OnPantryChanged($householdId: ID!) {
+  onPantryChanged(householdId: $householdId) {
+    ...PantryItemFields
+  }
+}

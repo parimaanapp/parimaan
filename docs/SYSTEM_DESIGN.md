@@ -554,9 +554,18 @@ type Subscription {
   # `haveIt`/`markPurchased` return `ShoppingListItem!` (wrong type, and
   # don't exist yet — W11/W12). Corrected per E2E_MVP_PLAN.md §11.2.1;
   # `bulkAddPantryItems`' own subscription coverage (`onPantryBulkChanged`
-  # or a refetch) is an open W18 item, not solved here. `Subscription`
-  # itself is still not implemented (W8) — this type declaration is
-  # aspirational until then, same as the rest of this section.
+  # or a refetch) is an open W18 item, not solved here.
+  #
+  # `onPantryChanged` **is implemented** (W5 S8) — the first field in this
+  # type to go live, authorized by a per-field Lambda resolver rather than
+  # this section's stated connect-time authorizer (§10.4 deviation,
+  # E2E_MVP_PLAN.md §11.2.9). `onMenuChanged`/`onShoppingListChanged`/
+  # `onHouseholdChanged` below remain aspirational (`onHouseholdChanged`
+  # deferred to W8; the other two to W11/W12, alongside the mutations they
+  # subscribe to). The pushed payload carries no event-type discriminator —
+  # see E2E_MVP_PLAN.md §11.2.12 for why the mobile client treats every push
+  # as "refetch", not a local add/update/delete patch — the same constraint
+  # applies to every subscription field in this type, not just this one.
   onPantryChanged(householdId: ID!): PantryItem
     @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])
 
@@ -969,7 +978,7 @@ lib/
 - On app start: hydrate UI from Drift, then fetch fresh via GraphQL.
 - Mutations go straight to network (no offline queue in MVP).
 
-**Real-time sync:** `ferry` supports GraphQL subscriptions over WebSocket. One connection per user, multiplexed across household subscriptions. Reconnect logic:
+**Real-time sync:** `ferry` itself ships no AppSync transport — AppSync's real-time protocol is not plain `graphql-ws` (see E2E_MVP_PLAN.md §11.3 S8 step 1's adopt-vs-hand-roll research). Hand-rolled in `shared/graphql/`: `appsync_realtime_protocol.dart` (pure frame-shape helpers), `subscription_client.dart` (`AppSyncSubscriptionClient` — the one multiplexed WebSocket connection for the whole app), and `appsync_websocket_link.dart` (the `gql_link` `Link`, chained after `AuthLink`, that routes `subscription` operations to it and forwards everything else to `HttpLink`). W5 (S8) ships only `onPantryChanged`, subscribed for as long as the watching controller is alive and unsubscribed on its disposal — no reconnect logic yet. Reconnect logic is **W8**:
 - Backoff 1s → 2s → 5s → 15s → 60s
 - On reconnect, invalidate local cache for that household and refetch.
 
@@ -1280,6 +1289,8 @@ Design-level, ranked by decision urgency:
 > **Amended 2026-08-14** (W1, during `auth-stack` planning): two lines below were superseded by decisions locked later in `E2E_MVP_PLAN.md` §10 and never reconciled back here — same class of drift already fixed once in §12.3. Both corrected below; original wording struck through for the audit trail.
 > - Auth: ~~hand-rolled clients, not Amplify libraries~~ → **Q2 (locked):** `amplify_auth_cognito` used for OAuth only (PKCE/redirect/refresh handling — realistically a 1-2 week hand-roll cost otherwise); everything else (GraphQL client, state) stays hand-rolled.
 > - DB: ~~accessed via RDS Proxy~~ → **Q1 (locked):** direct Postgres connections first; RDS Proxy added only if the W3/W11 connection-load spikes show failures, not a guaranteed component.
+
+> **Amended 2026-08-26** (W5 S8, during `onPantryChanged` subscription implementation): §10.4 said subscription authorization is "a Lambda authorizer on subscription connect" — an API-level `AWS_LAMBDA` auth mode. **Deviation (E2E_MVP_PLAN.md §11.2.9, locked as §11.7 Q4):** a Lambda **resolver** on the `Subscription.onPantryChanged` field instead, invoked once at subscribe time, reusing `requireHouseholdMember` unchanged. Same security property — a non-member is denied before the connection is ever accepted — for far less machinery: no second API auth mode, no per-request invocation on unrelated fields, Cognito stays the API's sole `AuthenticationType`. Chosen after an explicit complexity/response-time/cost comparison against the API-level authorizer. Applies to every future subscription field the same way; §10.4's original wording is superseded, not just for `onPantryChanged`.
 
 - Region: `ap-south-1` (Mumbai) primary; `us-east-1` fallback for Bedrock only if needed.
 - Backend runtime: Node.js 20 + TypeScript on Lambda.

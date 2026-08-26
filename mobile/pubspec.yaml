@@ -43,6 +43,16 @@ dependencies:
   gql_http_link: ^1.2.0
   gql_link: ^1.1.0
   gql_exec: ^1.1.1-alpha+1699813812660
+  # AST types + printNode — appsync_websocket_link.dart uses these directly
+  # (operation-type detection, re-serializing a request's document to send
+  # over the AppSync realtime WS), not just transitively via gql_link.
+  gql: ^1.0.1
+  # AppSync's real-time protocol is a raw WebSocket subprotocol, not
+  # `graphql-ws` — Ferry ships no AppSync transport (see
+  # `appsync_websocket_link.dart`'s doc for the adopt-vs-hand-roll research,
+  # E2E_MVP_PLAN.md §11.3 S8 step 1). `web_socket_channel` is the Dart team's
+  # own low-level transport; everything above it here is hand-rolled.
+  web_socket_channel: ^3.0.3
   built_value: ^8.12.7
   built_collection: ^5.1.1
   # Delivers the `parimaan://join?code=XXXXXX` invite deep link. Chosen over
@@ -56,6 +66,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # FakeWebSocketChannel (test/support/) mixes in StreamChannelMixin directly,
+  # rather than transitively through web_socket_channel.
+  stream_channel: ^2.1.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

@@ -4,8 +4,10 @@ import 'package:gql_http_link/gql_http_link.dart';
 
 import '../../app/config/app_config.dart';
 import '../../features/auth/data/auth_repository.dart';
+import 'appsync_websocket_link.dart';
 import 'auth_link.dart';
 import 'graphql_error_mapper.dart';
+import 'subscription_client.dart';
 
 /// Builds the app's Ferry [Client] for one environment.
 ///
@@ -26,10 +28,16 @@ import 'graphql_error_mapper.dart';
 Client buildFerryClient({
   required AppConfig config,
   required IdTokenProvider idTokenProvider,
+  AppSyncSubscriptionClient? subscriptionClient,
   Cache? cache,
 }) {
   final Link link = Link.from(<Link>[
     AuthLink(idTokenProvider: idTokenProvider),
+    AppSyncWebSocketLink(
+      subscriptionClient:
+          subscriptionClient ??
+          AppSyncSubscriptionClient(httpGraphQlUrl: config.graphQlUrl),
+    ),
     HttpLink(config.graphQlUrl, parser: const AppSyncResponseParser()),
   ]);
 
@@ -56,10 +64,15 @@ final Provider<Client> ferryClientProvider = Provider<Client>(
 /// chooses an environment, exactly as it already is for `AuthRepository`.
 Override ferryClientOverride(AppConfig config) =>
     ferryClientProvider.overrideWith((Ref ref) {
+      final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
+        httpGraphQlUrl: config.graphQlUrl,
+      );
       final Client client = buildFerryClient(
         config: config,
         idTokenProvider: ref.watch(authRepositoryProvider).currentIdToken,
+        subscriptionClient: subscriptionClient,
       );
       ref.onDispose(client.dispose);
+      ref.onDispose(subscriptionClient.disconnect);
       return client;
     });

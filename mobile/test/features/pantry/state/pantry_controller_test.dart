@@ -192,4 +192,73 @@ void main() {
       },
     );
   });
+
+  group('PantryController — live updates (S8)', () {
+    test('subscribes to watchPantryChanges for the household it is keyed on', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        result: <PantryItem>[_dal],
+      );
+      final ProviderContainer container = _container(repository);
+
+      await container.read(pantryControllerProvider('household-1').future);
+
+      expect(repository.watchCalls, <String>['household-1']);
+    });
+
+    test('a pushed change event triggers a refetch', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        result: <PantryItem>[_dal],
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(pantryControllerProvider('household-1').future);
+      expect(repository.calls, hasLength(1));
+
+      repository.watchControllers['household-1']!.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.calls, hasLength(2));
+    });
+
+    test('an error on the change stream is swallowed — the pantry list stays as last fetched', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        result: <PantryItem>[_dal],
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(pantryControllerProvider('household-1').future);
+
+      repository.watchControllers['household-1']!.addError(
+        const ForbiddenError('You are not a member of this household.'),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final AsyncValue<List<PantryItem>> state = container.read(
+        pantryControllerProvider('household-1'),
+      );
+      expect(state.hasError, isFalse);
+      expect(state.value, <PantryItem>[_dal]);
+      // No second fetch — an errored change-stream event is not a "something
+      // changed" signal.
+      expect(repository.calls, hasLength(1));
+    });
+
+    test('disposing the container cancels the change subscription — no refetch after', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        result: <PantryItem>[_dal],
+      );
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[pantryRepositoryProvider.overrideWithValue(repository)],
+      );
+      await container.read(pantryControllerProvider('household-1').future);
+
+      container.dispose();
+      // Broadcast controllers accept `.add` with no listeners without
+      // throwing — this only proves the controller-side subscription is
+      // gone by asserting no refetch call landed, not that `.add` itself
+      // would have failed.
+      repository.watchControllers['household-1']!.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.calls, hasLength(1));
+    });
+  });
 }

@@ -162,6 +162,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'bulkAddPantryItems',
   },
+  {
+    id: 'OnPantryChanged',
+    entryFile: 'onPantryChanged.ts',
+    typeName: 'Subscription',
+    fieldName: 'onPantryChanged',
+  },
 ];
 
 /**
@@ -209,12 +215,20 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   and a nonexistent id or one in another household both surface as the
  *   identical `NOT_FOUND` (see `resolvers/updatePantryItem.ts`'s doc).
  *   `bulkAddPantryItems` IS `householdId`-gated like `addPantryItem`, and
- *   is capped at 50 items per call. `onPantryChanged` is S8, not yet
- *   wired.
+ *   is capped at 50 items per call.
+ * - `Subscription.onPantryChanged` — W5 slice S8, the first subscription in
+ *   the app. Authorization is a Lambda resolver on this field, invoked once
+ *   at subscribe time — a deliberate deviation from SD §10.4's stated
+ *   API-level `AWS_LAMBDA` authorizer (E2E_MVP_PLAN.md §11.2.9): adopting
+ *   that literally would add a second auth mode to a currently pure-Cognito
+ *   API and run on every request, not just subscribe. `addPantryItem`/
+ *   `updatePantryItem`/`deletePantryItem` are `@aws_subscribe`d in the SDL;
+ *   `bulkAddPantryItems` deliberately is not (§11.2.1 — a list payload can't
+ *   fan out to this subscription's single-`PantryItem` shape).
  *
- * The `onHouseholdChanged`/`onHouseholdSettingsChanged` subscriptions are
- * deliberately deferred to W12, when a connect-time authorizer Lambda exists
- * (SD §10.4) — no `Subscription` type exists in `shared/schema.graphql` yet.
+ * `onHouseholdChanged`/`onHouseholdSettingsChanged` stay deferred to W8 (a
+ * natural follow-on once the WebSocket link exists) — `HouseholdSyncPolicy`
+ * keeps polling until then.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`

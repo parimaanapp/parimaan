@@ -430,6 +430,19 @@ Three places assert it: `infra/stacks/api-stack.ts` (lines 171–173), `mobile/l
 
 `_redirect` sends every signed-in user from splash to `/first-run` unconditionally (documented stopgap, out of scope). Consequence for the DoD demo: **both devices must reach the pantry within the session in which they created/joined** — a cold restart lands back on first-run. Enough to demonstrate the gate, but it makes the two-device test feel more fragile than the sync actually is. Fixing the redirect is the natural first slice of W8.
 
+#### 11.2.12 CRITICAL, DECIDED — the S8 RED spec's "add-event inserts, update-event replaces, delete-event removes" cannot be implemented as written
+
+Discovered mid-S8 implementation, the same way §11.2.1–§11.2.3 were. AppSync's `@aws_subscribe` mechanism forwards **the exact response of whichever mutation fired**, with no event-type discriminator — `addPantryItem`/`updatePantryItem`/`deletePantryItem` all return `PantryItem!`, so a pushed payload is structurally identical regardless of which of the three fired. There is no field to branch a local add/replace/remove on.
+
+Two knock-on problems make a client-side patch worse than just wrong for delete:
+
+1. A "delete" push can't be safely treated as an upsert — doing so would resurrect the row that was just removed, silently reintroducing the exact bug the DoD gate's delete case exists to catch.
+2. Even for add/update, a local patch can't tell whether the changed item now matches (or stopped matching) the screen's current `search`/`category` filter — that predicate only exists server-side (`api/src/repositories/pantryRepository.ts`).
+
+Changing the SDL to add a discriminator (e.g. wrapping `PantryItem` in a `PantryChangeEvent { changeType, item }` payload) doesn't work either: AppSync requires `@aws_subscribe`'d mutations' return type to structurally match the subscription's, and the subscription resolver only runs at subscribe time (authorization), never to reshape the push — the exact same constraint §11.2.1 already hit.
+
+**DECIDED:** `onPantryChanged`'s payload is not surfaced to the pantry screen at all — every push (add, update, *or* delete, and the local device's own mutation echoing back) is treated as a pure "something changed, refetch" signal. `PantryRepository.watchPantryChanges(householdId)` returns `Stream<void>`; `PantryController` calls its existing `_refetch()` on every event, swallowing stream errors (the initial `fetchPantry` remains the source of truth even if the live channel never connects). This is strictly correct (the server is re-asked for truth, including the current filter) at the cost of an extra round trip per event — an acceptable trade for W5's single-household, low-frequency scope. Revisit only if W11+'s higher-volume households make the extra round trips a measured problem.
+
 ### 11.3 Slice breakdown
 
 Nine slices, one PR each — matching the W1–W4 shape (`#17` client + first mutation + screen; `#18` one resolver; `#19` seven wizard screens; `#20` join flow + settings + members + sync policy), i.e. coherent verticals, not one-file commits. Sizes include strict-TDD overhead (§6a: +25–40%).
@@ -515,6 +528,10 @@ First subscription in the app. This is the slice the DoD gate actually measures.
 | 9 | Docs | `doc-updater` | SD §6.1 re-sync; SD §10.4 deviation; **correct the three stale "subscriptions are W12" comments** (§11.2.10). | Synced. |
 
 **Depends on:** S3 and S5. S7 is **not** a dependency — cache and subscription are independent. **Size / Risk:** ~3 hrs / **High** — highest-risk slice, and the one the DoD gate depends on.
+
+**Step 1 result (adopt-vs-hand-roll):** hand-rolled. Three pub.dev candidates checked: `aws_appsync_subscription` is an abandoned 2022 package speaking AppSync's separate MQTT-based Events API, not GraphQL subscriptions; `aws_appsync_api` is a control-plane REST client (creating AppSync resources), not a runtime GraphQL transport; `aws_appsync` is a 2020 stub with no realtime code at all. `aws-amplify/amplify-flutter`'s `amplify_api_dart` package *does* implement this protocol correctly, but only as an unexported internal (`src/graphql/web_socket/...`) of the full Amplify plugin architecture — reachable only via `Amplify.API`, which would also violate this codebase's own locked SD §18 decision that Amplify stays scoped to OAuth (`amplify_auth_cognito`) and everything else stays hand-rolled. Hand-rolled against AWS's public real-time protocol docs, in `mobile/lib/shared/graphql/appsync_realtime_protocol.dart` (pure frame-shape helpers) + `subscription_client.dart` (the stateful multiplexed connection) + `appsync_websocket_link.dart` (the `gql_link` `Link` routing subscriptions to it) — `aws-amplify/amplify-flutter`'s implementation used only as a design reference, never a dependency.
+
+**Step 3 result:** the RED spec's "add-event inserts, update-event replaces, delete-event removes" turned out not to be implementable against AppSync's actual push mechanism — see §11.2.12 for the finding and the refetch-on-any-event decision that replaced it. The Flutter RED tests actually written assert that behavior instead: a pushed event (of any kind) triggers a refetch; a stream error is swallowed without disturbing the last good list; disposing the controller cancels the subscription.
 
 #### S9 — Two-device verification, weekly doc pass
 - **Delivers:** the DoD gate measured — two real devices, two Google accounts, one household; add/edit/delete on A appears on B, **timed**, target <5s. Result written with the actual number, not "felt fast". Plus §4.2's mandatory weekly pass: actual-vs-planned hours into this document's §4 W5 row.

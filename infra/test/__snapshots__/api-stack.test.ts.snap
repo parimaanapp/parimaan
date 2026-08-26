@@ -1290,6 +1290,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiOnPantryChangedDataSourceCF547BBC": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "OnPantryChangedFn2FE0B4B8",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "OnPantryChangedDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiOnPantryChangedDataSourceServiceRoleBBF69B60",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiOnPantryChangedDataSourceServiceRoleBBF69B60": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiOnPantryChangedDataSourceServiceRoleDefaultPolicy92EE01ED": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OnPantryChangedFn2FE0B4B8",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OnPantryChangedFn2FE0B4B8",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiOnPantryChangedDataSourceServiceRoleDefaultPolicy92EE01ED",
+        "Roles": [
+          {
+            "Ref": "ApiOnPantryChangedDataSourceServiceRoleBBF69B60",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiOnPantryChangedResolver791A4E60": {
+      "DependsOn": [
+        "ApiOnPantryChangedDataSourceCF547BBC",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "OnPantryChangedDataSource",
+        "FieldName": "onPantryChanged",
+        "Kind": "UNIT",
+        "TypeName": "Subscription",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiPantryDataSourceE6263D5B": {
       "Properties": {
         "ApiId": {
@@ -1661,6 +1766,21 @@ type Mutation {
   payload can't fan out to that subscription's single-\`PantryItem\` shape.
   """
   bulkAddPantryItems(householdId: ID!, items: [PantryItemInput!]!): [PantryItem!]!
+}
+
+type Subscription {
+  """
+  Pushes the added/updated/deleted \`PantryItem\` to every other connected
+  device in \`householdId\` (E2E_MVP_PLAN.md §11.2.1). Subscribe-time
+  authorization is a Lambda resolver on this field (not an API-level
+  authorizer — SD §10.4 deviation, E2E_MVP_PLAN.md §11.2.9): a non-member
+  or nonexistent \`householdId\` is denied identically, matching every other
+  household-scoped resolver's existence-oracle avoidance. Not wired to
+  \`bulkAddPantryItems\` — a list-shaped payload can't fan out to this
+  single-\`PantryItem\` shape (§11.2.1).
+  """
+  onPantryChanged(householdId: ID!): PantryItem
+    @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])
 }
 
 type User {
@@ -3344,6 +3464,140 @@ input PantryItemPatchInput {
         ],
       },
       "Type": "AWS::IAM::Role",
+    },
+    "OnPantryChangedFn2FE0B4B8": {
+      "DependsOn": [
+        "OnPantryChangedFnServiceRoleDefaultPolicy0CF77C94",
+        "OnPantryChangedFnServiceRole9AA84E75",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "OnPantryChangedFnServiceRole9AA84E75",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "OnPantryChangedFnServiceRole9AA84E75": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "OnPantryChangedFnServiceRoleDefaultPolicy0CF77C94": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "OnPantryChangedFnServiceRoleDefaultPolicy0CF77C94",
+        "Roles": [
+          {
+            "Ref": "OnPantryChangedFnServiceRole9AA84E75",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "PantryFn5C5C5C44": {
       "DependsOn": [
