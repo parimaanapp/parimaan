@@ -1,0 +1,10 @@
+#import "./pantry_item_fields.graphql"
+
+# `Mutation.deletePantryItem` — returns the deleted row (not a bare Boolean),
+# so a future subscriber can learn which item vanished. Takes only `id`, same
+# reasoning as `UpdatePantryItem`.
+mutation DeletePantryItem($id: ID!) {
+  deletePantryItem(id: $id) {
+    ...PantryItemFields
+  }
+}

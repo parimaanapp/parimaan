@@ -1,0 +1,10 @@
+#import "./pantry_item_fields.graphql"
+
+# `Mutation.addPantryItem` — adds a pantry item to a household. Requires the
+# caller to already be a member; `addedBy` is never a client argument — see
+# `shared/schema.graphql`'s own doc on this field.
+mutation AddPantryItem($householdId: ID!, $input: PantryItemInput!) {
+  addPantryItem(householdId: $householdId, input: $input) {
+    ...PantryItemFields
+  }
+}

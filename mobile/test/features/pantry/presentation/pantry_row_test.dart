@@ -85,5 +85,32 @@ void main() {
       await pumpComponent(tester, PantryRow(item: _item()));
       expect(find.byKey(PantryRow.expiryKey), findsNothing);
     });
+
+    testWidgets('tapping the row calls onTap', (WidgetTester tester) async {
+      bool tapped = false;
+      await pumpComponent(
+        tester,
+        PantryRow(item: _item(), onTap: () => tapped = true),
+      );
+      await tester.tap(find.byType(PantryRow));
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('shows no delete button when onDelete is null', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(tester, PantryRow(item: _item()));
+      expect(find.byKey(PantryRow.deleteButtonKey), findsNothing);
+    });
+
+    testWidgets('tapping delete calls onDelete', (WidgetTester tester) async {
+      bool deleted = false;
+      await pumpComponent(
+        tester,
+        PantryRow(item: _item(), onDelete: () => deleted = true),
+      );
+      await tester.tap(find.byKey(PantryRow.deleteButtonKey));
+      expect(deleted, isTrue);
+    });
   });
 }

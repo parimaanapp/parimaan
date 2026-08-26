@@ -6,6 +6,8 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
+import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
+import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
 import 'package:mobile/shared/ui/components/p_tab_bar.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
@@ -70,6 +72,36 @@ void main() {
 
       expect(_location(router), AppRoutes.signIn);
     });
+
+    testWidgets(
+      'deep navigation to /home/pantry/add is redirected to /sign-in',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(AppRoutes.pantryAddChooseMethod('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.signIn);
+      },
+    );
+
+    testWidgets(
+      'deep navigation to /home/pantry/add/manual is redirected to /sign-in',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(AppRoutes.pantryManualAdd('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.signIn);
+      },
+    );
 
     testWidgets('deep navigation to /home/pantry is redirected to /sign-in', (
       WidgetTester tester,
@@ -221,6 +253,36 @@ void main() {
       await tester.pump();
 
       expect(_location(router), AppRoutes.pantry);
+    });
+
+    testWidgets('/home/pantry/add stays reachable and renders AddMethodScreen', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.pantryAddChooseMethod('household-1'));
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.pantryAddChooseMethod('household-1'));
+      expect(find.byType(AddMethodScreen), findsOneWidget);
+    });
+
+    testWidgets('/home/pantry/add/manual stays reachable and renders ManualAddScreen', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.pantryManualAdd('household-1'));
+      await tester.pumpAndSettle();
+
+      expect(_location(router), AppRoutes.pantryManualAdd('household-1'));
+      expect(find.byType(ManualAddScreen), findsOneWidget);
     });
 
     testWidgets(

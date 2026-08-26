@@ -24,6 +24,9 @@ import '../features/household/presentation/settings/settings_placeholder_screen.
 import '../features/household/state/pending_join_code_controller.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
+import '../features/pantry/domain/pantry_item.dart';
+import '../features/pantry/presentation/add_method_screen.dart';
+import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
 
@@ -141,6 +144,26 @@ abstract final class AppRoutes {
   /// a child route, even though the path nests under it. See the
   /// `StatefulShellRoute` in [goRouterProvider].
   static const String pantry = '/home/pantry';
+
+  // ── Pantry add/edit (wireframes 9.2, 9.3 — W5 S6) ────────────────────────
+  //
+  // Both are flat, pushed routes *outside* the shell (not a third branch) —
+  // unlike Home/Pantry, the add/edit flow has its own full-screen chrome
+  // (its own `PTopBar`, no bottom tab bar) and is reached with `context.push`
+  // rather than `context.go`, so `Navigator.pop()` inside `ManualAddScreen`
+  // returns to whichever pantry screen pushed it. `householdId` travels as a
+  // query parameter (both screens need it, including before a `PantryItem`
+  // exists to carry it); the optional [PantryItem] being edited travels as
+  // `extra` — it has no sensible URL encoding and does not need to survive a
+  // deep link.
+
+  static const String _pantryAddChooseMethodPattern = '/home/pantry/add';
+  static String pantryAddChooseMethod(String householdId) =>
+      '$_pantryAddChooseMethodPattern?householdId=$householdId';
+
+  static const String _pantryManualAddPattern = '/home/pantry/add/manual';
+  static String pantryManualAdd(String householdId) =>
+      '$_pantryManualAddPattern?householdId=$householdId';
 }
 
 /// The app's route table plus its auth guard.
@@ -329,6 +352,23 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: AppRoutes._pantryAddChooseMethodPattern,
+        builder: (BuildContext context, GoRouterState state) {
+          final String householdId = _pantryHouseholdId(state);
+          return AddMethodScreen(
+            onManual: () =>
+                context.push(AppRoutes.pantryManualAdd(householdId)),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes._pantryManualAddPattern,
+        builder: (BuildContext context, GoRouterState state) => ManualAddScreen(
+          householdId: _pantryHouseholdId(state),
+          initialItem: state.extra as PantryItem?,
+        ),
+      ),
     ],
   );
   ref.onDispose(router.dispose);
@@ -343,6 +383,12 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
 /// bad link into a redscreen.
 String _householdId(GoRouterState state) =>
     state.pathParameters[AppRoutes.householdIdParameter] ?? '';
+
+/// The `householdId` query parameter both pantry add/edit routes carry —
+/// see `AppRoutes`' doc on why it travels as a query param rather than a
+/// path segment.
+String _pantryHouseholdId(GoRouterState state) =>
+    state.uri.queryParameters['householdId'] ?? '';
 
 /// Returns the path to move to, or `null` to stay put.
 ///
