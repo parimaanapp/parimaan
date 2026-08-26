@@ -101,7 +101,40 @@ Anticipated from `SYSTEM_DESIGN.md` §14 failure modes:
 
 ---
 
-## 3. Rollback Procedures
+## 3. Two-Device Verification Procedure
+
+Written for the W5 S9 DoD gate (E2E_MVP_PLAN.md §11.3 S9: "add/edit/delete on A appears on B, **timed**, target <5s") and re-run unchanged at W8, W11, and W12 against whatever entity that week's subscription covers (household settings, shopping list, pantry-via-menu). Requires a human running two real physical devices — this cannot be automated or delegated.
+
+### Prerequisites
+
+- Two physical devices (iOS or Android, any mix), each on a real network connection — **not** the same Wi-Fi's loopback or a simulator/emulator pair, since the point is to exercise the real AppSync WebSocket path end to end.
+- Two separate Google accounts, neither of which has signed into this app before (a clean first-run avoids a stale cached session muddying the timing).
+- The dev backend deployed and reachable (`docs/RUNBOOK.md` §2's AWS deploy notes if it isn't already).
+- A stopwatch, or the "time elapsed" indicator on whichever screen-recording tool is used to capture both devices at once — the target is measured, not eyeballed.
+
+### Procedure
+
+1. **Device A:** sign in with Google account 1, create a new household (any name), reach the Pantry tab.
+2. **Device B:** sign in with Google account 2, join the household using the invite code from Device A, reach the Pantry tab.
+3. Confirm both devices show the same (empty) pantry list before starting the timed steps — this is the baseline, not part of the measurement.
+4. **Add, timed:** on Device A, add one pantry item (any name/quantity/unit). Start the stopwatch the moment the add confirms on A; stop it the moment the new row appears on B without B's user taking any action (no manual pull-to-refresh, no re-entering the screen). Record the elapsed time.
+5. **Edit, timed:** on Device B, edit that same item (change quantity or name). Start the stopwatch on confirm; stop when the change appears on A. Record.
+6. **Delete, timed:** on Device A, delete the item. Start the stopwatch on confirm; stop when the row disappears from B. Record.
+7. Repeat steps 4–6 once more (a second sample) — a single run can be misleadingly fast or slow depending on connection jitter; two runs is the minimum to say the number is representative, not lucky.
+
+### Recording the result
+
+Write the actual numbers — never "felt fast" or "seemed instant" — into `E2E_MVP_PLAN.md` §4's row for the week being verified (W5/W8/W11/W12), plus a one-line pass/fail against the <5s target. If any sample exceeds 5s, note which of add/edit/delete and don't round it away; a slow outlier is exactly the kind of thing this gate exists to catch before it reaches a real household.
+
+### If it fails
+
+- **Consistently >5s on every sample:** check the AppSync CloudWatch logs for the subscription resolver's invocation latency first — a cold VPC Lambda (the `onPantryChanged` resolver is VPC-attached, same Aurora-auto-pause cold-start risk as every other DB-backed resolver) can add several seconds on the *first* call after a period of inactivity. Re-run once more before concluding the sync path itself is slow, not just cold.
+- **Never arrives at all (not just slow):** confirm Device B's WebSocket actually connected — the mobile app has no visible connection indicator yet (W5 S8 shipped subscribe/unsubscribe only, no reconnect UI), so a silently-failed `connection_init` looks identical to "still loading." Check `AppSyncSubscriptionClient`'s behavior isn't the first thing to suspect here if this is W8+ (reconnect backoff exists by then); for W5 specifically, a connection that failed to establish at all simply never retries — background/foreground the app to force a fresh `PantryController.build()` and a new subscribe attempt.
+- **Works on Wi-Fi, fails on cellular:** expected and out of scope for this gate — E2E_MVP_PLAN.md §11.3 S8 already documents that a good-wifi two-device demo passing "while the mechanism is still fragile on a subway" is a known, accepted gap until W8's reconnect backoff and W11's 5-concurrent-client load spike land.
+
+---
+
+## 4. Rollback Procedures
 
 _To be filled in W22–W23._
 
@@ -114,7 +147,7 @@ _To be filled in W22–W23._
 
 ---
 
-## 4. Contacts
+## 5. Contacts
 
 _To be filled in W22–W23._
 
