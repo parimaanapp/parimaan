@@ -1,0 +1,11 @@
+#import "./pantry_item_fields.graphql"
+
+# `Mutation.updatePantryItem` — a partial patch. Every `input` field is
+# optional; absent means unchanged. Takes only `id`, no `householdId` — see
+# `shared/schema.graphql`'s own doc on why a non-member's item and a
+# nonexistent id are indistinguishable here.
+mutation UpdatePantryItem($id: ID!, $input: PantryItemPatchInput!) {
+  updatePantryItem(id: $id, input: $input) {
+    ...PantryItemFields
+  }
+}

@@ -8,21 +8,34 @@ import '../domain/pantry_item.dart';
 
 /// One row in the Pantry List (wireframe 9.1) — name, quantity+unit, and
 /// the staple / running-low affordances, matching `MembersListScreen`'s
-/// `_MemberRow` shape (a `PCard` per row, not a plain `ListTile`).
+/// `_MemberRow` shape (a `PCard` per row, not a plain `ListTile`). Tapping
+/// the row opens it in edit mode (S6's `ManualAddScreen`, reused); the
+/// trailing delete icon opens `delete_pantry_item_dialog.dart`'s confirm —
+/// both are optional so this widget stays usable in a context (a future
+/// read-only view) that wants neither.
 class PantryRow extends StatelessWidget {
-  const PantryRow({super.key, required this.item});
+  const PantryRow({super.key, required this.item, this.onTap, this.onDelete});
 
   final PantryItem item;
+
+  /// Opens the item in edit mode. `null` renders a non-interactive row.
+  final VoidCallback? onTap;
+
+  /// Opens the delete confirmation. `null` hides the delete affordance.
+  final VoidCallback? onDelete;
 
   static const Key stapleBadgeKey = Key('pantry-row-staple');
   static const Key runningLowBadgeKey = Key('pantry-row-running-low');
   static const Key expiryKey = Key('pantry-row-expiry');
+  static const Key deleteButtonKey = Key('pantry-row-delete');
 
   @override
   Widget build(BuildContext context) {
     final String? expiryDate = item.expiryDate;
+    final VoidCallback? onDelete = this.onDelete;
 
     return PCard(
+      onTap: onTap,
       semanticLabel: '${item.name}, ${_quantityLabel()}',
       child: Row(
         children: <Widget>[
@@ -65,6 +78,16 @@ class PantryRow extends StatelessWidget {
               key: runningLowBadgeKey,
               label: 'Low',
               tone: PBadgeTone.warning,
+            ),
+          ],
+          if (onDelete != null) ...<Widget>[
+            const SizedBox(width: AppSpacing.s1),
+            PIconButton(
+              key: deleteButtonKey,
+              icon: Icons.delete_outline,
+              semanticLabel: 'Delete ${item.name}',
+              variant: PButtonVariant.ghost,
+              onPressed: onDelete,
             ),
           ],
         ],

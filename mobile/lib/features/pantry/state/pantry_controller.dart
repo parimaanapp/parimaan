@@ -23,10 +23,22 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
 
   String? _search;
   String? _category;
-  late final SearchDebouncer _searchDebouncer;
+
+  /// Not `late final`: `build()` can run more than once on the *same*
+  /// notifier instance — `ref.invalidate(pantryControllerProvider(...))`
+  /// (used by `PantryFormController` after a successful add/update/delete)
+  /// triggers exactly that, and a second assignment to a `late final` field
+  /// throws `LateInitializationError`. Caught by
+  /// `pantry_form_controller_test.dart`'s invalidation test, not by
+  /// inspection — this field's own tests never exercised a second `build()`.
+  SearchDebouncer? _searchDebouncer;
 
   @override
   Future<List<PantryItem>> build(String householdId) {
+    // A stale debouncer from a previous `build()` could still have a pending
+    // timer; disposing it before replacing avoids two debouncers racing to
+    // call `_refetch()` for the same controller instance.
+    _searchDebouncer?.dispose();
     _searchDebouncer = SearchDebouncer(
       onSettled: (String? value) {
         _search = value;
@@ -36,7 +48,7 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
         unawaited(_refetch());
       },
     );
-    ref.onDispose(_searchDebouncer.dispose);
+    ref.onDispose(() => _searchDebouncer?.dispose());
     return _repository.fetchPantry(householdId);
   }
 
@@ -44,7 +56,7 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
   /// not produce a request per keystroke.
   void setSearch(String? search) {
     final String? trimmed = search?.trim();
-    _searchDebouncer.update(trimmed == null || trimmed.isEmpty ? null : trimmed);
+    _searchDebouncer?.update(trimmed == null || trimmed.isEmpty ? null : trimmed);
   }
 
   /// Applies (or clears, with `null`) a category filter and refetches

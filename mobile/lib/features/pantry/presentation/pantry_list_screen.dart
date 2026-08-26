@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
@@ -10,6 +12,7 @@ import '../../household/state/current_household_controller.dart';
 import '../domain/pantry_category.dart';
 import '../domain/pantry_item.dart';
 import '../state/pantry_controller.dart';
+import 'delete_pantry_item_dialog.dart';
 import 'pantry_row.dart';
 
 /// Wireframe screen 9.1 — the Pantry List. The Pantry tab of the W5 nav
@@ -26,6 +29,7 @@ class PantryListScreen extends ConsumerWidget {
   static const Key emptyStateKey = Key('pantry-list-empty');
   static const Key errorStateKey = Key('pantry-list-error');
   static const Key searchFieldKey = Key('pantry-list-search');
+  static const Key addButtonKey = Key('pantry-list-add');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,6 +60,17 @@ class _PantryForHousehold extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        PTopBar(
+          title: 'Pantry',
+          trailing: PButton.icon(
+            key: PantryListScreen.addButtonKey,
+            icon: Icons.add,
+            semanticLabel: 'Add a pantry item',
+            variant: PButtonVariant.ghost,
+            onPressed: () =>
+                context.push(AppRoutes.pantryAddChooseMethod(householdId)),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.s3,
@@ -102,7 +117,15 @@ class _PantryForHousehold extends ConsumerWidget {
                   for (final PantryItem item in items)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.s1),
-                      child: PantryRow(item: item),
+                      child: PantryRow(
+                        item: item,
+                        onTap: () => context.push(
+                          AppRoutes.pantryManualAdd(householdId),
+                          extra: item,
+                        ),
+                        onDelete: () =>
+                            showDeletePantryItemDialog(context: context, item: item),
+                      ),
                     ),
                 ],
               ),
@@ -114,9 +137,9 @@ class _PantryForHousehold extends ConsumerWidget {
                 action: PButton(
                   label: 'Add an item',
                   variant: PButtonVariant.secondary,
-                  // S6 wires the real add-item flow; the shell just needs an
-                  // honest, non-dead-end action here first.
-                  onPressed: () {},
+                  onPressed: () => context.push(
+                    AppRoutes.pantryAddChooseMethod(householdId),
+                  ),
                 ),
               ),
             ),

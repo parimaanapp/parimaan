@@ -170,4 +170,26 @@ void main() {
       },
     );
   });
+
+  group('PantryController — surviving a second build()', () {
+    test(
+      'ref.invalidate followed by a re-read does not throw — a rebuilt '
+      'instance must be able to set up its own SearchDebouncer again',
+      () async {
+        final FakePantryRepository repository = FakePantryRepository(
+          result: <PantryItem>[_dal],
+        );
+        final ProviderContainer container = _container(repository);
+        await container.read(pantryControllerProvider('household-1').future);
+
+        container.invalidate(pantryControllerProvider('household-1'));
+
+        await expectLater(
+          container.read(pantryControllerProvider('household-1').future),
+          completes,
+        );
+        expect(repository.calls, hasLength(2));
+      },
+    );
+  });
 }

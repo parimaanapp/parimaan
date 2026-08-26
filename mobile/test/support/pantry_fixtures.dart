@@ -36,3 +36,15 @@ Map<String, dynamic> pantryQueryWireData({
 }) => <String, dynamic>{
   'pantry': items ?? <Map<String, dynamic>>[pantryItemWireNode()],
 };
+
+/// `Mutation.addPantryItem`'s wire response body.
+Map<String, dynamic> addPantryItemWireData({Map<String, dynamic>? item}) =>
+    <String, dynamic>{'addPantryItem': item ?? pantryItemWireNode()};
+
+/// `Mutation.updatePantryItem`'s wire response body.
+Map<String, dynamic> updatePantryItemWireData({Map<String, dynamic>? item}) =>
+    <String, dynamic>{'updatePantryItem': item ?? pantryItemWireNode()};
+
+/// `Mutation.deletePantryItem`'s wire response body.
+Map<String, dynamic> deletePantryItemWireData({Map<String, dynamic>? item}) =>
+    <String, dynamic>{'deletePantryItem': item ?? pantryItemWireNode()};
