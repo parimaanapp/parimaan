@@ -64,6 +64,12 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # api/vitest.config.ts enforces >=80% (E2E_MVP_PLAN.md §0 amendment).
+      # Only `api` measures coverage today — the other TS workspaces don't
+      # have a `test:coverage` script yet.
+      - name: Lambda coverage (api)
+        run: pnpm --filter api test:coverage
+
       # SDL is the single source of truth for Ferry, graphql-codegen, urql, and Zod
       # (DEV_WORKFLOW §6d "SDL drift across four consumers"). Once codegen exists,
       # regenerate here and fail on a dirty tree. No-op until then.
