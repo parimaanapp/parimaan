@@ -228,4 +228,37 @@ describe('addPantryItem resolver', () => {
     expect(result.addedBy).toBe(attacker.id);
     expect(result.addedBy).not.toBe(owner.id);
   });
+
+  // Regression: a real AppSync/Ferry client sends an unset nullable field
+  // as an explicit `null`, not an absent key — `validInput` above (used by
+  // every other test in this file) omits category/isStaple/expiryDate/
+  // lowThreshold entirely, which is `undefined`, not the wire shape a real
+  // client actually produces. `pantryItemInputSchema` used `.optional()`
+  // (rejects `null`) on all four, which made adding an item with no
+  // category/staple flag/expiry/threshold fail validation in production
+  // while this whole suite stayed green.
+  it('treats explicit nulls for category/isStaple/expiryDate/lowThreshold the same as absent fields', async () => {
+    const owner = await createUser('sub-owner-null-input');
+    const householdId = await createHouseholdWithMember(owner, 'NLI234');
+    const handler = createAddPantryItemHandler({ getPool: async () => pool });
+
+    const result = await handler(
+      buildEvent(
+        householdId,
+        {
+          ...validInput,
+          category: null,
+          isStaple: null,
+          expiryDate: null,
+          lowThreshold: null,
+        },
+        'sub-owner-null-input',
+      ),
+    );
+
+    expect(result.category).toBeNull();
+    expect(result.isStaple).toBe(false);
+    expect(result.expiryDate).toBeNull();
+    expect(result.lowThreshold).toBeNull();
+  });
 });

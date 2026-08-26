@@ -193,4 +193,20 @@ describe('bulkAddPantryItems resolver', () => {
     );
     expect(items).toHaveLength(0);
   });
+
+  // Regression: same gap as addPantryItem.test.ts — an explicit `null`
+  // category (the real wire shape from a Ferry client) must not fail
+  // validation or reach `canonicalizePantryCategory` as `null`.
+  it('treats an explicit null category the same as an absent one', async () => {
+    const owner = await createUser('sub-owner-null-category');
+    const householdId = await createHouseholdWithMember(owner, 'NLC234');
+    const handler = createBulkAddPantryItemsHandler({ getPool: async () => pool });
+
+    const result = await handler(
+      buildEvent(householdId, [{ ...item('Toor Dal'), category: null }], 'sub-owner-null-category'),
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.category).toBeNull();
+  });
 });

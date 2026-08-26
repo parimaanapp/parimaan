@@ -50,14 +50,26 @@ const lowThresholdSchema = z.number().min(0, 'lowThreshold must not be negative'
  * own doc on `PantryItemInput`), and the resolver takes it exclusively from
  * the verified caller identity.
  */
+// `.nullish()`, not `.optional()`, on every field below: this is a create
+// input, not a patch (contrast `updatePantryItem`'s `PantryItemPatchInput`,
+// where explicit `null` is deliberately rejected to distinguish "leave
+// unchanged" from "clear the field"). For a create, "not provided" and
+// "explicitly null" mean the identical thing, and a GraphQL client
+// legitimately sends either — a Ferry client in particular always
+// serializes every declared variable, `null` included, for a field the
+// user never touched. `.optional()` alone made adding an item without a
+// category/expiryDate/lowThreshold fail validation in production while
+// every unit test (which only ever passed `undefined`) stayed green — the
+// exact same gap found and fixed in `validation/pantry.ts`'s
+// `pantryArgsSchema`.
 export const pantryItemInputSchema = z.object({
   name: nameSchema,
   quantity: quantitySchema,
   unit: unitSchema,
-  category: categorySchema.optional(),
-  isStaple: z.boolean().optional(),
-  expiryDate: expiryDateSchema.optional(),
-  lowThreshold: lowThresholdSchema.optional(),
+  category: categorySchema.nullish(),
+  isStaple: z.boolean().nullish(),
+  expiryDate: expiryDateSchema.nullish(),
+  lowThreshold: lowThresholdSchema.nullish(),
 });
 
 export type PantryItemInput = z.infer<typeof pantryItemInputSchema>;

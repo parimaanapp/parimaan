@@ -203,4 +203,37 @@ describe('pantry resolver (Query.pantry)', () => {
 
     expect(result.map((item) => item.name)).toEqual(['Toor Dal']);
   });
+
+  // Regression: a real AppSync/Ferry client sends an unset nullable
+  // variable as an explicit `null`, not an absent key — `undefined` (what
+  // every other test in this file uses) never exercised that wire shape.
+  // `pantryArgsSchema` used `.optional()` (rejects `null`), which made
+  // every unfiltered `Query.pantry` call from the real mobile app fail
+  // validation in production while this whole suite stayed green.
+  it('treats an explicit null search/category the same as an absent one — not a ValidationError', async () => {
+    const owner = await createUser('sub-owner-null-filter');
+    const householdId = await createHouseholdWithMember(owner, 'NUL234');
+    await withUserTransaction(
+      owner.id,
+      (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Toor Dal',
+          quantity: 2,
+          unit: 'kg',
+          category: 'dal',
+          isStaple: true,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      pool,
+    );
+
+    const handler = createPantryHandler({ getPool: async () => pool });
+    const result = await handler(buildEvent(householdId, null, null, 'sub-owner-null-filter'));
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.name).toBe('Toor Dal');
+  });
 });
