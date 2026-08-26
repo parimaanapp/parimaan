@@ -153,6 +153,21 @@ type Mutation {
   bulkAddPantryItems(householdId: ID!, items: [PantryItemInput!]!): [PantryItem!]!
 }
 
+type Subscription {
+  """
+  Pushes the added/updated/deleted `PantryItem` to every other connected
+  device in `householdId` (E2E_MVP_PLAN.md §11.2.1). Subscribe-time
+  authorization is a Lambda resolver on this field (not an API-level
+  authorizer — SD §10.4 deviation, E2E_MVP_PLAN.md §11.2.9): a non-member
+  or nonexistent `householdId` is denied identically, matching every other
+  household-scoped resolver's existence-oracle avoidance. Not wired to
+  `bulkAddPantryItems` — a list-shaped payload can't fan out to this
+  single-`PantryItem` shape (§11.2.1).
+  """
+  onPantryChanged(householdId: ID!): PantryItem
+    @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])
+}
+
 type User {
   id: ID!
   email: String!

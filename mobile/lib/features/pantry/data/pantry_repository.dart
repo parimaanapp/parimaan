@@ -11,6 +11,9 @@ import '../../../shared/graphql/operations/__generated__/add_pantry_item.var.gql
 import '../../../shared/graphql/operations/__generated__/delete_pantry_item.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_pantry_item.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_pantry_item.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_pantry_changed.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_pantry_changed.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_pantry_changed.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/pantry.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/pantry.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/pantry.var.gql.dart';
@@ -56,6 +59,27 @@ abstract interface class PantryRepository {
   /// Deletes the item [id] and returns the row that was deleted. Same
   /// id-only membership resolution as [updatePantryItem].
   Future<PantryItem> deletePantryItem(String id);
+
+  /// Emits once every time another device adds, updates, or deletes an item
+  /// in [householdId]'s pantry (`Subscription.onPantryChanged`, W5 S8) — a
+  /// pure "something changed, refetch" signal, not the changed item itself.
+  ///
+  /// **Why not surface the pushed `PantryItem` and patch the list locally**
+  /// (E2E_MVP_PLAN.md §11.2.12): AppSync's `@aws_subscribe` forwards the
+  /// exact response of whichever mutation fired, with no event-type field —
+  /// add, update, and delete are all indistinguishable `PantryItem` payloads
+  /// on the wire. A delete can't be safely "upserted" from that shape
+  /// without resurrecting the row it just removed, and a local patch also
+  /// can't tell whether the changed item newly matches (or stops matching)
+  /// the caller's current search/category filter. A full refetch is correct
+  /// in every one of those cases with no special-casing.
+  ///
+  /// Errors (e.g. the subscribe-time [ForbiddenError] `S8`'s resolver can
+  /// throw) surface through this stream — [PantryController] deliberately
+  /// swallows them rather than failing the whole pantry read: the initial
+  /// [fetchPantry] is still the source of truth even if live updates never
+  /// connect.
+  Stream<void> watchPantryChanges(String householdId);
 }
 
 /// Boxes an `AWSDate` string into the generated `GAWSDate` builder Ferry's
@@ -149,6 +173,27 @@ class FerryPantryRepository implements PantryRepository {
 
     final GDeletePantryItemData data = await _execute(request);
     return pantryItemFromGraphQL(data.deletePantryItem);
+  }
+
+  @override
+  Stream<void> watchPantryChanges(String householdId) async* {
+    final GOnPantryChangedReq request = GOnPantryChangedReq(
+      (GOnPantryChangedReqBuilder b) =>
+          b..vars = (GOnPantryChangedVarsBuilder()..householdId = householdId),
+    );
+
+    await for (final OperationResponse<GOnPantryChangedData, GOnPantryChangedVars> response
+        in client.request(request)) {
+      if (response.hasErrors) {
+        throw mapOperationFailure(
+          graphqlErrors: response.graphqlErrors,
+          linkException: response.linkException,
+        );
+      }
+      if (response.data != null) {
+        yield null;
+      }
+    }
   }
 
   /// Identical reduction to `FerryHouseholdRepository._execute` — see that

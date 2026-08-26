@@ -7,11 +7,14 @@ import 'package:flutter/widgets.dart' show AppLifecycleState;
 ///
 /// ## Scope boundary — read this before extending it
 ///
-/// This is a **placeholder for real-time**, not a synchronisation engine. Real
-/// GraphQL subscriptions are W12's deliverable; until they land, a member who
-/// joins or leaves has to become visible on another device *somehow*, and this
-/// is the cheapest mechanism that makes that true without pretending to be
-/// more than it is.
+/// This is a **placeholder for real-time**, not a synchronisation engine.
+/// `onPantryChanged` shipped in W5 (S8) — this class is unrelated to it and
+/// stays exactly as-is: it covers *household* membership changes
+/// (`onHouseholdChanged`), which the locked plan defers to **W8**, a natural
+/// follow-on once the WebSocket link S8 built already exists
+/// (E2E_MVP_PLAN.md §11.2.10). Until then, a member who joins or leaves has
+/// to become visible on another device *somehow*, and this is the cheapest
+/// mechanism that makes that true without pretending to be more than it is.
 ///
 /// It does exactly three things:
 ///
@@ -22,8 +25,8 @@ import 'package:flutter/widgets.dart' show AppLifecycleState;
 ///     interaction.
 ///
 /// Explicitly **out of scope**, and deliberately absent rather than
-/// forgotten — every one of these belongs to W12, where subscriptions make
-/// them answerable properly:
+/// forgotten — every one of these belongs to W8, where `onHouseholdChanged`
+/// makes them answerable properly:
 ///
 ///  * No retry, no backoff, no jitter. A failed poll is dropped; the next tick
 ///    tries again. Retrying a poll that is about to repeat anyway is just a
@@ -36,7 +39,7 @@ import 'package:flutter/widgets.dart' show AppLifecycleState;
 ///  * No offline queue and no connectivity awareness.
 ///
 /// If a change to this class needs any of the above, that is the signal it
-/// belongs in W12's subscription work instead.
+/// belongs in W8's `onHouseholdChanged` subscription work instead.
 ///
 /// ## Why the idle decay exists
 ///
@@ -68,7 +71,7 @@ class HouseholdSyncPolicy {
 
   /// Chosen to be fast enough that a co-member's join feels near-live, and
   /// slow enough to stay cheap. Not tuned against real usage — that data does
-  /// not exist yet, and this mechanism is replaced at W12 anyway.
+  /// not exist yet, and this mechanism is replaced at W8 anyway.
   static const Duration defaultPollInterval = Duration(seconds: 15);
 
   /// How long a screen may sit untouched before the cadence gives up.

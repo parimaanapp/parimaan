@@ -205,8 +205,8 @@ class FerryHouseholdRepository implements HouseholdRepository {
   /// re-read of a value that can never change. `NoCache` rather than
   /// `NetworkOnly` because this response is deliberately **not** written back
   /// into the cache either: cache invalidation across household-scoped screens
-  /// is explicitly W12's problem once real subscriptions land, and a poll that
-  /// silently rewrites shared cache entries underneath other screens is
+  /// is explicitly W8's problem once `onHouseholdChanged` lands, and a poll
+  /// that silently rewrites shared cache entries underneath other screens is
   /// exactly the coupling this slice is scoped to avoid.
   @override
   Future<Household> fetchHousehold(String householdId) async {

@@ -33,6 +33,10 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
   /// inspection — this field's own tests never exercised a second `build()`.
   SearchDebouncer? _searchDebouncer;
 
+  /// Same nullable-not-`late-final` reasoning as [_searchDebouncer] —
+  /// `build()` reassigns this on every run.
+  StreamSubscription<void>? _changeSubscription;
+
   @override
   Future<List<PantryItem>> build(String householdId) {
     // A stale debouncer from a previous `build()` could still have a pending
@@ -49,6 +53,21 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
       },
     );
     ref.onDispose(() => _searchDebouncer?.dispose());
+
+    // Live updates (S8) — subscribed for as long as this controller (and so
+    // the screen watching it) is alive, and cancelled on dispose, which is
+    // this family provider's version of "subscribe-on-foreground /
+    // unsubscribe-on-background" (E2E_MVP_PLAN.md §11.3 S8 step 2d — no
+    // reconnect backoff in W5). Errors are swallowed: a live-update channel
+    // that never connects must not fail the pantry read this controller
+    // already got from `fetchPantry` below — see `watchPantryChanges`'s own
+    // doc for the full reasoning.
+    unawaited(_changeSubscription?.cancel());
+    _changeSubscription = _repository
+        .watchPantryChanges(householdId)
+        .listen((_) => unawaited(_refetch()), onError: (Object _) {});
+    ref.onDispose(() => unawaited(_changeSubscription?.cancel()));
+
     return _repository.fetchPantry(householdId);
   }
 

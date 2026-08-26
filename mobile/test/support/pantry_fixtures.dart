@@ -48,3 +48,7 @@ Map<String, dynamic> updatePantryItemWireData({Map<String, dynamic>? item}) =>
 /// `Mutation.deletePantryItem`'s wire response body.
 Map<String, dynamic> deletePantryItemWireData({Map<String, dynamic>? item}) =>
     <String, dynamic>{'deletePantryItem': item ?? pantryItemWireNode()};
+
+/// `Subscription.onPantryChanged`'s wire response body.
+Map<String, dynamic> onPantryChangedWireData({Map<String, dynamic>? item}) =>
+    <String, dynamic>{'onPantryChanged': item ?? pantryItemWireNode()};

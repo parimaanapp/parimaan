@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/domain/pantry_item_draft.dart';
@@ -54,6 +56,19 @@ class FakePantryRepository implements PantryRepository {
   Object? deleteError;
   final List<String> deleteCalls = <String>[];
 
+  // ── watchPantryChanges ─────────────────────────────────────────────────
+
+  /// One controller per `householdId` a test has called
+  /// [watchPantryChanges] for, so a test can `.add(null)`/`.addError(...)`
+  /// to simulate a live-update push without any real subscription
+  /// transport. Never emits on its own — a test opts in explicitly.
+  final Map<String, StreamController<void>> watchControllers =
+      <String, StreamController<void>>{};
+
+  /// Every `householdId` [watchPantryChanges] was called with, in order —
+  /// asserts a controller's `build()` actually subscribed.
+  final List<String> watchCalls = <String>[];
+
   // ── Implementation ─────────────────────────────────────────────────────
 
   Future<void> _wait() async {
@@ -100,5 +115,13 @@ class FakePantryRepository implements PantryRepository {
   Future<PantryItem> deletePantryItem(String id) {
     deleteCalls.add(id);
     return _answer<PantryItem>(deleteError, deleteResult, 'deleteResult');
+  }
+
+  @override
+  Stream<void> watchPantryChanges(String householdId) {
+    watchCalls.add(householdId);
+    return watchControllers
+        .putIfAbsent(householdId, () => StreamController<void>.broadcast())
+        .stream;
   }
 }

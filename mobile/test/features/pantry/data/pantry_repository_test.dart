@@ -254,4 +254,43 @@ void main() {
       );
     });
   });
+
+  group('FerryPantryRepository.watchPantryChanges', () {
+    test('sends the OnPantryChanged operation with the householdId variable', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': onPantryChangedWireData()},
+      );
+
+      await subject.repository.watchPantryChanges('household-1').first;
+
+      final Request sent = subject.link.requests.single;
+      expect(sent.operation.operationName, 'OnPantryChanged');
+      expect(sent.variables['householdId'], 'household-1');
+    });
+
+    test('emits (a pure signal — the pushed item is not surfaced)', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': onPantryChangedWireData()},
+      );
+
+      await expectLater(
+        subject.repository.watchPantryChanges('household-1').first,
+        completes,
+      );
+    });
+
+    test('a subscribe-time FORBIDDEN denial maps to ForbiddenError', () async {
+      final subject = _subject(
+        (Request _) => _errorBody(
+          'FORBIDDEN',
+          'You are not a member of this household.',
+        ),
+      );
+
+      await expectLater(
+        subject.repository.watchPantryChanges('household-1').first,
+        throwsA(isA<ForbiddenError>()),
+      );
+    });
+  });
 }
