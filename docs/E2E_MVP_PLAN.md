@@ -511,6 +511,8 @@ First local database in this codebase; own design decision per §2.2 step 2b of 
 
 **Depends on:** S5. **Size / Risk:** ~2.5 hrs / **High** — three code generators in one `build_runner` pipeline is the single most likely place this week burns an unplanned hour (`build-error-resolver` on standby).
 
+**Steps 1–2 result:** Drift confirmed (SD §9.1 amendment, 2026-08-26) — `drift 2.34.3`/`drift_flutter 0.3.1`/`sqlite3_flutter_libs 0.6.0+eol` all current and compatible with this app's `^3.13.0` SDK constraint (the `+eol` version suffix is `drift_flutter`'s own official dependency pin, not a deprecation warning — the package's *name* is being retired in favor of a future `sqlite3`-native story, but this pinned version remains the correct, actively-maintained dependency today). The required cheaper-alternative check — Ferry's own persisted (Hive) `Cache`, which `client.dart` already has a hook for — was ruled out: `hive`/`hive_flutter` last published 2021–2022, targeting a pre-null-safety-only SDK range, unmaintained. `gh search code` prior art (`BCNelson/tendant`) confirmed `drift_dev`'s builders coexist in one `build.yaml` alongside `ferry_generator`'s with no special ordering needed — the three-generators risk this slice is sized around is real (see the working-order note below) but not a known incompatibility.
+
 #### S8 — `onPantryChanged` subscription *(new infrastructure — full pipeline)*
 
 First subscription in the app. This is the slice the DoD gate actually measures.

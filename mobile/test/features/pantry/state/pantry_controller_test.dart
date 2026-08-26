@@ -1,9 +1,11 @@
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/state/pantry_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/storage/app_database.dart';
 
 import '../../../support/fake_pantry_repository.dart';
 
@@ -20,11 +22,16 @@ final PantryItem _dal = PantryItem(
   updatedAt: DateTime.utc(2026, 8, 25),
 );
 
-ProviderContainer _container(FakePantryRepository repository) {
+ProviderContainer _container(FakePantryRepository repository, {AppDatabase? database}) {
+  final AppDatabase db = database ?? AppDatabase(NativeDatabase.memory());
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[pantryRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      pantryRepositoryProvider.overrideWithValue(repository),
+      appDatabaseProvider.overrideWithValue(db),
+    ],
   );
   addTearDown(container.dispose);
+  addTearDown(db.close);
   return container;
 }
 
@@ -53,6 +60,24 @@ void main() {
       final ProviderContainer container = _container(repository);
 
       await container.read(pantryControllerProvider('a').future);
+      // Real `PantryItem.id`s are server-generated and globally unique —
+      // two different households never share one. Swapping the fixture
+      // before the second read matches that (and avoids the local Drift
+      // cache's `id`-only primary key colliding on two inserts of the
+      // literal same fixture, which a real backend could never produce).
+      repository.result = <PantryItem>[
+        PantryItem(
+          id: 'item-2',
+          householdId: 'b',
+          name: 'Rice',
+          quantity: 1,
+          unit: 'kg',
+          isStaple: false,
+          addedBy: 'user-1',
+          addedAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        ),
+      ];
       await container.read(pantryControllerProvider('b').future);
 
       expect(
@@ -245,9 +270,14 @@ void main() {
       final FakePantryRepository repository = FakePantryRepository(
         result: <PantryItem>[_dal],
       );
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
       final ProviderContainer container = ProviderContainer(
-        overrides: <Override>[pantryRepositoryProvider.overrideWithValue(repository)],
+        overrides: <Override>[
+          pantryRepositoryProvider.overrideWithValue(repository),
+          appDatabaseProvider.overrideWithValue(db),
+        ],
       );
+      addTearDown(db.close);
       await container.read(pantryControllerProvider('household-1').future);
 
       container.dispose();
@@ -260,5 +290,194 @@ void main() {
 
       expect(repository.calls, hasLength(1));
     });
+  });
+
+  group('PantryController — hydrate-then-fetch (S7)', () {
+    test('emits cached rows, then the fresh network result, in that order', () async {
+      final PantryItem fresh = PantryItem(
+        id: 'item-1',
+        householdId: 'household-1',
+        name: 'Toor Dal (fresh)',
+        quantity: 5,
+        unit: 'kg',
+        isStaple: true,
+        addedBy: 'user-1',
+        addedAt: DateTime.utc(2026, 8, 25),
+        updatedAt: DateTime.utc(2026, 8, 25),
+      );
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.pantryDao.replaceAll('household-1', <PantryItem>[_dal]);
+
+      final FakePantryRepository repository = FakePantryRepository(
+        result: <PantryItem>[fresh],
+        delay: const Duration(milliseconds: 20),
+      );
+      final ProviderContainer container = _container(repository, database: db);
+
+      final List<AsyncValue<List<PantryItem>>> states = <AsyncValue<List<PantryItem>>>[];
+      container.listen(
+        pantryControllerProvider('household-1'),
+        (AsyncValue<List<PantryItem>>? previous, AsyncValue<List<PantryItem>> next) =>
+            states.add(next),
+        fireImmediately: true,
+      );
+
+      // Deliberately NOT `container.read(...future)`: `.future` resolves the
+      // *first* time `state.hasValue` becomes true, which is the cached
+      // (mid-`build()`) assignment below, not `build()` actually finishing —
+      // waiting past the repository's own artificial delay is what proves
+      // the *fresh* result lands too, not just the cached one.
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Cached row visible before the network result lands, then replaced.
+      final int cachedIndex = states.indexWhere(
+        (AsyncValue<List<PantryItem>> s) => s.valueOrNull?.singleOrNull == _dal,
+      );
+      final int freshIndex = states.indexWhere(
+        (AsyncValue<List<PantryItem>> s) => s.valueOrNull?.singleOrNull == fresh,
+      );
+      expect(cachedIndex, greaterThanOrEqualTo(0));
+      expect(freshIndex, greaterThan(cachedIndex));
+    });
+
+    test('a fetch that fails after a successful hydrate leaves the cached rows visible, with the error attached', () async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.pantryDao.replaceAll('household-1', <PantryItem>[_dal]);
+
+      final FakePantryRepository repository = FakePantryRepository(
+        error: const InternalError('boom'),
+      );
+      final ProviderContainer container = _container(repository, database: db);
+
+      // Not `container.read(...future)`: it resolves the first time
+      // `state.hasValue` is true, which happens at the cached mid-`build()`
+      // assignment — before the (synchronously-rejecting-but-still-async)
+      // fetch below has actually run. Listening and settling the event loop
+      // observes the real, final state instead.
+      final List<AsyncValue<List<PantryItem>>> states = <AsyncValue<List<PantryItem>>>[];
+      container.listen(
+        pantryControllerProvider('household-1'),
+        (AsyncValue<List<PantryItem>>? previous, AsyncValue<List<PantryItem>> next) =>
+            states.add(next),
+        fireImmediately: true,
+      );
+      await pumpEventQueue();
+
+      expect(states.last.hasError, isTrue);
+      expect(states.last.value, <PantryItem>[_dal]);
+
+      final AsyncValue<List<PantryItem>> state = container.read(
+        pantryControllerProvider('household-1'),
+      );
+      expect(state.hasError, isTrue);
+      expect(state.value, <PantryItem>[_dal]);
+    });
+
+    test('a fetch that fails with nothing cached yet leaves the screen with only the error — no phantom empty list', () async {
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      final FakePantryRepository repository = FakePantryRepository(
+        error: const InternalError('boom'),
+      );
+      final ProviderContainer container = _container(repository, database: db);
+
+      await expectLater(
+        container.read(pantryControllerProvider('household-1').future),
+        throwsA(isA<InternalError>()),
+      );
+
+      final AsyncValue<List<PantryItem>> state = container.read(
+        pantryControllerProvider('household-1'),
+      );
+      expect(state.hasError, isTrue);
+      expect(state.hasValue, isFalse);
+    });
+
+    test('a successful fetch writes the fresh result into the cache for the next hydrate', () async {
+      final PantryItem fresh = PantryItem(
+        id: 'item-2',
+        householdId: 'household-1',
+        name: 'Rice',
+        quantity: 3,
+        unit: 'kg',
+        isStaple: false,
+        addedBy: 'user-1',
+        addedAt: DateTime.utc(2026, 8, 25),
+        updatedAt: DateTime.utc(2026, 8, 25),
+      );
+      final AppDatabase db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final FakePantryRepository repository = FakePantryRepository(
+        result: <PantryItem>[fresh],
+      );
+      final ProviderContainer container = _container(repository, database: db);
+
+      await container.read(pantryControllerProvider('household-1').future);
+
+      final List<PantryItem> cached = await db.pantryDao.readPantryItems('household-1');
+      expect(cached, <PantryItem>[fresh]);
+    });
+
+    test(
+      'a filtered refetch (search/category) never writes to the cache — it would evict rows the filter excludes',
+      () async {
+        final AppDatabase db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        await db.pantryDao.replaceAll('household-1', <PantryItem>[_dal]);
+
+        final FakePantryRepository repository = FakePantryRepository(
+          result: <PantryItem>[_dal],
+        );
+        final ProviderContainer container = _container(repository, database: db);
+        await container.read(pantryControllerProvider('household-1').future);
+
+        await container
+            .read(pantryControllerProvider('household-1').notifier)
+            .setCategory('dal');
+
+        final List<PantryItem> cached = await db.pantryDao.readPantryItems('household-1');
+        // Still there — a filtered refetch must not have run `replaceAll`.
+        expect(cached, <PantryItem>[_dal]);
+      },
+    );
+
+    test(
+      'a cache-write failure after a successful fetch still returns the fresh result — never discarded',
+      () async {
+        final PantryItem fresh = PantryItem(
+          id: 'item-2',
+          householdId: 'household-1',
+          name: 'Rice',
+          quantity: 3,
+          unit: 'kg',
+          isStaple: false,
+          addedBy: 'user-1',
+          addedAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        );
+        final AppDatabase db = AppDatabase(NativeDatabase.memory());
+        addTearDown(db.close);
+        final FakePantryRepository repository = FakePantryRepository(
+          result: <PantryItem>[fresh],
+          delay: const Duration(milliseconds: 10),
+        );
+        final ProviderContainer container = _container(repository, database: db);
+
+        // Kick off the read, then break the cache write mid-flight (before
+        // the repository's own artificial delay resolves) by dropping the
+        // table out from under it — the closest thing to a real disk/SQLite
+        // failure this test harness can force without a fakeable DAO seam.
+        final Future<List<PantryItem>> future = container.read(
+          pantryControllerProvider('household-1').future,
+        );
+        await db.customStatement('DROP TABLE pantry_items_table');
+
+        final List<PantryItem> result = await future;
+        expect(result, <PantryItem>[fresh]);
+      },
+    );
   });
 }
