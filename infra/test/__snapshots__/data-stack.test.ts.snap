@@ -574,7 +574,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
         "AuroraClusterWriterAA1AB06C",
       ],
       "Properties": {
-        "MigrationsHash": "a44396b549b8cf19edd38d238999b7606242e316b6d80bb7599f3eb08dc88431",
+        "MigrationsHash": "3b375ad9cd02558fb3f30c4d37f9314e11b9558f68f937718e7ec5d06d13a715",
         "ServiceToken": {
           "Fn::GetAtt": [
             "MigrationRunnerProviderframeworkonEvent4B2DF953",

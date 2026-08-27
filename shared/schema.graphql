@@ -54,6 +54,20 @@ type Query {
   client is never rejected outright.
   """
   pantry(householdId: ID!, search: String, category: String): [PantryItem!]!
+
+  """
+  Returns a household's recipes, optionally filtered by `role` and/or
+  `isFavorite`. Requires the caller to already be a member of `householdId`
+  — a non-member or a nonexistent `householdId` both deny identically,
+  matching `Query.pantry`/`Query.household`. Ordered favorite-first, then
+  by title (PRD §7.1: "favorites and rotation surfaced first"). Unlike
+  `PantryItem`'s free-text `unit`/`category`, `role`/`cuisineTier1`/
+  `dietaryTags` are closed enums — an unrecognised value is rejected at
+  write time and never persisted (E2E_MVP_PLAN.md §12.2.6). This query
+  deliberately does not hydrate `Recipe.ingredients` inline — see that
+  field's own doc.
+  """
+  recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean): [Recipe!]!
 }
 
 type Mutation {
@@ -314,4 +328,138 @@ input PantryItemPatchInput {
   isStaple: Boolean
   expiryDate: AWSDate
   lowThreshold: Float
+}
+
+enum RecipeSource {
+  user
+  url
+  curated
+  ai
+  freeform_ai
+}
+
+"""
+Meal-slot categorization a recipe fills — unrelated to `HouseholdRole`
+(primary/member) despite the shared word "role" (E2E_MVP_PLAN.md §12.7 D1,
+confirmed with the founder rather than assumed). Required on
+`RecipeInput`/`RecipePatchInput` with no default — the "role assignment
+required" DoD gate (§12.7 D1/D2). Drives which slot a recipe can fill in a
+future weekly plan (W9/W10); `drink` exists but is post-MVP scope for
+planning (PRD §7.1).
+"""
+enum RecipeRole {
+  breakfast
+  carb
+  sabzi_dal
+  accompaniment
+  snack
+  sweet
+  drink
+}
+
+"""
+A household recipe. `role`/`cuisineTier1`/`dietaryTags` are closed enums,
+unlike `PantryItem`'s free-text `unit`/`category` — an unrecognised value
+is rejected server-side at write time and never persisted
+(E2E_MVP_PLAN.md §12.2.6). `sourceType` and `createdAt`/`updatedAt` are
+never client-supplied.
+"""
+type Recipe {
+  id: ID!
+  householdId: ID!
+  sourceType: RecipeSource!
+  sourceUrl: String
+  title: String!
+  description: String
+  servings: Int!
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]!
+  role: RecipeRole!
+  inRotation: Boolean!
+  isFavorite: Boolean!
+
+  """
+  Resolved by a separate field resolver, not hydrated inline on
+  `Query.recipes` (E2E_MVP_PLAN.md §12.2.7) — a Library-style query that
+  never selects this field never pays for the join, which matters at the
+  280-300 recipe scale risk R7 (§6) is scoped around. RLS is the only
+  authorization layer on this field (there is no `householdId` argument to
+  gate on at the app layer) — see `resolvers/recipeIngredients.ts`'s doc.
+  """
+  ingredients: [RecipeIngredient!]!
+  steps: [String!]!
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type RecipeIngredient {
+  id: ID!
+  name: String!
+  quantity: Float
+  unit: String
+  category: String
+  notes: String
+  isStaple: Boolean!
+}
+
+"""
+Input for `Mutation.createRecipe` (a later W6 slice — this type is defined
+now so the full recipe SDL package lands together, E2E_MVP_PLAN.md §12.7
+D3). No `id`, `householdId`, `sourceType`, or `isFavorite` — all
+server-owned (`sourceType` is set to `user` for a caller-created recipe;
+a create-time favorite isn't in any wireframe). `role` is REQUIRED with no
+default. `ingredients` order is the array index — there is no
+client-supplied `sortOrder`.
+"""
+input RecipeInput {
+  title: String!
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]
+  role: RecipeRole!
+  inRotation: Boolean
+  ingredients: [RecipeIngredientInput!]!
+  steps: [String!]!
+}
+
+input RecipeIngredientInput {
+  name: String!
+  quantity: Float
+  unit: String
+  category: String
+  notes: String
+  isStaple: Boolean
+}
+
+"""
+A partial patch for `Mutation.updateRecipe` (a later W6 slice). Every
+scalar field is optional (absent = "leave unchanged"); an explicit `null`
+is rejected server-side, the same convention as `PantryItemPatchInput`/
+`HouseholdSettingsInput`. `ingredients`/`steps` are a third semantic this
+schema hasn't used before: optional, but when present they REPLACE the
+whole list rather than patching individual entries — a list can't express
+"change ingredient 3" any other way (E2E_MVP_PLAN.md §12.2.4). An explicit
+empty list (`ingredients: []`) clears every ingredient; an absent
+`ingredients` key leaves the existing list untouched.
+"""
+input RecipePatchInput {
+  title: String
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]
+  role: RecipeRole
+  inRotation: Boolean
+  ingredients: [RecipeIngredientInput!]
+  steps: [String!]
 }

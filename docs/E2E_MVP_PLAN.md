@@ -969,8 +969,8 @@ The Lambda concurrency quota increase remains filed and pending (real ceiling: 1
 
 ### 12.6 W6 exit criteria
 
-- [ ] `recipes` and `recipe_ingredients` on dev with RLS **enabled and forced on both**, policies covering `USING` **and** `WITH CHECK`, `parimaan_app` grants on both — verified by wrong-household tests for read, insert, update, delete, **including a direct `recipe_ingredients` read by `recipe_id`** (S1)
-- [ ] `recipes.updated_at`, the `cuisine_tier1` CHECK, and the `recipe_ingredients` RLS line reflected in SD §7.1 with rationale (S1/S10)
+- [x] `recipes` and `recipe_ingredients` on dev with RLS **enabled and forced on both**, policies covering `USING` **and** `WITH CHECK`, `parimaan_app` grants on both — verified by wrong-household tests for read, insert, update, delete, **including a direct `recipe_ingredients` read by `recipe_id`** (S1, `#40`)
+- [x] `recipes.updated_at`, the `cuisine_tier1` CHECK, and the `recipe_ingredients` RLS line reflected in SD §7.1 with rationale (S1/S2 — deferred from S1's own PR, closed here; SD §18 decisions log also updated)
 - [ ] All five recipe mutations + `Query.recipes` + `Recipe.ingredients` live on dev, each member-gated (or RLS-gated, for the id-only and field resolvers), each with a non-member denial test (S2–S5)
 - [ ] `role` is required on create with no default; a `createRecipe` missing `role` fails `VALIDATION` — the DoD gate's "role assignment required", asserted by a named test (S3, D1)
 - [ ] Unknown `role`/`cuisineTier1`/`dietaryTag` values are **rejected, not passed through**, at both the resolver and the DB `CHECK` (S2/S3, D4)

@@ -239,9 +239,25 @@ describe('ApiStack', () => {
     );
   });
 
-  it('declares exactly 16 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged)', () => {
+  it('the real schema file still declares the recipes query and the Recipe SDL package (W6 S2)', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /recipes\(householdId:\s*ID!,\s*role:\s*RecipeRole,\s*isFavorite:\s*Boolean\)\s*:\s*\[Recipe!\]!/,
+    );
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/type Recipe \{/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/type RecipeIngredient \{/);
+    // The full input-type package was locked together (E2E_MVP_PLAN.md
+    // §12.7 D3) even though the mutations that consume them land in a
+    // later W6 slice — a future edit dropping one silently would fail here.
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/input RecipeInput \{/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/input RecipeIngredientInput \{/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/input RecipePatchInput \{/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/enum RecipeRole \{/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/enum RecipeSource \{/);
+  });
+
+  it('declares exactly 18 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipeIngredients)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(16);
+    expect(ourFunctions(template)).toHaveLength(18);
   });
 
   it('declares the health Lambda outside the VPC, on the Node.js 24 runtime', () => {
@@ -254,10 +270,10 @@ describe('ApiStack', () => {
     expect(healthFn.Properties.Runtime).toBe('nodejs24.x');
   });
 
-  it('declares 15 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 17 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipeIngredients), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(15);
+    expect(vpcFunctions).toHaveLength(17);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -275,7 +291,7 @@ describe('ApiStack', () => {
   it('gives every VPC-attached resolver Lambda enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(15);
+    expect(vpcFunctions).toHaveLength(17);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
@@ -285,7 +301,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(15);
+    expect(vpcFunctions).toHaveLength(17);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -407,9 +423,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 16 AppSync Lambda data sources', () => {
+  it('declares exactly 18 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 16);
+    template.resourceCountIs('AWS::AppSync::DataSource', 18);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -556,9 +572,27 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 16 resolvers total', () => {
+  it('declares a resolver for Query.recipes', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 16);
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Query',
+      FieldName: 'recipes',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Recipe.ingredients', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Recipe',
+      FieldName: 'ingredients',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares exactly 18 resolvers total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::Resolver', 18);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {
