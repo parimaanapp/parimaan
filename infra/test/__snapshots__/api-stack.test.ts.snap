@@ -1920,6 +1920,92 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiRecipeDataSourceDDCD02DB": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "RecipeFn13C2DEEC",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "RecipeDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiRecipeDataSourceServiceRoleE63B9528",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiRecipeDataSourceServiceRoleDefaultPolicy5EAD2E9C": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "RecipeFn13C2DEEC",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "RecipeFn13C2DEEC",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiRecipeDataSourceServiceRoleDefaultPolicy5EAD2E9C",
+        "Roles": [
+          {
+            "Ref": "ApiRecipeDataSourceServiceRoleE63B9528",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiRecipeDataSourceServiceRoleE63B9528": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
     "ApiRecipeIngredientsDataSource8BA92369": {
       "Properties": {
         "ApiId": {
@@ -2022,6 +2108,25 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
         "FieldName": "ingredients",
         "Kind": "UNIT",
         "TypeName": "Recipe",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiRecipeResolverBBD5E644": {
+      "DependsOn": [
+        "ApiRecipeDataSourceDDCD02DB",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "RecipeDataSource",
+        "FieldName": "recipe",
+        "Kind": "UNIT",
+        "TypeName": "Query",
       },
       "Type": "AWS::AppSync::Resolver",
     },
@@ -2313,6 +2418,18 @@ type Query {
   field's own doc.
   """
   recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean): [Recipe!]!
+
+  """
+  Returns a single recipe by \`id\` — added in W6 S7 so the Detail screen can
+  read one recipe (selecting \`ingredients\`) without re-fetching the whole
+  household's \`Query.recipes\` list just to display one row. Takes no
+  \`householdId\`: the recipe's household is looked up from \`id\` itself, and
+  RLS is what actually enforces "your own household's recipes only" here —
+  same \`id\`-only pattern as \`Mutation.updateRecipe\`/\`deleteRecipe\`. A
+  nonexistent \`id\` and a real \`id\` in another household both deny
+  identically with \`NOT_FOUND\`.
+  """
+  recipe(id: ID!): Recipe!
 }
 
 type Mutation {
@@ -5319,6 +5436,140 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "PantryFnServiceRoleDBB2BD85",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "RecipeFn13C2DEEC": {
+      "DependsOn": [
+        "RecipeFnServiceRoleDefaultPolicy71A06072",
+        "RecipeFnServiceRole5855211E",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "RecipeFnServiceRole5855211E",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "RecipeFnServiceRole5855211E": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "RecipeFnServiceRoleDefaultPolicy71A06072": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "RecipeFnServiceRoleDefaultPolicy71A06072",
+        "Roles": [
+          {
+            "Ref": "RecipeFnServiceRole5855211E",
           },
         ],
       },

@@ -1,0 +1,11 @@
+#import "./recipe_detail_fields.graphql"
+
+# `Mutation.deleteRecipe` — returns the deleted row (not a bare Boolean), so
+# a subscribed second device learns which recipe vanished. Takes only `id`,
+# same `updateRecipe`/`deleteRecipe`-precedent reasoning as
+# `FavoriteRecipe`/`SetInRotation`.
+mutation DeleteRecipe($id: ID!) {
+  deleteRecipe(id: $id) {
+    ...RecipeDetailFields
+  }
+}

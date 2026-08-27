@@ -1,0 +1,9 @@
+#import "./recipe_detail_fields.graphql"
+
+# `Mutation.setInRotation` — same end-state-not-toggle, household-level,
+# `id`-only pattern as `FavoriteRecipe`.
+mutation SetInRotation($id: ID!, $inRotation: Boolean!) {
+  setInRotation(id: $id, inRotation: $inRotation) {
+    ...RecipeDetailFields
+  }
+}

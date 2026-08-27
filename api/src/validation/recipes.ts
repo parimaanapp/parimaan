@@ -47,3 +47,14 @@ export const recipesArgsSchema = z.object({
 });
 
 export type RecipesArgs = z.infer<typeof recipesArgsSchema>;
+
+/**
+ * Validates `Query.recipe`'s `{ id: ID! }` argument — same `id`-only shape
+ * as `deleteRecipeArgsSchema`/`updateRecipeArgsSchema`: no `householdId`,
+ * RLS alone gates the read (`resolvers/recipe.ts`'s own doc).
+ */
+export const recipeArgsSchema = z.object({
+  id: z.string().uuid('id must be a valid UUID'),
+});
+
+export type RecipeArgs = z.infer<typeof recipeArgsSchema>;

@@ -9,7 +9,19 @@ import 'package:mobile/features/recipes/domain/recipe_role.dart';
 /// (the loading-state requirement) that a `mocktail` stub makes awkward,
 /// plus a call log so a test can assert exactly which filters were sent.
 class FakeRecipeRepository implements RecipeRepository {
-  FakeRecipeRepository({this.result, this.error, this.delay});
+  FakeRecipeRepository({
+    this.result,
+    this.error,
+    this.delay,
+    this.detailResult,
+    this.detailError,
+    this.favoriteResult,
+    this.favoriteError,
+    this.setInRotationResult,
+    this.setInRotationError,
+    this.deleteResult,
+    this.deleteError,
+  });
 
   List<Recipe>? result;
   Object? error;
@@ -64,5 +76,73 @@ class FakeRecipeRepository implements RecipeRepository {
     return watchControllers
         .putIfAbsent(householdId, () => StreamController<void>.broadcast())
         .stream;
+  }
+
+  // ── fetchRecipeDetail ──────────────────────────────────────────────────
+
+  Recipe? detailResult;
+  Object? detailError;
+  final List<String> detailCalls = <String>[];
+
+  @override
+  Future<Recipe> fetchRecipeDetail(String id) {
+    detailCalls.add(id);
+    return _answer<Recipe>(detailError, detailResult, 'detailResult');
+  }
+
+  // ── favoriteRecipe ─────────────────────────────────────────────────────
+
+  Recipe? favoriteResult;
+  Object? favoriteError;
+  final List<({String id, bool favorite})> favoriteCalls =
+      <({String id, bool favorite})>[];
+
+  @override
+  Future<Recipe> favoriteRecipe(String id, bool favorite) {
+    favoriteCalls.add((id: id, favorite: favorite));
+    return _answer<Recipe>(favoriteError, favoriteResult, 'favoriteResult');
+  }
+
+  // ── setInRotation ──────────────────────────────────────────────────────
+
+  Recipe? setInRotationResult;
+  Object? setInRotationError;
+  final List<({String id, bool inRotation})> setInRotationCalls =
+      <({String id, bool inRotation})>[];
+
+  @override
+  Future<Recipe> setInRotation(String id, bool inRotation) {
+    setInRotationCalls.add((id: id, inRotation: inRotation));
+    return _answer<Recipe>(
+      setInRotationError,
+      setInRotationResult,
+      'setInRotationResult',
+    );
+  }
+
+  // ── deleteRecipe ───────────────────────────────────────────────────────
+
+  Recipe? deleteResult;
+  Object? deleteError;
+  final List<String> deleteCalls = <String>[];
+
+  @override
+  Future<Recipe> deleteRecipe(String id) {
+    deleteCalls.add(id);
+    return _answer<Recipe>(deleteError, deleteResult, 'deleteResult');
+  }
+
+  Future<T> _answer<T>(Object? error, T? value, String field) async {
+    final Duration? delay = this.delay;
+    if (delay != null) {
+      await Future<void>.delayed(delay);
+    }
+    if (error != null) {
+      throw error;
+    }
+    if (value == null) {
+      throw StateError('FakeRecipeRepository needs a `$field` or an error.');
+    }
+    return value;
   }
 }

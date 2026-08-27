@@ -175,6 +175,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     fieldName: 'recipes',
   },
   {
+    id: 'Recipe',
+    entryFile: 'recipe.ts',
+    typeName: 'Query',
+    fieldName: 'recipe',
+  },
+  {
     id: 'RecipeIngredients',
     entryFile: 'recipeIngredients.ts',
     typeName: 'Recipe',
@@ -314,6 +320,13 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   `favoriteRecipe`/`setInRotation`) — unlike `onPantryChanged`, every
  *   recipe mutation returns a single `Recipe!`, so there is no
  *   list-shaped-payload exclusion to make here.
+ * - `Query.recipe` — W6 slice S7 (E2E_MVP_PLAN.md §12.3), added mid-slice
+ *   (not in the original SDL/plan text) so the Detail screen can read one
+ *   recipe without re-fetching the whole household's `Query.recipes` list
+ *   just to select `ingredients` on a single row. Same `id`-only, RLS-gated
+ *   pattern as `updateRecipe`/`deleteRecipe`/`favoriteRecipe`/
+ *   `setInRotation` — no `householdId`, a nonexistent id and a real id in
+ *   another household both surface as the identical `NotFoundError`.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`

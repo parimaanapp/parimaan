@@ -10,6 +10,7 @@ import { insertHousehold, insertMembership } from './householdRepository.js';
 import {
   deleteRecipeById,
   deleteRecipeIngredientsByRecipeId,
+  findRecipeById,
   findRecipeIngredientsByRecipeId,
   findRecipes,
   insertRecipe as insertRecipeRow,
@@ -501,6 +502,28 @@ describe('recipeRepository', () => {
         findRecipeIngredientsByRecipeId(client, recipe.id),
       );
       expect(rows).toEqual([]);
+    });
+  });
+
+  describe('findRecipeById', () => {
+    it('returns the recipe matching the id', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Rajma Chawal' }),
+      );
+
+      const row = await asUser(owner.id, (client) => findRecipeById(client, recipe.id));
+      expect(row?.id).toBe(recipe.id);
+      expect(row?.title).toBe('Rajma Chawal');
+    });
+
+    it('returns null when no row matches the id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+
+      const row = await asUser(owner.id, (client) => findRecipeById(client, randomUUID()));
+      expect(row).toBeNull();
     });
   });
 

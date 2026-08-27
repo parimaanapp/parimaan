@@ -1,0 +1,14 @@
+#import "./recipe_detail_fields.graphql"
+
+# `Query.recipe` — a single recipe by id, added in W6 S7 (E2E_MVP_PLAN.md
+# §12.3) so the Detail screen can read one recipe without re-fetching the
+# whole household's `Query.recipes` list.
+#
+# Takes no `householdId`: a nonexistent `id` and a real `id` in another
+# household both deny identically with `NOT_FOUND` (see `Query.recipe`'s
+# own schema doc).
+query RecipeDetail($id: ID!) {
+  recipe(id: $id) {
+    ...RecipeDetailFields
+  }
+}

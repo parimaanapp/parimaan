@@ -28,6 +28,7 @@ import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
+import '../features/recipes/presentation/recipe_detail_screen.dart';
 import '../features/recipes/presentation/recipes_library_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
 
@@ -169,6 +170,21 @@ abstract final class AppRoutes {
   static const String _pantryManualAddPattern = '/home/pantry/add/manual';
   static String pantryManualAdd(String householdId) =>
       '$_pantryManualAddPattern?householdId=$householdId';
+
+  // ── Recipe Detail (wireframes 7.2/7.3 — W6 S7) ───────────────────────────
+  //
+  // A flat, pushed route *outside* the shell, same reasoning as pantry
+  // add/edit above — its own full-screen chrome, reached via `context.push`
+  // so `context.pop()` inside `RecipeDetailScreen` returns to the Library.
+  // `recipeId` travels as a real path parameter, not a query param like
+  // pantry's `householdId`: unlike a not-yet-created `PantryItem`, a recipe
+  // always already has an id by the time this route is reached (tapped from
+  // an already-loaded `RecipeCard`), so there is no "doesn't exist yet"
+  // case to work around.
+
+  static const String recipeIdParameter = 'recipeId';
+  static const String _recipeDetailPattern = '/home/recipes/:recipeId';
+  static String recipeDetail(String recipeId) => '/home/recipes/$recipeId';
 }
 
 /// The app's route table plus its auth guard.
@@ -381,6 +397,12 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => ManualAddScreen(
           householdId: _pantryHouseholdId(state),
           initialItem: state.extra as PantryItem?,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes._recipeDetailPattern,
+        builder: (BuildContext context, GoRouterState state) => RecipeDetailScreen(
+          recipeId: state.pathParameters[AppRoutes.recipeIdParameter] ?? '',
         ),
       ),
     ],

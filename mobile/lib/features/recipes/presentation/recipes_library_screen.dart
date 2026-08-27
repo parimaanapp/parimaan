@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
@@ -203,7 +205,10 @@ class _RecipeList extends StatelessWidget {
       return Padding(
         key: ValueKey<String>(recipe.id),
         padding: const EdgeInsets.only(bottom: AppSpacing.s1),
-        child: RecipeCard(recipe: recipe),
+        child: RecipeCard(
+          recipe: recipe,
+          onTap: () => context.push(AppRoutes.recipeDetail(recipe.id)),
+        ),
       );
     },
   );
