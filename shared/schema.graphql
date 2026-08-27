@@ -202,6 +202,23 @@ type Mutation {
   `recipe_ingredients` for the deleted recipe are removed via cascade.
   """
   deleteRecipe(id: ID!): Recipe!
+
+  """
+  Sets whether a recipe is favorited — the caller supplies the desired end
+  state (`favorite: true`/`false`), not a toggle, so repeat calls with the
+  same value are idempotent. Household-level, not per-user (PRD §7.1):
+  every member sees the same favorite flag. Same `id`-only, RLS-gated
+  membership resolution as `updateRecipe`/`deleteRecipe`.
+  """
+  favoriteRecipe(id: ID!, favorite: Boolean!): Recipe!
+
+  """
+  Sets whether a recipe is in rotation — same end-state-not-toggle,
+  household-level, `id`-only pattern as `favoriteRecipe`. `inRotation` is
+  what a future weekly-plan auto-fill (W10) filters candidate recipes by;
+  this mutation only flips the flag, it does not itself consume it.
+  """
+  setInRotation(id: ID!, inRotation: Boolean!): Recipe!
 }
 
 type Subscription {

@@ -375,3 +375,48 @@ export const deleteRecipeById = async (client: PoolClient, id: string): Promise<
   const row = result.rows[0];
   return row === undefined ? null : mapRecipeRow(row);
 };
+
+/**
+ * Sets `is_favorite` unconditionally to `favorite` (not a toggle — the
+ * caller always sends the desired end state, matching
+ * `Mutation.favoriteRecipe(id, favorite: Boolean!)`'s SDL). Idempotent by
+ * construction: setting an already-favorite recipe favorite again is a
+ * plain `UPDATE` that matches the same row and returns it unchanged bar
+ * `updated_at`, never a conflict. Same `null`-means-not-found-or-not-mine
+ * reasoning as `updateRecipePartial`/`deleteRecipeById`. Favoriting is
+ * household-level, not per-user (PRD §7.1) — there is deliberately no
+ * per-caller column here, `is_favorite` is a single flag every member
+ * shares.
+ */
+export const setRecipeFavorite = async (
+  client: PoolClient,
+  id: string,
+  favorite: boolean,
+): Promise<RecipeRow | null> => {
+  const result = await client.query<RawRecipeRow>(
+    `UPDATE recipes SET is_favorite = $2, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [id, favorite],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapRecipeRow(row);
+};
+
+/**
+ * Sets `in_rotation` unconditionally to `inRotation` — same shape as
+ * `setRecipeFavorite`, backing `Mutation.setInRotation(id,
+ * inRotation: Boolean!)`. `in_rotation` is what W10's `autoFillWeek`
+ * filters on (`idx_recipes_role`'s partial-index predicate); this mutation
+ * only flips the flag, it does not itself consume it.
+ */
+export const setRecipeInRotation = async (
+  client: PoolClient,
+  id: string,
+  inRotation: boolean,
+): Promise<RecipeRow | null> => {
+  const result = await client.query<RawRecipeRow>(
+    `UPDATE recipes SET in_rotation = $2, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [id, inRotation],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapRecipeRow(row);
+};

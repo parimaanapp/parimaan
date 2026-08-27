@@ -198,6 +198,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'deleteRecipe',
   },
+  {
+    id: 'FavoriteRecipe',
+    entryFile: 'favoriteRecipe.ts',
+    typeName: 'Mutation',
+    fieldName: 'favoriteRecipe',
+  },
+  {
+    id: 'SetInRotation',
+    entryFile: 'setInRotation.ts',
+    typeName: 'Mutation',
+    fieldName: 'setInRotation',
+  },
 ];
 
 /**
@@ -282,6 +294,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   a third patch semantic (§12.2.4): present (even `[]`) replaces the
  *   whole list, absent leaves it untouched — everything else is the usual
  *   absent-means-unchanged/explicit-null-rejected patch convention.
+ * - `Mutation.favoriteRecipe`, `Mutation.setInRotation` — W6 slice S5
+ *   (E2E_MVP_PLAN.md §12.3). Same `id`-only, RLS-gated pattern as
+ *   `updateRecipe`/`deleteRecipe`. Both are single-column flag sets
+ *   (caller supplies the end state, not a toggle — idempotent by
+ *   construction) and both flags are household-level, not per-user
+ *   (PRD §7.1) — any member's call changes what every member sees.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`
