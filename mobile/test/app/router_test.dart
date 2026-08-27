@@ -8,6 +8,7 @@ import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
+import 'package:mobile/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:mobile/shared/ui/components/p_tab_bar.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
@@ -82,6 +83,21 @@ void main() {
         );
 
         router.go(AppRoutes.recipes);
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.signIn);
+      },
+    );
+
+    testWidgets(
+      'deep navigation to /home/recipes/:recipeId is redirected to /sign-in',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(AppRoutes.recipeDetail('recipe-1'));
         await tester.pumpAndSettle();
 
         expect(_location(router), AppRoutes.signIn);
@@ -317,6 +333,29 @@ void main() {
 
       expect(_location(router), AppRoutes.pantryManualAdd('household-1'));
       expect(find.byType(ManualAddScreen), findsOneWidget);
+    });
+
+    testWidgets('/home/recipes/:recipeId stays reachable and renders RecipeDetailScreen', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.recipeDetail('recipe-1'));
+      // Not `pumpAndSettle`: `RecipeDetailScreen`'s spinner never settles
+      // with no household data stubbed in this harness — same reasoning as
+      // the `/home/pantry` reachability test above. Two pumps, not one:
+      // unlike a shell-branch swap, this is a real pushed-route page
+      // transition (this route lives outside the shell, like
+      // `pantryManualAdd`), which needs a frame for the transition itself
+      // before the new page's own build settles.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(_location(router), AppRoutes.recipeDetail('recipe-1'));
+      expect(find.byType(RecipeDetailScreen), findsOneWidget);
     });
 
     testWidgets(

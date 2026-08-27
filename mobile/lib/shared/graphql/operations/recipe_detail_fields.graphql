@@ -1,0 +1,43 @@
+# The one canonical Detail-scale `Recipe` selection set — every field
+# `Recipe` exposes, including `ingredients` (the `Recipe.ingredients` field
+# resolver, E2E_MVP_PLAN.md §12.2.7/D5), shared by `RecipeDetail` and the
+# three Overflow menu mutations (`FavoriteRecipe`/`SetInRotation`/
+# `DeleteRecipe`, W6 S7). Selecting `ingredients` here — not just on
+# `RecipeDetail` — lets each mutation's own response push the whole updated
+# `Recipe` straight into `RecipeDetailController`'s state (no optimistic
+# update, but no second round trip either), the same "the mutation already
+# returns everything, use it" reasoning as
+# `HouseholdSettingsController.rotateInviteCode`.
+#
+# Never used by `Recipes.graphql` (the Library-scale query) — that query's
+# own doc explains why hydrating `ingredients` there is the exact cost
+# D5 wrote this split to avoid.
+fragment RecipeDetailFields on Recipe {
+  id
+  householdId
+  sourceType
+  sourceUrl
+  title
+  description
+  servings
+  prepMin
+  cookMin
+  cuisineTier1
+  cuisineTier2
+  dietaryTags
+  role
+  inRotation
+  isFavorite
+  ingredients {
+    id
+    name
+    quantity
+    unit
+    category
+    notes
+    isStaple
+  }
+  steps
+  createdAt
+  updatedAt
+}

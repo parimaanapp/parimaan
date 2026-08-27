@@ -1,0 +1,10 @@
+#import "./recipe_detail_fields.graphql"
+
+# `Mutation.favoriteRecipe` — sets the desired end state (`favorite:
+# true`/`false`), not a toggle, so repeat calls with the same value are
+# idempotent. Household-level, not per-user (PRD §7.1).
+mutation FavoriteRecipe($id: ID!, $favorite: Boolean!) {
+  favoriteRecipe(id: $id, favorite: $favorite) {
+    ...RecipeDetailFields
+  }
+}

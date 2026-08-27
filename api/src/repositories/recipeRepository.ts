@@ -103,6 +103,22 @@ export const findRecipes = async (
   return result.rows.map(mapRecipeRow);
 };
 
+/**
+ * Reads a single recipe by `id` — no `householdId` argument, same `id`-only
+ * shape as `deleteRecipeById`/`updateRecipePartial`: RLS alone gates this,
+ * so a nonexistent id and a real id in another household are both `null`
+ * here, indistinguishable by design (`resolvers/recipe.ts` turns `null`
+ * into the identical `NotFoundError` either way). Deliberately never
+ * selects/joins `recipe_ingredients` — same §12.2.7/D5 reasoning as
+ * `findRecipes`; `Recipe.ingredients` is the separate field resolver the
+ * Detail screen's own selection set triggers.
+ */
+export const findRecipeById = async (client: PoolClient, id: string): Promise<RecipeRow | null> => {
+  const result = await client.query<RawRecipeRow>(`SELECT * FROM recipes WHERE id = $1`, [id]);
+  const row = result.rows[0];
+  return row === undefined ? null : mapRecipeRow(row);
+};
+
 export interface RecipeIngredientRow {
   id: string;
   recipeId: string;

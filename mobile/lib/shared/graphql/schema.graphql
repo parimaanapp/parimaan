@@ -88,6 +88,18 @@ type Query {
   field's own doc.
   """
   recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean): [Recipe!]!
+
+  """
+  Returns a single recipe by `id` — added in W6 S7 so the Detail screen can
+  read one recipe (selecting `ingredients`) without re-fetching the whole
+  household's `Query.recipes` list just to display one row. Takes no
+  `householdId`: the recipe's household is looked up from `id` itself, and
+  RLS is what actually enforces "your own household's recipes only" here —
+  same `id`-only pattern as `Mutation.updateRecipe`/`deleteRecipe`. A
+  nonexistent `id` and a real `id` in another household both deny
+  identically with `NOT_FOUND`.
+  """
+  recipe(id: ID!): Recipe!
 }
 
 type Mutation {

@@ -3,6 +3,7 @@ import 'package:mobile/features/recipes/data/recipe_mapper.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/features/recipes/domain/recipe_source.dart';
 import 'package:mobile/shared/graphql/__generated__/schema.schema.gql.dart';
+import 'package:mobile/shared/graphql/operations/__generated__/recipe_detail_fields.data.gql.dart';
 import 'package:mobile/shared/graphql/operations/__generated__/recipes.data.gql.dart';
 
 GRecipesData_recipes _data({
@@ -73,6 +74,73 @@ void main() {
         _data(sourceType: GRecipeSource.gUnknownEnumValue),
       );
       expect(result.sourceType, RecipeSource.unknown);
+    });
+  });
+
+  group('recipeDetailFromGraphQL', () {
+    GRecipeDetailFieldsData detailData({
+      GCuisineTier1? cuisineTier1,
+      List<GRecipeDetailFieldsData_ingredients>? ingredients,
+    }) => GRecipeDetailFieldsData(
+      (GRecipeDetailFieldsDataBuilder b) => b
+        ..id = 'recipe-1'
+        ..householdId = 'household-1'
+        ..sourceType = GRecipeSource.user
+        ..sourceUrl = null
+        ..title = 'Toor Dal'
+        ..description = null
+        ..servings = 4
+        ..prepMin = 10
+        ..cookMin = 20
+        ..cuisineTier1 = cuisineTier1
+        ..cuisineTier2 = null
+        ..dietaryTags.addAll(<GDietaryTag>[GDietaryTag.veg])
+        ..role = GRecipeRole.sabzi_dal
+        ..inRotation = true
+        ..isFavorite = false
+        ..ingredients.addAll(
+          ingredients ??
+              <GRecipeDetailFieldsData_ingredients>[
+                GRecipeDetailFieldsData_ingredients(
+                  (GRecipeDetailFieldsData_ingredientsBuilder ib) => ib
+                    ..id = 'ingredient-1'
+                    ..name = 'Toor dal'
+                    ..quantity = 1
+                    ..unit = 'cup'
+                    ..category = null
+                    ..notes = null
+                    ..isStaple = true,
+                ),
+              ],
+        )
+        ..steps.addAll(<String>['Boil the dal.'])
+        ..createdAt = DateTime.utc(2026, 8, 25, 10)
+        ..updatedAt = DateTime.utc(2026, 8, 25, 11),
+    );
+
+    test('maps every field through, including ingredients', () {
+      final result = recipeDetailFromGraphQL(
+        detailData(cuisineTier1: GCuisineTier1.north_indian),
+      );
+
+      expect(result.id, 'recipe-1');
+      expect(result.title, 'Toor Dal');
+      expect(result.cuisineTier1, 'north_indian');
+      expect(result.ingredients, hasLength(1));
+      expect(result.ingredients!.first.id, 'ingredient-1');
+      expect(result.ingredients!.first.name, 'Toor dal');
+      expect(result.ingredients!.first.quantity, 1);
+      expect(result.ingredients!.first.unit, 'cup');
+      expect(result.ingredients!.first.isStaple, isTrue);
+      expect(result.steps, <String>['Boil the dal.']);
+    });
+
+    test('maps a zero-ingredient recipe to an empty (not null) list', () {
+      final result = recipeDetailFromGraphQL(
+        detailData(ingredients: <GRecipeDetailFieldsData_ingredients>[]),
+      );
+      expect(result.ingredients, isNotNull);
+      expect(result.ingredients, isEmpty);
     });
   });
 
