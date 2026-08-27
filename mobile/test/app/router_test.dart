@@ -74,6 +74,21 @@ void main() {
     });
 
     testWidgets(
+      'deep navigation to /home/recipes is redirected to /sign-in',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(AppRoutes.recipes);
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.signIn);
+      },
+    );
+
+    testWidgets(
       'deep navigation to /home/pantry/add is redirected to /sign-in',
       (WidgetTester tester) async {
         final GoRouter router = await _pumpRouter(
@@ -220,7 +235,7 @@ void main() {
       expect(find.text('Signed in'), findsOne);
     });
 
-    testWidgets('/home renders a two-item PTabBar', (
+    testWidgets('/home renders a three-item PTabBar', (
       WidgetTester tester,
     ) async {
       final GoRouter router = await _pumpRouter(
@@ -234,6 +249,7 @@ void main() {
       expect(find.byType(PTabBar), findsOneWidget);
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Pantry'), findsOneWidget);
+      expect(find.text('Recipes'), findsOneWidget);
     });
 
     testWidgets('/home/pantry stays reachable and is not bounced back', (
@@ -253,6 +269,24 @@ void main() {
       await tester.pump();
 
       expect(_location(router), AppRoutes.pantry);
+    });
+
+    testWidgets('/home/recipes stays reachable and is not bounced back', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
+
+      router.go(AppRoutes.recipes);
+      // Not `pumpAndSettle`: `RecipesLibraryScreen` shows a
+      // `CircularProgressIndicator` while `activeHouseholdProvider`
+      // resolves, and this harness stubs no household data at all — same
+      // reasoning as the `/home/pantry` reachability test above.
+      await tester.pump();
+
+      expect(_location(router), AppRoutes.recipes);
     });
 
     testWidgets('/home/pantry/add stays reachable and renders AddMethodScreen', (
@@ -311,6 +345,37 @@ void main() {
         // point of the assertion is that Home's tree survives while it is
         // the *unpainted* branch — the default `find.text` would only prove
         // the opposite.
+        expect(
+          find.text('Signed in', skipOffstage: false),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Home'));
+        await tester.pumpAndSettle();
+        expect(_location(router), AppRoutes.home);
+      },
+    );
+
+    testWidgets(
+      'tapping the Recipes tab switches branch and preserves Home '
+      'branch state',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.home);
+        await tester.pumpAndSettle();
+        expect(_location(router), AppRoutes.home);
+
+        await tester.tap(find.text('Recipes'));
+        // Same reason as the Pantry-tab test above: RecipesLibraryScreen's
+        // spinner never settles with no household data stubbed in this
+        // harness.
+        await tester.pump();
+        expect(_location(router), AppRoutes.recipes);
+
         expect(
           find.text('Signed in', skipOffstage: false),
           findsOneWidget,

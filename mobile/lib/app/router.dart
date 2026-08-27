@@ -28,6 +28,7 @@ import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
+import '../features/recipes/presentation/recipes_library_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
@@ -144,6 +145,10 @@ abstract final class AppRoutes {
   /// a child route, even though the path nests under it. See the
   /// `StatefulShellRoute` in [goRouterProvider].
   static const String pantry = '/home/pantry';
+
+  /// The Recipes tab of the signed-in shell (W6 S6) — same sibling-branch
+  /// shape as [pantry].
+  static const String recipes = '/home/recipes';
 
   // ── Pantry add/edit (wireframes 9.2, 9.3 — W5 S6) ────────────────────────
   //
@@ -347,6 +352,15 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
                 path: AppRoutes.pantry,
                 builder: (BuildContext context, GoRouterState state) =>
                     const PantryListScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.recipes,
+                builder: (BuildContext context, GoRouterState state) =>
+                    const RecipesLibraryScreen(),
               ),
             ],
           ),
