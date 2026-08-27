@@ -81,7 +81,16 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const PTopBar(title: 'Recipes'),
+        PTopBar(
+          title: 'Recipes',
+          trailing: PButton.icon(
+            icon: Icons.add,
+            semanticLabel: 'Add a recipe',
+            variant: PButtonVariant.ghost,
+            onPressed: () =>
+                context.push(AppRoutes.recipeCreate(widget.householdId)),
+          ),
+        ),
         SizedBox(
           height: 40,
           child: ListView(
@@ -157,12 +166,8 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
                 action: PButton(
                   label: 'Add a recipe',
                   variant: PButtonVariant.secondary,
-                  // Disabled: the add flow is a later slice (S8), so there
-                  // is nowhere for this to navigate yet. `PEmptyState.action`
-                  // is still required, and a visibly-disabled button is
-                  // truthful about "not yet" in a way a silent no-op tap
-                  // would not be.
-                  onPressed: null,
+                  onPressed: () =>
+                      context.push(AppRoutes.recipeCreate(widget.householdId)),
                 ),
               ),
             ),

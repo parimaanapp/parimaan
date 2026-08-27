@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:mobile/features/recipes/data/recipe_repository.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
+import 'package:mobile/features/recipes/domain/recipe_draft.dart';
+import 'package:mobile/features/recipes/domain/recipe_patch.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 
 /// Hand-written [RecipeRepository] double — same rationale as
@@ -21,6 +23,10 @@ class FakeRecipeRepository implements RecipeRepository {
     this.setInRotationError,
     this.deleteResult,
     this.deleteError,
+    this.createResult,
+    this.createError,
+    this.updateResult,
+    this.updateError,
   });
 
   List<Recipe>? result;
@@ -130,6 +136,32 @@ class FakeRecipeRepository implements RecipeRepository {
   Future<Recipe> deleteRecipe(String id) {
     deleteCalls.add(id);
     return _answer<Recipe>(deleteError, deleteResult, 'deleteResult');
+  }
+
+  // ── createRecipe ───────────────────────────────────────────────────────
+
+  Recipe? createResult;
+  Object? createError;
+  final List<({String householdId, RecipeDraft draft})> createCalls =
+      <({String householdId, RecipeDraft draft})>[];
+
+  @override
+  Future<Recipe> createRecipe(String householdId, RecipeDraft draft) {
+    createCalls.add((householdId: householdId, draft: draft));
+    return _answer<Recipe>(createError, createResult, 'createResult');
+  }
+
+  // ── updateRecipe ───────────────────────────────────────────────────────
+
+  Recipe? updateResult;
+  Object? updateError;
+  final List<({String id, RecipePatch patch})> updateCalls =
+      <({String id, RecipePatch patch})>[];
+
+  @override
+  Future<Recipe> updateRecipe(String id, RecipePatch patch) {
+    updateCalls.add((id: id, patch: patch));
+    return _answer<Recipe>(updateError, updateResult, 'updateResult');
   }
 
   Future<T> _answer<T>(Object? error, T? value, String field) async {

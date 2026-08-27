@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/graphql/client.dart';
 import '../../../shared/graphql/graphql_error_mapper.dart';
+import '../../../shared/graphql/operations/__generated__/create_recipe.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/create_recipe.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/create_recipe.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_recipe.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_recipe.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_recipe.var.gql.dart';
@@ -22,7 +25,12 @@ import '../../../shared/graphql/operations/__generated__/recipes.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/set_in_rotation.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/set_in_rotation.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/set_in_rotation.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/update_recipe.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/update_recipe.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/update_recipe.var.gql.dart';
 import '../domain/recipe.dart';
+import '../domain/recipe_draft.dart';
+import '../domain/recipe_patch.dart';
 import '../domain/recipe_role.dart';
 import 'recipe_mapper.dart';
 
@@ -87,6 +95,18 @@ abstract interface class RecipeRepository {
   /// Deletes the recipe [id] and returns the deleted row. Same `id`-only
   /// membership resolution as [favoriteRecipe]/[setInRotation].
   Future<Recipe> deleteRecipe(String id);
+
+  /// Creates a recipe from [draft] in [householdId] (W6 S8). Requires the
+  /// caller to already be a member; `sourceType`/`createdBy` are never
+  /// sent — the server sets both from the verified caller, matching
+  /// `RecipeInput`'s own SDL shape.
+  Future<Recipe> createRecipe(String householdId, RecipeDraft draft);
+
+  /// Applies [patch] to the recipe [id] and returns the whole updated row.
+  /// Same `id`-only membership resolution as [favoriteRecipe]/
+  /// [setInRotation]/[deleteRecipe]. See [RecipePatch]'s own doc for the
+  /// `ingredients`/`steps` whole-list-replace semantic this forwards as-is.
+  Future<Recipe> updateRecipe(String id, RecipePatch patch);
 }
 
 /// Ferry-backed [RecipeRepository].
@@ -191,6 +211,32 @@ class FerryRecipeRepository implements RecipeRepository {
 
     final GDeleteRecipeData data = await _execute(request);
     return recipeDetailFromGraphQL(data.deleteRecipe);
+  }
+
+  @override
+  Future<Recipe> createRecipe(String householdId, RecipeDraft draft) async {
+    final GCreateRecipeReq request = GCreateRecipeReq(
+      (GCreateRecipeReqBuilder b) => b
+        ..vars = (GCreateRecipeVarsBuilder()
+          ..householdId = householdId
+          ..input = recipeDraftToGraphQL(draft).toBuilder()),
+    );
+
+    final GCreateRecipeData data = await _execute(request);
+    return recipeDetailFromGraphQL(data.createRecipe);
+  }
+
+  @override
+  Future<Recipe> updateRecipe(String id, RecipePatch patch) async {
+    final GUpdateRecipeReq request = GUpdateRecipeReq(
+      (GUpdateRecipeReqBuilder b) => b
+        ..vars = (GUpdateRecipeVarsBuilder()
+          ..id = id
+          ..input = recipePatchToGraphQL(patch).toBuilder()),
+    );
+
+    final GUpdateRecipeData data = await _execute(request);
+    return recipeDetailFromGraphQL(data.updateRecipe);
   }
 
   /// Identical reduction to `FerryPantryRepository._execute` — see that

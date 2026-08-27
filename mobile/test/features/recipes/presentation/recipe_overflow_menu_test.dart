@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile/features/recipes/data/recipe_repository.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
@@ -39,12 +40,16 @@ Future<ProviderContainer> _pump(
   addTearDown(container.dispose);
   await container.read(recipeDetailControllerProvider(_arg).future);
 
-  await tester.pumpWidget(
-    UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(
-        theme: parimaanTheme(),
-        home: Scaffold(
+  // A real (minimal) `GoRouter`, not a plain `MaterialApp` — the Edit row
+  // uses `context.push` (`go_router`'s extension needs a real `GoRouter`
+  // ancestor, not just any `Navigator`) since it navigates to
+  // `RecipeFormScreen` via `AppRoutes.recipeEdit`.
+  final GoRouter router = GoRouter(
+    initialLocation: '/',
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/',
+        builder: (BuildContext context, GoRouterState state) => Scaffold(
           body: Builder(
             builder: (BuildContext context) => Center(
               child: ElevatedButton(
@@ -55,6 +60,18 @@ Future<ProviderContainer> _pump(
           ),
         ),
       ),
+      GoRoute(
+        path: '/home/recipes/:recipeId/edit',
+        builder: (BuildContext context, GoRouterState state) =>
+            const Scaffold(body: Text('recipe form screen')),
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(theme: parimaanTheme(), routerConfig: router),
     ),
   );
   await tester.tap(find.text('open'));
@@ -110,7 +127,7 @@ void main() {
       ]);
     });
 
-    testWidgets('the Edit row is disabled (S8 has not shipped yet)', (
+    testWidgets('tapping Edit navigates to RecipeFormScreen with the recipe as extra', (
       WidgetTester tester,
     ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
@@ -118,15 +135,14 @@ void main() {
       );
       await _pump(tester, repository: repository);
 
-      final Finder editRow = find.byKey(RecipeOverflowMenu.editRowKey);
-      expect(editRow, findsOneWidget);
-      // A disabled PCard renders with onTap: null — tapping is a no-op, no
-      // action is dispatched.
-      await tester.tap(editRow);
-      await tester.pump();
-      expect(repository.favoriteCalls, isEmpty);
-      expect(repository.setInRotationCalls, isEmpty);
-      expect(repository.deleteCalls, isEmpty);
+      await tester.tap(find.byKey(RecipeOverflowMenu.editRowKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('recipe form screen'), findsOneWidget);
+      // The Overflow sheet closed on its way to the form — same
+      // `Navigator.of(context).pop()`-before-`push` shape as Delete's own
+      // success path.
+      expect(find.byType(RecipeOverflowMenu), findsNothing);
     });
 
     testWidgets('shows the server error message on a failed toggle', (

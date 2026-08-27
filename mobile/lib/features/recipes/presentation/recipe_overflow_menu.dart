@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/sizing.dart';
@@ -98,12 +100,18 @@ class RecipeOverflowMenu extends ConsumerWidget {
                           .read(recipeOverflowControllerProvider(arg).notifier)
                           .setInRotation(!recipe.inRotation),
               ),
-              // Always shown (E2E_MVP_PLAN.md §12.7 D2), even though the
-              // create/edit form (S8) hasn't shipped yet this week — disabled,
-              // not hidden, per this session's own "visibly disabled beats a
-              // silent no-op" convention (`RecipesLibraryScreen`'s empty-state
-              // "Add a recipe" button).
-              const _OverflowRow(key: editRowKey, label: 'Edit', onTap: null),
+              // Always shown (E2E_MVP_PLAN.md §12.7 D2) — the create/edit
+              // form is `RecipeFormScreen` (W6 S8).
+              _OverflowRow(
+                key: editRowKey,
+                label: 'Edit',
+                onTap: isBusy
+                    ? null
+                    : () {
+                        Navigator.of(context).pop();
+                        context.push(AppRoutes.recipeEdit(recipe.id), extra: recipe);
+                      },
+              ),
               _OverflowRow(
                 key: deleteRowKey,
                 label: 'Delete',
