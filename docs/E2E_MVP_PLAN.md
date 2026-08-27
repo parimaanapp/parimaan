@@ -976,9 +976,9 @@ The Lambda concurrency quota increase remains filed and pending (real ceiling: 1
 - [ ] Unknown `role`/`cuisineTier1`/`dietaryTag` values are **rejected, not passed through**, at both the resolver and the DB `CHECK` (S2/S3, D4)
 - [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression, all backend slices)
 - [ ] `shared/schema.graphql` gains the recipe SDL and is re-synced into SD §6.1, including `RecipeInput`, `RecipePatchInput`, and `deleteRecipe: Recipe!` (D3)
-- [ ] `/home` is a **three**-tab shell; existing W5 router/shell tests pass unmodified except the tab-count assertion (S6)
-- [ ] Wireframes 7.1, 7.2, 7.3, **8.2** shipped → **22/49** (S6/S7/S8, D2)
-- [ ] `RecipeCard` built and covered; the Library GraphQL document provably does not select `ingredients` (S6, D5)
+- [x] `/home` is a **three**-tab shell; existing W5 router/shell tests pass unmodified except the tab-count assertion (S6)
+- [ ] Wireframes 7.1, 7.2, 7.3, **8.2** shipped → **22/49** (S6/S7/S8, D2) — 7.1 done (S6); 7.2/7.3/8.2 pending S7/S8
+- [x] `RecipeCard` built and covered; the Library GraphQL document provably does not select `ingredients` (S6, D5)
 - [ ] Favorite and rotation toggles work from the Overflow menu and are visible to a second member (S5/S7)
 - [ ] Create and edit both work end-to-end through the structured form, role required with no pre-selection (S8, D2/D1)
 - [ ] `onRecipeChanged` fans out add/update/delete across two devices — **two-device sync verified per `RUNBOOK.md` §3**, timed, target <5s, same honesty standard as W5 §11.5.5 (S11/S10, D6)

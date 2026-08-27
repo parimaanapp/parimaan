@@ -1,0 +1,32 @@
+# `Query.recipes` — a household's recipes, optionally filtered by `role`
+# and/or `isFavorite`, both applied server-side
+# (`api/src/repositories/recipeRepository.ts`). Deliberately does not select
+# `ingredients` — that's a separate field resolver (`Recipe.ingredients`)
+# meant only for the Detail screen (a later slice), so a Library-scale query
+# never pays for hydrating every recipe's full ingredient list
+# (E2E_MVP_PLAN.md §12.2.7).
+#
+# Any member may read. A non-member and a nonexistent `householdId` deny
+# identically (see `Query.household`'s doc for the same convention).
+query Recipes($householdId: ID!, $role: RecipeRole, $isFavorite: Boolean) {
+  recipes(householdId: $householdId, role: $role, isFavorite: $isFavorite) {
+    id
+    householdId
+    sourceType
+    sourceUrl
+    title
+    description
+    servings
+    prepMin
+    cookMin
+    cuisineTier1
+    cuisineTier2
+    dietaryTags
+    role
+    inRotation
+    isFavorite
+    steps
+    createdAt
+    updatedAt
+  }
+}
