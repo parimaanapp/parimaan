@@ -256,3 +256,122 @@ export const insertRecipeIngredient = async (
   }
   return mapRecipeIngredientRow(row);
 };
+
+/**
+ * Removes every ingredient row for a recipe — the "delete" half of
+ * `Mutation.updateRecipe`'s ingredients-replace-whole-list-when-present
+ * semantic (E2E_MVP_PLAN.md §12.2.4). Always paired with a bulk
+ * `insertRecipeIngredient` loop on the SAME `client`/transaction by the
+ * resolver, so a failure on the re-insert half rolls back the delete too —
+ * no window where a recipe is left with zero ingredients due to a partial
+ * failure.
+ */
+export const deleteRecipeIngredientsByRecipeId = async (
+  client: PoolClient,
+  recipeId: string,
+): Promise<void> => {
+  await client.query(`DELETE FROM recipe_ingredients WHERE recipe_id = $1`, [recipeId]);
+};
+
+export interface RecipePatch {
+  title?: string;
+  description?: string;
+  servings?: number;
+  prepMin?: number;
+  cookMin?: number;
+  cuisineTier1?: string;
+  cuisineTier2?: string;
+  dietaryTags?: string[];
+  role?: string;
+  inRotation?: boolean;
+  steps?: string[];
+}
+
+/** `undefined` → `null` (SQL's "no value bound", `COALESCE`'s "keep existing"); anything else passes through unchanged. */
+const orNull = <T>(value: T | undefined): T | null => (value === undefined ? null : value);
+
+/** Same as `orNull`, but JSON-serializes a present array first — for the two JSONB columns (`dietary_tags`, `steps`). */
+const orNullJson = (value: string[] | undefined): string | null =>
+  value === undefined ? null : JSON.stringify(value);
+
+/**
+ * Builds the bind-parameter array for `updateRecipePartial`'s `UPDATE ...
+ * COALESCE($n, col)` statement — an absent patch field becomes SQL `NULL`,
+ * which `COALESCE` treats as "keep the existing value" (never intended as
+ * "clear the column"; the patch schema already rejects an explicit
+ * client-supplied `null` before this is ever called). Extracted purely to
+ * keep `updateRecipePartial` itself under this repo's ESLint complexity cap.
+ */
+const toUpdateRecipeParams = (id: string, patch: RecipePatch): unknown[] => [
+  id,
+  orNull(patch.title),
+  orNull(patch.description),
+  orNull(patch.servings),
+  orNull(patch.prepMin),
+  orNull(patch.cookMin),
+  orNull(patch.cuisineTier1),
+  orNull(patch.cuisineTier2),
+  orNullJson(patch.dietaryTags),
+  orNull(patch.role),
+  orNull(patch.inRotation),
+  orNullJson(patch.steps),
+];
+
+/**
+ * Applies `patch` to a single `recipes` row via one `UPDATE ... SET col =
+ * COALESCE($n, col), ...` statement — identical pattern to
+ * `pantryRepository.ts`'s `updatePantryItemPartial`: an absent patch field
+ * binds SQL `NULL`, and `COALESCE` keeps that column's existing value
+ * unchanged. `updated_at` is bumped unconditionally, regardless of which
+ * fields actually changed (the RED test in the locked plan asserts this).
+ * Returns `null` if no row matched `id` — either it doesn't exist, or (via
+ * RLS's `USING` clause) it belongs to a household the caller isn't a
+ * member of; the two cases are indistinguishable by design, matching
+ * `updatePantryItemPartial`'s own doc.
+ *
+ * Deliberately does NOT touch `recipe_ingredients` — that's
+ * `deleteRecipeIngredientsByRecipeId` + a bulk `insertRecipeIngredient`
+ * loop, run separately by the resolver only when `ingredients` is present
+ * in the patch at all (§12.2.4's distinct "present vs. absent" semantic,
+ * which this SQL-level COALESCE pattern can't express for a child table).
+ */
+export const updateRecipePartial = async (
+  client: PoolClient,
+  id: string,
+  patch: RecipePatch,
+): Promise<RecipeRow | null> => {
+  const result = await client.query<RawRecipeRow>(
+    `UPDATE recipes SET
+       title = COALESCE($2::text, title),
+       description = COALESCE($3::text, description),
+       servings = COALESCE($4::int, servings),
+       prep_min = COALESCE($5::int, prep_min),
+       cook_min = COALESCE($6::int, cook_min),
+       cuisine_tier1 = COALESCE($7::text, cuisine_tier1),
+       cuisine_tier2 = COALESCE($8::text, cuisine_tier2),
+       dietary_tags = COALESCE($9::jsonb, dietary_tags),
+       role = COALESCE($10::text, role),
+       in_rotation = COALESCE($11::boolean, in_rotation),
+       steps = COALESCE($12::jsonb, steps),
+       updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    toUpdateRecipeParams(id, patch),
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapRecipeRow(row);
+};
+
+/**
+ * Deletes a single recipe by id and returns the row that was deleted
+ * (`null` if none matched — same indistinguishable not-found-vs-not-mine
+ * reasoning as `updateRecipePartial`). Returning the deleted row rather
+ * than a boolean matches `deletePantryItemById`'s precedent (§11.2.1) —
+ * `ON DELETE CASCADE` on `recipe_ingredients.recipe_id` handles the child
+ * rows for free.
+ */
+export const deleteRecipeById = async (client: PoolClient, id: string): Promise<RecipeRow | null> => {
+  const result = await client.query<RawRecipeRow>(`DELETE FROM recipes WHERE id = $1 RETURNING *`, [id]);
+  const row = result.rows[0];
+  return row === undefined ? null : mapRecipeRow(row);
+};

@@ -177,6 +177,31 @@ type Mutation {
   (E2E_MVP_PLAN.md §12.7 D1/D2).
   """
   createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
+
+  """
+  Applies a partial patch to a recipe — every `input` field is optional,
+  and an absent field leaves that column unchanged (an explicit `null` is
+  rejected), the same convention as `updateHouseholdSettings`/
+  `updatePantryItem`. `ingredients`/`steps` are a third semantic: when
+  PRESENT (even as `[]`) they REPLACE the whole list rather than patching
+  individual entries; absent leaves the existing list untouched
+  (E2E_MVP_PLAN.md §12.2.4). Takes no `householdId`: the recipe's household
+  is looked up from `id` itself, and RLS is what actually enforces "your
+  own household's recipes only" here — a caller who isn't a member of the
+  recipe's household gets the identical NOT_FOUND response as a
+  nonexistent `id`.
+  """
+  updateRecipe(id: ID!, input: RecipePatchInput!): Recipe!
+
+  """
+  Deletes a recipe and returns the row that was deleted, so a future
+  `onRecipeChanged` subscriber can learn which recipe vanished (matching
+  `deletePantryItem`'s §11.2.1 precedent). Same `id`-only membership
+  resolution as `updateRecipe`. A second call for the same `id` denies
+  identically to the first call ever having been for a nonexistent recipe.
+  `recipe_ingredients` for the deleted recipe are removed via cascade.
+  """
+  deleteRecipe(id: ID!): Recipe!
 }
 
 type Subscription {

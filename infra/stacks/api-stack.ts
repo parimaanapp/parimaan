@@ -186,6 +186,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'createRecipe',
   },
+  {
+    id: 'UpdateRecipe',
+    entryFile: 'updateRecipe.ts',
+    typeName: 'Mutation',
+    fieldName: 'updateRecipe',
+  },
+  {
+    id: 'DeleteRecipe',
+    entryFile: 'deleteRecipe.ts',
+    typeName: 'Mutation',
+    fieldName: 'deleteRecipe',
+  },
 ];
 
 /**
@@ -262,6 +274,14 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   ingredient *k* rolls back everything, the `bulkAddPantryItems`
  *   rollback shape). `role` is required in the SDL with no server default
  *   — the "role assignment required" DoD gate's actual enforcement point.
+ * - `Mutation.updateRecipe`, `Mutation.deleteRecipe` — W6 slice S4
+ *   (E2E_MVP_PLAN.md §12.3). Both take only `id` (no `householdId`), the
+ *   `updatePantryItem`/`deletePantryItem` pattern — RLS alone gates them,
+ *   and a nonexistent id or one in another household both surface as the
+ *   identical `NotFoundError`. `updateRecipe` gives `ingredients`/`steps`
+ *   a third patch semantic (§12.2.4): present (even `[]`) replaces the
+ *   whole list, absent leaves it untouched — everything else is the usual
+ *   absent-means-unchanged/explicit-null-rejected patch convention.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`
