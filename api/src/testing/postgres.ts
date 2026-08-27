@@ -71,6 +71,6 @@ export const startTestDatabase = async (): Promise<TestDatabase> => {
  */
 export const truncateAll = async (client: Client): Promise<void> => {
   await client.query(
-    'TRUNCATE TABLE pantry_items, household_memberships, household_settings, households, users RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE recipe_ingredients, recipes, pantry_items, household_memberships, household_settings, households, users RESTART IDENTITY CASCADE',
   );
 };
