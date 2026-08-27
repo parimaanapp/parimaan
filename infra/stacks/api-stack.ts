@@ -168,6 +168,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Subscription',
     fieldName: 'onPantryChanged',
   },
+  {
+    id: 'Recipes',
+    entryFile: 'recipes.ts',
+    typeName: 'Query',
+    fieldName: 'recipes',
+  },
+  {
+    id: 'RecipeIngredients',
+    entryFile: 'recipeIngredients.ts',
+    typeName: 'Recipe',
+    fieldName: 'ingredients',
+  },
 ];
 
 /**
@@ -229,6 +241,15 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  * `onHouseholdChanged`/`onHouseholdSettingsChanged` stay deferred to W8 (a
  * natural follow-on once the WebSocket link exists) — `HouseholdSyncPolicy`
  * keeps polling until then.
+ * - `Query.recipes`, `Recipe.ingredients` — W6 slice S2
+ *   (E2E_MVP_PLAN.md §12.3). `Query.recipes` is member-gated the same way
+ *   as `Query.pantry`, with `recipes`' RLS policy (S1) as layer-3
+ *   defense-in-depth behind it, and deliberately never selects/joins
+ *   `recipe_ingredients`. `Recipe.ingredients` is its own field resolver
+ *   (the `User.households` pattern) with NO `householdId` to gate on at
+ *   this layer — `recipe_ingredients`' parent-join RLS policy (S1) is the
+ *   sole authorization here, not defense-in-depth (§12.2.2/§12.5.2, the
+ *   highest-severity item in this slice).
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`

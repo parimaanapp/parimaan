@@ -390,8 +390,15 @@ type Recipe {
   role: RecipeRole!
   inRotation: Boolean!
   isFavorite: Boolean!
+  # Resolved by a separate field resolver (W6 S2, E2E_MVP_PLAN.md §12.2.7) —
+  # Query.recipes never hydrates this inline, so a Library-style query that
+  # doesn't select it never pays for the join. RLS is the sole
+  # authorization layer here (no householdId argument to gate on).
   ingredients: [RecipeIngredient!]!
   steps: [String!]!
+  # Added W6 S2 (§12.2.8) — this block originally had neither field.
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
 }
 
 type RecipeIngredient {
@@ -510,10 +517,19 @@ type Mutation {
   updatePantryItem(id: ID!, input: PantryItemPatchInput!): PantryItem!
   deletePantryItem(id: ID!): PantryItem!
 
-  # Recipes
+  # Recipes. Not yet shipped as of W6 S2 (Query.recipes + Recipe.ingredients
+  # only) — signatures below are locked (E2E_MVP_PLAN.md §12.7 D3) ahead of
+  # implementation (W6 S3/S4/S5), so this SD block matches what actually
+  # ships rather than the schema module's own original draft:
+  # `updateRecipe` takes `RecipePatchInput!`, not `RecipeInput!` (a partial
+  # patch, matching `updatePantryItem`'s convention — reusing the create
+  # input was wrong for the same reason `PantryItemPatchInput` exists at
+  # all); `deleteRecipe` returns `Recipe!`, not `Boolean!` (so a subscriber
+  # learns which recipe vanished, matching `deletePantryItem`'s §11.2.1
+  # precedent).
   createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
-  updateRecipe(id: ID!, input: RecipeInput!): Recipe!
-  deleteRecipe(id: ID!): Boolean!
+  updateRecipe(id: ID!, input: RecipePatchInput!): Recipe!
+  deleteRecipe(id: ID!): Recipe!
   favoriteRecipe(id: ID!, favorite: Boolean!): Recipe!
   setInRotation(id: ID!, inRotation: Boolean!): Recipe!
   importRecipeFromUrl(householdId: ID!, url: String!): Recipe!            # returns draft, requires confirm
@@ -588,7 +604,13 @@ type Subscription {
     ])
 }
 
-# input types omitted for brevity — mirror the Type shapes
+# input types omitted for brevity — mirror the Type shapes, EXCEPT where
+# `shared/schema.graphql` (the single source of truth once a slice actually
+# ships) deliberately diverges: `RecipeInput`/`RecipeIngredientInput`/
+# `RecipePatchInput` (W6 S2, E2E_MVP_PLAN.md §12.7 D3) omit every
+# server-owned field (`id`, `householdId`, `sourceType`, `isFavorite`,
+# `createdAt`/`updatedAt`) that a literal mirror of `Recipe`/
+# `RecipeIngredient` would otherwise expose to the client.
 ```
 
 ### 6.2 Authorization
@@ -675,6 +697,14 @@ CREATE INDEX idx_memberships_user ON household_memberships(user_id);
 CREATE INDEX idx_memberships_household ON household_memberships(household_id);
 
 -- Recipes
+-- W6 S1 (E2E_MVP_PLAN.md §12.2.6/§12.2.8) deviates from this DDL as
+-- originally drafted in three places, all additive: `updated_at` (below —
+-- this block only had `created_at` before), a CHECK on `cuisine_tier1`
+-- (§12.2.6 — an unrecognised value here would fail to serialize the
+-- *entire* `Query.recipes` response, not just one field, since it's a
+-- closed GraphQL enum), and RLS on `recipe_ingredients` (see the RLS block
+-- below — this table was never in the original RLS list at all, despite
+-- having no `household_id` of its own).
 CREATE TABLE recipes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
@@ -686,7 +716,7 @@ CREATE TABLE recipes (
   servings INT NOT NULL DEFAULT 4,
   prep_min INT,
   cook_min INT,
-  cuisine_tier1 TEXT,
+  cuisine_tier1 TEXT CHECK (cuisine_tier1 IS NULL OR cuisine_tier1 IN ('north_indian','south_indian','pan_india','indo_chinese','continental')),
   cuisine_tier2 TEXT,
   dietary_tags JSONB NOT NULL DEFAULT '[]',
   role TEXT NOT NULL CHECK (role IN ('breakfast','carb','sabzi_dal','accompaniment','snack','sweet','drink')),
@@ -694,7 +724,8 @@ CREATE TABLE recipes (
   is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
   steps JSONB NOT NULL DEFAULT '[]',
   created_by UUID NOT NULL REFERENCES users(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_recipes_household ON recipes(household_id);
@@ -805,6 +836,19 @@ ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shopping_lists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shopping_list_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE household_settings ENABLE ROW LEVEL SECURITY;
+-- Added W6 S1 (E2E_MVP_PLAN.md §12.2.2) — missing from this list originally,
+-- a genuine gap: `recipe_ingredients` has no `household_id` of its own, and
+-- is read via a `Recipe.ingredients` field resolver with no `householdId`
+-- argument to gate on at the app layer, so RLS here is the SOLE
+-- authorization, not defense-in-depth. Its policy is a parent-join, not a
+-- membership subquery like every other table below — it composes with
+-- `recipes`' own RLS-filtered visibility instead of duplicating the
+-- membership rule:
+--   CREATE POLICY recipe_ingredients_via_recipe ON recipe_ingredients
+--     FOR ALL
+--     USING (recipe_id IN (SELECT id FROM recipes))
+--     WITH CHECK (recipe_id IN (SELECT id FROM recipes));
+ALTER TABLE recipe_ingredients ENABLE ROW LEVEL SECURITY;
 
 -- Example RLS policy: pantry_items
 CREATE POLICY pantry_household_member ON pantry_items
@@ -815,7 +859,12 @@ CREATE POLICY pantry_household_member ON pantry_items
     )
   );
 
--- Similar policies for each table.
+-- Similar policies for each table. Every policy actually shipped uses BOTH
+-- `USING` and `WITH CHECK` (E2E_MVP_PLAN.md §11.2.2 — `USING` alone governs
+-- SELECT/UPDATE/DELETE visibility but does nothing for INSERT) and `FORCE
+-- ROW LEVEL SECURITY` (not just `ENABLE` — the table owner is otherwise
+-- exempt), which this simplified example omits for brevity; see
+-- `api/migrations/*.ts` for what's actually deployed.
 -- Lambda sets 'parimaan.user_id' at connection start per request.
 ```
 
@@ -1295,6 +1344,8 @@ Design-level, ranked by decision urgency:
 > **Amended 2026-08-26** (W5 S8, during `onPantryChanged` subscription implementation): §10.4 said subscription authorization is "a Lambda authorizer on subscription connect" — an API-level `AWS_LAMBDA` auth mode. **Deviation (E2E_MVP_PLAN.md §11.2.9, locked as §11.7 Q4):** a Lambda **resolver** on the `Subscription.onPantryChanged` field instead, invoked once at subscribe time, reusing `requireHouseholdMember` unchanged. Same security property — a non-member is denied before the connection is ever accepted — for far less machinery: no second API auth mode, no per-request invocation on unrelated fields, Cognito stays the API's sole `AuthenticationType`. Chosen after an explicit complexity/response-time/cost comparison against the API-level authorizer. Applies to every future subscription field the same way; §10.4's original wording is superseded, not just for `onPantryChanged`.
 
 > **Amended 2026-08-26** (W5 S7, during the Drift local read-cache implementation): §9.1's `Drift` choice is **confirmed, not deviated** — the step-1 research this slice's own plan entry requires (E2E_MVP_PLAN.md §11.3 S7) evaluated `drift`/`drift_flutter`/`sqlite3_flutter_libs` against this app's `^3.13.0` SDK constraint (all current/compatible) and against the cheaper alternative Ferry's `Cache` hook already supports — a persisted Hive store — which turned out to be unmaintained (`hive`/`hive_flutter` last published 2021–2022, predates the app's SDK floor) and was ruled out on that basis alone. §9.1 above is updated in place with the confirmed dependency set, cache scope (read-only, no offline queue), staleness policy (hydrate-then-fetch, wholesale overwrite, no merge), and eviction triggers (sign-out, household switch).
+
+> **Amended 2026-08-27** (W6 S1/S2, during the recipes migration and SDL): four deviations from this doc's original `recipes`/`recipe_ingredients` design, all locked in `E2E_MVP_PLAN.md` §12.7 (D3, D4): (1) `recipes.updated_at` added — §7.1's DDL had only `created_at`; (2) a `CHECK` on `cuisine_tier1` added as a DB-level backstop (§12.2.6) — unlike `pantry_items`' free-text `unit`/`category` (§11.2.4), `role`/`cuisineTier1`/`dietaryTags` are closed GraphQL enums, and an unrecognised persisted value fails to serialize the *entire* `Query.recipes` response, not just one field — enforced server-side by rejecting (not canonicalising-and-passing-through) at `api/src/domain/{recipeRoles,cuisineTiers,dietaryTags}.ts`; (3) RLS enabled on `recipe_ingredients` (§12.2.2) — never in §7.1's original RLS list at all, despite the table having no `household_id` of its own and being read via a field resolver with no `householdId` argument to gate on at the app layer, making RLS the sole authorization there; (4) `updateRecipe` takes `RecipePatchInput!` (not `RecipeInput!`) and `deleteRecipe` returns `Recipe!` (not `Boolean!`) — matching the `PantryItemPatchInput`/`deletePantryItem` precedents already locked in W5 (§11.7 Q1–Q2). §6.1/§7.1 above are updated in place; a real bug found in (2)'s first attempt — the migration's own `CHECK` briefly disagreed with the already-shipped `CuisineTier1` enum values (`household_settings.cuisine_tier1`) — was fixed by a follow-up migration (`1787811731724_fix-recipes-cuisine-tier1-check.ts`) rather than editing the already-applied one.
 
 - Region: `ap-south-1` (Mumbai) primary; `us-east-1` fallback for Bedrock only if needed.
 - Backend runtime: Node.js 20 + TypeScript on Lambda.

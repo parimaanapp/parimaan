@@ -1500,6 +1500,216 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiRecipeIngredientsDataSource8BA92369": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "RecipeIngredientsFnDADD45B2",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "RecipeIngredientsDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiRecipeIngredientsDataSourceServiceRole3F80C1B5",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiRecipeIngredientsDataSourceServiceRole3F80C1B5": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiRecipeIngredientsDataSourceServiceRoleDefaultPolicy6A5B2D80": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "RecipeIngredientsFnDADD45B2",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "RecipeIngredientsFnDADD45B2",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiRecipeIngredientsDataSourceServiceRoleDefaultPolicy6A5B2D80",
+        "Roles": [
+          {
+            "Ref": "ApiRecipeIngredientsDataSourceServiceRole3F80C1B5",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiRecipeIngredientsResolver5CD0D7FE": {
+      "DependsOn": [
+        "ApiRecipeIngredientsDataSource8BA92369",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "RecipeIngredientsDataSource",
+        "FieldName": "ingredients",
+        "Kind": "UNIT",
+        "TypeName": "Recipe",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiRecipesDataSourceA2603886": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "RecipesFnD3A2A1A9",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "RecipesDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiRecipesDataSourceServiceRole6DF26AE3",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiRecipesDataSourceServiceRole6DF26AE3": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiRecipesDataSourceServiceRoleDefaultPolicyF57275B7": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "RecipesFnD3A2A1A9",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "RecipesFnD3A2A1A9",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiRecipesDataSourceServiceRoleDefaultPolicyF57275B7",
+        "Roles": [
+          {
+            "Ref": "ApiRecipesDataSourceServiceRole6DF26AE3",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiRecipesResolver0BDF2264": {
+      "DependsOn": [
+        "ApiRecipesDataSourceA2603886",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "RecipesDataSource",
+        "FieldName": "recipes",
+        "Kind": "UNIT",
+        "TypeName": "Query",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiRotateInviteCodeDataSource0D53A52D": {
       "Properties": {
         "ApiId": {
@@ -1669,6 +1879,20 @@ type Query {
   client is never rejected outright.
   """
   pantry(householdId: ID!, search: String, category: String): [PantryItem!]!
+
+  """
+  Returns a household's recipes, optionally filtered by \`role\` and/or
+  \`isFavorite\`. Requires the caller to already be a member of \`householdId\`
+  — a non-member or a nonexistent \`householdId\` both deny identically,
+  matching \`Query.pantry\`/\`Query.household\`. Ordered favorite-first, then
+  by title (PRD §7.1: "favorites and rotation surfaced first"). Unlike
+  \`PantryItem\`'s free-text \`unit\`/\`category\`, \`role\`/\`cuisineTier1\`/
+  \`dietaryTags\` are closed enums — an unrecognised value is rejected at
+  write time and never persisted (E2E_MVP_PLAN.md §12.2.6). This query
+  deliberately does not hydrate \`Recipe.ingredients\` inline — see that
+  field's own doc.
+  """
+  recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean): [Recipe!]!
 }
 
 type Mutation {
@@ -1929,6 +2153,140 @@ input PantryItemPatchInput {
   isStaple: Boolean
   expiryDate: AWSDate
   lowThreshold: Float
+}
+
+enum RecipeSource {
+  user
+  url
+  curated
+  ai
+  freeform_ai
+}
+
+"""
+Meal-slot categorization a recipe fills — unrelated to \`HouseholdRole\`
+(primary/member) despite the shared word "role" (E2E_MVP_PLAN.md §12.7 D1,
+confirmed with the founder rather than assumed). Required on
+\`RecipeInput\`/\`RecipePatchInput\` with no default — the "role assignment
+required" DoD gate (§12.7 D1/D2). Drives which slot a recipe can fill in a
+future weekly plan (W9/W10); \`drink\` exists but is post-MVP scope for
+planning (PRD §7.1).
+"""
+enum RecipeRole {
+  breakfast
+  carb
+  sabzi_dal
+  accompaniment
+  snack
+  sweet
+  drink
+}
+
+"""
+A household recipe. \`role\`/\`cuisineTier1\`/\`dietaryTags\` are closed enums,
+unlike \`PantryItem\`'s free-text \`unit\`/\`category\` — an unrecognised value
+is rejected server-side at write time and never persisted
+(E2E_MVP_PLAN.md §12.2.6). \`sourceType\` and \`createdAt\`/\`updatedAt\` are
+never client-supplied.
+"""
+type Recipe {
+  id: ID!
+  householdId: ID!
+  sourceType: RecipeSource!
+  sourceUrl: String
+  title: String!
+  description: String
+  servings: Int!
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]!
+  role: RecipeRole!
+  inRotation: Boolean!
+  isFavorite: Boolean!
+
+  """
+  Resolved by a separate field resolver, not hydrated inline on
+  \`Query.recipes\` (E2E_MVP_PLAN.md §12.2.7) — a Library-style query that
+  never selects this field never pays for the join, which matters at the
+  280-300 recipe scale risk R7 (§6) is scoped around. RLS is the only
+  authorization layer on this field (there is no \`householdId\` argument to
+  gate on at the app layer) — see \`resolvers/recipeIngredients.ts\`'s doc.
+  """
+  ingredients: [RecipeIngredient!]!
+  steps: [String!]!
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+}
+
+type RecipeIngredient {
+  id: ID!
+  name: String!
+  quantity: Float
+  unit: String
+  category: String
+  notes: String
+  isStaple: Boolean!
+}
+
+"""
+Input for \`Mutation.createRecipe\` (a later W6 slice — this type is defined
+now so the full recipe SDL package lands together, E2E_MVP_PLAN.md §12.7
+D3). No \`id\`, \`householdId\`, \`sourceType\`, or \`isFavorite\` — all
+server-owned (\`sourceType\` is set to \`user\` for a caller-created recipe;
+a create-time favorite isn't in any wireframe). \`role\` is REQUIRED with no
+default. \`ingredients\` order is the array index — there is no
+client-supplied \`sortOrder\`.
+"""
+input RecipeInput {
+  title: String!
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]
+  role: RecipeRole!
+  inRotation: Boolean
+  ingredients: [RecipeIngredientInput!]!
+  steps: [String!]!
+}
+
+input RecipeIngredientInput {
+  name: String!
+  quantity: Float
+  unit: String
+  category: String
+  notes: String
+  isStaple: Boolean
+}
+
+"""
+A partial patch for \`Mutation.updateRecipe\` (a later W6 slice). Every
+scalar field is optional (absent = "leave unchanged"); an explicit \`null\`
+is rejected server-side, the same convention as \`PantryItemPatchInput\`/
+\`HouseholdSettingsInput\`. \`ingredients\`/\`steps\` are a third semantic this
+schema hasn't used before: optional, but when present they REPLACE the
+whole list rather than patching individual entries — a list can't express
+"change ingredient 3" any other way (E2E_MVP_PLAN.md §12.2.4). An explicit
+empty list (\`ingredients: []\`) clears every ingredient; an absent
+\`ingredients\` key leaves the existing list untouched.
+"""
+input RecipePatchInput {
+  title: String
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]
+  role: RecipeRole
+  inRotation: Boolean
+  ingredients: [RecipeIngredientInput!]
+  steps: [String!]
 }
 ",
       },
@@ -3728,6 +4086,274 @@ input PantryItemPatchInput {
         "Roles": [
           {
             "Ref": "PantryFnServiceRoleDBB2BD85",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "RecipeIngredientsFnDADD45B2": {
+      "DependsOn": [
+        "RecipeIngredientsFnServiceRoleDefaultPolicy3096247C",
+        "RecipeIngredientsFnServiceRole30605D92",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "RecipeIngredientsFnServiceRole30605D92",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "RecipeIngredientsFnServiceRole30605D92": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "RecipeIngredientsFnServiceRoleDefaultPolicy3096247C": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "RecipeIngredientsFnServiceRoleDefaultPolicy3096247C",
+        "Roles": [
+          {
+            "Ref": "RecipeIngredientsFnServiceRole30605D92",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "RecipesFnD3A2A1A9": {
+      "DependsOn": [
+        "RecipesFnServiceRoleDefaultPolicy8A80F6E8",
+        "RecipesFnServiceRoleCA43E70A",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "RecipesFnServiceRoleCA43E70A",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "RecipesFnServiceRoleCA43E70A": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "RecipesFnServiceRoleDefaultPolicy8A80F6E8": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "RecipesFnServiceRoleDefaultPolicy8A80F6E8",
+        "Roles": [
+          {
+            "Ref": "RecipesFnServiceRoleCA43E70A",
           },
         ],
       },

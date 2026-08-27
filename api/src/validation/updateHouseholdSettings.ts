@@ -1,19 +1,17 @@
 import { z } from 'zod';
 import { householdIdSchema } from './householdId.js';
+import { CUISINE_TIER1_VALUES } from '../domain/cuisineTiers.js';
+import { DIETARY_TAG_VALUES } from '../domain/dietaryTags.js';
 
 // Mirrors `shared/schema.graphql`'s enum value names exactly — these are
 // TEXT-backed values persisted verbatim (see `householdRepository.ts`'s own
 // comment on this), so drift here is a silent data-shape break, not just a
-// validation-message annoyance.
+// validation-message annoyance. `CUISINE_TIER1_VALUES`/`DIETARY_TAG_VALUES`
+// come from `domain/cuisineTiers.ts`/`dietaryTags.ts` — shared with
+// `validation/recipes.ts` so the two consumers of these same closed enums
+// can't drift out of sync (E2E_MVP_PLAN.md §12.2.6; the bug that prompted
+// pulling these out, `1787811731724_fix-recipes-cuisine-tier1-check.ts`).
 const MEAL_TYPES = ['breakfast', 'lunch', 'snacks', 'dinner'] as const;
-const CUISINE_TIER1_VALUES = [
-  'north_indian',
-  'south_indian',
-  'pan_india',
-  'indo_chinese',
-  'continental',
-] as const;
-const DIETARY_TAG_VALUES = ['veg', 'vegan', 'jain', 'eggetarian', 'gluten_free', 'dairy_free'] as const;
 const CUISINE_TIER2_WEIGHT_VALUES = ['more', 'normal', 'less'] as const;
 
 const MAX_CUISINE_TIER2_KEYS = 20;
