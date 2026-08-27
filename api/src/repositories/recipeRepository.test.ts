@@ -14,6 +14,8 @@ import {
   findRecipes,
   insertRecipe as insertRecipeRow,
   insertRecipeIngredient as insertRecipeIngredientRow,
+  setRecipeFavorite,
+  setRecipeInRotation,
   updateRecipePartial,
 } from './recipeRepository.js';
 import type { UserRow } from './userRepository.js';
@@ -520,6 +522,45 @@ describe('recipeRepository', () => {
       await createHouseholdWithMember(owner);
 
       const row = await asUser(owner.id, (client) => deleteRecipeById(client, randomUUID()));
+      expect(row).toBeNull();
+    });
+  });
+
+  describe('setRecipeFavorite', () => {
+    it('sets is_favorite and bumps updated_at', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+
+      const row = await asUser(owner.id, (client) => setRecipeFavorite(client, recipe.id, true));
+      expect(row?.isFavorite).toBe(true);
+
+      const unfavorited = await asUser(owner.id, (client) => setRecipeFavorite(client, recipe.id, false));
+      expect(unfavorited?.isFavorite).toBe(false);
+    });
+
+    it('returns null when no row matches the id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+      const row = await asUser(owner.id, (client) => setRecipeFavorite(client, randomUUID(), true));
+      expect(row).toBeNull();
+    });
+  });
+
+  describe('setRecipeInRotation', () => {
+    it('sets in_rotation and bumps updated_at', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+
+      const row = await asUser(owner.id, (client) => setRecipeInRotation(client, recipe.id, false));
+      expect(row?.inRotation).toBe(false);
+    });
+
+    it('returns null when no row matches the id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+      const row = await asUser(owner.id, (client) => setRecipeInRotation(client, randomUUID(), false));
       expect(row).toBeNull();
     });
   });
