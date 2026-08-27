@@ -819,6 +819,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiDeleteRecipeDataSource0C1D5AA1": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "DeleteRecipeFn311B0F46",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "DeleteRecipeDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiDeleteRecipeDataSourceServiceRole81214AEF",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiDeleteRecipeDataSourceServiceRole81214AEF": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiDeleteRecipeDataSourceServiceRoleDefaultPolicyFACAC64B": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DeleteRecipeFn311B0F46",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "DeleteRecipeFn311B0F46",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiDeleteRecipeDataSourceServiceRoleDefaultPolicyFACAC64B",
+        "Roles": [
+          {
+            "Ref": "ApiDeleteRecipeDataSourceServiceRole81214AEF",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiDeleteRecipeResolver4B376E9E": {
+      "DependsOn": [
+        "ApiDeleteRecipeDataSource0C1D5AA1",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "DeleteRecipeDataSource",
+        "FieldName": "deleteRecipe",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiF70053CD": {
       "Properties": {
         "AuthenticationType": "AMAZON_COGNITO_USER_POOLS",
@@ -2107,6 +2212,31 @@ type Mutation {
   (E2E_MVP_PLAN.md §12.7 D1/D2).
   """
   createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
+
+  """
+  Applies a partial patch to a recipe — every \`input\` field is optional,
+  and an absent field leaves that column unchanged (an explicit \`null\` is
+  rejected), the same convention as \`updateHouseholdSettings\`/
+  \`updatePantryItem\`. \`ingredients\`/\`steps\` are a third semantic: when
+  PRESENT (even as \`[]\`) they REPLACE the whole list rather than patching
+  individual entries; absent leaves the existing list untouched
+  (E2E_MVP_PLAN.md §12.2.4). Takes no \`householdId\`: the recipe's household
+  is looked up from \`id\` itself, and RLS is what actually enforces "your
+  own household's recipes only" here — a caller who isn't a member of the
+  recipe's household gets the identical NOT_FOUND response as a
+  nonexistent \`id\`.
+  """
+  updateRecipe(id: ID!, input: RecipePatchInput!): Recipe!
+
+  """
+  Deletes a recipe and returns the row that was deleted, so a future
+  \`onRecipeChanged\` subscriber can learn which recipe vanished (matching
+  \`deletePantryItem\`'s §11.2.1 precedent). Same \`id\`-only membership
+  resolution as \`updateRecipe\`. A second call for the same \`id\` denies
+  identically to the first call ever having been for a nonexistent recipe.
+  \`recipe_ingredients\` for the deleted recipe are removed via cascade.
+  """
+  deleteRecipe(id: ID!): Recipe!
 }
 
 type Subscription {
@@ -2614,6 +2744,111 @@ input RecipePatchInput {
         },
         "DataSourceName": "UpdatePantryItemDataSource",
         "FieldName": "updatePantryItem",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiUpdateRecipeDataSource25004143": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "UpdateRecipeFn4A631153",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "UpdateRecipeDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiUpdateRecipeDataSourceServiceRoleD0384BA9",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiUpdateRecipeDataSourceServiceRoleD0384BA9": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiUpdateRecipeDataSourceServiceRoleDefaultPolicy80D1420E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "UpdateRecipeFn4A631153",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "UpdateRecipeFn4A631153",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiUpdateRecipeDataSourceServiceRoleDefaultPolicy80D1420E",
+        "Roles": [
+          {
+            "Ref": "ApiUpdateRecipeDataSourceServiceRoleD0384BA9",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiUpdateRecipeResolverB9B46889": {
+      "DependsOn": [
+        "ApiSchema510EECD7",
+        "ApiUpdateRecipeDataSource25004143",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "UpdateRecipeDataSource",
+        "FieldName": "updateRecipe",
         "Kind": "UNIT",
         "TypeName": "Mutation",
       },
@@ -3393,6 +3628,140 @@ input RecipePatchInput {
         ],
       },
       "Type": "AWS::IAM::Role",
+    },
+    "DeleteRecipeFn311B0F46": {
+      "DependsOn": [
+        "DeleteRecipeFnServiceRoleDefaultPolicyB6D5938F",
+        "DeleteRecipeFnServiceRole920B5E77",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "DeleteRecipeFnServiceRole920B5E77",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "DeleteRecipeFnServiceRole920B5E77": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "DeleteRecipeFnServiceRoleDefaultPolicyB6D5938F": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "DeleteRecipeFnServiceRoleDefaultPolicyB6D5938F",
+        "Roles": [
+          {
+            "Ref": "DeleteRecipeFnServiceRole920B5E77",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "HealthFn0EF18565": {
       "DependsOn": [
@@ -5019,6 +5388,140 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "UpdatePantryItemFnServiceRole555441AD",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "UpdateRecipeFn4A631153": {
+      "DependsOn": [
+        "UpdateRecipeFnServiceRoleDefaultPolicy895E4367",
+        "UpdateRecipeFnServiceRole1E3F530A",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "UpdateRecipeFnServiceRole1E3F530A",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "UpdateRecipeFnServiceRole1E3F530A": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "UpdateRecipeFnServiceRoleDefaultPolicy895E4367": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "UpdateRecipeFnServiceRoleDefaultPolicy895E4367",
+        "Roles": [
+          {
+            "Ref": "UpdateRecipeFnServiceRole1E3F530A",
           },
         ],
       },

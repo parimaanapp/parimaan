@@ -8,10 +8,13 @@ import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from './userRepository.js';
 import { insertHousehold, insertMembership } from './householdRepository.js';
 import {
+  deleteRecipeById,
+  deleteRecipeIngredientsByRecipeId,
   findRecipeIngredientsByRecipeId,
   findRecipes,
   insertRecipe as insertRecipeRow,
   insertRecipeIngredient as insertRecipeIngredientRow,
+  updateRecipePartial,
 } from './recipeRepository.js';
 import type { UserRow } from './userRepository.js';
 
@@ -395,6 +398,129 @@ describe('recipeRepository', () => {
       expect(row.unit).toBeNull();
       expect(row.isStaple).toBe(true);
       expect(row.sortOrder).toBe(3);
+    });
+  });
+
+  describe('updateRecipePartial', () => {
+    it('patches only the given fields, leaving the rest unchanged', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) =>
+        insertRecipeRow(client, {
+          householdId,
+          sourceType: 'user',
+          title: 'Original',
+          description: 'Original description',
+          servings: 4,
+          prepMin: null,
+          cookMin: null,
+          cuisineTier1: null,
+          cuisineTier2: null,
+          dietaryTags: [],
+          role: 'sabzi_dal',
+          inRotation: true,
+          steps: [],
+          createdBy: owner.id,
+        }),
+      );
+
+      const row = await asUser(owner.id, (client) =>
+        updateRecipePartial(client, recipe.id, { servings: 8 }),
+      );
+
+      expect(row?.servings).toBe(8);
+      expect(row?.title).toBe('Original');
+      expect(row?.description).toBe('Original description');
+    });
+
+    it('returns null when no row matches the id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+
+      const row = await asUser(owner.id, (client) =>
+        updateRecipePartial(client, randomUUID(), { title: 'X' }),
+      );
+      expect(row).toBeNull();
+    });
+
+    it('bumps updated_at even for a patch with a single field', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) =>
+        insertRecipeRow(client, {
+          householdId,
+          sourceType: 'user',
+          title: 'Original',
+          description: null,
+          servings: 4,
+          prepMin: null,
+          cookMin: null,
+          cuisineTier1: null,
+          cuisineTier2: null,
+          dietaryTags: [],
+          role: 'sabzi_dal',
+          inRotation: true,
+          steps: [],
+          createdBy: owner.id,
+        }),
+      );
+
+      const row = await asUser(owner.id, (client) =>
+        updateRecipePartial(client, recipe.id, { title: 'Renamed' }),
+      );
+      // Both timestamps come from the same DB server clock, so this is
+      // immune to any client/container clock skew a `Date.now()` snapshot
+      // would be exposed to.
+      expect(row?.updatedAt.getTime()).toBeGreaterThanOrEqual(recipe.updatedAt.getTime());
+    });
+  });
+
+  describe('deleteRecipeIngredientsByRecipeId', () => {
+    it('removes every ingredient for the recipe', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+      await asUser(owner.id, (client) =>
+        insertRecipeIngredientRow(client, {
+          recipeId: recipe.id,
+          name: 'Onion',
+          quantity: null,
+          unit: null,
+          category: null,
+          notes: null,
+          isStaple: false,
+          sortOrder: 0,
+        }),
+      );
+
+      await asUser(owner.id, (client) => deleteRecipeIngredientsByRecipeId(client, recipe.id));
+
+      const rows = await asUser(owner.id, (client) =>
+        findRecipeIngredientsByRecipeId(client, recipe.id),
+      );
+      expect(rows).toEqual([]);
+    });
+  });
+
+  describe('deleteRecipeById', () => {
+    it('deletes the recipe and returns the deleted row', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+
+      const row = await asUser(owner.id, (client) => deleteRecipeById(client, recipe.id));
+      expect(row?.id).toBe(recipe.id);
+
+      const remaining = await asUser(owner.id, (client) => findRecipes(client, householdId));
+      expect(remaining).toEqual([]);
+    });
+
+    it('returns null when no row matches the id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+
+      const row = await asUser(owner.id, (client) => deleteRecipeById(client, randomUUID()));
+      expect(row).toBeNull();
     });
   });
 });

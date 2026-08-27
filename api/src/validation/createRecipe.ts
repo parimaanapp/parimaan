@@ -3,59 +3,16 @@ import { householdIdSchema } from './householdId.js';
 import { RECIPE_ROLE_VALUES } from '../domain/recipeRoles.js';
 import { CUISINE_TIER1_VALUES } from '../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../domain/dietaryTags.js';
-
-const MAX_TITLE_LENGTH = 200;
-const MAX_DESCRIPTION_LENGTH = 2000;
-const MAX_CUISINE_TIER2_LENGTH = 60;
-const MAX_INGREDIENT_NAME_LENGTH = 120;
-const MAX_INGREDIENT_UNIT_LENGTH = 20;
-const MAX_INGREDIENT_CATEGORY_LENGTH = 40;
-const MAX_INGREDIENT_NOTES_LENGTH = 500;
-const MAX_STEP_LENGTH = 2000;
-
-/**
- * Bounds `RecipeInput.ingredients`/`.steps` — unbounded lists reaching the
- * resolver's per-item insert loop are a straightforward resource-
- * exhaustion vector, the same reasoning as `bulkAddPantryItems.ts`'s
- * `MAX_BULK_PANTRY_ITEMS` (E2E_MVP_PLAN.md §12.3 S3). Both allow **zero**
- * entries deliberately — a recipe with no ingredients listed, or no steps
- * written yet, is a real, valid state (the RED test in the locked plan
- * asserts this explicitly), not something to reject.
- */
-const MAX_INGREDIENTS = 100;
-const MAX_STEPS = 100;
-
-/**
- * Normalises a string (trim + lowercase) before a closed-enum check, same
- * helper as `validation/recipes.ts` — duplicated rather than imported
- * because the two live in genuinely different argument shapes (a top-level
- * filter arg here vs. deeply-nested `RecipeInput` fields there) and Zod
- * schemas compose more clearly kept local to their call site; the actual
- * value LISTS are still the single shared source of truth
- * (`domain/{recipeRoles,cuisineTiers,dietaryTags}.ts`).
- */
-const normalizeThenEnum = <T extends readonly [string, ...string[]]>(values: T) =>
-  z.preprocess(
-    (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value),
-    z.enum(values),
-  );
-
-const recipeIngredientInputSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, 'ingredient name must not be empty')
-    .max(MAX_INGREDIENT_NAME_LENGTH, `ingredient name must be at most ${MAX_INGREDIENT_NAME_LENGTH} characters`),
-  quantity: z.number().min(0, 'ingredient quantity must not be negative').nullish(),
-  unit: z.string().trim().max(MAX_INGREDIENT_UNIT_LENGTH, `ingredient unit must be at most ${MAX_INGREDIENT_UNIT_LENGTH} characters`).nullish(),
-  category: z
-    .string()
-    .trim()
-    .max(MAX_INGREDIENT_CATEGORY_LENGTH, `ingredient category must be at most ${MAX_INGREDIENT_CATEGORY_LENGTH} characters`)
-    .nullish(),
-  notes: z.string().trim().max(MAX_INGREDIENT_NOTES_LENGTH, `ingredient notes must be at most ${MAX_INGREDIENT_NOTES_LENGTH} characters`).nullish(),
-  isStaple: z.boolean().nullish(),
-});
+import {
+  MAX_CUISINE_TIER2_LENGTH,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_INGREDIENTS,
+  MAX_STEP_LENGTH,
+  MAX_STEPS,
+  MAX_TITLE_LENGTH,
+  normalizeThenEnum,
+  recipeIngredientInputSchema,
+} from './recipeShared.js';
 
 /**
  * Validates `RecipeInput` for `Mutation.createRecipe`. `.nullish()` on
