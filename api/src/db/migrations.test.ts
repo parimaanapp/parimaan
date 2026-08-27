@@ -4,15 +4,17 @@ import { Client } from 'pg';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { runMigrations } from './runMigrations.js';
-
-/**
- * Real ephemeral Postgres via Testcontainers, per docs/DEV_WORKFLOW.md §3.2:
- * a mocked `pg` client can never exercise RLS, and RLS is defense-in-depth
- * layer 3 (SD §6.2) for this multi-tenant household model. Every describe
- * block below boots its own `postgres:16` container so each is a genuinely
- * fresh database — slower than mocks, intentionally so.
- */
-const POSTGRES_IMAGE = 'postgres:16';
+import {
+  APP_ROLE,
+  APP_ROLE_PASSWORD_ENV_VAR,
+  APP_ROLE_TEST_PASSWORD,
+  POSTGRES_IMAGE,
+  firstRow,
+  getColumnTypes,
+  insertHousehold,
+  insertUser,
+  tableExists,
+} from './migrationTestHelpers.js';
 
 const BASELINE_TABLES = [
   'users',
@@ -22,10 +24,6 @@ const BASELINE_TABLES = [
 ] as const;
 
 const VALID_SUBSCRIPTION_STATUSES = ['free', 'trial', 'active', 'past_due', 'cancelled'] as const;
-
-const APP_ROLE_PASSWORD_ENV_VAR = 'PARIMAAN_APP_ROLE_PASSWORD';
-const APP_ROLE = 'parimaan_app';
-const APP_ROLE_TEST_PASSWORD = 'app_role_test_password';
 
 /**
  * The app-role migration (`migrations/1787124517648_app-role.ts`) requires
@@ -39,77 +37,6 @@ const APP_ROLE_TEST_PASSWORD = 'app_role_test_password';
  * afterward.
  */
 process.env[APP_ROLE_PASSWORD_ENV_VAR] = APP_ROLE_TEST_PASSWORD;
-
-interface InsertedUser {
-  id: string;
-}
-
-interface InsertedHousehold {
-  id: string;
-}
-
-/**
- * `noUncheckedIndexedAccess` means `QueryResult['rows'][0]` types as
- * possibly-`undefined` even though we know a `RETURNING`/`SELECT 1` row is
- * present here. Centralizing the "unwrap or fail loudly" behavior in one
- * helper avoids scattering non-null assertions through every test.
- */
-const firstRow = <T>(rows: readonly T[]): T => {
-  const row = rows[0];
-  if (row === undefined) {
-    throw new Error('Expected at least one row, got none.');
-  }
-  return row;
-};
-
-const insertUser = async (client: Client): Promise<InsertedUser> => {
-  const result = await client.query<{ id: string }>(
-    `INSERT INTO users (cognito_sub, email) VALUES ($1, $2) RETURNING id`,
-    [`sub-${randomUUID()}`, `${randomUUID()}@example.test`],
-  );
-  return { id: firstRow(result.rows).id };
-};
-
-const insertHousehold = async (
-  client: Client,
-  primaryUserId: string,
-  overrides: { subscriptionStatus?: string } = {},
-): Promise<InsertedHousehold> => {
-  const result = await client.query<{ id: string }>(
-    `INSERT INTO households (name, invite_code, primary_user_id, subscription_status)
-     VALUES ($1, $2, $3, $4) RETURNING id`,
-    [
-      'Test Household',
-      `invite-${randomUUID()}`,
-      primaryUserId,
-      overrides.subscriptionStatus ?? 'free',
-    ],
-  );
-  return { id: firstRow(result.rows).id };
-};
-
-const getColumnTypes = async (
-  client: Client,
-  tableName: string,
-): Promise<Record<string, string>> => {
-  const result = await client.query<{ column_name: string; data_type: string }>(
-    `SELECT column_name, data_type FROM information_schema.columns
-     WHERE table_schema = 'public' AND table_name = $1`,
-    [tableName],
-  );
-  return Object.fromEntries(result.rows.map((row) => [row.column_name, row.data_type]));
-};
-
-const tableExists = async (client: Client, tableName: string): Promise<boolean> => {
-  const result = await client.query<{ exists: boolean }>(
-    `SELECT EXISTS (
-       SELECT 1 FROM information_schema.tables
-       WHERE table_schema = 'public' AND table_name = $1
-     ) AS exists`,
-    [tableName],
-  );
-  return firstRow(result.rows).exists;
-};
 
 describe('running the baseline-schema migration', () => {
   let container: StartedPostgreSqlContainer;
