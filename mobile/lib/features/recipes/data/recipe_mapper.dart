@@ -1,8 +1,13 @@
+import 'package:built_collection/built_collection.dart';
+
 import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipe_detail_fields.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipes.data.gql.dart';
 import '../domain/recipe.dart';
+import '../domain/recipe_draft.dart';
 import '../domain/recipe_ingredient.dart';
+import '../domain/recipe_ingredient_draft.dart';
+import '../domain/recipe_patch.dart';
 import '../domain/recipe_role.dart';
 import '../domain/recipe_source.dart';
 
@@ -129,3 +134,79 @@ GRecipeRole recipeRoleToGraphQL(RecipeRole role) => switch (role) {
     'RecipeRole.unknown has no wire value to filter by.',
   ),
 };
+
+/// [RecipeDraft] → `RecipeInput` (W6 S8, `Mutation.createRecipe`).
+GRecipeInput recipeDraftToGraphQL(RecipeDraft draft) => GRecipeInput(
+  (GRecipeInputBuilder b) => b
+    ..title = draft.title
+    ..description = draft.description
+    ..servings = draft.servings
+    ..prepMin = draft.prepMin
+    ..cookMin = draft.cookMin
+    ..cuisineTier1 = _cuisineTier1ToGraphQL(draft.cuisineTier1)
+    ..cuisineTier2 = draft.cuisineTier2
+    ..dietaryTags = _dietaryTagsToGraphQL(draft.dietaryTags)
+    ..role = recipeRoleToGraphQL(draft.role)
+    ..inRotation = draft.inRotation
+    ..ingredients.addAll(draft.ingredients.map(_recipeIngredientDraftToGraphQL))
+    ..steps.addAll(draft.steps),
+);
+
+/// [RecipePatch] → `RecipePatchInput` (W6 S8, `Mutation.updateRecipe`).
+/// `ingredients`/`steps` carry [RecipePatch]'s own null-means-unchanged /
+/// any-list-means-replace semantic straight through — a `null` here never
+/// reaches the builder call at all (the field stays unset, i.e. absent on
+/// the wire, exactly like every other unset field in this input), and a
+/// non-null (possibly empty) list is always sent whole.
+GRecipePatchInput recipePatchToGraphQL(RecipePatch patch) => GRecipePatchInput(
+  (GRecipePatchInputBuilder b) {
+    b
+      ..title = patch.title
+      ..description = patch.description
+      ..servings = patch.servings
+      ..prepMin = patch.prepMin
+      ..cookMin = patch.cookMin
+      ..cuisineTier1 = _cuisineTier1ToGraphQL(patch.cuisineTier1)
+      ..cuisineTier2 = patch.cuisineTier2
+      ..dietaryTags = _dietaryTagsToGraphQL(patch.dietaryTags)
+      ..role = patch.role == null ? null : recipeRoleToGraphQL(patch.role!)
+      ..inRotation = patch.inRotation;
+    final List<RecipeIngredientDraft>? ingredients = patch.ingredients;
+    if (ingredients != null) {
+      b.ingredients = ListBuilder<GRecipeIngredientInput>(
+        ingredients.map(_recipeIngredientDraftToGraphQL),
+      );
+    }
+    final List<String>? steps = patch.steps;
+    if (steps != null) {
+      b.steps = ListBuilder<String>(steps);
+    }
+  },
+);
+
+GRecipeIngredientInput _recipeIngredientDraftToGraphQL(RecipeIngredientDraft draft) =>
+    GRecipeIngredientInput(
+      (GRecipeIngredientInputBuilder b) => b
+        ..name = draft.name
+        ..quantity = draft.quantity
+        ..unit = draft.unit
+        ..category = draft.category
+        ..notes = draft.notes
+        ..isStaple = draft.isStaple,
+    );
+
+/// The raw wire-value string [Recipe.cuisineTier1] is kept as, converted
+/// back to the generated enum `GCuisineTier1.valueOf` expects — the write
+/// direction [Recipe]'s own class doc anticipates. `null` in, `null` out.
+GCuisineTier1? _cuisineTier1ToGraphQL(String? value) =>
+    value == null ? null : GCuisineTier1.valueOf(value);
+
+/// Same shape as [_cuisineTier1ToGraphQL], for the wire-value strings
+/// [Recipe.dietaryTags] carries. `null` in (unset on a patch) stays `null`,
+/// not an empty list — those are different states (§ [RecipePatch]'s own
+/// doc). Returns a `ListBuilder`, not a `BuiltList` — that's what the
+/// generated input builders' own list-field setters expect.
+ListBuilder<GDietaryTag>? _dietaryTagsToGraphQL(List<String>? values) =>
+    values == null
+        ? null
+        : ListBuilder<GDietaryTag>(values.map(GDietaryTag.valueOf));

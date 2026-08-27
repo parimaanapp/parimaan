@@ -1,0 +1,10 @@
+#import "./recipe_detail_fields.graphql"
+
+# `Mutation.createRecipe` — the parent row plus its ingredients, in one
+# transaction. `sourceType` is always `user` for a recipe created this way,
+# never client-suppliable — `RecipeInput` has no such field.
+mutation CreateRecipe($householdId: ID!, $input: RecipeInput!) {
+  createRecipe(householdId: $householdId, input: $input) {
+    ...RecipeDetailFields
+  }
+}

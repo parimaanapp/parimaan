@@ -1,0 +1,13 @@
+#import "./recipe_detail_fields.graphql"
+
+# `Mutation.updateRecipe` — a partial patch. Every scalar `input` field is
+# optional; absent means unchanged. `ingredients`/`steps` are a third
+# semantic: present (even `[]`) replaces the whole list; absent leaves the
+# existing list untouched (E2E_MVP_PLAN.md §12.2.4). Takes only `id`, no
+# `householdId` — the recipe's household is looked up from `id` itself, RLS
+# gates it.
+mutation UpdateRecipe($id: ID!, $input: RecipePatchInput!) {
+  updateRecipe(id: $id, input: $input) {
+    ...RecipeDetailFields
+  }
+}

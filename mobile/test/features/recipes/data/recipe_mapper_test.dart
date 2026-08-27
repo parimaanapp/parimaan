@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/recipes/data/recipe_mapper.dart';
+import 'package:mobile/features/recipes/domain/recipe_draft.dart';
+import 'package:mobile/features/recipes/domain/recipe_ingredient_draft.dart';
+import 'package:mobile/features/recipes/domain/recipe_patch.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/features/recipes/domain/recipe_source.dart';
 import 'package:mobile/shared/graphql/__generated__/schema.schema.gql.dart';
@@ -156,6 +159,87 @@ void main() {
         () => recipeRoleToGraphQL(RecipeRole.unknown),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('recipeDraftToGraphQL', () {
+    test('maps every field through, including ingredients and steps', () {
+      final input = recipeDraftToGraphQL(
+        const RecipeDraft(
+          title: 'Toor Dal',
+          description: 'A simple dal.',
+          servings: 4,
+          prepMin: 10,
+          cookMin: 20,
+          role: RecipeRole.sabziDal,
+          inRotation: true,
+          ingredients: <RecipeIngredientDraft>[
+            RecipeIngredientDraft(name: 'Toor dal', quantity: 1, unit: 'cup', isStaple: true),
+          ],
+          steps: <String>['Boil the dal.'],
+        ),
+      );
+
+      expect(input.title, 'Toor Dal');
+      expect(input.description, 'A simple dal.');
+      expect(input.servings, 4);
+      expect(input.role.name, 'sabzi_dal');
+      expect(input.inRotation, isTrue);
+      expect(input.ingredients, hasLength(1));
+      expect(input.ingredients.first.name, 'Toor dal');
+      expect(input.ingredients.first.quantity, 1);
+      expect(input.ingredients.first.isStaple, isTrue);
+      expect(input.steps, <String>['Boil the dal.']);
+    });
+
+    test('maps a zero-ingredient, zero-step draft to empty (not null) lists', () {
+      final input = recipeDraftToGraphQL(
+        const RecipeDraft(title: 'Toor Dal', role: RecipeRole.sabziDal),
+      );
+      expect(input.ingredients, isEmpty);
+      expect(input.steps, isEmpty);
+    });
+  });
+
+  group('recipePatchToGraphQL', () {
+    test('maps only the fields present on the patch', () {
+      final input = recipePatchToGraphQL(const RecipePatch(title: 'New Title'));
+      expect(input.title, 'New Title');
+      expect(input.servings, isNull);
+      expect(input.ingredients, isNull);
+      expect(input.steps, isNull);
+    });
+
+    test('an absent ingredients/steps field stays null (unchanged), not an empty list', () {
+      final input = recipePatchToGraphQL(const RecipePatch(title: 'New Title'));
+      expect(input.ingredients, isNull);
+      expect(input.steps, isNull);
+    });
+
+    test('an explicit empty ingredients/steps list is sent as an empty list, not null', () {
+      final input = recipePatchToGraphQL(
+        const RecipePatch(
+          ingredients: <RecipeIngredientDraft>[],
+          steps: <String>[],
+        ),
+      );
+      expect(input.ingredients, isNotNull);
+      expect(input.ingredients, isEmpty);
+      expect(input.steps, isNotNull);
+      expect(input.steps, isEmpty);
+    });
+
+    test('a non-empty ingredients list replaces the whole list', () {
+      final input = recipePatchToGraphQL(
+        const RecipePatch(
+          ingredients: <RecipeIngredientDraft>[
+            RecipeIngredientDraft(name: 'Onion'),
+            RecipeIngredientDraft(name: 'Garlic'),
+          ],
+        ),
+      );
+      expect(input.ingredients, hasLength(2));
+      expect(input.ingredients!.map((i) => i.name), <String>['Onion', 'Garlic']);
     });
   });
 }

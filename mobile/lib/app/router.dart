@@ -28,7 +28,9 @@ import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
+import '../features/recipes/domain/recipe.dart';
 import '../features/recipes/presentation/recipe_detail_screen.dart';
+import '../features/recipes/presentation/recipe_form_screen.dart';
 import '../features/recipes/presentation/recipes_library_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
 
@@ -185,6 +187,24 @@ abstract final class AppRoutes {
   static const String recipeIdParameter = 'recipeId';
   static const String _recipeDetailPattern = '/home/recipes/:recipeId';
   static String recipeDetail(String recipeId) => '/home/recipes/$recipeId';
+
+  // ── Recipe create/edit form (wireframe 8.2 — W6 S8) ──────────────────────
+  //
+  // Both flat, pushed routes outside the shell, same reasoning as above.
+  // Create's `householdId` travels as a query param — the pantry
+  // add/edit precedent — since a not-yet-created recipe has no id to hang
+  // a path segment on. Edit's `recipeId` is a real path segment (same
+  // reasoning as [recipeDetail] above: it always already has one); the
+  // already-loaded `Recipe` being edited travels as `extra`, same as
+  // `ManualAddScreen`'s `initialItem` — no sensible URL encoding and no
+  // need to survive a deep link.
+
+  static const String _recipeCreatePattern = '/home/recipes/new';
+  static String recipeCreate(String householdId) =>
+      '$_recipeCreatePattern?householdId=$householdId';
+
+  static const String _recipeEditPattern = '/home/recipes/:recipeId/edit';
+  static String recipeEdit(String recipeId) => '/home/recipes/$recipeId/edit';
 }
 
 /// The app's route table plus its auth guard.
@@ -404,6 +424,32 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => RecipeDetailScreen(
           recipeId: state.pathParameters[AppRoutes.recipeIdParameter] ?? '',
         ),
+      ),
+      GoRoute(
+        path: AppRoutes._recipeCreatePattern,
+        // Same query-param reader as pantry's add/edit routes — the
+        // parameter itself is generic (just `householdId`), not
+        // pantry-specific, despite the helper's name.
+        builder: (BuildContext context, GoRouterState state) =>
+            RecipeFormScreen(householdId: _pantryHouseholdId(state)),
+      ),
+      GoRoute(
+        path: AppRoutes._recipeEditPattern,
+        // `extra` is never optional here (unlike `ManualAddScreen`'s
+        // `initialItem`, where absence means create mode) — this route
+        // only exists to edit an already-loaded `Recipe`, and is only ever
+        // reached in-app from the Overflow menu, which always has one. A
+        // missing `extra` is a genuine caller bug, not a malformed deep
+        // link (no wireframe exposes an editable URL to this route), so a
+        // clear cast failure here is preferable to a route that silently
+        // can't tell which household a not-yet-loaded recipe belongs to.
+        builder: (BuildContext context, GoRouterState state) {
+          final Recipe recipe = state.extra as Recipe;
+          return RecipeFormScreen(
+            householdId: recipe.householdId,
+            initialRecipe: recipe,
+          );
+        },
       ),
     ],
   );
