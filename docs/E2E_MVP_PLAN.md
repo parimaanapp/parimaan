@@ -155,11 +155,11 @@ Six phases mapped to the 26-week runway.
 | **W3** | Data stack + first mutation | First run choose path (3/49) | data-stack; RDS Proxy; `001-baseline.sql` migration; `createHousehold` resolver; RLS baseline | Row in `households` after tap in Flutter |
 | **W4** | Household create + settings screens | Name household, Meals to plan, Meal structure lunch, Cuisine regions, Cuisine sub+bias, Dietary+allergens, Invite code, Enter code, Confirm, Full·notify primary, Settings hub, Members list (15/49) | `joinHousehold` w/ 5-cap; `updateHouseholdSettings`; `me` query; `onHouseholdChanged` sub; 10 core UI components | Two-device demo: create + join + settings sync; **End of Month 1 milestone** |
 | **W5** | Pantry CRUD + Drift cache | Pantry List, Add choose method, Manual add (18/49) | pantry resolvers; `onPantryChanged` sub; Drift local schema; PantryRow widget | Two-device pantry edit <5s sync |
-| **W6** | Structured recipes + roles | Recipes Library, Detail, Overflow menu (21/49) | recipe resolvers; role enum; favorite + rotation flags; RecipeCard widget | Recipe CRUD complete; role assignment required |
-| **W7** | URL import + freeform AI parse **spike week** | Choose method, Structured form, URL import, Freeform input, Freeform review, AI failure fallback (27/49) | JSON-LD parser; `parseFreeformRecipe` via Haiku; Zod validation; **Bedrock ap-south-1 spike**; **JSON-LD spike (top-20 blogs)**; AIProposal widget | ≥16/20 blogs parse; freeform AI returns valid JSON |
+| **W6** | Structured recipes + roles (locked as a **two-week** sprint, §12.5.1/D8 — same pattern as W5) | Recipes Library, Detail, Overflow menu, **Structured form** (pulled forward from W7 per §12.7 D2) (22/49) | recipe resolvers (createRecipe/updateRecipe/deleteRecipe/favoriteRecipe/setInRotation); `role` enum (meal-slot, required, no default — §12.7 D1); `onRecipeChanged` sub (pulled forward from W8 per §12.7 D6); RecipeCard widget | Recipe CRUD complete (server + mobile); role assignment required; two-device recipe sync <5s (RUNBOOK.md §3, re-run per §12.7 D6) |
+| **W7** | URL import + freeform AI parse **spike week** | Choose method, URL import, Freeform input, Freeform review, AI failure fallback (27/49) | JSON-LD parser; `parseFreeformRecipe` via Haiku; Zod validation; **Bedrock ap-south-1 spike**; **JSON-LD spike (top-20 blogs)**; AIProposal widget | ≥16/20 blogs parse; freeform AI returns valid JSON |
 | **W8** | Sync polish + Month 2 demo | Notif preferences (finalized) (28/49) | Reconnect backoff; refetch-on-reconnect; membership caching (30s TTL) | **End of Month 2 milestone:** 2-device sync <5s under load |
 | **W9** | 7-day calendar UI | Weekly plan, Today morning, Today empty (31/49) | `createMenu`, `addMenuItem`, `removeMenuItem` resolvers; MealSlot widget; today's-agenda query | Week-view honors meal structure config |
-| **W10** | Recipe picker + rotation | Picker sheet, Auto-fill preview, Regenerate confirm (34/49) | `autoFillWeek(overwrite)` with recency avoidance + cuisine bias; `setInRotation` mutation | Auto-fill respects MAX caps; regenerate requires confirm |
+| **W10** | Recipe picker + rotation | Picker sheet, Auto-fill preview, Regenerate confirm (34/49) | `autoFillWeek(overwrite)` with recency avoidance + cuisine bias; **consumes** `setInRotation` (mutation itself ships W6, §12.7 D2 planning notes/§12.2.16) | Auto-fill respects MAX caps; regenerate requires confirm |
 | **W11** | Shopping list + Have-it | Week confirmed→list prompt, List preview, Shopping List, Swipe · Have it, Have-it quantity (39/49) | `generateShoppingList`; staples exclusion logic; `haveIt` transaction; ChecklistItem widget; **RDS Proxy load spike**; **AppSync 5-client subscription spike** | List generated correctly; Have-it moves to pantry |
 | **W12** | Mark-made + pantry deduction | Mark as made, Bought syncs to pantry, Offline banner (42/49) | `markMade` deducts pantry; `markPurchased` → pantry sync via subscription; offline detection banner | **End of Month 3 milestone:** full core loop; founder household using daily |
 | **W13** | Curated library authoring | (42/49 — content-heavy week) | 30 North Indian recipes JSON authored + validated against schema | 30 recipes checked in |
@@ -641,5 +641,366 @@ The planned-hours table above (§11.5.1) sums to 18.0 hrs across S1–S9. **Actu
 | Q4 | §11.2.9 — subscription-field resolver instead of SD §10.4's API-level Lambda authorizer? | **Yes, per-field resolver** — same security property, far less machinery, Cognito stays sole auth mode. Chosen after a clarifying discussion of complexity/response-time/cost tradeoffs against the API-level authorizer alternative. |
 | Q5 | §11.5.1 — how to absorb the ~18 hr vs 10 hr gap? | **Accept a two-week W5.** Full 9-slice scope, no deferrals — chosen over the planner's recommendation to defer S7 (Drift) to W8. |
 | Q6 | Is `docs/plans/W<n>-<slug>.md` the convention, or fold into this document? | **Fold into `E2E_MVP_PLAN.md`.** This is a standing convention, not a one-off: every future week's plan — including weeks with novel infrastructure — folds into this document rather than a separate file. `docs/plans/W5-pantry-crud-drift.md` has been removed; this §11 is its sole remaining copy. |
+
+---
+
+## 12. W6 detailed plan — Structured recipes + roles
+
+**Status:** LOCKED, 2026-08-26. Drafted by the **planner** agent following §11's structure, then walked through decision-by-decision with the founder. All nine decisions (D1–D9) are locked below — see §12.7. **W6 is a two-week sprint** (D8), same pattern as W5.
+
+**Budget:** ~10 hrs nominal against Phase 2's ~40 hrs / 4 weeks (§7). Locked scope estimates **~20.0 hrs** (§12.5.1) — a 100% overrun before any surprise, on top of a §7 buffer that W5 already spent ~8 of its 20 hours from. Accepted knowingly (D8): Phase 2 (W5–W8) is now effectively a ~6-calendar-week stretch, and the buffer will be essentially gone by W8.
+
+**Pipeline:** `DEV_WORKFLOW.md` §2.1 applies unmodified to every slice below. Per §11.7 Q6 this plan folds into this document rather than a `docs/plans/` file.
+
+**Process carry-over from W5 (§11.5.5):** log real wall-clock time per slice this week — a timestamp at slice start and at PR-open — so §12.5.1's estimate table can be checked against reality rather than reporting "not tracked" again.
+
+### 12.1 What W6 is locked to deliver
+
+| Focus | Screens | Backend/infra | DoD gate |
+|---|---|---|---|
+| Structured recipes + roles | Recipes Library, Detail, Overflow menu, **Structured form** (D2 — pulled forward from W7) | recipe resolvers (all five mutations); `role` enum (meal-slot, required, no default — D1); `onRecipeChanged` sub (D6 — pulled forward from W8); favorite + rotation flags; RecipeCard widget | Recipe CRUD complete (server + mobile UI); role assignment required; two-device recipe sync <5s |
+
+Plus, from §6 R7: **W6 spike, benchmark 300-item list scroll on a Redmi-class device** — confirmed staying in W6, not sliding (D9).
+
+**Added to W6 by this plan** (not in the original §4 row, now folded into it above):
+- A third tab (Recipes) in the W5 nav shell — `app_shell.dart`'s own doc comment already names this as W6's job.
+- `recipe_ingredients` RLS (§12.2.2) — a security hole in the locked DDL, not an enhancement.
+- Server-side enum canonicalisation/**rejection** for `role`/`cuisineTier1`/`dietaryTags` (§12.2.6, D4) — deliberately the opposite strategy from W5's pantry-unit pass-through, because these are closed GraphQL enums where a bad row breaks the whole `Query.recipes` response.
+- `onRecipeChanged` subscription + two-device verification (D6) — not originally in W6's row at all.
+
+**Out of scope** (tracked, not forgotten): URL import and freeform AI parse (**W7** — a separate spike week); recipe *picker* filtered by slot role (**W9/W10**); `autoFillWeek` consumption of `in_rotation` (**W10**); curated 50-recipe seeding (**W13/W14**); recipe cover images / S3 `recipe-images/` (nowhere in the sprint table — §12.2.11); duplicate-recipe action (PRD §7.1 — §12.2.10, unscheduled, founder to place in W14 or v1.1); allergen/skip-ingredient warnings at pick time (W9/W10); the router's unconditional `/first-run` redirect (§11.2.11, still open, still W8's first slice); subscription reconnect backoff (**W8**); Drift local cache for recipes (**W14**, D7).
+
+### 12.2 Conflicts and gaps found in the locked docs
+
+Items marked **LOCKED** were open decisions in the planner's draft, now resolved by the founder (§12.7 has the full table). Items marked **CALL** are judgment calls implemented as stated. Items marked **NOTE** are informational or forward-flags for later weeks.
+
+#### 12.2.1 CRITICAL, LOCKED (D2) — "Recipe CRUD complete" needs a create/edit screen W6's original budget didn't have
+
+The original §4 W6 row budgeted three wireframes — Library, Detail, Overflow menu (Flow 7) — none of which is a create or edit screen. The structured-entry form is wireframe 8.2, originally W7's. **Locked: pull it forward into W6** (Option B). Cost: +~2.5 hrs (S8, below). Consequence: W6's running screen count is **22/49** (not 21/49); W7's cumulative count is unaffected (still 27/49 by end of W7 — the same 49 screens, just one moves earlier) since it drops one screen from its own row. §4's W6/W7 rows already reflect this.
+
+#### 12.2.2 CRITICAL — `recipe_ingredients` has no RLS, and RLS on `recipes` does not cascade to it
+
+`SYSTEM_DESIGN.md` §7.1's RLS block enables row-level security on `recipes`, `pantry_items`, `menus`, `menu_items`, `shopping_lists`, `shopping_list_items`, `household_settings`. **`recipe_ingredients` is not in that list**, and it is the only household-scoped child table in the schema with **no `household_id` column** (SD §7.1 lines 703–713: `recipe_id`, `name`, `quantity`, `unit`, `category`, `notes`, `is_staple`, `sort_order`).
+
+Postgres RLS is per-table. A policy on `recipes` does nothing for `SELECT * FROM recipe_ingredients WHERE recipe_id = $1`. Since `parimaan_app` will hold `SELECT` on that table, a resolver bug that passes an unvalidated `recipeId` through leaks another household's ingredient list with layer 3 offering zero protection — the recipe-side analogue of §11.2.2/§11.2.3.
+
+**Call:** the W6 migration enables and **forces** RLS on `recipe_ingredients` with a parent-join policy:
+
+```
+FOR ALL
+USING (recipe_id IN (SELECT id FROM recipes))
+WITH CHECK (recipe_id IN (SELECT id FROM recipes))
+```
+
+The inner `SELECT id FROM recipes` is itself RLS-filtered to the caller's households, so this composes with `recipes`' own policy rather than duplicating the membership subquery. Both clauses explicit (§11.2.2's lesson), `FORCE` not just `ENABLE`, explicit `GRANT SELECT, INSERT, UPDATE, DELETE ON recipe_ingredients TO parimaan_app` in the same migration (§11.2.3's lesson). This is a `doc-updater` §4.1 trigger (SD §7.1's RLS list gains a line).
+
+The RED tests for S1 must include a non-member reading `recipe_ingredients` *by `recipe_id` directly*, not only through the `recipes` join — the test that would have caught this.
+
+#### 12.2.3 CRITICAL, LOCKED (D3) — `RecipeInput`/`RecipeIngredientInput` did not exist in any locked document
+
+`SYSTEM_DESIGN.md` §6.1 declares `createRecipe(householdId, input: RecipeInput!)` then closes the SDL block with "input types omitted for brevity — mirror the Type shapes." Mirroring the `Recipe` type verbatim would give the client `id`, `householdId`, `sourceType`, `isFavorite`, `inRotation`, and server-owned ingredient ids — several of which a client must never supply. **Locked shape:**
+
+```
+input RecipeInput {
+  title: String!
+  description: String
+  servings: Int            # defaults to 4 server-side if absent (SD §7.1 column default)
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]
+  role: RecipeRole!        # REQUIRED — no default (D1). This is the "role assignment required" gate.
+  inRotation: Boolean      # defaults TRUE (PRD §7.1: "default: true when created")
+  ingredients: [RecipeIngredientInput!]!
+  steps: [String!]!
+}
+
+input RecipeIngredientInput {
+  name: String!
+  quantity: Float
+  unit: String
+  category: String
+  notes: String
+  isStaple: Boolean
+}
+```
+
+No `id`, no `householdId`, no `sourceType` (server-set: `user` for W6's `createRecipe`; W7 sets `url`/`freeform_ai`; W14 sets `curated`; W19 sets `ai`), no `isFavorite`. `sortOrder` is not client-supplied — it is the array index.
+
+#### 12.2.4 CONFLICT, LOCKED (D3) — `updateRecipe` takes `RecipeInput!` (full replace) against this codebase's locked patch convention
+
+Two shipped mutations establish partial-patch semantics with a dedicated patch input: `updateHouseholdSettings(HouseholdSettingsInput)` and `updatePantryItem(PantryItemPatchInput)` — "every field optional, absent = leave unchanged, explicit `null` rejected." SD §6.1's `updateRecipe(id, input: RecipeInput!)` reuses the create input, exactly what W5 rejected for pantry.
+
+Genuine wrinkle: `ingredients`/`steps` are lists, and a patch cannot express "change ingredient 3" sensibly. **Locked:** `RecipePatchInput` where every scalar is optional (absent = unchanged, explicit `null` rejected — the locked convention), and `ingredients`/`steps` are optional but **replace the whole list when present** (`DELETE FROM recipe_ingredients WHERE recipe_id = $1` then re-insert, same transaction). Documented on the SDL field — "optional but wholesale" is a new semantic this schema hasn't used before.
+
+#### 12.2.5 CONFLICT, LOCKED (D3) — `deleteRecipe: Boolean!` → `deleteRecipe(id: ID!): Recipe!`
+
+W5 changed `deletePantryItem` from `Boolean!` to `PantryItem!` (§11.7 Q2) so a subscriber learns *which* item vanished. SD §6.1 still has `deleteRecipe(id: ID!): Boolean!`. With `onRecipeChanged` now shipping in W6 (D6), the same rationale applies immediately, not just in the future. **Locked: `deleteRecipe(id: ID!): Recipe!`**, matching the pantry precedent.
+
+**Related NOTE, forward-flag:** `menu_items.recipe_id` is `ON DELETE CASCADE`, so deleting a recipe silently removes it from planned menus once W9+ menus exist. Nothing in W6 breaks; recorded here for the W9 plan.
+
+#### 12.2.6 GAP, LOCKED (D4) — `role`, `cuisineTier1` and `dietaryTags` are closed GraphQL enums over unconstrained SQL
+
+`recipes.cuisine_tier1` is plain `TEXT` with no `CHECK`; `dietary_tags` is `JSONB DEFAULT '[]'` with no shape constraint. The SDL types them as `CuisineTier1` and `[DietaryTag!]!` — closed enums. `role` alone is DB-constrained (`CHECK (role IN (...))`, matching `RecipeRole` exactly).
+
+This is **not** the same situation as §11.2.4's pantry `unit`/`category` (plain `String` on the wire, so an unrecognised value passes through harmlessly). Here, an unrecognised persisted value makes **AppSync fail to serialize the entire `Query.recipes` response** — the whole Library errors because one row is bad. Realistic sources: W7's AI freeform parse, W7's URL import, W13/14's hand-authored curated JSON, W19's cook-from-pantry save.
+
+**Locked (D4): reject, don't pass through.** `api/src/domain/recipeRoles.ts`, `cuisineTiers.ts`, `dietaryTags.ts` (the `pantryUnits.ts`/`pantryCategories.ts` file pattern, opposite failure mode) — normalise then reject. Case/whitespace normalisation and a small alias map on the way in; an unknown value is a `ValidationError` at the resolver boundary, never persisted. The migration additionally adds a `CHECK` on `cuisine_tier1` as a DB-level backstop (a deviation from SD §7.1's DDL → `doc-updater` trigger).
+
+On read, if a row somehow already holds an invalid value (hand-inserted, or a future bug): coerce `cuisineTier1` to `null` and drop unknown `dietaryTags` entries, logging a warning — one bad row degrades one field, never the whole query. `role` can't be coerced (`RecipeRole!`, non-null), but the SQL `CHECK` makes an invalid stored `role` unreachable.
+
+#### 12.2.7 GAP, LOCKED (D5) — `Query.recipes` would otherwise return unbounded recipes with fully-hydrated ingredients
+
+`Recipe.ingredients` is `[RecipeIngredient!]!` — non-null, so a naive implementation hydrates every ingredient of every recipe on every Library open. At R7's 280–300-recipe scale (~10 ingredients each), that's a ~3,000-row join for a card (`RecipeCard`) that shows only a title, role, time, and a favorite star.
+
+**Locked (D5):** a separate `Recipe.ingredients` **field resolver**, the same pattern `User.households` already uses (`api/src/resolvers/userHouseholds.ts`, wired via `{ typeName: 'User', fieldName: 'households' }` in `api-stack.ts`'s `DB_RESOLVERS`). The Library's Ferry operation does not select `ingredients`; the Detail screen's does. No SDL type change — only the wiring.
+
+Separately: `Query.recipes` gets a deterministic `ORDER BY` (`is_favorite DESC, LOWER(title)`) — PRD §7.1 says "favorites and rotation surfaced first." **Pagination is deliberately not added in W6** unless S9's spike says otherwise (D9).
+
+#### 12.2.8 GAP — `recipes` has no `updated_at`, `Recipe` exposes no `createdAt`/`updatedAt`
+
+`pantry_items` carries `added_at` + `updated_at`; `recipes` carries only `created_at`, and the GraphQL type exposes neither. **Locked as part of D3:** the W6 migration adds `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` (set by `updateRecipe`/`favoriteRecipe`/`setInRotation`, the `updatePantryItem` pattern), and the SDL exposes `createdAt: AWSDateTime!` / `updatedAt: AWSDateTime!` on `Recipe`. Both are SD deviations → `doc-updater` triggers. `created_by` is *not* exposed (no wireframe shows it, small privacy surface for no product benefit yet).
+
+#### 12.2.9 GAP, LOCKED (D6) — `onRecipeChanged` ships in W6, not deferred
+
+SD §6.1's `Subscription` type had four fields (`onPantryChanged`, `onMenuChanged`, `onShoppingListChanged`, `onHouseholdChanged`) and none for recipes, despite recipes being household-shared and editable by any member (favoriting is explicitly household-level per PRD §7.1). The planner recommended deferring to W8; **the founder chose to build it in W6 instead (D6)** — this is slice **S11** below, and it makes W6 two-device-verifiable the way W5 was, using the same `RUNBOOK.md` §3 procedure.
+
+Mechanically cheap after W5 S8: the multiplexed `AppSyncSubscriptionClient` + `appsync_websocket_link.dart` are already generic over any subscription, the per-field authorization resolver pattern is established (§11.2.9), and §11.2.12's "every push means refetch" decision means the client side is a `Stream<void>` + one `_refetch()` — the same ~10 lines `PantryController` already has.
+
+#### 12.2.10 NOTE — "duplicate" is in the PRD and in no sprint week
+
+`PRD.md` §7.1 lists recipe actions as "Edit / delete / **duplicate**." Not in SD §6.1's mutation list, not in any sprint week. **Call:** not built in W6 — it's a locked-SDL change for a convenience action whose primary use case (duplicating a curated recipe) doesn't exist until W14. Founder should schedule it (W14 is the natural place) or move it to v1.1 explicitly; recorded here so it isn't silently dropped.
+
+#### 12.2.11 NOTE — recipe cover images are in the storage design and in no week
+
+SD §8 reserves `recipe-images/{recipeId}.jpg` with a CloudFront-fronted presigned-URL upload path. No `Recipe` SDL field references an image, no week schedules it, no wireframe shows an image slot. **Call:** treated as descoped from MVP; `RecipeCard` (S6) is designed without an image slot. Flagged so a later week doesn't "discover" it as a requirement.
+
+#### 12.2.12 NOTE, LOCKED (D7) — Drift caching for recipes → W14
+
+SD §9.1 and the Phase 2 exit criteria mention the Drift read-cache only for pantry. No week originally scoped a recipes cache, despite the recipe library arguably being the stronger offline case (a 50–300-item reference browsed with bad signal, vs. a pantry mostly edited at home). Two real complications beyond a copy of W5's S7: recipes have a **child table** (two Drift tables + a join, or one table with a serialized ingredients column), and the cache-write invariant (only the unfiltered fetch may `replaceAll`) gets harder with two filter dimensions (`role`, `isFavorite`). **Locked (D7): W14** — when 300 real curated recipes exist and offline browsing genuinely matters, and after D9's perf-spike result (a cached library changes what the scroll benchmark measures) is known.
+
+#### 12.2.13 NOTE, forward-flag — `recipes.created_by` is `NOT NULL REFERENCES users(id)`, and W14 seeds curated rows
+
+Curated-library seeding (locked as "copy rows on `createHousehold`" elsewhere) needs every copied row to satisfy the `created_by` FK. There is no system user. W14 will have to use the household creator's id or add a sentinel user row. Nothing in W6 changes; recorded so W14 doesn't hit a `NOT NULL` wall mid-slice.
+
+#### 12.2.14 NOTE — `idx_recipes_role` does not serve W6's actual query
+
+SD §7.1 creates `idx_recipes_role ON recipes(household_id, role) WHERE in_rotation = TRUE` — a partial index built for W10's auto-fill, not W6's `Query.recipes(householdId, role, isFavorite)` (no rotation predicate). **Call:** create both indexes exactly as SD §7.1 specifies; `idx_recipes_role` is deliberately unused until W10, recorded so a future reader doesn't "fix" it.
+
+#### 12.2.15 NOTE — `drink` role exists but is out of planning scope
+
+PRD §7.1: "`drink` — beverages (post-MVP scope for planning, but role exists)." **Call:** W6 accepts `drink` everywhere the other six roles are accepted; nothing to build, recorded so "post-MVP" next to a shipped enum value doesn't invite a wrong deletion later.
+
+#### 12.2.16 CONFLICT, minor — `setInRotation`'s week was ambiguous between the original W6 and W10 rows
+
+The original §4 W6 row said "favorite + rotation flags" and the W10 row said "`setInRotation` mutation." **Call (reflected in §4 already):** the mutation ships W6 (S5, below — it's a recipe-library toggle in the W6 Overflow menu); W10's row now reads "consumes `setInRotation` in `autoFillWeek`."
+
+### 12.3 Slice breakdown
+
+Eleven slices, one PR each. **S8 is committed** (D2 = Option B, not conditional). **S11 is new** (D6 — `onRecipeChanged`, not in the planner's original draft, added after founder sign-off).
+
+#### S1 — `recipes` + `recipe_ingredients` migration, RLS on both, grants
+
+- **Delivers:** both tables per SD §7.1 DDL, both specified indexes (§12.2.14), plus three W6 deviations: `recipes.updated_at` (§12.2.8), a `CHECK` on `cuisine_tier1` (§12.2.6), and RLS on `recipe_ingredients` (§12.2.2). `ENABLE` + `FORCE` on both tables, `FOR ALL USING ... WITH CHECK ...` on both, explicit `parimaan_app` grants on both. No GraphQL, no app code.
+- **Files:** `api/migrations/<ts>_recipes.ts` (new; grants go in the *new* migration, not the applied `app-role` one — §11.2.3's lesson). `1787670947641_pantry-items.ts` is the pattern to copy comment-for-comment.
+- **Depends on:** nothing. Can start immediately.
+- **Size / Risk:** ~2.0 hrs / **Medium-High** — two tables, one with a parent-join RLS policy that has no precedent in this codebase and is the week's highest-value test surface.
+- **Agents:** `tdd-guide` → `database-reviewer` (mandatory on every migration) → `security-reviewer` (fires: SQL migration + RLS policy) → `code-reviewer`.
+- **RED tests** (real Testcontainers Postgres, §3.2): member SELECTs only own-household recipes; **non-member SELECT on `recipe_ingredients` by `recipe_id` directly returns zero rows** (the §12.2.2 gap — the single most important test in this slice); non-member INSERT into `recipes` rejected; non-member INSERT into `recipe_ingredients` referencing another household's recipe rejected by `WITH CHECK`; non-member UPDATE/DELETE affect zero rows on both tables; `ON DELETE CASCADE` from `recipes` removes ingredients; `parimaan_app` can CRUD both tables; `role` CHECK rejects an unknown role; `cuisine_tier1` CHECK rejects an unknown cuisine and accepts `NULL`; `down()` clean and re-runnable.
+- **Gate:** all green; both reviewers clean; deployed to real dev AWS and the migration runner ran it (not synth).
+
+#### S2 — Recipe SDL + domain enums + `Query.recipes` + `Recipe.ingredients` field resolver
+
+- **Delivers:** `RecipeRole`, `RecipeSource`, `Recipe`, `RecipeIngredient`, `RecipeInput`, `RecipeIngredientInput`, `RecipePatchInput` in `shared/schema.graphql` (first recipe SDL in the repo); the three canonicalisation/rejection domain modules (§12.2.6); repository + mapper + Zod; `Query.recipes` and the `Recipe.ingredients` field resolver (§12.2.7); two `DB_RESOLVERS` entries.
+- **Files:** `shared/schema.graphql`; `api/src/domain/{recipeRoles,cuisineTiers,dietaryTags}.ts`; `api/src/repositories/recipeRepository.ts`; `api/src/mappers/recipe.ts`; `api/src/validation/recipes.ts`; `api/src/resolvers/{recipes,recipeIngredients}.ts`; `infra/stacks/api-stack.ts`.
+- **Depends on:** S1.
+- **Size / Risk:** ~2.5 hrs / **Medium** — resolver follows the well-worn `pantry.ts` path; new parts are the field resolver (precedent: `userHouseholds.ts`) and three enum modules.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (fires: new Lambda resolvers + SQL construction) → `code-reviewer` → `doc-updater` (SDL change → re-sync SD §6.1; record §12.2.6/§12.2.8 deviations in SD §18).
+- **RED tests:** non-member → denial on `Query.recipes`, identical to a nonexistent `householdId`; **`Recipe.ingredients` for a recipe in another household returns empty, not an error and not data** (the field resolver has no `householdId` arg to gate on — RLS is the only guard, the `findPantryItemById` situation); Zod rejections (blank title, unknown role, unknown cuisine, unknown dietary tag, invalid `servings`, over-long strings); `role`/`isFavorite` filters, individually and combined; **`.nullish()` not `.optional()` on every nullable arg** (the W5 §11.5.5 production bug — this is the first slice written after it was found); deterministic `ORDER BY` asserted; ingredient `sort_order` round-trips as array order.
+- **Gate:** ≥80% coverage; `pnpm -r` regenerates Ferry/TS clients with a clean tree; deployed to dev AWS and queried for real.
+
+#### S3 — `createRecipe`
+
+- **Delivers:** `Mutation.createRecipe(householdId, input: RecipeInput!): Recipe!` — parent row + N ingredient rows in one transaction, `sourceType` server-set to `user`, `createdBy` from verified caller identity, `sortOrder` from array index, `inRotation` defaulting TRUE, **`role` required with no default** (the DoD gate's actual enforcement point, D1).
+- **Files:** `api/src/resolvers/createRecipe.ts`; `api/src/validation/createRecipe.ts`; `recipeRepository.ts` (insert + bulk ingredient insert); `api-stack.ts`.
+- **Depends on:** S2.
+- **Size / Risk:** ~2.0 hrs / **Medium** — transaction with a child table is new (`bulkAddPantryItems` is the nearest rollback-shape precedent). **Cap ingredients and steps** (proposed 100 ingredients, 100 steps, 2000 chars/step) against unbounded-list resource exhaustion.
+- **RED tests:** non-member denied; missing `role` → `VALIDATION` (**the gate test — assert it by name**); unknown role/cuisine/dietary rejected, not coerced; `sourceType` cannot be set from input; `createdBy` is the caller, never input; over-cap ingredients → `VALIDATION`; **rolls back entirely when ingredient *k* fails**; empty ingredients list **allowed** (a recipe with no ingredients listed is real); zero steps allowed.
+
+#### S4 — `updateRecipe` + `deleteRecipe`
+
+- **Delivers:** `updateRecipe(id, input: RecipePatchInput!): Recipe!` with §12.2.4's mixed semantics (scalars patch, `ingredients`/`steps` replace-whole-list-when-present), and `deleteRecipe(id): Recipe!` per §12.2.5. Neither takes `householdId` — discovered from `id` through an RLS-scoped query (the `updatePantryItem`/`deletePantryItem` pattern).
+- **Depends on:** S3.
+- **Size / Risk:** ~1.5 hrs / **Low-Medium**.
+- **RED tests:** update/delete in another household denied identically to a nonexistent id (never an existence oracle); partial patch leaves absent scalars unchanged and rejects explicit `null`; `ingredients: []` explicitly clears (distinct from absent — assert both); ingredient replace is transactional; `updated_at` moves; `deleteRecipe` returns the deleted row and a second call denies; deleting a recipe cascades its ingredients.
+
+#### S5 — `favoriteRecipe` + `setInRotation`
+
+- **Delivers:** the two flag mutations, both single-column updates returning the full `Recipe!`. Ships W6 (§12.2.16); W10 consumes it.
+- **Depends on:** S2.
+- **Size / Risk:** ~1.0 hr / **Low**.
+- **RED tests:** non-member denied identically to nonexistent; idempotent; `favorite: false` un-favorites; `updated_at` moves; both are household-level not per-user (assert a second member sees the flag).
+
+#### S6 — Recipes tab + Library screen + `RecipeCard`
+
+- **Delivers:** a third `StatefulShellBranch` in `router.dart` at `/home/recipes` through the existing `PTabBar`; wireframe 7.1; the **`RecipeCard`** domain widget; role filter chips + favorites filter driving server-side `role`/`isFavorite` params; empty/loading/error states via `PEmptyState`.
+- **Files:** `mobile/lib/app/router.dart`; `mobile/lib/features/shell/presentation/app_shell.dart`; `mobile/lib/shared/graphql/operations/recipes.graphql` + regenerated `__generated__/`; `mobile/lib/features/recipes/domain/{recipe,recipe_role,recipe_source,recipe_ingredient}.dart`; `.../data/{recipe_repository,recipe_mapper}.dart`; `.../state/recipe_library_controller.dart`; `.../presentation/{recipes_library_screen,recipe_card,recipes_error_copy}.dart`.
+- **Depends on:** S2 (query only).
+- **Size / Risk:** ~2.5 hrs / **Medium** — mirror `features/pantry/` layer-for-layer. `RecipeCard` has no image slot (§12.2.11). The Library operation deliberately does not select `ingredients` (§12.2.7) — assert this in a test.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips (presentation + a read path over an already-reviewed resolver).
+- **RED tests:** family provider scoped by `householdId` emits `loading → data`; errors surface via `graphql_error_mapper.dart`; role-chip selection refetches server-side (no client-side filtering — breaks at 300 items); failed refetch keeps last good list; `RecipeCard` renders title, role, total time (nullable `prepMin`/`cookMin`, test the all-null case), favorite indicator, rotation indicator; Library query document does not contain `ingredients`; `/home` shows a three-item `PTabBar`; branch state preserved across tab switches; deep-link while signed out bounces to `/sign-in`; existing W5 router/shell tests pass except the tab-count assertion.
+
+#### S7 — Recipe Detail + Overflow menu
+
+- **Delivers:** wireframes 7.2/7.3. Detail selects `ingredients` (the field resolver's W6 consumer) and steps. Overflow menu: Toggle favorite → `favoriteRecipe`; Toggle rotation → `setInRotation`; Delete → confirm dialog → `deleteRecipe`; Edit → present (D2 = B ships S8, so Edit is always shown this week).
+- **Files:** `mobile/lib/features/recipes/presentation/{recipe_detail_screen,recipe_overflow_menu,delete_recipe_dialog}.dart`; `.../state/recipe_detail_controller.dart`; routes.
+- **Depends on:** S4, S5, S6.
+- **Size / Risk:** ~2.0 hrs / **Medium** — no optimistic update on flag toggles; invalidate the library provider on success (`PantryFormController`'s `ref.invalidate` pattern).
+- **RED tests:** detail renders ingredients + steps in `sort_order`; zero-ingredient recipe renders without crashing; overflow toggles call the right mutation and invalidate the library; delete requires confirm, cancel is a no-op; delete pops back to Library, row is gone; server `FORBIDDEN`/`NOT_FOUND` renders as copy, not a crash.
+
+#### S8 — Structured create/edit form
+
+- **Delivers:** wireframe 8.2, pulled forward from W7 (D2), used for both create and edit (the §11.2.7 seeded-form reuse pattern). **Role is required with no pre-selection** — where "role assignment required" becomes visible to a user (D1).
+- **Files:** `mobile/lib/features/recipes/presentation/{recipe_form_screen,recipe_form_entry,ingredient_row_editor,step_row_editor}.dart`; `.../state/recipe_form_controller.dart`; `.../domain/{recipe_draft,recipe_patch,recipe_validation}.dart`; routes.
+- **Depends on:** S3, S4, S7.
+- **Size / Risk:** ~2.5 hrs / **Medium-High** — highest-uncertainty Flutter slice: a *dynamic-length list* form (add/remove/reorder ingredients and steps), which nothing in this codebase has built yet. Mitigation: pure-Dart validators in `features/recipes/domain/`, unit-tested against the same case table as the Vitest suite.
+- **RED tests:** submit disabled until title + role + valid ingredients; role picker has no default, blocks submit until chosen; add/remove ingredient rows preserves other rows' values; reorder updates submitted array order; edit mode seeded from the existing recipe, unchanged scalars not sent; edited ingredient list sends the *whole* list (replace semantics, tested explicitly); server `VALIDATION` renders inline; cancel mutates nothing.
+
+#### S9 — R7 perf spike: 300-recipe library scroll on a low-end Android
+
+- **Delivers:** the §6 R7 spike, executed and written up with real numbers. Spikes are exempt from strict TDD (`DEV_WORKFLOW.md` §6c) — measurement, not tested production code.
+- **Method:** (1) seed a real dev household with 300 recipes with realistic title lengths and 10–15 ingredients each (§12.5.3 — not `Recipe 001`, so the number is comparable at a W14 re-run) via a throwaway script or direct SQL, not committed as production code; (2) build in **profile mode** (never debug) on the lowest-end physical Android available; (3) scroll the Library end-to-end three times, capture frame timings via DevTools; record **p50/p99 frame build+raster times, count of frames >16ms/>32ms, jank percentage, time-to-first-paint**; (4) separately record the **payload** `Query.recipes` returns for 300 recipes — bytes and wall-clock.
+- **Pass/fail:** target <5% of frames over 16ms, no frame over 100ms during steady scroll, Library time-to-first-paint under 1.5s on a **warm** backend (Aurora auto-pause would otherwise contaminate the number — §12.5.4).
+- **If it fails:** verify `ListView.builder` recycling (should already hold from S6 — verify, don't assume) and add **pagination to `Query.recipes`** — an SDL change, cheaper now (one consumer) than at W10 (picker sheet) or W14 (curated seed).
+- **Depends on:** S6 (needs a real Library to scroll). Runs right after S6 (D9), before S7/S8, so a pagination finding doesn't force rework of already-built screens.
+- **Size / Risk:** ~1.5 hrs / **Medium** — risk is device availability, not technical. Named fallback (D9): lowest-end physical Android on hand, exact device/SoC recorded, result treated as an upper bound. A simulator/emulator run is not a substitute.
+- **Agents:** none mandated (spike). `doc-updater` records the result.
+
+#### S11 — `onRecipeChanged` subscription (D6 — pulled forward from a planner-recommended W8)
+
+- **Delivers:** `Subscription.onRecipeChanged(householdId)`, per-field authorization resolver (§11.2.9's pattern — same security property as an API-level authorizer, far less machinery), wired into the existing multiplexed `AppSyncSubscriptionClient` (generic since W5 S8). `RecipeLibraryController` and `RecipeDetailController` subscribe and refetch on push — the "every push means refetch" decision (§11.2.12), a `Stream<void>` + `_refetch()`, mirroring `PantryController`.
+- **Files:** `shared/schema.graphql` (`Subscription.onRecipeChanged`); `api/src/resolvers/onRecipeChanged.ts` (or the equivalent field-authorizer wiring `onPantryChanged.ts` used); `infra/stacks/api-stack.ts`; `mobile/lib/features/recipes/state/{recipe_library_controller,recipe_detail_controller}.dart`; `mobile/lib/shared/graphql/operations/recipes.graphql` (subscription op).
+- **Depends on:** S2 (SDL), S3/S4/S5 (mutations to fan out from).
+- **Size / Risk:** ~1.5 hrs / **Low-Medium** — the mechanism is proven (W5 S8); risk is limited to wiring, not design.
+- **Agents:** `tdd-guide` → `security-reviewer` (fires: subscription authorization) → `flutter-reviewer` (client side) → `code-reviewer`.
+- **RED tests:** non-member's subscribe attempt rejected (test, not inspection — the §11.6 W5 precedent); a create/update/delete/favorite/rotation change on one client triggers a refetch on a second subscribed client; disconnect/reconnect resubscribes (reuses W5 S8's connection-lifecycle tests as a template, since three real bugs were caught there — a hang, a poisoned client, a use-after-cancel crash — the same test shapes apply here).
+
+#### S10 — Real-AWS verification + two-device sync + weekly doc pass
+
+- **Delivers:** every W6 backend slice exercised against the real dev stack (`RUNBOOK.md` §2's non-negotiable) — `cdk deploy Parimaan-dev-Data Parimaan-dev-Api`, confirm the migration runner applied the recipes migration, then drive create → read → favorite → rotate → edit → delete from a real signed-in device against real AppSync/Aurora, including at least one call with an **explicit `null`** for every nullable argument (the exact shape of the W5 §11.5.5 bug). Plus **`RUNBOOK.md` §3's two-device verification procedure, re-run for `onRecipeChanged`** (D6 makes this applicable this week, unlike the planner's original draft which assumed no W6 subscription) — add/edit/delete on Device A appears on Device B, timed, target <5s, following the identical honesty standard set in W5 §11.5.5 (no fabricated stopwatch numbers if precision can't be certified). Plus §4.2's mandatory weekly pass: actual-vs-planned hours into §4's W6 row, and S9's spike result.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 W6 actuals + this §12); `docs/SYSTEM_DESIGN.md` (§6.1 SDL re-sync; §7.1 DDL deviations; §18 for the enum-rejection decision); `docs/RUNBOOK.md` (any new real-deploy bugs, in the §2 pattern).
+- **Depends on:** S5, S7, S8, S9, S11.
+- **Size / Risk:** ~1.0 hr / **Low** risk, non-optional — a week isn't done until its §4 row has actuals.
+- **Agents:** `doc-updater`. `security-reviewer` phase-boundary sweep does not fire this week (W6 is not a §2.3 boundary week); per-slice triggers still fire on S1, S2, S3, S4, S5, S11.
+
+### 12.4 Sequencing
+
+```
+        can start immediately, in parallel
+        ┌───────────────────────────────────────────────┐
+   ┌────▼──────────────────┐                            │
+   │ S1 recipes +          │                     (nothing Flutter-side
+   │ recipe_ingredients    │                      is zero-dependency this
+   │ migration + RLS x2    │                      week — S6 needs S2's
+   └────┬──────────────────┘                      SDL to codegen against)
+   ┌────▼──────────────────┐
+   │ S2 SDL + enums +      │
+   │  Query.recipes +      │
+   │  Recipe.ingredients   │
+   └────┬───────────┬──────┘
+        │           └──────────────────────────┐
+   ┌────▼──────────┐   ┌──────────────────┐    │
+   │ S3 createRecipe│   │ S5 favorite +   │    │
+   └────┬──────────┘   │   setInRotation  │    │
+   ┌────▼──────────┐   └────────┬─────────┘    │
+   │ S4 update +   │            │      ┌───────▼──────────────┐
+   │    delete     │            │      │ S6 Recipes tab +     │
+   └────┬──────────┘            │      │  Library + RecipeCard│
+        │                       │      └───┬──────────────┬───┘
+        │        ┌──────────────┘          │              │
+        │  ┌─────▼───────────────▼─────────▼──┐    ┌──────▼─────────────┐
+        │  │ S11 onRecipeChanged subscription  │    │ S9 R7 perf spike   │
+        │  └─────┬──────────────────────────────┘    │  (300 items)       │
+        │  ┌──────▼────────────────────────────┐    └──────┬─────────────┘
+        └─►│ S7 Detail + Overflow menu          │           │
+           └─────────────┬────────────────────┘           │
+           ┌─────────────▼────────────────────┐           │
+           │ S8 Structured form                │           │
+           └─────────────┬────────────────────┘           │
+                  ┌───────▼───────────────────────────────▼┐
+                  │ S10 real-AWS + two-device verification  │
+                  │    + doc pass                           │
+                  └──────────────────────────────────────────┘
+```
+
+**Working order: S1 → S2 → S6 → S3 → S4 → S5 → S9 → S11 → S7 → S8 → S10.**
+
+Non-obvious choices, with rationale:
+
+- **S6 immediately after S2, before the write mutations.** Nothing Flutter-side can start before the SDL exists (Ferry codegen needs it). Getting a real Library screen on screen early is what makes S9's spike possible before the week is over, and gives visible progress in week 1 of a two-week W6.
+- **S9 before S7/S8, not last.** S9's only dependency is S6, and its worst-case outcome is an SDL change (pagination). Discovering that after S7/S8/S11 are built means reworking multiple slices. Same reasoning as W5's "S8 before S7" — do the risk-relevant slice first.
+- **S11 before S7/S8.** The Detail/Overflow/Form screens are more useful to build and test against a library that's already syncing in real time, and S11 only needs S2–S5, not S6's UI.
+- **S5 before S9/S11 but after S3/S4.** S5 is trivially small and can run while S3/S4 sit in review.
+
+### 12.5 Risks
+
+#### 12.5.1 The week does not fit in 10 hours — locked and accepted (D8)
+
+| Slice | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | S11 | S10 | **Total** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| hrs | 2.0 | 2.5 | 2.0 | 1.5 | 1.0 | 2.5 | 2.0 | 2.5 | 1.5 | 1.5 | 1.0 | **20.0** |
+
+Against ~10 hrs nominal, a **100% overrun before any surprise** — worse than §11.5.1 flagged for W5 (which itself then overran further on two slices, §11.5.5). §11.7 Q5 already spent ~8 of the §7 plan's 20-hr buffer on W5. **Locked (D8): accept a two-week W6.** Phase 2 (W5–W8) is now effectively ~6 calendar weeks; the buffer will be essentially gone by W8, and every subsequent slip pushes the MVP date directly. Phase 3 remains flagged as a stretch phase (§7).
+
+#### 12.5.2 The `recipe_ingredients` RLS policy is the week's highest-severity item
+
+A genuine data-leak surface (§12.2.2) in a table with no `household_id`, protected by a policy pattern with no precedent in this repo, sitting under a field resolver (`Recipe.ingredients`) with **no `householdId` argument to gate on** — layer 2 (`requireHouseholdMember`) cannot run there at all, so RLS is genuinely load-bearing, not defense-in-depth. Both S1 and S2 must test this directly; `security-reviewer` fires on both.
+
+#### 12.5.3 R7 may return a result nobody wants to act on
+
+If S9 says the list is slow, the fix (pagination) is an SDL change plus rework of S6 mid-week. If S9 says it's fine, the number may be unrepresentative — 300 synthetic recipes with short titles and no images vs. W14's real library with long titles and W19's AI-generated ones. **Mitigation:** seed with realistic title lengths and 10–15 ingredients, not `Recipe 001`; record the seed characteristics alongside the numbers so a W14 re-run is comparable.
+
+#### 12.5.4 Real-AWS verification cost, and the two W5 bug classes that will recur
+
+Every backend slice needs a real dev deploy. Two specific recurrences to pre-empt: **`.optional()` vs `.nullish()`** on every nullable Zod field (`Query.recipes` has two nullable args; `RecipeInput`/`RecipePatchInput` have many — S2/S3/S4's tests must exercise explicit `null`, not only absent keys); and **Aurora auto-pause cold start** (~30s on first request after a pause) — S9's time-to-first-paint measurement must be taken against a **warm** backend or the number measures Aurora, not Flutter.
+
+The Lambda concurrency quota increase remains filed and pending (real ceiling: 10). W6 adds ~7 more DB-backed resolver Lambdas to `DB_RESOLVERS`, taking the total well past 15 — nothing in W6 *depends* on the quota landing (a single dev user invokes serially), but S9's spike (300 recipes seeded via repeated `createRecipe` calls) is the most likely thing to hit it. Seed via direct SQL if the script throttles.
+
+### 12.6 W6 exit criteria
+
+- [ ] `recipes` and `recipe_ingredients` on dev with RLS **enabled and forced on both**, policies covering `USING` **and** `WITH CHECK`, `parimaan_app` grants on both — verified by wrong-household tests for read, insert, update, delete, **including a direct `recipe_ingredients` read by `recipe_id`** (S1)
+- [ ] `recipes.updated_at`, the `cuisine_tier1` CHECK, and the `recipe_ingredients` RLS line reflected in SD §7.1 with rationale (S1/S10)
+- [ ] All five recipe mutations + `Query.recipes` + `Recipe.ingredients` live on dev, each member-gated (or RLS-gated, for the id-only and field resolvers), each with a non-member denial test (S2–S5)
+- [ ] `role` is required on create with no default; a `createRecipe` missing `role` fails `VALIDATION` — the DoD gate's "role assignment required", asserted by a named test (S3, D1)
+- [ ] Unknown `role`/`cuisineTier1`/`dietaryTag` values are **rejected, not passed through**, at both the resolver and the DB `CHECK` (S2/S3, D4)
+- [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression, all backend slices)
+- [ ] `shared/schema.graphql` gains the recipe SDL and is re-synced into SD §6.1, including `RecipeInput`, `RecipePatchInput`, and `deleteRecipe: Recipe!` (D3)
+- [ ] `/home` is a **three**-tab shell; existing W5 router/shell tests pass unmodified except the tab-count assertion (S6)
+- [ ] Wireframes 7.1, 7.2, 7.3, **8.2** shipped → **22/49** (S6/S7/S8, D2)
+- [ ] `RecipeCard` built and covered; the Library GraphQL document provably does not select `ingredients` (S6, D5)
+- [ ] Favorite and rotation toggles work from the Overflow menu and are visible to a second member (S5/S7)
+- [ ] Create and edit both work end-to-end through the structured form, role required with no pre-selection (S8, D2/D1)
+- [ ] `onRecipeChanged` fans out add/update/delete across two devices — **two-device sync verified per `RUNBOOK.md` §3**, timed, target <5s, same honesty standard as W5 §11.5.5 (S11/S10, D6)
+- [ ] **R7 spike run and written up with real p50/p99 frame numbers and a payload size** (S9, D9)
+- [ ] Coverage: Lambda ≥80% (enforced in CI since W5); Flutter domain+state ≥80%
+- [ ] `security-reviewer` clean on S1–S5 and S11 (per-slice triggers; no phase-boundary sweep this week)
+- [ ] Every backend slice verified against real dev AWS, not synth — including a full create → favorite → rotate → edit → delete round trip from a real device (S10)
+- [ ] §4's W6 row has actual hours (per-slice wall-clock) and carry-over notes
+- [ ] §4's W10 row corrected to "consumes `setInRotation`" (already reflected — §12.2.16)
+
+### 12.7 W6 planning decisions (final, locked 2026-08-26)
+
+| # | Question | **Locked decision** |
+|---|---|---|
+| D1 | §12.2.1 — is `RecipeRole` the meal-slot role, and does "role assignment required" mean no default anywhere (server or UI)? | **Yes to both.** Meal-slot categorization (breakfast/carb/sabzi_dal/accompaniment/snack/sweet/drink), unrelated to `HouseholdRole`. Required on create, no server default, no pre-selected UI chip. |
+| D2 | §12.2.1 — "Recipe CRUD complete" has no create/edit screen in W6's original budget: reword the gate, or pull wireframe 8.2 forward from W7? | **Pull forward (Option B).** +2.5 hrs (S8). Screen count 22/49 this week; W7's cumulative count unaffected. |
+| D3 | §12.2.3–§12.2.5, §12.2.8 — the SDL shape package: `RecipeInput`/`RecipeIngredientInput` with no client-supplied server fields; `RecipePatchInput`; `deleteRecipe: Recipe!`; `createdAt`/`updatedAt` + `recipes.updated_at`. | **Approve all four**, as drafted in §12.2.3/§12.2.4/§12.2.5/§12.2.8. |
+| D4 | §12.2.6 — `role`/`cuisineTier1`/`dietaryTags`: reject unknown values, or pass through like W5's pantry units? | **Reject** — deliberate asymmetry with W5's §11.2.4 pantry decision, because these are closed GraphQL enums and a bad row breaks the entire `Query.recipes` response, not one field. |
+| D5 | §12.2.7 — hydrate `Recipe.ingredients` via a separate field resolver, Library query not selecting it? | **Yes.** Uses the `User.households` field-resolver precedent; cheap now, expensive after W10's picker and W14's seed both become consumers. |
+| D6 | §12.2.9 — `onRecipeChanged`: build in W6, schedule into W8, or accept no recipe sync in MVP? | **Build in W6** (S11, new slice, ~1.5 hrs) — against the planner's W8 recommendation. Makes W6 two-device-verifiable like W5. |
+| D7 | §12.2.12 — Drift local cache for recipes: W6, W8, W14, or never in MVP? | **W14** — when 300 real curated recipes exist and offline browsing genuinely matters; also lets D9's spike result inform the cache design. |
+| D8 | §12.5.1 — how to absorb ~20.0 hrs against ~10, with the §7 buffer already ~8 hrs down from W5? | **Accept a two-week W6**, same pattern as W5. Phase 2 (W5–W8) becomes ~6 calendar weeks; buffer essentially gone by W8. |
+| D9 | §6 R7 / S9 — does the 300-item perf spike run in W6, and on what device? | **Run it in W6, right after S6.** Cost-asymmetry argument: the likely mitigation (pagination) is an SDL change, nearly free now and expensive from W10/W14 onward. Fallback if no Redmi-class device is on hand: lowest-end physical Android available, exact device/SoC recorded, result treated as an upper bound — no simulator/emulator substitution. |
 
 ---
