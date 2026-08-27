@@ -165,6 +165,18 @@ type Mutation {
   payload can't fan out to that subscription's single-`PantryItem` shape.
   """
   bulkAddPantryItems(householdId: ID!, items: [PantryItemInput!]!): [PantryItem!]!
+
+  """
+  Creates a recipe: the parent row plus its ingredients, in one transaction
+  — a failure partway through rolls back the whole recipe, not just the
+  failed ingredient (same shape as `bulkAddPantryItems`). Requires the
+  caller to already be a member of `householdId`. `sourceType` is always
+  `user` for a recipe created this way — never client-suppliable, `RecipeInput`
+  has no such field. `role` is required with no default: this is the
+  "role assignment required" DoD gate's actual enforcement point
+  (E2E_MVP_PLAN.md §12.7 D1/D2).
+  """
+  createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
 }
 
 type Subscription {
