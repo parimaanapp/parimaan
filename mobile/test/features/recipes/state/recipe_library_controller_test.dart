@@ -170,4 +170,73 @@ void main() {
       expect(state.valueOrNull, <Recipe>[_dalRecipe]);
     });
   });
+
+  group('RecipeLibraryController — live updates (S11)', () {
+    test('subscribes to watchRecipeChanges for the household it is keyed on', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = _container(repository);
+
+      await container.read(recipeLibraryControllerProvider('household-1').future);
+
+      expect(repository.watchCalls, <String>['household-1']);
+    });
+
+    test('a pushed change event triggers a refetch', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('household-1').future);
+      expect(repository.calls, hasLength(1));
+
+      repository.watchControllers['household-1']!.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.calls, hasLength(2));
+    });
+
+    test('an error on the change stream is swallowed — the library stays as last fetched', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('household-1').future);
+
+      repository.watchControllers['household-1']!.addError(
+        const ForbiddenError('You are not a member of this household.'),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final AsyncValue<List<Recipe>> state = container.read(
+        recipeLibraryControllerProvider('household-1'),
+      );
+      expect(state.hasError, isFalse);
+      expect(state.value, <Recipe>[_dalRecipe]);
+      // No second fetch — an errored change-stream event is not a
+      // "something changed" signal.
+      expect(repository.calls, hasLength(1));
+    });
+
+    test('disposing the container cancels the change subscription — no refetch after', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
+      );
+      await container.read(recipeLibraryControllerProvider('household-1').future);
+
+      container.dispose();
+      // Broadcast controllers accept `.add` with no listeners without
+      // throwing — this only proves the controller-side subscription is
+      // gone by asserting no refetch call landed, not that `.add` itself
+      // would have failed.
+      repository.watchControllers['household-1']!.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.calls, hasLength(1));
+    });
+  });
 }

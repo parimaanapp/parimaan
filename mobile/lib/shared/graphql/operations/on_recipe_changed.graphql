@@ -1,0 +1,11 @@
+# `Subscription.onRecipeChanged` — pushed whenever another device creates,
+# updates, deletes, favorites, or rotation-flags a recipe in `householdId`
+# (W6 slice S11, D6). `id` is the only field selected: `RecipeRepository.
+# watchRecipeChanges` never reads the pushed payload, only that one
+# arrived — the "every push means refetch" decision (§11.2.12), same as
+# `PantryRepository.watchPantryChanges`'s identical shape.
+subscription OnRecipeChanged($householdId: ID!) {
+  onRecipeChanged(householdId: $householdId) {
+    id
+  }
+}

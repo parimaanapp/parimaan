@@ -210,6 +210,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'setInRotation',
   },
+  {
+    id: 'OnRecipeChanged',
+    entryFile: 'onRecipeChanged.ts',
+    typeName: 'Subscription',
+    fieldName: 'onRecipeChanged',
+  },
 ];
 
 /**
@@ -300,6 +306,14 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   (caller supplies the end state, not a toggle — idempotent by
  *   construction) and both flags are household-level, not per-user
  *   (PRD §7.1) — any member's call changes what every member sees.
+ * - `Subscription.onRecipeChanged` — W6 slice S11 (E2E_MVP_PLAN.md §12.3,
+ *   D6 — pulled forward from a planner-recommended W8). Identical
+ *   subscribe-time Lambda-resolver authorization shape as
+ *   `onPantryChanged` above. `@aws_subscribe`d to all five recipe
+ *   mutations (`createRecipe`/`updateRecipe`/`deleteRecipe`/
+ *   `favoriteRecipe`/`setInRotation`) — unlike `onPantryChanged`, every
+ *   recipe mutation returns a single `Recipe!`, so there is no
+ *   list-shaped-payload exclusion to make here.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`

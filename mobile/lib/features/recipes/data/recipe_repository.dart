@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/graphql/client.dart';
 import '../../../shared/graphql/graphql_error_mapper.dart';
+import '../../../shared/graphql/operations/__generated__/on_recipe_changed.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_recipe_changed.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_recipe_changed.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipes.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipes.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipes.var.gql.dart';
@@ -29,6 +32,24 @@ abstract interface class RecipeRepository {
     RecipeRole? role,
     bool? isFavorite,
   });
+
+  /// Emits once every time another device creates, updates, deletes,
+  /// favorites, or rotation-flags a recipe in [householdId]'s library (W6
+  /// S11, D6) — a pure "something changed, refetch" signal, not the changed
+  /// recipe itself. Same "every push means refetch" reasoning as
+  /// `PantryRepository.watchPantryChanges`'s own doc: all five recipe
+  /// mutations push the identical `Recipe` shape on the wire with no
+  /// event-type field, so a full refetch is correct in every case (add,
+  /// update, delete, favorite, rotation) with no special-casing — and it's
+  /// the only way a delete or a filter-relevant change is ever reflected
+  /// correctly, since a local patch can't tell whether the changed recipe
+  /// newly matches (or stops matching) the caller's current role/favorites
+  /// filter.
+  ///
+  /// Errors surface through this stream — `RecipeLibraryController`
+  /// deliberately swallows them rather than failing the whole recipe read,
+  /// same as `PantryController`.
+  Stream<void> watchRecipeChanges(String householdId);
 }
 
 /// Ferry-backed [RecipeRepository].
@@ -60,6 +81,27 @@ class FerryRecipeRepository implements RecipeRepository {
 
     final GRecipesData data = await _execute(request);
     return data.recipes.map(recipeFromGraphQL).toList(growable: false);
+  }
+
+  @override
+  Stream<void> watchRecipeChanges(String householdId) async* {
+    final GOnRecipeChangedReq request = GOnRecipeChangedReq(
+      (GOnRecipeChangedReqBuilder b) => b
+        ..vars = (GOnRecipeChangedVarsBuilder()..householdId = householdId),
+    );
+
+    await for (final OperationResponse<GOnRecipeChangedData, GOnRecipeChangedVars> response
+        in client.request(request)) {
+      if (response.hasErrors) {
+        throw mapOperationFailure(
+          graphqlErrors: response.graphqlErrors,
+          linkException: response.linkException,
+        );
+      }
+      if (response.data != null) {
+        yield null;
+      }
+    }
   }
 
   /// Identical reduction to `FerryPantryRepository._execute` — see that

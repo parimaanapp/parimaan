@@ -234,6 +234,19 @@ type Subscription {
   """
   onPantryChanged(householdId: ID!): PantryItem
     @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])
+
+  """
+  Pushes the added/updated/deleted/favorited/rotation-flagged `Recipe` to
+  every other connected device in `householdId` (E2E_MVP_PLAN.md §12.3
+  S11, D6 — pulled forward from a planner-recommended W8). Same
+  subscribe-time Lambda-resolver authorization pattern as `onPantryChanged`
+  (SD §10.4 deviation, §11.2.9): a non-member or nonexistent `householdId`
+  is denied identically.
+  """
+  onRecipeChanged(householdId: ID!): Recipe
+    @aws_subscribe(
+      mutations: ["createRecipe", "updateRecipe", "deleteRecipe", "favoriteRecipe", "setInRotation"]
+    )
 }
 
 type User {
