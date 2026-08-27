@@ -7,7 +7,12 @@ import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from './userRepository.js';
 import { insertHousehold, insertMembership } from './householdRepository.js';
-import { findRecipeIngredientsByRecipeId, findRecipes } from './recipeRepository.js';
+import {
+  findRecipeIngredientsByRecipeId,
+  findRecipes,
+  insertRecipe as insertRecipeRow,
+  insertRecipeIngredient as insertRecipeIngredientRow,
+} from './recipeRepository.js';
 import type { UserRow } from './userRepository.js';
 
 describe('recipeRepository', () => {
@@ -256,6 +261,140 @@ describe('recipeRepository', () => {
         findRecipeIngredientsByRecipeId(client, recipeId),
       );
       expect(rowsAsOwner).toHaveLength(1);
+    });
+  });
+
+  describe('insertRecipe', () => {
+    it('inserts a recipe with every column populated and returns it mapped', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const row = await asUser(owner.id, (client) =>
+        insertRecipeRow(client, {
+          householdId,
+          sourceType: 'user',
+          title: 'Rajma Chawal',
+          description: 'Weeknight staple',
+          servings: 4,
+          prepMin: 10,
+          cookMin: 30,
+          cuisineTier1: 'north_indian',
+          cuisineTier2: 'punjabi',
+          dietaryTags: ['veg'],
+          role: 'sabzi_dal',
+          inRotation: true,
+          steps: ['Soak', 'Cook'],
+          createdBy: owner.id,
+        }),
+      );
+
+      expect(row).toMatchObject({
+        householdId,
+        sourceType: 'user',
+        title: 'Rajma Chawal',
+        description: 'Weeknight staple',
+        servings: 4,
+        prepMin: 10,
+        cookMin: 30,
+        cuisineTier1: 'north_indian',
+        cuisineTier2: 'punjabi',
+        dietaryTags: ['veg'],
+        role: 'sabzi_dal',
+        inRotation: true,
+        isFavorite: false,
+        steps: ['Soak', 'Cook'],
+        createdBy: owner.id,
+      });
+    });
+
+    it('inserts a recipe with all nullable fields null and empty steps', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const row = await asUser(owner.id, (client) =>
+        insertRecipeRow(client, {
+          householdId,
+          sourceType: 'user',
+          title: 'Quick Poha',
+          description: null,
+          servings: 2,
+          prepMin: null,
+          cookMin: null,
+          cuisineTier1: null,
+          cuisineTier2: null,
+          dietaryTags: [],
+          role: 'breakfast',
+          inRotation: true,
+          steps: [],
+          createdBy: owner.id,
+        }),
+      );
+
+      expect(row.description).toBeNull();
+      expect(row.prepMin).toBeNull();
+      expect(row.cookMin).toBeNull();
+      expect(row.cuisineTier1).toBeNull();
+      expect(row.steps).toEqual([]);
+    });
+  });
+
+  describe('insertRecipeIngredient', () => {
+    it('inserts an ingredient with every column populated and returns it mapped', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipeId = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id)).then(
+        (r) => r.id,
+      );
+
+      const row = await asUser(owner.id, (client) =>
+        insertRecipeIngredientRow(client, {
+          recipeId,
+          name: 'Rajma beans',
+          quantity: 2,
+          unit: 'cup',
+          category: 'dal',
+          notes: 'soaked overnight',
+          isStaple: false,
+          sortOrder: 0,
+        }),
+      );
+
+      expect(row).toMatchObject({
+        recipeId,
+        name: 'Rajma beans',
+        quantity: 2,
+        unit: 'cup',
+        category: 'dal',
+        notes: 'soaked overnight',
+        isStaple: false,
+        sortOrder: 0,
+      });
+    });
+
+    it('inserts an ingredient with nullable fields null', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipeId = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id)).then(
+        (r) => r.id,
+      );
+
+      const row = await asUser(owner.id, (client) =>
+        insertRecipeIngredientRow(client, {
+          recipeId,
+          name: 'Salt',
+          quantity: null,
+          unit: null,
+          category: null,
+          notes: null,
+          isStaple: true,
+          sortOrder: 3,
+        }),
+      );
+
+      expect(row.quantity).toBeNull();
+      expect(row.unit).toBeNull();
+      expect(row.isStaple).toBe(true);
+      expect(row.sortOrder).toBe(3);
     });
   });
 });

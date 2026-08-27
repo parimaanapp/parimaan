@@ -163,3 +163,96 @@ export const findRecipeIngredientsByRecipeId = async (
   );
   return result.rows.map(mapRecipeIngredientRow);
 };
+
+export interface InsertRecipeInput {
+  householdId: string;
+  sourceType: RecipeSourceType;
+  title: string;
+  description: string | null;
+  servings: number;
+  prepMin: number | null;
+  cookMin: number | null;
+  cuisineTier1: string | null;
+  cuisineTier2: string | null;
+  dietaryTags: string[];
+  role: string;
+  inRotation: boolean;
+  steps: string[];
+  createdBy: string;
+}
+
+/**
+ * Inserts the parent `recipes` row only — ingredients are a separate
+ * `insertRecipeIngredient` call per row (below), left to the caller to loop
+ * over on the SAME `client`/transaction, matching `bulkAddPantryItems.ts`'s
+ * resolver-level loop rather than adding a second savepoint layer: the
+ * whole `withUserTransaction` scope already rolls back atomically on any
+ * throw (E2E_MVP_PLAN.md §12.3 S3), so a failure on ingredient *k* undoes
+ * both the parent row and ingredients `0..k-1` for free.
+ */
+export const insertRecipe = async (client: PoolClient, input: InsertRecipeInput): Promise<RecipeRow> => {
+  const result = await client.query<RawRecipeRow>(
+    `INSERT INTO recipes
+       (household_id, source_type, title, description, servings, prep_min, cook_min, cuisine_tier1, cuisine_tier2, dietary_tags, role, in_rotation, steps, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+     RETURNING *`,
+    [
+      input.householdId,
+      input.sourceType,
+      input.title,
+      input.description,
+      input.servings,
+      input.prepMin,
+      input.cookMin,
+      input.cuisineTier1,
+      input.cuisineTier2,
+      JSON.stringify(input.dietaryTags),
+      input.role,
+      input.inRotation,
+      JSON.stringify(input.steps),
+      input.createdBy,
+    ],
+  );
+  const row = result.rows[0];
+  if (row === undefined) {
+    throw new Error('insertRecipe: expected a returned row.');
+  }
+  return mapRecipeRow(row);
+};
+
+export interface InsertRecipeIngredientInput {
+  recipeId: string;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  category: string | null;
+  notes: string | null;
+  isStaple: boolean;
+  sortOrder: number;
+}
+
+export const insertRecipeIngredient = async (
+  client: PoolClient,
+  input: InsertRecipeIngredientInput,
+): Promise<RecipeIngredientRow> => {
+  const result = await client.query<RawRecipeIngredientRow>(
+    `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, category, notes, is_staple, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING *`,
+    [
+      input.recipeId,
+      input.name,
+      input.quantity,
+      input.unit,
+      input.category,
+      input.notes,
+      input.isStaple,
+      input.sortOrder,
+    ],
+  );
+  const row = result.rows[0];
+  if (row === undefined) {
+    throw new Error('insertRecipeIngredient: expected a returned row.');
+  }
+  return mapRecipeIngredientRow(row);
+};

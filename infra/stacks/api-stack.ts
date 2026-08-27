@@ -180,6 +180,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Recipe',
     fieldName: 'ingredients',
   },
+  {
+    id: 'CreateRecipe',
+    entryFile: 'createRecipe.ts',
+    typeName: 'Mutation',
+    fieldName: 'createRecipe',
+  },
 ];
 
 /**
@@ -250,6 +256,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
  *   this layer — `recipe_ingredients`' parent-join RLS policy (S1) is the
  *   sole authorization here, not defense-in-depth (§12.2.2/§12.5.2, the
  *   highest-severity item in this slice).
+ * - `Mutation.createRecipe` — W6 slice S3 (E2E_MVP_PLAN.md §12.3).
+ *   Member-gated like `addPantryItem`; inserts the parent `recipes` row
+ *   plus N `recipe_ingredients` rows in one transaction (a failure on
+ *   ingredient *k* rolls back everything, the `bulkAddPantryItems`
+ *   rollback shape). `role` is required in the SDL with no server default
+ *   — the "role assignment required" DoD gate's actual enforcement point.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`
