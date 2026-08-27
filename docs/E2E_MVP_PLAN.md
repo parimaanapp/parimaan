@@ -967,6 +967,25 @@ Every backend slice needs a real dev deploy. Two specific recurrences to pre-emp
 
 The Lambda concurrency quota increase remains filed and pending (real ceiling: 10). W6 adds ~7 more DB-backed resolver Lambdas to `DB_RESOLVERS`, taking the total well past 15 — nothing in W6 *depends* on the quota landing (a single dev user invokes serially), but S9's spike (300 recipes seeded via repeated `createRecipe` calls) is the most likely thing to hit it. Seed via direct SQL if the script throttles.
 
+#### 12.5.5 S9 result — exploratory emulator run, NOT the recorded D9 spike
+
+No physical Android device was available when S9 ran. Per D9's own fallback language ("no simulator/emulator substitution"), this is **not** the recorded spike result — the exit-criteria box below stays unchecked pending a real low-end device. What follows is an exploratory pass, run to get early signal rather than to close the gap.
+
+**Setup:** an Android Studio emulator (`Redmi_Class_API34`, Android 14/API 34, arm64-v8a) was set up on the dev Mac, hardware profile hand-tuned toward a budget device (720×1600 @ 270dpi, 3GB RAM, 4 cores — the AVD's own default profile is a placeholder 320×640 QVGA screen, not representative of anything). This runs on the Mac's own Apple Silicon GPU/CPU, not real budget-Android silicon — the number below characterizes whether `RecipeCard`/`ListView.builder` recycling holds up structurally, not real-world frame cost on weak hardware.
+
+**Seed (method step 1):** 300 recipes (10–15 ingredients each, realistic dish names/qualifiers, not `Recipe 001`) created in a throwaway "S9 Perf Spike Household" on real dev AWS via direct `createHousehold`/`createRecipe` Lambda invokes (a throwaway Node script, not committed — direct SQL wasn't needed; `CONCURRENCY=8` stayed under the account's 10-execution Lambda ceiling §12.5.4 flagged as the risk). 300/300 succeeded, 0 failures, ~29s wall-clock.
+
+**Payload/wall-clock (method step 4):** `Query.recipes` for the 300-recipe household, invoked directly against the real `RecipesFn` Lambda (dev Aurora, warm — §12.5.4's auto-pause caveat doesn't apply to a direct Lambda invoke the same way it would to a cold first mobile request, but the backend was not freshly resumed either way): **283,250 bytes**, **~0.68s** wall-clock on a warm invoke (first invoke 1.85s, cold-start-inflated).
+
+**Scroll perf (method step 3):** an `integration_test` fling-scroll (three passes, forward+back) over `RecipesLibraryScreen` seeded with 300 synthetic `Recipe` objects (no network — isolates the render cost from the already-measured network cost above), captured via `IntegrationTestWidgetsFlutterBinding.traceAction` + `TimelineSummary`, `flutter drive --profile`:
+
+- First run used the AVD's default `hw.gpu.enabled=no` (software/SwiftShader rendering) — 158/242 frames (65%) missed the 16ms raster budget, p99 raster 45.9ms. Discarded: this measures the software rasterizer, not anything resembling GPU-accelerated rendering on any real device, weak or otherwise.
+- Re-run with `hw.gpu.enabled=yes` / `hw.gpu.mode=host` (real host-GPU passthrough): **0/262 frames missed either the build or the raster budget.** Build: avg 0.56ms, p99 1.95ms, worst 3.23ms. Raster: avg 3.28ms, p99 8.64ms, worst 11.7ms. Jank percentage: 0%.
+
+**Reading this:** the 0%-jank number is a real result for *this* run, not a fabricated one — but it answers "does the widget tree recycle correctly at 300 items," not "is this fast enough on a Redmi." §12.5.3's own warning applies in the other direction here too: a clean emulator pass, on host-GPU-accelerated hardware vastly faster than a budget phone's, is exactly the kind of number that "may return a result nobody wants to act on" if mistaken for the real spike. No jank at this scale is consistent with `.builder`-backed recycling doing its job (the thing S9's own fallback section says to verify first if the real spike fails) — it does not clear D9's bar. Exit-criteria box stays open.
+
+**Cleanup:** the throwaway `integration_test`/`test_driver` harness and the temporary `integration_test` pubspec dependency were removed after the run (`git status` clean, confirmed) — not committed, per S9's own spikes-are-exempt-from-TDD, throwaway-script convention. The seeded "S9 Perf Spike Household" (300 recipes) was left in dev Aurora rather than torn down, for a possible re-run once a physical device is available; it's clearly named and isolated to its own household, no cost/risk to leaving it.
+
 ### 12.6 W6 exit criteria
 
 - [x] `recipes` and `recipe_ingredients` on dev with RLS **enabled and forced on both**, policies covering `USING` **and** `WITH CHECK`, `parimaan_app` grants on both — verified by wrong-household tests for read, insert, update, delete, **including a direct `recipe_ingredients` read by `recipe_id`** (S1, `#40`)
