@@ -1710,6 +1710,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiOnRecipeChangedDataSourceA3062C29": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "OnRecipeChangedFnAA912A38",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "OnRecipeChangedDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiOnRecipeChangedDataSourceServiceRole374AEE22",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiOnRecipeChangedDataSourceServiceRole374AEE22": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiOnRecipeChangedDataSourceServiceRoleDefaultPolicyADE21A0C": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OnRecipeChangedFnAA912A38",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OnRecipeChangedFnAA912A38",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiOnRecipeChangedDataSourceServiceRoleDefaultPolicyADE21A0C",
+        "Roles": [
+          {
+            "Ref": "ApiOnRecipeChangedDataSourceServiceRole374AEE22",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiOnRecipeChangedResolver052C6305": {
+      "DependsOn": [
+        "ApiOnRecipeChangedDataSourceA3062C29",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "OnRecipeChangedDataSource",
+        "FieldName": "onRecipeChanged",
+        "Kind": "UNIT",
+        "TypeName": "Subscription",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiPantryDataSourceE6263D5B": {
       "Properties": {
         "ApiId": {
@@ -2374,6 +2479,19 @@ type Subscription {
   """
   onPantryChanged(householdId: ID!): PantryItem
     @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])
+
+  """
+  Pushes the added/updated/deleted/favorited/rotation-flagged \`Recipe\` to
+  every other connected device in \`householdId\` (E2E_MVP_PLAN.md §12.3
+  S11, D6 — pulled forward from a planner-recommended W8). Same
+  subscribe-time Lambda-resolver authorization pattern as \`onPantryChanged\`
+  (SD §10.4 deviation, §11.2.9): a non-member or nonexistent \`householdId\`
+  is denied identically.
+  """
+  onRecipeChanged(householdId: ID!): Recipe
+    @aws_subscribe(
+      mutations: ["createRecipe", "updateRecipe", "deleteRecipe", "favoriteRecipe", "setInRotation"]
+    )
 }
 
 type User {
@@ -4937,6 +5055,140 @@ input RecipePatchInput {
         ],
       },
       "Type": "AWS::IAM::Policy",
+    },
+    "OnRecipeChangedFnAA912A38": {
+      "DependsOn": [
+        "OnRecipeChangedFnServiceRoleDefaultPolicy3590E04D",
+        "OnRecipeChangedFnServiceRoleF7C23BD1",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "OnRecipeChangedFnServiceRoleF7C23BD1",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "OnRecipeChangedFnServiceRoleDefaultPolicy3590E04D": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "OnRecipeChangedFnServiceRoleDefaultPolicy3590E04D",
+        "Roles": [
+          {
+            "Ref": "OnRecipeChangedFnServiceRoleF7C23BD1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "OnRecipeChangedFnServiceRoleF7C23BD1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
     },
     "PantryFn5C5C5C44": {
       "DependsOn": [
