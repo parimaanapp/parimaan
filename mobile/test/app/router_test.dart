@@ -8,7 +8,10 @@ import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
+import 'package:mobile/features/recipes/presentation/freeform_input_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_detail_screen.dart';
+import 'package:mobile/features/recipes/presentation/recipe_method_screen.dart';
+import 'package:mobile/features/recipes/presentation/url_import_screen.dart';
 import 'package:mobile/shared/ui/components/p_tab_bar.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
@@ -334,6 +337,60 @@ void main() {
       expect(_location(router), AppRoutes.pantryManualAdd('household-1'));
       expect(find.byType(ManualAddScreen), findsOneWidget);
     });
+
+    testWidgets(
+      '/home/recipes/new/method stays reachable and renders RecipeMethodScreen, householdId threaded through',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.recipeChooseMethod('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.recipeChooseMethod('household-1'));
+        expect(find.byType(RecipeMethodScreen), findsOneWidget);
+        expect(
+          tester.widget<RecipeMethodScreen>(find.byType(RecipeMethodScreen)).householdId,
+          'household-1',
+        );
+      },
+    );
+
+    testWidgets(
+      '/home/recipes/new/url stays reachable and renders UrlImportScreen — distinct from the method/freeform routes, not swallowed by an earlier pattern',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.recipeUrlImport('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.recipeUrlImport('household-1'));
+        expect(find.byType(UrlImportScreen), findsOneWidget);
+        expect(find.byType(RecipeMethodScreen), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '/home/recipes/new/freeform stays reachable and renders FreeformInputScreen — distinct from the method/url routes, not swallowed by an earlier pattern',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.recipeFreeformInput('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.recipeFreeformInput('household-1'));
+        expect(find.byType(FreeformInputScreen), findsOneWidget);
+        expect(find.byType(RecipeMethodScreen), findsNothing);
+      },
+    );
 
     testWidgets('/home/recipes/:recipeId stays reachable and renders RecipeDetailScreen', (
       WidgetTester tester,

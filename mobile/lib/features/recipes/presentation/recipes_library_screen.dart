@@ -58,9 +58,8 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
   RecipeRole? _selectedRole;
   bool _favoritesOnly = false;
 
-  RecipeLibraryController get _controller => ref.read(
-    recipeLibraryControllerProvider(widget.householdId).notifier,
-  );
+  RecipeLibraryController get _controller =>
+      ref.read(recipeLibraryControllerProvider(widget.householdId).notifier);
 
   /// Re-applies the filters this widget already believes are selected,
   /// rather than `ref.invalidate`-ing the whole controller. Invalidating
@@ -88,7 +87,7 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
             semanticLabel: 'Add a recipe',
             variant: PButtonVariant.ghost,
             onPressed: () =>
-                context.push(AppRoutes.recipeCreate(widget.householdId)),
+                context.push(AppRoutes.recipeChooseMethod(widget.householdId)),
           ),
         ),
         SizedBox(
@@ -132,32 +131,34 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
         Expanded(
           child: switch ((recipes.valueOrNull, recipes.error)) {
             (final List<Recipe> items, final Object error)
-                when items.isNotEmpty => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                // A failed filter refetch keeps the last-good list on screen
-                // (`RecipeLibraryController._refetch`'s `copyWithPrevious`)
-                // rather than blanking it — this banner is what stops that
-                // stale list from silently passing as a successful one.
-                Padding(
-                  key: RecipesLibraryScreen.staleBannerKey,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s3,
-                    vertical: AppSpacing.s1,
+                when items.isNotEmpty =>
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  // A failed filter refetch keeps the last-good list on screen
+                  // (`RecipeLibraryController._refetch`'s `copyWithPrevious`)
+                  // rather than blanking it — this banner is what stops that
+                  // stale list from silently passing as a successful one.
+                  Padding(
+                    key: RecipesLibraryScreen.staleBannerKey,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s3,
+                      vertical: AppSpacing.s1,
+                    ),
+                    child: PBadge(
+                      label: error is AppError
+                          ? error.errorMessage
+                          : genericErrorMessage,
+                      tone: PBadgeTone.warning,
+                      uppercase: false,
+                    ),
                   ),
-                  child: PBadge(
-                    label: error is AppError
-                        ? error.errorMessage
-                        : genericErrorMessage,
-                    tone: PBadgeTone.warning,
-                    uppercase: false,
-                  ),
-                ),
-                Expanded(child: _RecipeList(items: items)),
-              ],
+                  Expanded(child: _RecipeList(items: items)),
+                ],
+              ),
+            (final List<Recipe> items, _) when items.isNotEmpty => _RecipeList(
+              items: items,
             ),
-            (final List<Recipe> items, _) when items.isNotEmpty =>
-              _RecipeList(items: items),
             (final List<Recipe> items, _) when items.isEmpty => Center(
               key: RecipesLibraryScreen.emptyStateKey,
               child: PEmptyState(
@@ -166,8 +167,9 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
                 action: PButton(
                   label: 'Add a recipe',
                   variant: PButtonVariant.secondary,
-                  onPressed: () =>
-                      context.push(AppRoutes.recipeCreate(widget.householdId)),
+                  onPressed: () => context.push(
+                    AppRoutes.recipeChooseMethod(widget.householdId),
+                  ),
                 ),
               ),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/household/state/me_households_controller.dart';
@@ -8,6 +9,7 @@ import 'package:mobile/features/recipes/data/recipe_repository.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/features/recipes/domain/recipe_source.dart';
+import 'package:mobile/features/recipes/presentation/recipe_method_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipes_library_screen.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/components/components.dart';
@@ -32,6 +34,13 @@ final Recipe _dalRecipe = Recipe(
   updatedAt: DateTime.utc(2026, 8, 25),
 );
 
+/// Real (minimal) `GoRouter`, not a plain `MaterialApp` — W7 S8 moved both
+/// FAB call sites from `context.push(AppRoutes.recipeCreate(...))` straight
+/// to `AppRoutes.recipeChooseMethod(...)`, and `context.push` needs a real
+/// `GoRouter` ancestor (`recipe_overflow_menu_test.dart`'s own precedent for
+/// this exact fix). The chooser route renders the real `RecipeMethodScreen`
+/// — a plain `StatelessWidget` with no provider dependencies of its own, so
+/// there is nothing to fake here.
 Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required FakeRecipeRepository recipeRepository,
@@ -50,13 +59,28 @@ Future<ProviderContainer> _pump(
   // races `Query.me`.
   await container.read(meHouseholdsControllerProvider.future);
 
+  final GoRouter router = GoRouter(
+    initialLocation: '/',
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/',
+        builder: (BuildContext context, GoRouterState state) =>
+            const RecipesLibraryScreen(),
+      ),
+      GoRoute(
+        path: '/home/recipes/new/method',
+        builder: (BuildContext context, GoRouterState state) =>
+            RecipeMethodScreen(
+              householdId: state.uri.queryParameters['householdId'] ?? '',
+            ),
+      ),
+    ],
+  );
+
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
-        theme: parimaanTheme(),
-        home: const RecipesLibraryScreen(),
-      ),
+      child: MaterialApp.router(theme: parimaanTheme(), routerConfig: router),
     ),
   );
   return container;
@@ -100,6 +124,38 @@ void main() {
 
       expect(find.byKey(RecipesLibraryScreen.emptyStateKey), findsOneWidget);
     });
+
+    testWidgets(
+      'tapping the top-bar "Add a recipe" button opens the method chooser, not the structured form directly',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[_dalRecipe],
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.bySemanticsLabel('Add a recipe'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RecipeMethodScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the empty-state "Add a recipe" button opens the method chooser, not the structured form directly',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[],
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add a recipe'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RecipeMethodScreen), findsOneWidget);
+      },
+    );
 
     testWidgets('shows an error state when the repository throws', (
       WidgetTester tester,
