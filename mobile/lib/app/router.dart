@@ -29,9 +29,12 @@ import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
 import '../features/recipes/domain/recipe.dart';
+import '../features/recipes/presentation/freeform_input_screen.dart';
 import '../features/recipes/presentation/recipe_detail_screen.dart';
 import '../features/recipes/presentation/recipe_form_screen.dart';
+import '../features/recipes/presentation/recipe_method_screen.dart';
 import '../features/recipes/presentation/recipes_library_screen.dart';
+import '../features/recipes/presentation/url_import_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
@@ -205,6 +208,32 @@ abstract final class AppRoutes {
 
   static const String _recipeEditPattern = '/home/recipes/:recipeId/edit';
   static String recipeEdit(String recipeId) => '/home/recipes/$recipeId/edit';
+
+  // W7 S8 (wireframe 8.1) — the "how do you want to add this recipe"
+  // chooser, now the FAB's real destination; [recipeCreate] above is the
+  // chooser's "Structured entry" option's own unchanged target, not a
+  // route this slice touches. Same query-param-not-path-segment convention
+  // as [recipeCreate]/[_pantryAddChooseMethodPattern] — none of these three
+  // destinations exist yet when the chooser is reached, so there is no id
+  // to hang a path segment on.
+  static const String _recipeMethodPattern = '/home/recipes/new/method';
+  static String recipeChooseMethod(String householdId) =>
+      '$_recipeMethodPattern?householdId=$householdId';
+
+  // S9's own screen (URL import, wireframe 8.3) — routed to here ahead of
+  // that slice's own build, per S8's locked scope: the chooser needs a
+  // real destination to route to today, not a TODO. S9 replaces this
+  // file's contents, not this route.
+  static const String _recipeUrlImportPattern = '/home/recipes/new/url';
+  static String recipeUrlImport(String householdId) =>
+      '$_recipeUrlImportPattern?householdId=$householdId';
+
+  // S10's own screen (Freeform input, wireframe 8.4) — same "route exists
+  // now, real screen lands with its own slice" shape as [recipeUrlImport].
+  static const String _recipeFreeformInputPattern =
+      '/home/recipes/new/freeform';
+  static String recipeFreeformInput(String householdId) =>
+      '$_recipeFreeformInputPattern?householdId=$householdId';
 }
 
 /// The app's route table plus its auth guard.
@@ -366,12 +395,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             ),
       ),
       StatefulShellRoute.indexedStack(
-        builder:
-            (
-              BuildContext context,
-              GoRouterState state,
-              StatefulNavigationShell navigationShell,
-            ) => AppShell(navigationShell: navigationShell),
+        builder: (
+          BuildContext context,
+          GoRouterState state,
+          StatefulNavigationShell navigationShell,
+        ) => AppShell(navigationShell: navigationShell),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             routes: <RouteBase>[
@@ -421,9 +449,25 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       ),
       GoRoute(
         path: AppRoutes._recipeDetailPattern,
-        builder: (BuildContext context, GoRouterState state) => RecipeDetailScreen(
-          recipeId: state.pathParameters[AppRoutes.recipeIdParameter] ?? '',
-        ),
+        builder: (BuildContext context, GoRouterState state) =>
+            RecipeDetailScreen(
+              recipeId: state.pathParameters[AppRoutes.recipeIdParameter] ?? '',
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes._recipeMethodPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            RecipeMethodScreen(householdId: _pantryHouseholdId(state)),
+      ),
+      GoRoute(
+        path: AppRoutes._recipeUrlImportPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            UrlImportScreen(householdId: _pantryHouseholdId(state)),
+      ),
+      GoRoute(
+        path: AppRoutes._recipeFreeformInputPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            FreeformInputScreen(householdId: _pantryHouseholdId(state)),
       ),
       GoRoute(
         path: AppRoutes._recipeCreatePattern,
