@@ -55,6 +55,10 @@ dependencies:
   web_socket_channel: ^3.0.3
   built_value: ^8.12.7
   built_collection: ^5.1.1
+  # DeepCollectionEquality — ProposedField<T>'s ==/hashCode need content
+  # (not identity) equality when T is list-shaped (dietaryTags/ingredients/
+  # steps on AiRecipeDraftState), W7 S7.
+  collection: ^1.19.1
   # Delivers the `parimaan://join?code=XXXXXX` invite deep link. Chosen over
   # `uni_links` (unmaintained since 2023) and over a hand-rolled platform
   # channel: this is one plugin for two platforms' link plumbing, and hand-

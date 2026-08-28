@@ -1,0 +1,11 @@
+#import "./recipe_draft_fields.graphql"
+
+# `Mutation.parseFreeformRecipe` — parses free-text recipe content into an
+# unsaved `RecipeDraft` via Gemini (E2E_MVP_PLAN.md §13.3 S3). Takes no
+# `householdId` — this resolver runs on a non-VPC Lambda with no route to
+# Aurora (§13.2.1 D3) and cannot enforce `requireHouseholdMember`.
+mutation ParseFreeformRecipe($text: String!) {
+  parseFreeformRecipe(text: $text) {
+    ...RecipeDraftFields
+  }
+}

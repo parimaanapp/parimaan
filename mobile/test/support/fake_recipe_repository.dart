@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:mobile/features/recipes/data/recipe_repository.dart';
+import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/features/recipes/domain/recipe_draft.dart';
 import 'package:mobile/features/recipes/domain/recipe_patch.dart';
@@ -162,6 +163,38 @@ class FakeRecipeRepository implements RecipeRepository {
   Future<Recipe> updateRecipe(String id, RecipePatch patch) {
     updateCalls.add((id: id, patch: patch));
     return _answer<Recipe>(updateError, updateResult, 'updateResult');
+  }
+
+  // ── parseFreeformRecipe ────────────────────────────────────────────────
+
+  AiRecipeDraft? parseFreeformRecipeResult;
+  Object? parseFreeformRecipeError;
+  final List<String> parseFreeformRecipeCalls = <String>[];
+
+  @override
+  Future<AiRecipeDraft> parseFreeformRecipe(String text) {
+    parseFreeformRecipeCalls.add(text);
+    return _answer<AiRecipeDraft>(
+      parseFreeformRecipeError,
+      parseFreeformRecipeResult,
+      'parseFreeformRecipeResult',
+    );
+  }
+
+  // ── importRecipeFromUrl ────────────────────────────────────────────────
+
+  AiRecipeDraft? importRecipeFromUrlResult;
+  Object? importRecipeFromUrlError;
+  final List<String> importRecipeFromUrlCalls = <String>[];
+
+  @override
+  Future<AiRecipeDraft> importRecipeFromUrl(String url) {
+    importRecipeFromUrlCalls.add(url);
+    return _answer<AiRecipeDraft>(
+      importRecipeFromUrlError,
+      importRecipeFromUrlResult,
+      'importRecipeFromUrlResult',
+    );
   }
 
   Future<T> _answer<T>(Object? error, T? value, String field) async {
