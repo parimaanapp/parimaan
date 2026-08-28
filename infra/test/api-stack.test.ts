@@ -255,10 +255,14 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/enum RecipeSource \{/);
   });
 
-  it('the real schema file still declares createRecipe (W6 S3)', () => {
+  it('the real schema file still declares createRecipe, now with its optional W7 S6 source argument', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(
-      /createRecipe\(householdId:\s*ID!,\s*input:\s*RecipeInput!\)\s*:\s*Recipe!/,
+      /createRecipe\(householdId:\s*ID!,\s*input:\s*RecipeInput!,\s*source:\s*RecipeSourceAttribution\)\s*:\s*Recipe!/,
     );
+  });
+
+  it('the real schema file declares the W7 S6 RecipeSourceAttribution input type', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/input RecipeSourceAttribution\s*\{\s*sourceType:\s*RecipeSource!\s*sourceUrl:\s*String\s*\}/);
   });
 
   it('the real schema file still declares updateRecipe and deleteRecipe (W6 S4)', () => {

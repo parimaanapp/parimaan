@@ -183,6 +183,7 @@ export const findRecipeIngredientsByRecipeId = async (
 export interface InsertRecipeInput {
   householdId: string;
   sourceType: RecipeSourceType;
+  sourceUrl: string | null;
   title: string;
   description: string | null;
   servings: number;
@@ -209,12 +210,13 @@ export interface InsertRecipeInput {
 export const insertRecipe = async (client: PoolClient, input: InsertRecipeInput): Promise<RecipeRow> => {
   const result = await client.query<RawRecipeRow>(
     `INSERT INTO recipes
-       (household_id, source_type, title, description, servings, prep_min, cook_min, cuisine_tier1, cuisine_tier2, dietary_tags, role, in_rotation, steps, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       (household_id, source_type, source_url, title, description, servings, prep_min, cook_min, cuisine_tier1, cuisine_tier2, dietary_tags, role, in_rotation, steps, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      RETURNING *`,
     [
       input.householdId,
       input.sourceType,
+      input.sourceUrl,
       input.title,
       input.description,
       input.servings,

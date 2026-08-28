@@ -7,7 +7,7 @@ import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from '../repositories/userRepository.js';
 import { insertHousehold, insertMembership } from '../repositories/householdRepository.js';
-import { findRecipeIngredientsByRecipeId, findRecipes, insertRecipeIngredient } from '../repositories/recipeRepository.js';
+import { findRecipeById, findRecipeIngredientsByRecipeId, findRecipes, insertRecipeIngredient } from '../repositories/recipeRepository.js';
 import type { UserRow } from '../repositories/userRepository.js';
 import { createCreateRecipeHandler } from './createRecipe.js';
 import { ForbiddenError, UnauthorizedError, ValidationError } from '../errors.js';
@@ -19,12 +19,14 @@ const validInput = {
   steps: [],
 };
 
+/** `sourceArg` is deliberately omitted from `arguments` entirely when not passed (not sent as `undefined`) — matching a real AppSync event, where an unset optional argument is an absent key, not a key with an `undefined` value. Every existing call site (no 4th argument) is byte-for-byte unaffected by this addition. */
 const buildEvent = (
   householdId: unknown,
   input: unknown,
   cognitoSub: string | null,
-): AppSyncResolverEvent<{ householdId: unknown; input: unknown }> => ({
-  arguments: { householdId, input },
+  sourceArg?: unknown,
+): AppSyncResolverEvent<{ householdId: unknown; input: unknown; source?: unknown }> => ({
+  arguments: sourceArg === undefined ? { householdId, input } : { householdId, input, source: sourceArg },
   identity:
     cognitoSub === null
       ? null
@@ -36,7 +38,7 @@ const buildEvent = (
           sourceIp: ['127.0.0.1'],
           defaultAuthStrategy: 'ALLOW',
           groups: null,
-        } as unknown as AppSyncResolverEvent<{ householdId: unknown; input: unknown }>['identity']),
+        } as unknown as AppSyncResolverEvent<{ householdId: unknown; input: unknown; source?: unknown }>['identity']),
   source: null,
   request: { headers: {}, domainName: null },
   info: {
@@ -295,6 +297,166 @@ describe('createRecipe resolver', () => {
         ),
       ),
     ).rejects.toThrow('simulated failure on the second ingredient');
+
+    const recipes = await withUserTransaction(owner.id, (client) => findRecipes(client, householdId), pool);
+    expect(recipes).toHaveLength(0);
+  });
+});
+
+describe('createRecipe resolver — source attribution (W7 S6, §13.2.4 D2)', () => {
+  let db: TestDatabase;
+  let pool: Pool;
+
+  beforeAll(async () => {
+    db = await startTestDatabase();
+    pool = new Pool({ connectionString: db.appUri });
+  }, 120_000);
+
+  afterAll(async () => {
+    await pool.end();
+    await db.stop();
+  });
+
+  afterEach(async () => {
+    await truncateAll(db.adminClient);
+  });
+
+  const createUser = async (cognitoSub: string): Promise<UserRow> => {
+    const client = await pool.connect();
+    try {
+      return await upsertUserByCognitoSub(client, {
+        cognitoSub,
+        email: `${cognitoSub}@example.test`,
+        displayName: null,
+        avatarUrl: null,
+      });
+    } finally {
+      client.release();
+    }
+  };
+
+  const createHouseholdWithMember = async (owner: UserRow, inviteCode: string): Promise<string> =>
+    withUserTransaction(
+      owner.id,
+      async (client) => {
+        const household = await insertHousehold(client, {
+          name: `House ${inviteCode}`,
+          inviteCode,
+          primaryUserId: owner.id,
+        });
+        await insertMembership(client, { householdId: household.id, userId: owner.id, role: 'primary' });
+        return household.id;
+      },
+      pool,
+    );
+
+  it('absent source: sourceType is user, sourceUrl is null', async () => {
+    const owner = await createUser('sub-owner-src-absent');
+    const householdId = await createHouseholdWithMember(owner, 'SRA234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(buildEvent(householdId, validInput, 'sub-owner-src-absent'));
+
+    expect(result.sourceType).toBe('user');
+    expect(result.sourceUrl).toBeNull();
+  });
+
+  it('explicit null source behaves identically to absent (§11.5.5)', async () => {
+    const owner = await createUser('sub-owner-src-null');
+    const householdId = await createHouseholdWithMember(owner, 'SRN234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(buildEvent(householdId, validInput, 'sub-owner-src-null', null));
+
+    expect(result.sourceType).toBe('user');
+    expect(result.sourceUrl).toBeNull();
+  });
+
+  it('{sourceType: url, sourceUrl} persists both and round-trips through findRecipeById (Query.recipe\'s own repository call)', async () => {
+    const owner = await createUser('sub-owner-src-url');
+    const householdId = await createHouseholdWithMember(owner, 'SRU234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(
+      buildEvent(householdId, validInput, 'sub-owner-src-url', { sourceType: 'url', sourceUrl: 'https://example.com/recipe' }),
+    );
+
+    expect(result.sourceType).toBe('url');
+    expect(result.sourceUrl).toBe('https://example.com/recipe');
+
+    const reread = await withUserTransaction(owner.id, (client) => findRecipeById(client, result.id), pool);
+    expect(reread?.sourceType).toBe('url');
+    expect(reread?.sourceUrl).toBe('https://example.com/recipe');
+  });
+
+  it('{sourceType: freeform_ai} persists with sourceUrl: null', async () => {
+    const owner = await createUser('sub-owner-src-ai');
+    const householdId = await createHouseholdWithMember(owner, 'SRF234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(buildEvent(householdId, validInput, 'sub-owner-src-ai', { sourceType: 'freeform_ai' }));
+
+    expect(result.sourceType).toBe('freeform_ai');
+    expect(result.sourceUrl).toBeNull();
+  });
+
+  it.each(['curated', 'ai', 'user'])('rejects a client-claimed sourceType: %s with ValidationError, inserting nothing', async (sourceType) => {
+    const owner = await createUser(`sub-owner-src-reject-${sourceType}`);
+    const householdId = await createHouseholdWithMember(owner, `SR${sourceType.slice(0, 2).toUpperCase()}23`);
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    await expect(
+      handler(buildEvent(householdId, validInput, `sub-owner-src-reject-${sourceType}`, { sourceType })),
+    ).rejects.toThrow(ValidationError);
+
+    const recipes = await withUserTransaction(owner.id, (client) => findRecipes(client, householdId), pool);
+    expect(recipes).toHaveLength(0);
+  });
+
+  it('rejects sourceType: url with no sourceUrl, inserting nothing', async () => {
+    const owner = await createUser('sub-owner-src-nourl');
+    const householdId = await createHouseholdWithMember(owner, 'SNU234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    await expect(
+      handler(buildEvent(householdId, validInput, 'sub-owner-src-nourl', { sourceType: 'url' })),
+    ).rejects.toThrow(ValidationError);
+
+    const recipes = await withUserTransaction(owner.id, (client) => findRecipes(client, householdId), pool);
+    expect(recipes).toHaveLength(0);
+  });
+
+  it('rejects sourceUrl alongside sourceType: freeform_ai, inserting nothing', async () => {
+    const owner = await createUser('sub-owner-src-extraurl');
+    const householdId = await createHouseholdWithMember(owner, 'SEU234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    await expect(
+      handler(
+        buildEvent(householdId, validInput, 'sub-owner-src-extraurl', {
+          sourceType: 'freeform_ai',
+          sourceUrl: 'https://example.com/recipe',
+        }),
+      ),
+    ).rejects.toThrow(ValidationError);
+
+    const recipes = await withUserTransaction(owner.id, (client) => findRecipes(client, householdId), pool);
+    expect(recipes).toHaveLength(0);
+  });
+
+  it('rejects a sourceUrl that is not a valid https URL, inserting nothing', async () => {
+    const owner = await createUser('sub-owner-src-badurl');
+    const householdId = await createHouseholdWithMember(owner, 'SBU234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    await expect(
+      handler(
+        buildEvent(householdId, validInput, 'sub-owner-src-badurl', {
+          sourceType: 'url',
+          sourceUrl: 'http://example.com/recipe',
+        }),
+      ),
+    ).rejects.toThrow(ValidationError);
 
     const recipes = await withUserTransaction(owner.id, (client) => findRecipes(client, householdId), pool);
     expect(recipes).toHaveLength(0);

@@ -95,6 +95,7 @@ describe('recipe resolver (Query.recipe)', () => {
       insertRecipe(client, {
         householdId,
         sourceType: 'user',
+        sourceUrl: null,
         title: 'Rajma Chawal',
         description: null,
         servings: 4,

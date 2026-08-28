@@ -170,6 +170,7 @@ describe('recipeRepository', () => {
       inRotation: true,
       isFavorite: false,
       sourceType: 'user',
+      sourceUrl: null,
     });
   });
 
@@ -279,6 +280,7 @@ describe('recipeRepository', () => {
         insertRecipeRow(client, {
           householdId,
           sourceType: 'user',
+          sourceUrl: null,
           title: 'Rajma Chawal',
           description: 'Weeknight staple',
           servings: 4,
@@ -297,6 +299,7 @@ describe('recipeRepository', () => {
       expect(row).toMatchObject({
         householdId,
         sourceType: 'user',
+        sourceUrl: null,
         title: 'Rajma Chawal',
         description: 'Weeknight staple',
         servings: 4,
@@ -321,6 +324,7 @@ describe('recipeRepository', () => {
         insertRecipeRow(client, {
           householdId,
           sourceType: 'user',
+          sourceUrl: null,
           title: 'Quick Poha',
           description: null,
           servings: 2,
@@ -412,6 +416,7 @@ describe('recipeRepository', () => {
         insertRecipeRow(client, {
           householdId,
           sourceType: 'user',
+          sourceUrl: null,
           title: 'Original',
           description: 'Original description',
           servings: 4,
@@ -453,6 +458,7 @@ describe('recipeRepository', () => {
         insertRecipeRow(client, {
           householdId,
           sourceType: 'user',
+          sourceUrl: null,
           title: 'Original',
           description: null,
           servings: 4,
