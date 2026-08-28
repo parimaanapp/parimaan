@@ -437,6 +437,22 @@ describe('ApiStack', () => {
     }
   });
 
+  it('adds no bedrock:* IAM policy statement anywhere in the template — W7 runs on Gemini, not Bedrock (D11, §13.2.2)', () => {
+    const template = synth('dev');
+    const policies = template.findResources('AWS::IAM::Policy');
+    const allActions = Object.values(policies).flatMap((policy) => {
+      const typed = policy as unknown as { Properties: { PolicyDocument: { Statement: Array<{ Action?: unknown }> } } };
+      return typed.Properties.PolicyDocument.Statement.flatMap((statement) =>
+        Array.isArray(statement.Action) ? statement.Action : [statement.Action],
+      );
+    });
+    for (const action of allActions) {
+      if (typeof action === 'string') {
+        expect(action.startsWith('bedrock:')).toBe(false);
+      }
+    }
+  });
+
   it('grants each VPC-attached resolver Lambda secretsmanager:GetSecretValue scoped only to the app-role secret — never Resource: "*"', () => {
     const template = synth('dev');
     const policies = template.findResources('AWS::IAM::Policy');
