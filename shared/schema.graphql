@@ -249,6 +249,26 @@ type Mutation {
   (§13.2.4 D2).
   """
   parseFreeformRecipe(text: String!): RecipeDraft!
+
+  """
+  Fetches a recipe page by URL and parses its JSON-LD `Recipe` schema into
+  an unsaved `RecipeDraft` (E2E_MVP_PLAN.md §13.3 S5). Same `householdId`
+  drop and non-VPC rationale as `parseFreeformRecipe` above (§13.2.1 D3).
+  The fetcher enforces the full SSRF control set (§13.2.10): `https` only,
+  no credentials/non-default-port/IP-literal host, every DNS-resolved
+  address checked against private/reserved ranges, at most 3 redirects
+  with the full check re-run on every hop, an 8s/1MB budget, and an
+  HTML-only content-type check. Rate-limited at 30/day per user
+  (`'urlImport'`, §13.2.9 D8), checked before any DNS lookup. A fetch
+  failure and a "no usable recipe found on the page" parse failure are
+  both surfaced identically (`URL_UNREADABLE`) — never distinguished,
+  since revealing *why* a URL failed (e.g. "that resolves to a private
+  address") would itself be an internal-network oracle. Nothing is
+  written to the database: `sourceUrl` on the returned draft is set to the
+  confirmed URL, and the client calls `Mutation.createRecipe` with
+  `source: {sourceType: url, sourceUrl}` to persist the confirmed draft.
+  """
+  importRecipeFromUrl(url: String!): RecipeDraft!
 }
 
 type Subscription {

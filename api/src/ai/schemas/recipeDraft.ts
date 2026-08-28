@@ -65,7 +65,6 @@ export const geminiRecipeDraftSchema = z.object({
 
 export type GeminiRecipeDraft = z.infer<typeof geminiRecipeDraftSchema>;
 
-/** The subset of `RecipeDraft`'s SDL shape (§13.2.3) this module produces — `sourceUrl` is always `null` here; only `importRecipeFromUrl` (S5) sets it. */
 export interface RecipeDraftIngredientResult {
   raw: string;
   name: string;
@@ -74,6 +73,15 @@ export interface RecipeDraftIngredientResult {
   notes: string | null;
 }
 
+/**
+ * The canonical `RecipeDraft` SDL shape (§13.2.3), shared by both parse
+ * mutations — `parseFreeformRecipe` (this module) always sets `sourceUrl`
+ * to `null` (a Gemini parse has no source page), while `importRecipeFromUrl`
+ * (S5, `resolvers/importRecipeFromUrl.ts`) sets it to the confirmed,
+ * already-validated URL. One shared type rather than two near-identical
+ * ones, since a later slice (S10's shared draft-review screen) treats
+ * both mutations' results identically.
+ */
 export interface RecipeDraftResult {
   title: string | null;
   description: string | null;
@@ -86,7 +94,7 @@ export interface RecipeDraftResult {
   role: RecipeRole | null;
   ingredients: RecipeDraftIngredientResult[];
   steps: string[];
-  sourceUrl: null;
+  sourceUrl: string | null;
   warnings: string[];
 }
 

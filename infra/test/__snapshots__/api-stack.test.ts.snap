@@ -1265,6 +1265,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiImportRecipeFromUrlDataSourceCEB8B087": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "ImportRecipeFromUrlFn126D1BD1",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "ImportRecipeFromUrlDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiImportRecipeFromUrlDataSourceServiceRoleB8BE5153",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiImportRecipeFromUrlDataSourceServiceRoleB8BE5153": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiImportRecipeFromUrlDataSourceServiceRoleDefaultPolicy00CD1F73": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ImportRecipeFromUrlFn126D1BD1",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ImportRecipeFromUrlFn126D1BD1",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiImportRecipeFromUrlDataSourceServiceRoleDefaultPolicy00CD1F73",
+        "Roles": [
+          {
+            "Ref": "ApiImportRecipeFromUrlDataSourceServiceRoleB8BE5153",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiImportRecipeFromUrlResolver6F19B012": {
+      "DependsOn": [
+        "ApiImportRecipeFromUrlDataSourceCEB8B087",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "ImportRecipeFromUrlDataSource",
+        "FieldName": "importRecipeFromUrl",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiJoinHouseholdDataSource78F51A4F": {
       "Properties": {
         "ApiId": {
@@ -2704,6 +2809,26 @@ type Mutation {
   (§13.2.4 D2).
   """
   parseFreeformRecipe(text: String!): RecipeDraft!
+
+  """
+  Fetches a recipe page by URL and parses its JSON-LD \`Recipe\` schema into
+  an unsaved \`RecipeDraft\` (E2E_MVP_PLAN.md §13.3 S5). Same \`householdId\`
+  drop and non-VPC rationale as \`parseFreeformRecipe\` above (§13.2.1 D3).
+  The fetcher enforces the full SSRF control set (§13.2.10): \`https\` only,
+  no credentials/non-default-port/IP-literal host, every DNS-resolved
+  address checked against private/reserved ranges, at most 3 redirects
+  with the full check re-run on every hop, an 8s/1MB budget, and an
+  HTML-only content-type check. Rate-limited at 30/day per user
+  (\`'urlImport'\`, §13.2.9 D8), checked before any DNS lookup. A fetch
+  failure and a "no usable recipe found on the page" parse failure are
+  both surfaced identically (\`URL_UNREADABLE\`) — never distinguished,
+  since revealing *why* a URL failed (e.g. "that resolves to a private
+  address") would itself be an internal-network oracle. Nothing is
+  written to the database: \`sourceUrl\` on the returned draft is set to the
+  confirmed URL, and the client calls \`Mutation.createRecipe\` with
+  \`source: {sourceType: url, sourceUrl}\` to persist the confirmed draft.
+  """
+  importRecipeFromUrl(url: String!): RecipeDraft!
 }
 
 type Subscription {
@@ -4711,6 +4836,105 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "HouseholdFnServiceRole1F2D5574",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ImportRecipeFromUrlFn126D1BD1": {
+      "DependsOn": [
+        "ImportRecipeFromUrlFnServiceRoleDefaultPolicy25E77AB1",
+        "ImportRecipeFromUrlFnServiceRole55AF1619",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "CACHE_TABLE_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefCacheTableC1E6DF7EB68DF245",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "ImportRecipeFromUrlFnServiceRole55AF1619",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 28,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "ImportRecipeFromUrlFnServiceRole55AF1619": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ImportRecipeFromUrlFnServiceRoleDefaultPolicy25E77AB1": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttCacheTableC1E6DF7EArn8EF20E10",
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ImportRecipeFromUrlFnServiceRoleDefaultPolicy25E77AB1",
+        "Roles": [
+          {
+            "Ref": "ImportRecipeFromUrlFnServiceRole55AF1619",
           },
         ],
       },

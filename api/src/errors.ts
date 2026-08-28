@@ -127,6 +127,22 @@ export class AiTimeoutError extends AppError {
   }
 }
 
+/**
+ * Thrown by `resolvers/importRecipeFromUrl.ts` (W7 S5) for EVERY failure
+ * on the fetch/parse path — an SSRF-rejected URL, a transport failure, a
+ * wrong content-type, too many redirects, or a page with no usable
+ * `Recipe` JSON-LD all collapse to this one generic client-facing error,
+ * deliberately never distinguished (§13.2.10: surfacing *why* a URL was
+ * rejected, e.g. "that resolves to a private address," is itself an
+ * internal-network oracle). Maps to SD §14's "couldn't read this page" +
+ * copy-paste fallback UX.
+ */
+export class UrlUnreadableError extends AppError {
+  constructor(message = "Couldn't read that page. Try pasting the recipe text instead.") {
+    super('URL_UNREADABLE', message);
+  }
+}
+
 export interface ClientError {
   errorType: string;
   errorMessage: string;
