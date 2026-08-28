@@ -13,8 +13,10 @@ import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { Secret as SecretsManagerSecret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import type { Construct } from 'constructs';
+import { createNonVpcResolverFunction } from './nonVpcResolver';
 
 export interface ApiStackProps extends cdk.StackProps {
   /** Deployment environment name, supplied via CDK context. */
@@ -225,6 +227,42 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
 ];
 
 /**
+ * One non-VPC resolver Lambda and the single GraphQL field it resolves —
+ * the `DbResolverEntry`/`DB_RESOLVERS` shape, adapted for the second Lambda
+ * category this stack builds (`E2E_MVP_PLAN.md` §13.2.1, D3). No
+ * `needsCacheTable`-style flag for the cache table here: neither W7 AI
+ * mutation needs it yet (that lands with S3/S5's own rate-limit wiring);
+ * `needsGeminiSecret` plays the equivalent role for the one shared
+ * resource this category can need.
+ */
+interface NonVpcResolverEntry {
+  readonly id: string;
+  readonly entryFile: string;
+  readonly typeName: string;
+  readonly fieldName: string;
+  /** Grants `GEMINI_API_KEY_SECRET_ARN` + a narrow `secretsmanager:GetSecretValue` scoped to that one secret's ARN. True only for resolvers that actually call Gemini — `importRecipeFromUrl` (S5) never sets this. */
+  readonly needsGeminiSecret?: boolean;
+}
+
+/**
+ * The AI-calling non-VPC resolvers. Empty as of S2 — `parseFreeformRecipe`
+ * is S3's own slice, added there once its SDL field exists (AppSync's
+ * `createResolver` requires the field to already be defined). S2 ships the
+ * reusable plumbing (`createNonVpcResolverFunction`, the Gemini secret
+ * reference below) ahead of the first entry, the same incremental pattern
+ * `DB_RESOLVERS` itself grew by across W3-W6 — not a placeholder that
+ * synthesizes anything yet.
+ */
+const AI_RESOLVERS: readonly NonVpcResolverEntry[] = [];
+
+/**
+ * The non-AI, non-VPC resolvers — `importRecipeFromUrl` (S5) is the only
+ * one W7 plans. Empty for the identical reason `AI_RESOLVERS` is: its SDL
+ * field doesn't exist until S3/S5 add it.
+ */
+const NET_RESOLVERS: readonly NonVpcResolverEntry[] = [];
+
+/**
  * AppSync GraphQL API, Cognito-authorized. Resolvers:
  * - `Query._health` — W1 placeholder, proves the AppSync → Lambda →
  *   response pipeline end-to-end (SYSTEM_DESIGN.md §6.1-§6.3).
@@ -359,6 +397,7 @@ export class ApiStack extends cdk.Stack {
 
     this.createHealthResolver();
     this.createHouseholdResolvers(props);
+    this.createAiAndNetResolvers();
 
     // Build-time config for the Flutter mobile app
     // (`mobile/lib/app/config/dev_config.dart` — see docs/RUNBOOK.md for the
@@ -415,6 +454,41 @@ export class ApiStack extends cdk.Stack {
       if (entry.needsCacheTable === true) {
         fn.addEnvironment('CACHE_TABLE_NAME', cacheTable.tableName);
         cacheTable.grant(fn, 'dynamodb:UpdateItem');
+      }
+
+      this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);
+    }
+  }
+
+  /**
+   * Wires `AI_RESOLVERS`/`NET_RESOLVERS` — currently both empty (S3/S5 add
+   * their first real entries), so this is a no-op as of S2. Ships now
+   * anyway, ahead of any entry, per this method's own reason for existing:
+   * proving the wiring shape (the Gemini secret reference, the
+   * `needsGeminiSecret`-scoped grant, no VPC/DB access) is ready before S3
+   * needs it, rather than being written under that slice's own time
+   * pressure. `createNonVpcResolverFunction` itself — the actual Lambda
+   * construct shape — is unit-tested standalone in
+   * `infra/test/nonVpcResolver.test.ts`, since there is no real resolver
+   * entry yet to exercise it through this stack's own synthesized template.
+   *
+   * The secret is referenced by name, not created here — `parimaan/gemini-
+   * api-key` is created out-of-band in the Secrets Manager console (same
+   * as `parimaan/google-oauth-secret`, §13.2.2 point 3), never as a CDK
+   * literal and never in this repo.
+   */
+  private createAiAndNetResolvers(): void {
+    const geminiApiKeySecret = SecretsManagerSecret.fromSecretNameV2(this, 'GeminiApiKeySecret', 'parimaan/gemini-api-key');
+
+    for (const entry of [...AI_RESOLVERS, ...NET_RESOLVERS]) {
+      const needsGeminiSecret = entry.needsGeminiSecret === true;
+      const fn = createNonVpcResolverFunction(this, `${entry.id}Fn`, {
+        entry: join(__dirname, `../../api/src/resolvers/${entry.entryFile}`),
+        environment: needsGeminiSecret ? { GEMINI_API_KEY_SECRET_ARN: geminiApiKeySecret.secretArn } : {},
+      });
+
+      if (needsGeminiSecret) {
+        geminiApiKeySecret.grantRead(fn);
       }
 
       this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);

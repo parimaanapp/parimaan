@@ -8,8 +8,19 @@
 export class AppError extends Error {
   public readonly errorType: string;
 
-  constructor(errorType: string, message: string) {
-    super(message);
+  /**
+   * `cause` is optional and, per `Error`'s own contract, never included in
+   * `toClientError`'s output below — it exists so a resolver can preserve
+   * the *original* failure (e.g. a specific Gemini/network error) for
+   * server-side logging (`resolvers/withErrorHandling.ts`'s own documented
+   * "log the unredacted error" contract) while still throwing a client-safe
+   * replacement. Losing this was a real gap: `ai/invokeModel.ts` used to
+   * construct every `Ai*Error` with no arguments at all, so the actual
+   * cause of an `AI_UNAVAILABLE` (a safety-filtered response? a changed
+   * response shape? a genuine outage?) was indistinguishable in CloudWatch.
+   */
+  constructor(errorType: string, message: string, options?: { cause?: unknown }) {
+    super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = new.target.name;
     this.errorType = errorType;
   }
@@ -65,6 +76,54 @@ export class HouseholdFullError extends AppError {
 export class RateLimitedError extends AppError {
   constructor(message = 'Too many join attempts. Try again tomorrow.') {
     super('RATE_LIMITED', message);
+  }
+}
+
+/**
+ * Thrown by `ai/invokeModel.ts` when the transport retry chain (up to 2
+ * retries against 429/503/500/connection errors) is exhausted. Retryable by
+ * the user — the mobile client offers an inline retry, the pasted text is
+ * never lost (W7 §13.2.7).
+ */
+export class AiBusyError extends AppError {
+  constructor(message = 'The AI service is busy. Try again in a moment.', options?: { cause?: unknown }) {
+    super('AI_BUSY', message, options);
+  }
+}
+
+/**
+ * Thrown when the output retry chain (exactly 1 reinforcement retry against
+ * a JSON.parse failure or a structural/bounds Zod failure — never an
+ * enum-only failure, see `D4`/§13.2.5) is exhausted. Not retryable by the
+ * user; routes to the AI failure fallback screen (12.1).
+ */
+export class AiUnparseableError extends AppError {
+  constructor(message = 'Could not understand the AI response.', options?: { cause?: unknown }) {
+    super('AI_UNPARSEABLE', message, options);
+  }
+}
+
+/**
+ * Thrown when the provider rejects the credential or the request outright
+ * (HTTP 401/403, revoked key, retired model, account-level quota
+ * exhausted) — never retried, since retrying an auth failure just repeats
+ * it. Routes to the fallback screen with distinct copy from `AiBusyError`.
+ */
+export class AiUnavailableError extends AppError {
+  constructor(message = 'The AI service is unavailable right now.', options?: { cause?: unknown }) {
+    super('AI_UNAVAILABLE', message, options);
+  }
+}
+
+/**
+ * Thrown when `invokeModel`'s shared deadline (`AI_DEADLINE_MS`, §13.2.7) is
+ * reached with no usable response — a slow first attempt that leaves
+ * insufficient budget does not start a retry, it throws this directly.
+ * Retryable by the user (a fresh call gets a fresh deadline).
+ */
+export class AiTimeoutError extends AppError {
+  constructor(message = 'The AI service took too long to respond.', options?: { cause?: unknown }) {
+    super('AI_TIMEOUT', message, options);
   }
 }
 
