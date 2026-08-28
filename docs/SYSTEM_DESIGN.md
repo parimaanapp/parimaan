@@ -489,6 +489,13 @@ type Query {
   household(id: ID!): Household!
   pantry(householdId: ID!, search: String, category: String): [PantryItem!]!
   recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean): [Recipe!]!
+  # Added W6 S7 (deviation, approved mid-slice — E2E_MVP_PLAN.md §12.2's S7
+  # entry): not in the original D3 signature set. The Detail screen needs
+  # one recipe (with `ingredients`) without re-fetching the whole
+  # household's list. No `householdId`; RLS alone gates it, same id-only
+  # pattern as `updateRecipe`/`deleteRecipe`. Nonexistent id and another
+  # household's id both deny identically.
+  recipe(id: ID!): Recipe!
   menu(householdId: ID!, weekStartDate: AWSDateTime!): Menu
   shoppingList(householdId: ID!, id: ID): ShoppingList
   cookFromPantry(householdId: ID!, vibe: String): [Recipe!]!   # AI
@@ -517,16 +524,16 @@ type Mutation {
   updatePantryItem(id: ID!, input: PantryItemPatchInput!): PantryItem!
   deletePantryItem(id: ID!): PantryItem!
 
-  # Recipes. Not yet shipped as of W6 S2 (Query.recipes + Recipe.ingredients
-  # only) — signatures below are locked (E2E_MVP_PLAN.md §12.7 D3) ahead of
-  # implementation (W6 S3/S4/S5), so this SD block matches what actually
-  # ships rather than the schema module's own original draft:
-  # `updateRecipe` takes `RecipePatchInput!`, not `RecipeInput!` (a partial
-  # patch, matching `updatePantryItem`'s convention — reusing the create
-  # input was wrong for the same reason `PantryItemPatchInput` exists at
-  # all); `deleteRecipe` returns `Recipe!`, not `Boolean!` (so a subscriber
-  # learns which recipe vanished, matching `deletePantryItem`'s §11.2.1
-  # precedent).
+  # Recipes. Shipped W6 S3 (createRecipe)/S4 (updateRecipe/deleteRecipe)/S5
+  # (favoriteRecipe/setInRotation), all five live on dev — E2E_MVP_PLAN.md
+  # §12.7 D3 locked the signatures ahead of implementation, and this SD
+  # block matches what actually shipped rather than the schema module's own
+  # original draft: `updateRecipe` takes `RecipePatchInput!`, not
+  # `RecipeInput!` (a partial patch, matching `updatePantryItem`'s
+  # convention — reusing the create input was wrong for the same reason
+  # `PantryItemPatchInput` exists at all); `deleteRecipe` returns `Recipe!`,
+  # not `Boolean!` (so a subscriber learns which recipe vanished, matching
+  # `deletePantryItem`'s §11.2.1 precedent).
   createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
   updateRecipe(id: ID!, input: RecipePatchInput!): Recipe!
   deleteRecipe(id: ID!): Recipe!
@@ -584,6 +591,13 @@ type Subscription {
   # applies to every subscription field in this type, not just this one.
   onPantryChanged(householdId: ID!): PantryItem
     @aws_subscribe(mutations: ["addPantryItem", "updatePantryItem", "deletePantryItem"])
+
+  # `onRecipeChanged` **is implemented** (W6 S11, D6 — pulled forward from a
+  # planner-recommended W8, same per-field-authorizer pattern as
+  # `onPantryChanged` above). Same "every push means refetch, no event-type
+  # discriminator" constraint (E2E_MVP_PLAN.md §11.2.12) applies here too.
+  onRecipeChanged(householdId: ID!): Recipe
+    @aws_subscribe(mutations: ["createRecipe", "updateRecipe", "deleteRecipe", "favoriteRecipe", "setInRotation"])
 
   onMenuChanged(householdId: ID!): Menu
     @aws_subscribe(mutations: [
