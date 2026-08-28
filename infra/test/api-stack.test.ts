@@ -292,21 +292,23 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 26 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe)', () => {
+  it('declares exactly 27 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(26);
+    expect(ourFunctions(template)).toHaveLength(27);
   });
 
-  it('declares the health and parseFreeformRecipe Lambdas outside the VPC, on the Node.js 24 runtime', () => {
-    // health has no DB access, and parseFreeformRecipe (W7 S3) is the non-VPC
-    // AI category (D3) — neither should be dragged into the VPC. See each
-    // Lambda's own comment in api-stack.ts.
+  it('declares the health, parseFreeformRecipe, and importRecipeFromUrl Lambdas outside the VPC, on the Node.js 24 runtime', () => {
+    // health has no DB access; parseFreeformRecipe (W7 S3) and
+    // importRecipeFromUrl (W7 S5) are both the non-VPC category (D3) —
+    // none of the three should be dragged into the VPC. See each Lambda's
+    // own comment in api-stack.ts.
     const template = synth('dev');
     const nonVpcFunctions = ourFunctions(template).filter(([, r]) => !r.Properties.VpcConfig);
-    expect(nonVpcFunctions).toHaveLength(2);
+    expect(nonVpcFunctions).toHaveLength(3);
     const nonVpcLogicalIds = nonVpcFunctions.map(([logicalId]) => logicalId);
     expect(nonVpcLogicalIds.some((id) => id.startsWith('HealthFn'))).toBe(true);
     expect(nonVpcLogicalIds.some((id) => id.startsWith('ParseFreeformRecipeFn'))).toBe(true);
+    expect(nonVpcLogicalIds.some((id) => id.startsWith('ImportRecipeFromUrlFn'))).toBe(true);
     for (const [, fn] of nonVpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
     }
@@ -385,13 +387,14 @@ describe('ApiStack', () => {
     expect(logicalIds[1]).toMatch(/^RotateInviteCodeFn/);
   });
 
-  it('sets CACHE_TABLE_NAME on the non-VPC parseFreeformRecipe Lambda too (its own \'freeformParse\' rate limit, W7 S3) — a third consumer, separate from the two VPC-attached ones above', () => {
+  it('sets CACHE_TABLE_NAME on the non-VPC parseFreeformRecipe and importRecipeFromUrl Lambdas too (their own \'freeformParse\'/\'urlImport\' rate limits, W7 S3/S5) — separate from the two VPC-attached ones above', () => {
     const template = synth('dev');
     const nonVpcFunctions = ourFunctions(template).filter(([, r]) => !r.Properties.VpcConfig);
-    const [, parseFreeformRecipeFn] = nonVpcFunctions.find(([logicalId]) => logicalId.startsWith('ParseFreeformRecipeFn'))!;
-    const env = (parseFreeformRecipeFn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
-      .Properties.Environment.Variables;
-    expect(env['CACHE_TABLE_NAME']).toBeDefined();
+    for (const prefix of ['ParseFreeformRecipeFn', 'ImportRecipeFromUrlFn']) {
+      const [, fn] = nonVpcFunctions.find(([logicalId]) => logicalId.startsWith(prefix))!;
+      const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } }).Properties.Environment.Variables;
+      expect(env['CACHE_TABLE_NAME']).toBeDefined();
+    }
   });
 
   /**
@@ -419,15 +422,15 @@ describe('ApiStack', () => {
       }).map((statement) => ({ statement, roleRefs }));
     });
 
-  it('grants dynamodb:UpdateItem on the cache table to exactly the three rate-limited Lambdas — no other action, never Resource: "*"', () => {
-    // Three, not two, as of W7 S3: `ParseFreeformRecipeFn` joins
-    // `JoinHouseholdFn`/`RotateInviteCodeFn` as the first non-VPC Lambda to
-    // need the cache table (`'freeformParse'`'s own rate limit, §13.2.9 D8)
-    // — `createAiAndNetResolvers`'s own `needsCacheTable` grant, not
-    // `createHouseholdResolvers`'s, but the identical narrow shape.
+  it('grants dynamodb:UpdateItem on the cache table to exactly the four rate-limited Lambdas — no other action, never Resource: "*"', () => {
+    // Four, not three, as of W7 S5: `ImportRecipeFromUrlFn` joins
+    // `JoinHouseholdFn`/`RotateInviteCodeFn`/`ParseFreeformRecipeFn` — its
+    // own `'urlImport'` rate limit (§13.2.9 D8), the identical
+    // `createAiAndNetResolvers`-owned `needsCacheTable` grant shape
+    // `ParseFreeformRecipeFn` already uses.
     const template = synth('dev');
     const entries = ddbPolicyStatements(template);
-    expect(entries).toHaveLength(3);
+    expect(entries).toHaveLength(4);
     for (const { statement } of entries) {
       const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
       expect(actions).toEqual(['dynamodb:UpdateItem']);
@@ -437,6 +440,7 @@ describe('ApiStack', () => {
     expect(grantedRoles).toMatch(/JoinHouseholdFnServiceRole/);
     expect(grantedRoles).toMatch(/RotateInviteCodeFnServiceRole/);
     expect(grantedRoles).toMatch(/ParseFreeformRecipeFnServiceRole/);
+    expect(grantedRoles).toMatch(/ImportRecipeFromUrlFnServiceRole/);
   });
 
   it('grants leaveHousehold and deleteHousehold NO DynamoDB access at all — no statement mentions either role', () => {
@@ -455,6 +459,37 @@ describe('ApiStack', () => {
         .Properties.Environment.Variables;
       expect(env['CACHE_TABLE_NAME']).toBeUndefined();
     }
+  });
+
+  it('grants importRecipeFromUrl NO Gemini secret access at all — it never calls Gemini, unlike parseFreeformRecipe', () => {
+    // Negative assertion, same "zero statements name this role" shape as
+    // leaveHousehold/deleteHousehold's own DynamoDB check above:
+    // importRecipeFromUrl (W7 S5) only ever needs the cache table for its
+    // own rate limit, never the Gemini secret parseFreeformRecipe (S3)
+    // needs — a least-privilege property worth asserting directly given
+    // this Lambda is the week's highest-severity security surface.
+    const template = synth('dev');
+    const policies = template.findResources('AWS::IAM::Policy');
+    const secretStatementsByRole = Object.values(policies).flatMap((policy) => {
+      const typed = policy as {
+        Properties: {
+          PolicyDocument: { Statement: Array<{ Action: string | string[] }> };
+          Roles?: Array<{ Ref?: string }>;
+        };
+      };
+      const roleRefs = (typed.Properties.Roles ?? []).map((role) => role.Ref).filter((ref): ref is string => ref !== undefined);
+      const hasSecretAction = typed.Properties.PolicyDocument.Statement.some((statement) => {
+        const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+        return actions.some((action) => typeof action === 'string' && action.startsWith('secretsmanager:'));
+      });
+      return hasSecretAction ? roleRefs : [];
+    });
+    expect(secretStatementsByRole.filter((ref) => /^ImportRecipeFromUrlFn/.test(ref))).toHaveLength(0);
+
+    const [, importRecipeFromUrlFn] = ourFunctions(template).find(([logicalId]) => logicalId.startsWith('ImportRecipeFromUrlFn'))!;
+    const env = (importRecipeFromUrlFn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } }).Properties.Environment
+      .Variables;
+    expect(env['GEMINI_API_KEY_SECRET_ARN']).toBeUndefined();
   });
 
   it('adds no bedrock:* IAM policy statement anywhere in the template — W7 runs on Gemini, not Bedrock (D11, §13.2.2)', () => {
@@ -496,9 +531,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 26 AppSync Lambda data sources', () => {
+  it('declares exactly 27 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 26);
+    template.resourceCountIs('AWS::AppSync::DataSource', 27);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -735,9 +770,18 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 26 resolvers total', () => {
+  it('declares a resolver for Mutation.importRecipeFromUrl', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 26);
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'importRecipeFromUrl',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares exactly 27 resolvers total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::AppSync::Resolver', 27);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

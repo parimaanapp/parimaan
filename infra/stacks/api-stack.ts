@@ -260,11 +260,20 @@ const AI_RESOLVERS: readonly NonVpcResolverEntry[] = [
 ];
 
 /**
- * The non-AI, non-VPC resolvers — `importRecipeFromUrl` (S5) is the only
- * one W7 plans. Empty for the identical reason `AI_RESOLVERS` is: its SDL
- * field doesn't exist until S3/S5 add it.
+ * The non-AI, non-VPC resolvers. `importRecipeFromUrl` (S5) never calls
+ * Gemini — no `needsGeminiSecret` — but shares the identical non-VPC/
+ * no-Aurora-route rationale as `AI_RESOLVERS` (§13.2.1 D3) and needs the
+ * cache table for its own `'urlImport'` rate limit (§13.2.9 D8).
  */
-const NET_RESOLVERS: readonly NonVpcResolverEntry[] = [];
+const NET_RESOLVERS: readonly NonVpcResolverEntry[] = [
+  {
+    id: 'ImportRecipeFromUrl',
+    entryFile: 'importRecipeFromUrl.ts',
+    typeName: 'Mutation',
+    fieldName: 'importRecipeFromUrl',
+    needsCacheTable: true,
+  },
+];
 
 /**
  * AppSync GraphQL API, Cognito-authorized. Resolvers:
