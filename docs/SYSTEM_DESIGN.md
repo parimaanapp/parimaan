@@ -411,6 +411,41 @@ type RecipeIngredient {
   isStaple: Boolean!
 }
 
+# SHIPPED W7 S3 (E2E_MVP_PLAN.md §13.2.3 D1). An UNSAVED, UNPERSISTED
+# proposal produced by `parseFreeformRecipe` (and, later, S5's
+# `importRecipeFromUrl`) — deliberately NOT a `Recipe`: no id, no
+# householdId, no timestamps, so it can't be mistaken for a stored row by
+# any client cache or mapper. Nothing is written until the user confirms
+# and the client calls `createRecipe` with a `source` attribution.
+type RecipeDraft {
+  title: String
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]!
+  role: RecipeRole   # NULLABLE and unconfirmed (§13.2.6 D5) — an AI-proposed
+                      # role does not satisfy W6 D1's "role assignment
+                      # required"; the user must still affirmatively confirm
+                      # or change it before createRecipe.
+  ingredients: [RecipeIngredientDraft!]!
+  steps: [String!]!
+  sourceUrl: String   # set by importRecipeFromUrl (S5); always null for parseFreeformRecipe
+  warnings: [String!]! # e.g. an unrecognised cuisineTier1 dropped, not a
+                        # parse failure (§13.2.5 D4) — never an error channel
+}
+
+type RecipeIngredientDraft {
+  raw: String!   # the original, unmodified source string/reconstruction —
+                  # kept verbatim so nothing the parser couldn't decompose is lost
+  name: String!
+  quantity: Float
+  unit: String
+  notes: String
+}
+
 type PantryItem {
   id: ID!
   householdId: ID!
@@ -539,8 +574,23 @@ type Mutation {
   deleteRecipe(id: ID!): Recipe!
   favoriteRecipe(id: ID!, favorite: Boolean!): Recipe!
   setInRotation(id: ID!, inRotation: Boolean!): Recipe!
-  importRecipeFromUrl(householdId: ID!, url: String!): Recipe!            # returns draft, requires confirm
-  parseFreeformRecipe(householdId: ID!, text: String!): Recipe!           # AI, returns draft
+  importRecipeFromUrl(householdId: ID!, url: String!): Recipe!            # returns draft, requires confirm — still aspirational, W7 S5
+  # SHIPPED W7 S3, deviating from this block's own original draft above
+  # (E2E_MVP_PLAN.md §13.2.3 D1, §13.2.1 D3): returns `RecipeDraft!`, not
+  # `Recipe!` — a `Recipe`'s ten non-null fields (id, householdId,
+  # timestamps, ...) have no honest value for an unsaved proposal, and
+  # returning it would hand every client cache/mapper something
+  # structurally indistinguishable from a persisted row. Takes NO
+  # `householdId`: this resolver runs on a non-VPC Lambda (D3 — the VPC has
+  # `natGateways: 0`, so an internet/Gemini-reaching Lambda has no route
+  # out from inside it) with no route to Aurora, so it cannot run
+  # `requireHouseholdMember` — accepting an argument it can't authorize
+  # would violate this codebase's existence-oracle convention. The caller
+  # is still a verified Cognito principal; the real abuse control is a
+  # 20/day-per-user rate limit keyed on the Cognito `sub` directly
+  # (`'freeformParse'`, §13.2.9 D8), not household membership. `importRecipeFromUrl`
+  # above will deviate identically once S5 ships.
+  parseFreeformRecipe(text: String!): RecipeDraft!                       # AI, returns an unsaved draft
   analyzePantryPhoto(householdId: ID!, s3Key: String!): [PantryItemInput!]! # AI
 
   # Menu
@@ -1362,6 +1412,8 @@ Design-level, ranked by decision urgency:
 > **Amended 2026-08-27** (W6 S1/S2, during the recipes migration and SDL): four deviations from this doc's original `recipes`/`recipe_ingredients` design, all locked in `E2E_MVP_PLAN.md` §12.7 (D3, D4): (1) `recipes.updated_at` added — §7.1's DDL had only `created_at`; (2) a `CHECK` on `cuisine_tier1` added as a DB-level backstop (§12.2.6) — unlike `pantry_items`' free-text `unit`/`category` (§11.2.4), `role`/`cuisineTier1`/`dietaryTags` are closed GraphQL enums, and an unrecognised persisted value fails to serialize the *entire* `Query.recipes` response, not just one field — enforced server-side by rejecting (not canonicalising-and-passing-through) at `api/src/domain/{recipeRoles,cuisineTiers,dietaryTags}.ts`; (3) RLS enabled on `recipe_ingredients` (§12.2.2) — never in §7.1's original RLS list at all, despite the table having no `household_id` of its own and being read via a field resolver with no `householdId` argument to gate on at the app layer, making RLS the sole authorization there; (4) `updateRecipe` takes `RecipePatchInput!` (not `RecipeInput!`) and `deleteRecipe` returns `Recipe!` (not `Boolean!`) — matching the `PantryItemPatchInput`/`deletePantryItem` precedents already locked in W5 (§11.7 Q1–Q2). §6.1/§7.1 above are updated in place; a real bug found in (2)'s first attempt — the migration's own `CHECK` briefly disagreed with the already-shipped `CuisineTier1` enum values (`household_settings.cuisine_tier1`) — was fixed by a follow-up migration (`1787811731724_fix-recipes-cuisine-tier1-check.ts`) rather than editing the already-applied one.
 
 > **Amended 2026-08-28** (W7 S2, during the AI invocation layer): this doc and the PRD assume Bedrock everywhere for AI features (this decisions log's own "AI: Bedrock Claude..." line below, §6 R1, §8.2/§8.4's `InvokeModel` sketch, §15 item 1 above). **W7 deviates, deliberately and scoped to W7 only (`E2E_MVP_PLAN.md` §13.2.2, D11):** `parseFreeformRecipe` and the freeform-fallback path off a failed URL import both call **Gemini 3.5 Flash-Lite**, not Bedrock/Claude. Real-call testing during S2 found the plan's originally-assumed model, "Gemini 2.5 Flash," already deprecated for new callers; two further real rounds (`gemini-3.6-flash` — works, but rejects fully disabling its internal "thinking" and measured p95 ≈ 8.7s even at the lowest accepted setting; `gemini-3.5-flash-lite` — 10/10 real calls, zero thinking overhead, p95 ≈ 4.2s, and pricing restored to the originally-assumed $0.30/M input, $2.50/M output) landed on the model actually shipped. Auth is a Secrets-Manager-held API key (`parimaan/gemini-api-key`), not AWS IAM; the AI/URL Lambdas are non-VPC (no route to Aurora, `householdId` dropped from both mutations' signatures rather than accepting an argument that can't be authorized); the existing idle `BEDROCK_RUNTIME` VPC interface endpoint (`infra/stacks/network-stack.ts`) is deliberately left untouched, available to whichever future week revisits Bedrock. **The provider choice for W15 (staples note), W17 (vision), W18 (photo pantry), and W19 (cook-from-pantry) remains fully open** — this amendment covers W7's two mutations only, not a codebase-wide switch off Bedrock.
+
+> **Amended 2026-08-28** (W7 S3, during the `parseFreeformRecipe` mutation): §6.1 above previously showed `parseFreeformRecipe(householdId: ID!, text: String!): Recipe!`, per this doc's own original draft — shipped as `parseFreeformRecipe(text: String!): RecipeDraft!` instead (`E2E_MVP_PLAN.md` §13.2.3 D1, §13.2.1 D3, both locked ahead of this slice and now confirmed as-built). Two deviations from the original draft, both already reflected in §6.1 above rather than left to drift: (1) a new `RecipeDraft`/`RecipeIngredientDraft` output type, not `Recipe!` — a `Recipe` has ten non-null fields (id, householdId, timestamps, ...) an unsaved proposal has no honest value for, and returning it would hand every client cache/mapper something indistinguishable from a persisted row; (2) `householdId` dropped from the signature entirely, not merely unused — this resolver runs on the non-VPC Lambda category S2 built (D3: the VPC's `natGateways: 0` means an internet-reaching Lambda has no route out from inside it), so it cannot run `requireHouseholdMember`, and accepting an argument it cannot authorize would violate this codebase's own existence-oracle convention (§12.2.5's precedent). The caller is still a verified Cognito principal; the actual abuse control is a 20/day-per-user DynamoDB rate limit keyed on the Cognito `sub` directly (`'freeformParse'`, §13.2.9 D8), asserted by a named test rather than merely being true. D4 (§13.2.5) is the validation-boundary decision this slice implements: the Zod schema validating Gemini's JSON response is strict on structure/bounds (fails the whole parse, triggering `invokeModel`'s one reinforcement retry) but asymmetrically lenient on the three closed-enum fields (`cuisineTier1`/`role`/`dietaryTags`) — an unrecognised value there degrades to `null` with a warning recorded in `RecipeDraft.warnings`, never failing an otherwise-good parse over one field. D5 (§13.2.6) is why `RecipeDraft.role` stays nullable even though `RecipeInput.role` is required with no default (W6 D1): an AI-proposed role is a proposal, not a default — W6 D1 still holds in full, enforced at confirm time (S10), not here.
 
 - Region: `ap-south-1` (Mumbai) primary; `us-east-1` fallback for Bedrock only if needed.
 - Backend runtime: Node.js 20 + TypeScript on Lambda.

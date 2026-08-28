@@ -231,6 +231,24 @@ type Mutation {
   this mutation only flips the flag, it does not itself consume it.
   """
   setInRotation(id: ID!, inRotation: Boolean!): Recipe!
+
+  """
+  Parses free-text recipe content (pasted from WhatsApp, a blog, a
+  handwritten transcription) into an unsaved `RecipeDraft` via Gemini
+  (E2E_MVP_PLAN.md §13.3 S3, D11). Deliberately takes no `householdId` —
+  this resolver runs on a non-VPC Lambda with no route to Aurora (§13.2.1
+  D3), so it cannot enforce `requireHouseholdMember`; accepting an
+  argument it cannot authorize would violate this codebase's existence-
+  oracle convention. The caller is still a verified Cognito principal, and
+  the real abuse control is the per-user daily rate limit below, not
+  household membership. Rate-limited at 20/day per user (`'freeformParse'`,
+  §13.2.9 D8) — input over 4,000 characters is rejected before any
+  provider call is made (a cost control, not just validation). Nothing is
+  written to the database: the client calls `Mutation.createRecipe` with
+  `source: {sourceType: freeform_ai}` to persist the confirmed draft
+  (§13.2.4 D2).
+  """
+  parseFreeformRecipe(text: String!): RecipeDraft!
 }
 
 type Subscription {
@@ -515,6 +533,53 @@ input RecipeIngredientInput {
   category: String
   notes: String
   isStaple: Boolean
+}
+
+"""
+An UNSAVED, UNPERSISTED proposal produced by `Mutation.parseFreeformRecipe`
+(and, later, `importRecipeFromUrl`, W7 S5). Deliberately NOT a `Recipe`: it
+has no `id`, no `householdId`, and no timestamps, so it cannot be mistaken
+for a stored row by any client cache or mapper (E2E_MVP_PLAN.md §13.2.3,
+D1 — an SD §6.1 deviation from the originally-planned `Recipe!` return
+type). Nothing is written to the database until the user confirms and the
+client calls `Mutation.createRecipe` with the corresponding `source`
+attribution (§13.2.4).
+"""
+type RecipeDraft {
+  title: String
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]!
+
+  """NULLABLE and unconfirmed — an AI-proposed role does not satisfy W6 D1's "role assignment required," the user must still affirmatively confirm or change it before `createRecipe` (§13.2.6 D5)."""
+  role: RecipeRole
+  ingredients: [RecipeIngredientDraft!]!
+  steps: [String!]!
+
+  """Set by `importRecipeFromUrl` (W7 S5); always null for `parseFreeformRecipe`."""
+  sourceUrl: String
+
+  """
+  Human-readable, already-localisable-later notes about what the parser or
+  the model could not determine or had to discard — e.g. an unrecognised
+  cuisine value that was dropped rather than failing the whole parse
+  (§13.2.5 D4). Never an error channel: a draft with warnings is still a
+  draft.
+  """
+  warnings: [String!]!
+}
+
+type RecipeIngredientDraft {
+  """The original, unmodified source string (e.g. `"2 cups atta, sifted"`). Kept verbatim so nothing the parser could not decompose is silently lost."""
+  raw: String!
+  name: String!
+  quantity: Float
+  unit: String
+  notes: String
 }
 
 """
