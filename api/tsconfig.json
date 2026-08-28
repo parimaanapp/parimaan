@@ -3,9 +3,17 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"]
+  // `prompts/` lives as a sibling of `src/`, not under it (established in
+  // W7 S2 — see `prompts/README.md`: every AI prompt is its own
+  // code-reviewed, unit-tested file, imported by a resolver under `src/`).
+  // `rootDir: "."` (rather than "src") is what lets `tsc` type-check a
+  // `src/` file that imports across that boundary without an "is not
+  // under rootDir" error — `outDir`'s resulting `dist/prompts/...` shape
+  // is unused either way (this package deploys via `NodejsFunction`'s own
+  // esbuild bundling, not `tsc`'s emitted output; `noEmit` is set anyway).
+  "include": ["src/**/*.ts", "prompts/**/*.ts"]
 }
