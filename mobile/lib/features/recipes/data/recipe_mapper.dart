@@ -38,7 +38,7 @@ Recipe recipeFromGraphQL(GRecipesData_recipes data) => Recipe(
   dietaryTags: data.dietaryTags
       .map((GDietaryTag value) => value.name)
       .toList(growable: false),
-  role: _recipeRoleFromGraphQL(data.role),
+  role: recipeRoleFromGraphQL(data.role),
   inRotation: data.inRotation,
   isFavorite: data.isFavorite,
   steps: data.steps.toList(growable: false),
@@ -69,7 +69,7 @@ Recipe recipeDetailFromGraphQL(GRecipeDetailFields data) => Recipe(
   dietaryTags: data.dietaryTags
       .map((GDietaryTag value) => value.name)
       .toList(growable: false),
-  role: _recipeRoleFromGraphQL(data.role),
+  role: recipeRoleFromGraphQL(data.role),
   inRotation: data.inRotation,
   isFavorite: data.isFavorite,
   ingredients: data.ingredients
@@ -92,11 +92,12 @@ RecipeIngredient _recipeIngredientFromGraphQL(
   isStaple: data.isStaple,
 );
 
-/// Visible for reuse by future recipe operations (create/update/favorite/
-/// setInRotation, later slices) that share this same schema-level enum —
-/// same "one mapper function per schema enum" shape
-/// `householdRoleFromGraphQL` establishes.
-RecipeRole _recipeRoleFromGraphQL(GRecipeRole role) => switch (role) {
+/// Public (not `_`-prefixed) for reuse by future recipe operations that
+/// share this same schema-level enum — same "one mapper function per
+/// schema enum" shape `householdRoleFromGraphQL` establishes. Its first
+/// reuse is `ai_recipe_draft_mapper.dart` (W7 S7), for `RecipeDraft.role`'s
+/// identical `GRecipeRole` wire type.
+RecipeRole recipeRoleFromGraphQL(GRecipeRole role) => switch (role) {
   GRecipeRole.breakfast => RecipeRole.breakfast,
   GRecipeRole.carb => RecipeRole.carb,
   GRecipeRole.sabzi_dal => RecipeRole.sabziDal,
@@ -107,7 +108,7 @@ RecipeRole _recipeRoleFromGraphQL(GRecipeRole role) => switch (role) {
   _ => RecipeRole.unknown,
 };
 
-/// See [_recipeRoleFromGraphQL].
+/// See [recipeRoleFromGraphQL].
 RecipeSource _recipeSourceFromGraphQL(GRecipeSource source) => switch (source) {
   GRecipeSource.user => RecipeSource.user,
   GRecipeSource.url => RecipeSource.url,

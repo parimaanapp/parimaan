@@ -13,9 +13,15 @@ import '../../../shared/graphql/operations/__generated__/delete_recipe.var.gql.d
 import '../../../shared/graphql/operations/__generated__/favorite_recipe.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/favorite_recipe.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/favorite_recipe.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/import_recipe_from_url.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/import_recipe_from_url.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/import_recipe_from_url.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/on_recipe_changed.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/on_recipe_changed.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/on_recipe_changed.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/parse_freeform_recipe.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/parse_freeform_recipe.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/parse_freeform_recipe.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipe_detail.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipe_detail.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/recipe_detail.var.gql.dart';
@@ -28,10 +34,12 @@ import '../../../shared/graphql/operations/__generated__/set_in_rotation.var.gql
 import '../../../shared/graphql/operations/__generated__/update_recipe.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/update_recipe.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/update_recipe.var.gql.dart';
+import '../domain/ai_recipe_draft.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
 import '../domain/recipe_patch.dart';
 import '../domain/recipe_role.dart';
+import 'ai_recipe_draft_mapper.dart';
 import 'recipe_mapper.dart';
 
 /// The app's recipe surface, GraphQL-free.
@@ -107,6 +115,21 @@ abstract interface class RecipeRepository {
   /// [setInRotation]/[deleteRecipe]. See [RecipePatch]'s own doc for the
   /// `ingredients`/`steps` whole-list-replace semantic this forwards as-is.
   Future<Recipe> updateRecipe(String id, RecipePatch patch);
+
+  /// Parses [text] into an unsaved [AiRecipeDraft] via `Mutation.
+  /// parseFreeformRecipe` (W7 S3). Takes no `householdId` — this resolver
+  /// has no route to Aurora and cannot authorize one (§13.2.1 D3); the
+  /// server's own rate limit (20/day per caller) is the abuse control.
+  /// Writes nothing to the database.
+  Future<AiRecipeDraft> parseFreeformRecipe(String text);
+
+  /// Fetches [url] and parses its JSON-LD `Recipe` schema into an unsaved
+  /// [AiRecipeDraft] via `Mutation.importRecipeFromUrl` (W7 S5). Same
+  /// no-`householdId` reasoning as [parseFreeformRecipe]. A fetch failure
+  /// and a "no usable recipe found on the page" failure both surface
+  /// identically through [AppError] — the server never distinguishes why
+  /// a URL was rejected (§13.2.10). Writes nothing to the database.
+  Future<AiRecipeDraft> importRecipeFromUrl(String url);
 }
 
 /// Ferry-backed [RecipeRepository].
@@ -237,6 +260,28 @@ class FerryRecipeRepository implements RecipeRepository {
 
     final GUpdateRecipeData data = await _execute(request);
     return recipeDetailFromGraphQL(data.updateRecipe);
+  }
+
+  @override
+  Future<AiRecipeDraft> parseFreeformRecipe(String text) async {
+    final GParseFreeformRecipeReq request = GParseFreeformRecipeReq(
+      (GParseFreeformRecipeReqBuilder b) =>
+          b..vars = (GParseFreeformRecipeVarsBuilder()..text = text),
+    );
+
+    final GParseFreeformRecipeData data = await _execute(request);
+    return aiRecipeDraftFromGraphQL(data.parseFreeformRecipe);
+  }
+
+  @override
+  Future<AiRecipeDraft> importRecipeFromUrl(String url) async {
+    final GImportRecipeFromUrlReq request = GImportRecipeFromUrlReq(
+      (GImportRecipeFromUrlReqBuilder b) =>
+          b..vars = (GImportRecipeFromUrlVarsBuilder()..url = url),
+    );
+
+    final GImportRecipeFromUrlData data = await _execute(request);
+    return aiRecipeDraftFromGraphQL(data.importRecipeFromUrl);
   }
 
   /// Identical reduction to `FerryPantryRepository._execute` — see that

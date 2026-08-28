@@ -202,13 +202,20 @@ type Mutation {
   Creates a recipe: the parent row plus its ingredients, in one transaction
   — a failure partway through rolls back the whole recipe, not just the
   failed ingredient (same shape as `bulkAddPantryItems`). Requires the
-  caller to already be a member of `householdId`. `sourceType` is always
-  `user` for a recipe created this way — never client-suppliable, `RecipeInput`
-  has no such field. `role` is required with no default: this is the
-  "role assignment required" DoD gate's actual enforcement point
-  (E2E_MVP_PLAN.md §12.7 D1/D2).
+  caller to already be a member of `householdId`. `role` is required with
+  no default: this is the "role assignment required" DoD gate's actual
+  enforcement point (E2E_MVP_PLAN.md §12.7 D1/D2).
+
+  `source` is the confirm-a-draft path (W7 S6, E2E_MVP_PLAN.md §13.2.4
+  D2): absent (every pre-W7 caller, unchanged) → `sourceType: user`,
+  `sourceUrl: null`. When present, `sourceType` is restricted server-side
+  to `url`/`freeform_ai` only — `curated` (the W13/W14 seeder) and `ai`
+  (a future cook-from-pantry feature) are server-owned values a client can
+  never claim, rejected with `VALIDATION` if attempted. `sourceUrl` is
+  required when `sourceType: url` and rejected for every other
+  `sourceType` (including absent `source`).
   """
-  createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
+  createRecipe(householdId: ID!, input: RecipeInput!, source: RecipeSourceAttribution): Recipe!
 
   """
   Applies a partial patch to a recipe — every `input` field is optional,
@@ -251,6 +258,44 @@ type Mutation {
   this mutation only flips the flag, it does not itself consume it.
   """
   setInRotation(id: ID!, inRotation: Boolean!): Recipe!
+
+  """
+  Parses free-text recipe content (pasted from WhatsApp, a blog, a
+  handwritten transcription) into an unsaved `RecipeDraft` via Gemini
+  (E2E_MVP_PLAN.md §13.3 S3, D11). Deliberately takes no `householdId` —
+  this resolver runs on a non-VPC Lambda with no route to Aurora (§13.2.1
+  D3), so it cannot enforce `requireHouseholdMember`; accepting an
+  argument it cannot authorize would violate this codebase's existence-
+  oracle convention. The caller is still a verified Cognito principal, and
+  the real abuse control is the per-user daily rate limit below, not
+  household membership. Rate-limited at 20/day per user (`'freeformParse'`,
+  §13.2.9 D8) — input over 4,000 characters is rejected before any
+  provider call is made (a cost control, not just validation). Nothing is
+  written to the database: the client calls `Mutation.createRecipe` with
+  `source: {sourceType: freeform_ai}` to persist the confirmed draft
+  (§13.2.4 D2).
+  """
+  parseFreeformRecipe(text: String!): RecipeDraft!
+
+  """
+  Fetches a recipe page by URL and parses its JSON-LD `Recipe` schema into
+  an unsaved `RecipeDraft` (E2E_MVP_PLAN.md §13.3 S5). Same `householdId`
+  drop and non-VPC rationale as `parseFreeformRecipe` above (§13.2.1 D3).
+  The fetcher enforces the full SSRF control set (§13.2.10): `https` only,
+  no credentials/non-default-port/IP-literal host, every DNS-resolved
+  address checked against private/reserved ranges, at most 3 redirects
+  with the full check re-run on every hop, an 8s/1MB budget, and an
+  HTML-only content-type check. Rate-limited at 30/day per user
+  (`'urlImport'`, §13.2.9 D8), checked before any DNS lookup. A fetch
+  failure and a "no usable recipe found on the page" parse failure are
+  both surfaced identically (`URL_UNREADABLE`) — never distinguished,
+  since revealing *why* a URL failed (e.g. "that resolves to a private
+  address") would itself be an internal-network oracle. Nothing is
+  written to the database: `sourceUrl` on the returned draft is set to the
+  confirmed URL, and the client calls `Mutation.createRecipe` with
+  `source: {sourceType: url, sourceUrl}` to persist the confirmed draft.
+  """
+  importRecipeFromUrl(url: String!): RecipeDraft!
 }
 
 type Subscription {
@@ -438,6 +483,19 @@ enum RecipeSource {
 }
 
 """
+Provenance attribution for `Mutation.createRecipe`'s confirm-a-draft path
+(W7 S6, §13.2.4 D2). `sourceType` is restricted server-side to `url`/
+`freeform_ai` — `curated`/`ai` are values only the server itself ever
+sets (the W13/W14 curated seeder, a future cook-from-pantry feature) and
+a client-supplied `curated`/`ai` here is rejected, not silently accepted.
+`sourceUrl` is required exactly when `sourceType: url`.
+"""
+input RecipeSourceAttribution {
+  sourceType: RecipeSource!
+  sourceUrl: String
+}
+
+"""
 Meal-slot categorization a recipe fills — unrelated to `HouseholdRole`
 (primary/member) despite the shared word "role" (E2E_MVP_PLAN.md §12.7 D1,
 confirmed with the founder rather than assumed). Required on
@@ -535,6 +593,53 @@ input RecipeIngredientInput {
   category: String
   notes: String
   isStaple: Boolean
+}
+
+"""
+An UNSAVED, UNPERSISTED proposal produced by `Mutation.parseFreeformRecipe`
+(and, later, `importRecipeFromUrl`, W7 S5). Deliberately NOT a `Recipe`: it
+has no `id`, no `householdId`, and no timestamps, so it cannot be mistaken
+for a stored row by any client cache or mapper (E2E_MVP_PLAN.md §13.2.3,
+D1 — an SD §6.1 deviation from the originally-planned `Recipe!` return
+type). Nothing is written to the database until the user confirms and the
+client calls `Mutation.createRecipe` with the corresponding `source`
+attribution (§13.2.4).
+"""
+type RecipeDraft {
+  title: String
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]!
+
+  """NULLABLE and unconfirmed — an AI-proposed role does not satisfy W6 D1's "role assignment required," the user must still affirmatively confirm or change it before `createRecipe` (§13.2.6 D5)."""
+  role: RecipeRole
+  ingredients: [RecipeIngredientDraft!]!
+  steps: [String!]!
+
+  """Set by `importRecipeFromUrl` (W7 S5); always null for `parseFreeformRecipe`."""
+  sourceUrl: String
+
+  """
+  Human-readable, already-localisable-later notes about what the parser or
+  the model could not determine or had to discard — e.g. an unrecognised
+  cuisine value that was dropped rather than failing the whole parse
+  (§13.2.5 D4). Never an error channel: a draft with warnings is still a
+  draft.
+  """
+  warnings: [String!]!
+}
+
+type RecipeIngredientDraft {
+  """The original, unmodified source string (e.g. `"2 cups atta, sifted"`). Kept verbatim so nothing the parser could not decompose is silently lost."""
+  raw: String!
+  name: String!
+  quantity: Float
+  unit: String
+  notes: String
 }
 
 """

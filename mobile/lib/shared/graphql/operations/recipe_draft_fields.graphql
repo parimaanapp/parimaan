@@ -1,0 +1,29 @@
+# The one selection set for `RecipeDraft` (E2E_MVP_PLAN.md §13.2.3, D1) —
+# shared by `ParseFreeformRecipe` (W7 S3) and `ImportRecipeFromUrl` (W7 S5),
+# since both mutations return the identical `RecipeDraft!` shape and this
+# client's own `AiRecipeDraft` (`features/recipes/domain/ai_recipe_draft.dart`)
+# is built generic over which mutation produced it. Deliberately every
+# field, not a narrower subset — an unsaved draft has no cheaper "list"
+# selection the way `Recipe`/`RecipeDetailFields` do (§12.2.7/D5's own
+# split doesn't apply here: there is no draft-listing screen).
+fragment RecipeDraftFields on RecipeDraft {
+  title
+  description
+  servings
+  prepMin
+  cookMin
+  cuisineTier1
+  cuisineTier2
+  dietaryTags
+  role
+  ingredients {
+    raw
+    name
+    quantity
+    unit
+    notes
+  }
+  steps
+  sourceUrl
+  warnings
+}

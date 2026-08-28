@@ -1,0 +1,11 @@
+#import "./recipe_draft_fields.graphql"
+
+# `Mutation.importRecipeFromUrl` — fetches a recipe page and parses its
+# JSON-LD `Recipe` schema into an unsaved `RecipeDraft` (E2E_MVP_PLAN.md
+# §13.3 S5). Same `householdId`-less, non-VPC rationale as
+# `ParseFreeformRecipe` (§13.2.1 D3).
+mutation ImportRecipeFromUrl($url: String!) {
+  importRecipeFromUrl(url: $url) {
+    ...RecipeDraftFields
+  }
+}
