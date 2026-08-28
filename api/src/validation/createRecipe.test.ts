@@ -198,3 +198,78 @@ describe('createRecipeArgsSchema', () => {
     expect(result.success).toBe(true);
   });
 });
+
+describe('createRecipeArgsSchema — source attribution (W7 S6, §13.2.4 D2)', () => {
+  it('accepts an absent source, unchanged from every pre-W7 caller', () => {
+    const result = createRecipeArgsSchema.safeParse({ householdId: randomUUID(), input: validInput });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.source).toBeUndefined();
+    }
+  });
+
+  it('accepts an explicit null source, identically to absent (§11.5.5)', () => {
+    const result = createRecipeArgsSchema.safeParse({ householdId: randomUUID(), input: validInput, source: null });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.source).toBeNull();
+    }
+  });
+
+  it('accepts sourceType: url with a valid https sourceUrl', () => {
+    const result = createRecipeArgsSchema.safeParse({
+      householdId: randomUUID(),
+      input: validInput,
+      source: { sourceType: 'url', sourceUrl: 'https://example.com/recipe' },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts sourceType: freeform_ai with no sourceUrl', () => {
+    const result = createRecipeArgsSchema.safeParse({
+      householdId: randomUUID(),
+      input: validInput,
+      source: { sourceType: 'freeform_ai' },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it.each(['curated', 'ai', 'user'])('rejects a client-claimed sourceType: %s — server-owned values', (sourceType) => {
+    const result = createRecipeArgsSchema.safeParse({
+      householdId: randomUUID(),
+      input: validInput,
+      source: { sourceType },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects sourceType: url with no sourceUrl', () => {
+    const result = createRecipeArgsSchema.safeParse({
+      householdId: randomUUID(),
+      input: validInput,
+      source: { sourceType: 'url' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects sourceUrl alongside sourceType: freeform_ai', () => {
+    const result = createRecipeArgsSchema.safeParse({
+      householdId: randomUUID(),
+      input: validInput,
+      source: { sourceType: 'freeform_ai', sourceUrl: 'https://example.com/recipe' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it.each(['http://example.com/recipe', 'not a url at all', 'ftp://example.com/recipe'])(
+    'rejects a sourceUrl that is not a valid https URL: %s',
+    (sourceUrl) => {
+      const result = createRecipeArgsSchema.safeParse({
+        householdId: randomUUID(),
+        input: validInput,
+        source: { sourceType: 'url', sourceUrl },
+      });
+      expect(result.success).toBe(false);
+    },
+  );
+});

@@ -182,13 +182,20 @@ type Mutation {
   Creates a recipe: the parent row plus its ingredients, in one transaction
   — a failure partway through rolls back the whole recipe, not just the
   failed ingredient (same shape as `bulkAddPantryItems`). Requires the
-  caller to already be a member of `householdId`. `sourceType` is always
-  `user` for a recipe created this way — never client-suppliable, `RecipeInput`
-  has no such field. `role` is required with no default: this is the
-  "role assignment required" DoD gate's actual enforcement point
-  (E2E_MVP_PLAN.md §12.7 D1/D2).
+  caller to already be a member of `householdId`. `role` is required with
+  no default: this is the "role assignment required" DoD gate's actual
+  enforcement point (E2E_MVP_PLAN.md §12.7 D1/D2).
+
+  `source` is the confirm-a-draft path (W7 S6, E2E_MVP_PLAN.md §13.2.4
+  D2): absent (every pre-W7 caller, unchanged) → `sourceType: user`,
+  `sourceUrl: null`. When present, `sourceType` is restricted server-side
+  to `url`/`freeform_ai` only — `curated` (the W13/W14 seeder) and `ai`
+  (a future cook-from-pantry feature) are server-owned values a client can
+  never claim, rejected with `VALIDATION` if attempted. `sourceUrl` is
+  required when `sourceType: url` and rejected for every other
+  `sourceType` (including absent `source`).
   """
-  createRecipe(householdId: ID!, input: RecipeInput!): Recipe!
+  createRecipe(householdId: ID!, input: RecipeInput!, source: RecipeSourceAttribution): Recipe!
 
   """
   Applies a partial patch to a recipe — every `input` field is optional,
@@ -453,6 +460,19 @@ enum RecipeSource {
   curated
   ai
   freeform_ai
+}
+
+"""
+Provenance attribution for `Mutation.createRecipe`'s confirm-a-draft path
+(W7 S6, §13.2.4 D2). `sourceType` is restricted server-side to `url`/
+`freeform_ai` — `curated`/`ai` are values only the server itself ever
+sets (the W13/W14 curated seeder, a future cook-from-pantry feature) and
+a client-supplied `curated`/`ai` here is rejected, not silently accepted.
+`sourceUrl` is required exactly when `sourceType: url`.
+"""
+input RecipeSourceAttribution {
+  sourceType: RecipeSource!
+  sourceUrl: String
 }
 
 """

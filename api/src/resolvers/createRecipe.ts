@@ -13,11 +13,24 @@ import type { InsertRecipeIngredientInput, InsertRecipeInput } from '../reposito
 import { toGraphQLRecipe } from '../mappers/recipe.js';
 import type { GraphQLRecipe } from '../mappers/recipe.js';
 import { createRecipeArgsSchema } from '../validation/createRecipe.js';
-import type { RecipeInput } from '../validation/createRecipe.js';
+import type { RecipeInput, RecipeSourceAttribution } from '../validation/createRecipe.js';
 import { ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
 
 const DEFAULT_SERVINGS = 4;
+
+/**
+ * Resolves the `source` argument (§13.2.4 D2) to the two columns it
+ * actually controls — absent/`null` (every pre-W7 caller) means
+ * `sourceType: 'user'`, `sourceUrl: null`; a `freeform_ai` attribution
+ * also has `sourceUrl: null` (the validation schema already guarantees
+ * `source.sourceUrl` is only ever set when `sourceType: 'url'`, so this
+ * is a straightforward pass-through, not a second enforcement point).
+ */
+const resolveSourceColumns = (source: RecipeSourceAttribution | null | undefined): Pick<InsertRecipeInput, 'sourceType' | 'sourceUrl'> =>
+  source === null || source === undefined
+    ? { sourceType: 'user', sourceUrl: null }
+    : { sourceType: source.sourceType, sourceUrl: source.sourceUrl ?? null };
 
 /**
  * Fills in the DB-column defaults explicitly (`servings ?? 4`,
@@ -30,10 +43,11 @@ const DEFAULT_SERVINGS = 4;
 const toInsertRecipeInput = (
   householdId: string,
   input: RecipeInput,
+  source: RecipeSourceAttribution | null | undefined,
   createdBy: string,
 ): InsertRecipeInput => ({
   householdId,
-  sourceType: 'user',
+  ...resolveSourceColumns(source),
   title: input.title,
   description: input.description ?? null,
   servings: input.servings ?? DEFAULT_SERVINGS,
@@ -83,15 +97,19 @@ export const productionDeps: CreateRecipeResolverDeps = { getPool };
  * catch-and-rollback, not a per-insert try/catch here (E2E_MVP_PLAN.md
  * §12.3 S3, same rollback shape as `bulkAddPantryItems.ts`).
  *
- * `sourceType` is always `'user'` here — never client-suppliable, `RecipeInput`
- * has no such field in the SDL at all (§12.2.3). `createdBy` is exclusively
- * the verified caller. See `toInsertRecipeInput`'s own doc for the
- * explicit-default-fallback reasoning.
+ * `sourceType`/`sourceUrl` come from the optional `source` argument (W7
+ * S6, §13.2.4 D2) via `resolveSourceColumns` — absent (every pre-W7
+ * caller, unchanged) resolves to `'user'`/`null`; the Zod schema
+ * (`validation/createRecipe.ts`) is what actually restricts client-
+ * suppliable `sourceType` values to `url`/`freeform_ai` and enforces
+ * `sourceUrl` required-iff-`url`, not this resolver. `createdBy` is
+ * exclusively the verified caller. See `toInsertRecipeInput`'s own doc
+ * for the explicit-default-fallback reasoning.
  */
 export const createCreateRecipeHandler =
   (deps: CreateRecipeResolverDeps) =>
   async (
-    event: AppSyncResolverEvent<{ householdId: unknown; input: unknown }>,
+    event: AppSyncResolverEvent<{ householdId: unknown; input: unknown; source?: unknown }>,
   ): Promise<GraphQLRecipe> => {
     const identity = extractCallerIdentity(event.identity);
 
@@ -99,7 +117,7 @@ export const createCreateRecipeHandler =
     if (!parsedArgs.success) {
       throw new ValidationError(parsedArgs.error.issues[0]?.message ?? 'Invalid input.');
     }
-    const { householdId, input } = parsedArgs.data;
+    const { householdId, input, source } = parsedArgs.data;
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
@@ -110,7 +128,7 @@ export const createCreateRecipeHandler =
       async (client) => {
         await requireHouseholdMember(client, callerUser.id, householdId);
 
-        const recipe = await insertRecipe(client, toInsertRecipeInput(householdId, input, callerUser.id));
+        const recipe = await insertRecipe(client, toInsertRecipeInput(householdId, input, source, callerUser.id));
 
         for (const [index, ingredient] of input.ingredients.entries()) {
           await insertIngredient(client, toInsertRecipeIngredientInput(recipe.id, ingredient, index));

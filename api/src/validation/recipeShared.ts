@@ -8,6 +8,8 @@ export const MAX_INGREDIENT_UNIT_LENGTH = 20;
 export const MAX_INGREDIENT_CATEGORY_LENGTH = 40;
 export const MAX_INGREDIENT_NOTES_LENGTH = 500;
 export const MAX_STEP_LENGTH = 2000;
+/** Same bound `validation/importRecipeFromUrl.ts` uses for its own `url` argument — `RecipeSourceAttribution.sourceUrl` (W7 S6) is stored, untrusted, third-party-influenced text displayed to other household members later, not merely echoed back once. */
+export const MAX_SOURCE_URL_LENGTH = 2048;
 
 /**
  * Bounds `ingredients`/`steps` on both `RecipeInput` (create) and

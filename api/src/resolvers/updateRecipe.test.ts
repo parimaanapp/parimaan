@@ -105,6 +105,7 @@ describe('updateRecipe resolver', () => {
       insertRecipe(client, {
         householdId,
         sourceType: 'user',
+        sourceUrl: null,
         title: overrides.title ?? 'Rajma Chawal',
         description: null,
         servings: 4,
