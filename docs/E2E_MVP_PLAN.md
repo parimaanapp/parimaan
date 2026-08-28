@@ -156,7 +156,7 @@ Six phases mapped to the 26-week runway.
 | **W4** | Household create + settings screens | Name household, Meals to plan, Meal structure lunch, Cuisine regions, Cuisine sub+bias, Dietary+allergens, Invite code, Enter code, Confirm, Full·notify primary, Settings hub, Members list (15/49) | `joinHousehold` w/ 5-cap; `updateHouseholdSettings`; `me` query; `onHouseholdChanged` sub; 10 core UI components | Two-device demo: create + join + settings sync; **End of Month 1 milestone** |
 | **W5** | Pantry CRUD + Drift cache | Pantry List, Add choose method, Manual add (18/49) | pantry resolvers; `onPantryChanged` sub; Drift local schema; PantryRow widget | Two-device pantry edit <5s sync |
 | **W6** | Structured recipes + roles (locked as a **two-week** sprint, §12.5.1/D8 — same pattern as W5) | Recipes Library, Detail, Overflow menu, **Structured form** (pulled forward from W7 per §12.7 D2) (22/49) | recipe resolvers (createRecipe/updateRecipe/deleteRecipe/favoriteRecipe/setInRotation); `role` enum (meal-slot, required, no default — §12.7 D1); `onRecipeChanged` sub (pulled forward from W8 per §12.7 D6); RecipeCard widget | Recipe CRUD complete (server + mobile); role assignment required; two-device recipe sync <5s (RUNBOOK.md §3, re-run per §12.7 D6) |
-| **W7** | URL import + freeform AI parse **spike week** | Choose method, URL import, Freeform input, Freeform review, AI failure fallback (27/49) | JSON-LD parser; `parseFreeformRecipe` via Haiku; Zod validation; **Bedrock ap-south-1 spike**; **JSON-LD spike (top-20 blogs)**; AIProposal widget | ≥16/20 blogs parse; freeform AI returns valid JSON |
+| **W7** | URL import + freeform AI parse **spike week** (locked as a multi-week sprint, §13.5.1/D9 — same pattern as W5/W6) | Choose method, URL import, Freeform input, Freeform review, AI failure fallback (27/49) | JSON-LD parser; `parseFreeformRecipe` via **Gemini 2.5 Flash** (D11 — scoped deviation from the Bedrock-everywhere assumption below, §13.2.2; Bedrock ap-south-1 spike **cut**, not run); Zod validation; **JSON-LD spike (top-20 blogs)**; AIProposal widget | ≥16/20 blogs parse; freeform AI returns valid JSON |
 | **W8** | Sync polish + Month 2 demo | Notif preferences (finalized) (28/49) | Reconnect backoff; refetch-on-reconnect; membership caching (30s TTL) | **End of Month 2 milestone:** 2-device sync <5s under load |
 | **W9** | 7-day calendar UI | Weekly plan, Today morning, Today empty (31/49) | `createMenu`, `addMenuItem`, `removeMenuItem` resolvers; MealSlot widget; today's-agenda query | Week-view honors meal structure config |
 | **W10** | Recipe picker + rotation | Picker sheet, Auto-fill preview, Regenerate confirm (34/49) | `autoFillWeek(overwrite)` with recency avoidance + cuisine bias; **consumes** `setInRotation` (mutation itself ships W6, §12.7 D2 planning notes/§12.2.16) | Auto-fill respects MAX caps; regenerate requires confirm |
@@ -218,7 +218,7 @@ Original 6 spikes from TIP §9, plus 4 new spikes surfaced by the design system 
 
 | # | Risk | Category | Mitigation | Scheduled spike / checkpoint |
 |---|---|---|---|---|
-| R1 | Bedrock Claude unavailable in `ap-south-1` | Technical | Cross-region fallback to `us-east-1`; accept +150–250ms latency | **W7** (day 1) |
+| R1 | Bedrock Claude unavailable in `ap-south-1` | Technical | Cross-region fallback to `us-east-1`; accept +150–250ms latency | **Moot for W7** (§13 D11 — W7's AI runs on Gemini instead, a scoped deviation; this row stays live only for a future week that revisits Bedrock) |
 | R2 | JSON-LD Recipe schema coverage < 60% on Indian blogs | Technical | Copy-paste fallback UX in URL import screen; downgrade importance | **W7** (target ≥16/20) |
 | R3 | AppSync subscription with 5 concurrent clients drops events | Technical | Reduce to per-entity subscriptions; add refetch-on-reconnect | **W11** (30-min soak, 5 clients) |
 | R4 | Aurora Serverless v2 auto-pause resume >30s | Technical | Disable auto-pause (+$35/mo) or switch to `db.t4g.small` | **W3** (15-min idle, first-query timing) |
@@ -1044,5 +1044,564 @@ All ten slices (plan lock through S8's merge) landed inside a single continuous 
 | D7 | §12.2.12 — Drift local cache for recipes: W6, W8, W14, or never in MVP? | **W14** — when 300 real curated recipes exist and offline browsing genuinely matters; also lets D9's spike result inform the cache design. |
 | D8 | §12.5.1 — how to absorb ~20.0 hrs against ~10, with the §7 buffer already ~8 hrs down from W5? | **Accept a two-week W6**, same pattern as W5. Phase 2 (W5–W8) becomes ~6 calendar weeks; buffer essentially gone by W8. |
 | D9 | §6 R7 / S9 — does the 300-item perf spike run in W6, and on what device? | **Run it in W6, right after S6.** Cost-asymmetry argument: the likely mitigation (pagination) is an SDL change, nearly free now and expensive from W10/W14 onward. Fallback if no Redmi-class device is on hand: lowest-end physical Android available, exact device/SoC recorded, result treated as an upper bound — no simulator/emulator substitution. |
+
+---
+
+## 13. W7 detailed plan — URL import + freeform AI parse
+
+**Status:** LOCKED, 2026-08-28. Drafted by the **planner** agent following §11/§12's structure, then walked through decision-by-decision with the founder. All eleven decisions (D1–D11) are locked below — see §13.7. **W7 is a multi-week sprint at full scope** (D9), same pattern as W5 and W6. **W7 also carries a scoped, deliberate deviation from the locked docs' Bedrock-everywhere assumption: this week's AI runs on Gemini 2.5 Flash** (D11, §13.2.2).
+
+**Budget:** ~10 hrs nominal against Phase 2's ~40 hrs / 4 weeks (§7). Locked scope estimates **~24.0 hrs** (§13.5.1) — a ~140% overrun, on top of a §7 buffer that W5 spent ~8 hrs of and W6 (§12.5.1, D8) formally claimed the rest of. W7 is where the buffer is not merely spent but overdrawn; D9 accepts that knowingly rather than trading scope for it.
+
+**Pipeline:** `DEV_WORKFLOW.md` §2.1 applies unmodified to every slice below. Per §11.7 Q6 this plan folds into this document rather than a `docs/plans/` file. **`DEV_WORKFLOW.md` §6c applies to S1 specifically** — spikes are explicitly exempt from strict TDD; they are measurement, not tested production code.
+
+**Process carry-over from W6 (§12.5.6):** the per-slice wall-clock method that actually worked (PR-merge timestamps via `git log --format=%ad`) is carried forward unchanged. W6 also leaves **two exit-criteria boxes genuinely open** — the physical-device two-device `onRecipeChanged` run (`RUNBOOK.md` §3) and the R7 300-item scroll spike on a real Redmi-class device (§12.5.5). Both stay **W6's** obligations, not W7's; neither blocks any W7 slice. They are listed here only so they are not quietly inherited and then forgotten.
+
+**Research & Reuse is non-negotiable this week.** `DEV_WORKFLOW.md` §2.2 names "JSON-LD parsers (W7)" by name as one of four places where mature OSS exists and hand-rolling is the wrong default. S4 does not start until that search has run and been written down. S2 carries the same obligation for the Gemini SDK.
+
+### 13.1 What W7 is locked to deliver
+
+| Focus | Screens | Backend/infra | DoD gate |
+|---|---|---|---|
+| URL import + freeform AI parse **spike week** | Choose method (8.1), URL import (8.3), Freeform input (8.4), Freeform review (8.5), AI failure fallback (12.1) → **27/49** | JSON-LD parser; `parseFreeformRecipe` via **Gemini 2.5 Flash** (D11); Zod validation; **JSON-LD spike, top-20 Indian blogs** (R2, day 1); AIProposal widget | ≥16/20 blogs parse; freeform AI returns valid JSON |
+
+Wireframe 8.2 (Structured form) is **not** in this row — it shipped in W6 (§12.2.1, D2). The cumulative count is unaffected: 22/49 at end of W6 + 5 = **27/49**, exactly as §4's W7 row states.
+
+**Removed from W7 by this plan:** the **Bedrock `ap-south-1` availability spike (R1)** that the §4 row and §6 R1 assumed would be W7's day-1 blocker. D11 replaces Bedrock with Gemini for this week, and Gemini has no AWS-region model-access question at all. **§6 R1's risk row is therefore moot for W7** — it is not "resolved," it is *not applicable*, and it stays live only for whichever future week (if any) revisits Bedrock. Said plainly here so nobody later reads an unchecked R1 box as a W7 miss. See §13.3's cut record.
+
+**Added to W7 by this plan** (not in the §4 row):
+
+- **A non-VPC Lambda resolver category in `api-stack.ts`** (§13.2.1). Every resolver in this codebase today is placed in `PRIVATE_ISOLATED` subnets behind a VPC with `natGateways: 0`. A Lambda that must fetch an arbitrary third-party URL — or reach `generativelanguage.googleapis.com` — cannot live there. This is architecture, not an enhancement.
+- **The shared AI invocation helper (SD §8.2) pulled forward from SD §16's "month 5"**, re-provider'd to Gemini per D11 — W7 is the first AI feature, so the AI plumbing lands now whether or not the sprint table said so.
+- **A Gemini API key in Secrets Manager**, following the *existing* Google-OAuth-client-secret pattern (`auth-stack.ts` line 93's `SecretValue.secretsManager('parimaan/google-oauth-secret')`) and the *existing* cold-start fetch pattern (`api/src/db/pool.ts`'s `GetSecretValueCommand` + `api/src/db/config.ts`'s Zod-validated `*_SECRET_ARN` env var). No new secrets pattern is invented (§13.2.2).
+- **A provenance argument on `createRecipe`** (§13.2.4). W6 shipped `createRecipe` with `sourceType` hardcoded to `'user'` and no `sourceUrl` in `RecipeInput` (both deliberate, §12.2.3/D3). Neither `url` nor `freeform_ai` is reachable through any shipped write path today, so "confirm the draft" has nowhere to land.
+- **An ingredient-string parser** (`"2 cups atta"` → `{quantity: 2, unit: 'cup', name: 'atta'}`), which neither `RecipeIngredientInput` nor JSON-LD's `recipeIngredient` (a flat string array) supplies for free.
+- **A pre-committed decision rule for the R2 spike outcome** (§13.2.11, D10) — written *before* the spike runs, so a mid-week number does not become a mid-week judgment call.
+- **A routing rework of W6's Library FAB.** `recipes_library_screen.dart` currently pushes `AppRoutes.recipeCreate(...)` directly (two call sites, lines 90 and 169). Wireframe 8.1 inserts a chooser between them.
+
+**Out of scope** (tracked, not forgotten): photo pantry (W18); cook-from-pantry (W19); AI staples note (W15); **the AI-provider choice for W15/W17/W18/W19 — explicitly left OPEN, not decided by D11** (§13.2.2); AI response caching (W19 — §13.2.13); the $5/day cost alarm and its DDB/CloudWatch wiring (W17/W22); PostHog acceptance-rate instrumentation (W22 — so W7's own acceptance measurement is manual, §13.5.7); Drift local cache for recipes (**W14**, §12.7 D7); `Query.recipes` pagination (deferred pending the still-open R7 spike); curated seeding (W13/W14); the duplicate-recipe action (§12.2.10, still unscheduled); recipe cover images (§12.2.11, descoped); the router's unconditional `/first-run` redirect (§11.2.11 — **still open, still W8's first slice**); subscription reconnect backoff + refetch-on-reconnect (W8).
+
+### 13.2 Conflicts and gaps found in the locked docs
+
+Items marked **LOCKED (Dn)** were open decisions in the planner's draft, now resolved by the founder (§13.7 has the full table). Items marked **CALL** are judgment calls implemented as stated. Items marked **NOTE** are informational or forward-flags.
+
+#### 13.2.1 CRITICAL, LOCKED (D3) — no W7 resolver that touches the internet can live where every other resolver lives
+
+`infra/stacks/network-stack.ts` builds the VPC with `natGateways: 0` and covers AWS-service traffic with four VPC endpoints (S3 gateway, DynamoDB gateway, `BEDROCK_RUNTIME` interface, Secrets Manager interface). Every resolver Lambda is created by `ApiStack.createDbResolverFunction`, which pins `vpcSubnets: { subnetType: SubnetType.PRIVATE_ISOLATED }` and attaches the shared `lambdaSecurityGroup`.
+
+An isolated subnet with no NAT has **no route to the public internet at all**. `importRecipeFromUrl` must `GET https://<any-indian-recipe-blog>/...`; `parseFreeformRecipe`, post-D11, must reach Google's Generative Language API. Neither can be a `DB_RESOLVERS` entry as written. Three options were weighed:
+
+| Option | Cost | Consequence |
+|---|---|---|
+| **A. Non-VPC Lambda** | $0 | Gets internet via Lambda's own managed networking. **Cannot reach Aurora**, so `requireHouseholdMember` cannot run. Reaches DynamoDB (rate limits) and Secrets Manager (the Gemini key) over the public, IAM-signed endpoints, which is fine and is exactly how those services are designed to be consumed. |
+| **B. Add a NAT Gateway** | ~$32–45/mo | Blows the `<$35/mo` MVP run-rate DoD (§8) on its own, for one feature. |
+| **C. VPC resolver → `lambda:InvokeFunction` → non-VPC fetcher** | +1 interface endpoint (~$9.5/mo/AZ) + a second Lambda | Preserves the membership check; two Lambdas, two cold starts, and a new endpoint, all to gate mutations that persist nothing. |
+
+**LOCKED (D3): Option A for BOTH `importRecipeFromUrl` and `parseFreeformRecipe`, and `householdId` is dropped from both signatures.** The honest position is that if the membership check cannot be enforced, the argument should not be accepted — this codebase's whole existence-oracle convention (§12.2.5, `updateRecipe`/`deleteRecipe`) is built on never accepting an argument whose authorization you then skip. Both mutations read no household data and write nothing; the caller is still a verified Cognito principal, and the real control on abuse is the per-user daily rate limit (§13.2.9), which works fine keyed on the Cognito `sub` alone.
+
+The draft version of this decision applied Option A only to `importRecipeFromUrl` and left `parseFreeformRecipe` VPC-attached "if the Bedrock spike clears ap-south-1." **D11 removes that fork entirely**: Gemini is a public HTTPS API with no AWS PrivateLink or interface-endpoint story, so a VPC-attached `parseFreeformRecipe` has no route to it either. Both AI mutations are non-VPC by the same reasoning, and there is no spike left to wait on. This is an SD §6.1 signature deviation → `architect` step 2b + `doc-updater` §4.1.
+
+#### 13.2.2 DEVIATION, LOCKED (D11) — W7's AI runs on Gemini 2.5 Flash, not Bedrock/Claude Haiku
+
+`SYSTEM_DESIGN.md` and `PRD.md` assume Bedrock everywhere: §6 R1's whole risk row is "Bedrock model availability in `ap-south-1`", WS-7 is framed as a Bedrock workstream, SD §8.2/§8.4 sketch `InvokeModel` with `anthropic_version` and a cross-region client swap, and SD §15.1 carries a Bedrock ap-south-1 spike as an open assumption. **W7 deviates from all of that, deliberately and in a scoped way**, and this section is the deviation record — the same treatment other weeks give their own deviations (§12.2.3's `RecipeInput` shape, §11.2.4's pantry-unit pass-through).
+
+**The decision:** `parseFreeformRecipe`, and the freeform-fallback path off a failed URL import, both call **Gemini 2.5 Flash**.
+
+**What this changes, concretely:**
+
+1. **The former S1 (Bedrock `ap-south-1` availability + VPC-reachability spike) is CUT ENTIRELY.** Its entire content was AWS-account-specific: is a Haiku model ID invocable in `ap-south-1`, does a fresh model-access grant come through in time, does it work through the `BEDROCK_RUNTIME` interface endpoint, and which of three mitigations applies if not. Gemini has none of those questions — an API key either works or it doesn't, and finding out takes one `curl`, not a day-1 calendar-blocking console request. §6 R1's risk row is **moot for W7** (see §13.1).
+2. **The old draft's §13.2.2 finding — that SD §8.4's `try ap-south-1 / catch → us-east-1` fallback is unreachable from an isolated subnet with no NAT — is now W7-irrelevant but still TRUE, and stays recorded.** Whichever future week revisits Bedrock inherits it. `doc-updater` writes it into SD §18 as a standing finding, not as a W7 action item.
+3. **Auth changes from AWS IAM to an API key.** There is no `bedrock:InvokeModel` policy, no model-ARN scoping, and no Bedrock resource policy in W7. Instead: a Gemini API key in Secrets Manager at `parimaan/gemini-api-key`, referenced by ARN through a `GEMINI_API_KEY_SECRET_ARN` env var, validated at cold start by the Zod config schema, fetched once per Lambda container with `GetSecretValueCommand` and cached in module scope. **This is not a new pattern — it is the two patterns this codebase already runs**: `auth-stack.ts` line 93 already sources the Google OAuth client secret via `cdk.SecretValue.secretsManager('parimaan/google-oauth-secret')`, and `api/src/db/pool.ts` + `api/src/db/config.ts` already do exactly this cold-start-fetch-and-cache against `APP_ROLE_SECRET_ARN`. S2 copies that shape rather than inventing one. The key itself is created out-of-band in the Secrets Manager console and referenced by CDK, never in a CDK literal and never in the repo — same as the OAuth secret.
+4. **No VPC endpoint work at all.** The AI Lambda is non-VPC (D3), so it reaches Secrets Manager and DynamoDB over their public IAM-signed endpoints and Gemini over plain egress. **W7 does not touch the existing idle `BEDROCK_RUNTIME` interface endpoint in `infra/stacks/network-stack.ts`.** That construct stays exactly as-is: dead-for-now infrastructure, harmless, potentially reused by a future Bedrock-using week. Not W7's to remove and not W7's to migrate. *(One honest cost flag for the founder, not a W7 slice: an interface endpoint bills hourly whether or not traffic flows, so an idle one is not literally $0. Whether to keep or drop it is a §8 cost-DoD question for whichever week next revisits the network stack — recorded here so it is a decision someone makes rather than a line item nobody notices.)*
+5. **Cost, with real numbers.** Gemini 2.5 Flash is **$0.30/M input tokens and $2.50/M output tokens**, against Claude Haiku 4.5 on Bedrock at **$1/M input and $5/M output**. A freeform parse is roughly 1,500 input + 700 output tokens: **≈$0.0022 on Gemini vs ≈$0.005 on Haiku**, a bit under half. At D8's 20 parses/user/day cap that is **≈$0.044/user/day worst case**. The founder holds **$300 of pre-existing Gemini credit**, which covers W7's entire realistic usage — the spike, prompt iteration, and S12's 20-parse acceptance measurement together are single-digit dollars — regardless of where the exact per-call number lands.
+6. **The provider choice for W15 (staples note), W17 (vision), W18 (photo pantry) and W19 (cook-from-pantry) is EXPLICITLY LEFT OPEN.** D11 is scoped to W7. Those weeks pick their own provider when they are planned, informed by what W7 measures. This is precisely why S2's invocation layer is named provider-neutrally (§13.3 S2) — the seam is where a future week swaps providers without touching resolvers.
+
+**CALL:** the deviation is written into SD §18 as a decision with this rationale, and SD §15.1's Bedrock ap-south-1 assumption is annotated "not exercised in W7 (D11); still open for any future Bedrock week" rather than being marked resolved or deleted.
+
+#### 13.2.3 CRITICAL, LOCKED (D1) — SD §6.1 returns `Recipe!` from both mutations, and `Recipe!` cannot represent an unsaved draft
+
+`SYSTEM_DESIGN.md` §6.1 lines 542–543:
+
+```
+importRecipeFromUrl(householdId: ID!, url: String!): Recipe!   # returns draft, requires confirm
+parseFreeformRecipe(householdId: ID!, text: String!): Recipe!  # AI, returns draft
+```
+
+The comments say "draft"; the type says `Recipe!`. `Recipe` (as shipped in `shared/schema.graphql` after W6) has **ten non-null fields that a draft has no honest value for**: `id`, `householdId`, `sourceType`, `servings`, `dietaryTags`, `role`, `inRotation`, `isFavorite`, `createdAt`, `updatedAt`. Returning it forces fabricated ids and timestamps, and — worse — hands the client a value structurally indistinguishable from a persisted row. Every Ferry-generated cache, every `RecipeCard`, every `recipe_mapper.dart` path would treat it as real. This is exactly the class of bug §12.2.7's Library/Detail split was written to avoid, in a nastier form.
+
+Reusing `RecipeInput` is not available either: GraphQL input types cannot be used as output types.
+
+**LOCKED (D1): a new `RecipeDraft` output type**, deliberately shaped as "what `RecipeInput` needs, plus what the user must be told about it":
+
+```graphql
+"""
+An UNSAVED, UNPERSISTED proposal produced by `importRecipeFromUrl` or
+`parseFreeformRecipe`. Deliberately NOT a `Recipe`: it has no `id`, no
+`householdId`, and no timestamps, so it cannot be mistaken for a stored row
+by any client cache or mapper (E2E_MVP_PLAN.md §13.2.3). Nothing is written
+to the database until the user confirms and the client calls `createRecipe`
+with the corresponding `source` attribution (§13.2.4).
+"""
+type RecipeDraft {
+  title: String
+  description: String
+  servings: Int
+  prepMin: Int
+  cookMin: Int
+  cuisineTier1: CuisineTier1
+  cuisineTier2: String
+  dietaryTags: [DietaryTag!]!
+  role: RecipeRole                  # NULLABLE and unconfirmed — see §13.2.6 / D5
+  ingredients: [RecipeIngredientDraft!]!
+  steps: [String!]!
+  sourceUrl: String                 # set by importRecipeFromUrl, null for freeform
+  """
+  Human-readable, already-localisable-later notes about what the parser or
+  the model could not determine or had to discard — e.g. an unrecognised
+  cuisine value that was dropped rather than failing the whole parse
+  (§13.2.5). Never an error channel: a draft with warnings is still a draft.
+  """
+  warnings: [String!]!
+}
+
+type RecipeIngredientDraft {
+  """The original, unmodified source string (`"2 cups atta, sifted"`). Kept
+  verbatim so nothing the parser could not decompose is silently lost."""
+  raw: String!
+  name: String!
+  quantity: Float
+  unit: String
+  notes: String
+}
+```
+
+`title` is nullable here even though `Recipe.title` is `String!` — a parse that finds no title is still worth returning with the ingredients it did find, and the review screen blocks submit until the user supplies one. Note also that `RecipeIngredientDraft` has no `category`/`isStaple`: neither JSON-LD nor a Gemini parse produces those reliably, and `RecipeIngredientInput` already defaults `isStaple` to `false` server-side.
+
+#### 13.2.4 CRITICAL, LOCKED (D2) — "confirm" has nowhere to land: `createRecipe` hardcodes `sourceType: 'user'` and cannot write `sourceUrl`
+
+`api/src/resolvers/createRecipe.ts` line 36 sets `sourceType: 'user'` unconditionally, and its own doc comment says so as a security property ("never client-suppliable, `RecipeInput` has no such field in the SDL at all"). `api/src/repositories/recipeRepository.ts`'s insert column list (line 212) omits `source_url` entirely, though the column exists (`1787808112003_recipes.ts` line 42) and `RecipeSource` already carries `url` and `freeform_ai` (`shared/schema.graphql` lines 412–418).
+
+So W6 reserved the enum values and then shipped no path that can produce them. Confirming a draft today would silently persist a URL-imported recipe as `sourceType: user` with no `sourceUrl` — losing provenance permanently, since there is no backfill.
+
+Two shapes were weighed:
+
+- **(a) Extend `createRecipe` with an optional attribution argument** — `createRecipe(householdId: ID!, input: RecipeInput!, source: RecipeSourceAttribution)`, where `RecipeSourceAttribution { sourceType: RecipeSource!, sourceUrl: String }`. Server-side rules: absent → `'user'` (every existing caller keeps working unchanged, no client migration); `sourceType` **restricted at the resolver to `url` and `freeform_ai` only** — `curated` (W13/W14's seeder) and `ai` (W19's cook-from-pantry) are server-set values a client must never be able to claim; `sourceUrl` required when `url` and rejected otherwise.
+- **(b) A server-side draft token** — the parse mutations write the draft into the DDB cache table with a TTL and return an opaque `draftId`; confirm passes `draftId` and the server reads back the provenance it recorded itself.
+
+**LOCKED (D2): (a).** (b) is genuinely more truthful about provenance — a client cannot lie about where a recipe came from — but it adds a stateful round trip, a new DDB access pattern, a TTL-expiry failure mode ("your draft expired") that needs its own UX, and a second copy of the draft on the server, all to protect a self-reported label on a recipe inside the user's own household. The lie is low-stakes and unexploitable across households. (a) is one optional argument and one repository column. The client re-sends `sourceType` + `sourceUrl` at confirm time.
+
+#### 13.2.5 CRITICAL, LOCKED (D4) — Zod on LLM output is a trust boundary, and "reject the whole thing" is the wrong default for enum fields
+
+This is the security-relevant one. `parseFreeformRecipe`'s response is **model-generated text**, and `importRecipeFromUrl`'s is **third-party-controlled HTML**. Neither is input the way `PantryItemInput` is input; both are *untrusted output* that this system then hands to a mobile client and, one confirm later, writes to Postgres. `DEV_WORKFLOW.md` §2.3 lists any AI prompt or response path as a `security-reviewer` trigger for exactly this reason, and SD §8.2 steps 4–6 make schema validation a mandated step, not hygiene.
+
+Concretely, the parsed object must be validated for:
+
+- **Structure** — the JSON parses at all; `ingredients`/`steps` are arrays of the right shape; no unexpected keys are passed through into anything downstream.
+- **Bounds** — reuse `createRecipe`'s caps exactly (**100 ingredients, 100 steps, 2,000 chars/step**, §12.3 S3) plus a title bound. A draft that could not be saved must never be proposed. Without a bound, a model that loops can return megabytes and the Lambda cheerfully forwards it to a phone.
+- **Enums** — `role`, `cuisineTier1`, `dietaryTags` are closed (§12.2.6, W6's D4), and a Gemini parse of a Punjabi rajma recipe will very plausibly emit `"punjabi"`, `"indian"`, or `"vegetarian"` — none of which are in `CuisineTier1` (`north_indian`, `south_indian`, `pan_india`, `indo_chinese`, `continental`) or `DietaryTag` (`veg`, `vegan`, `jain`, `eggetarian`, `gluten_free`, `dairy_free`). Gemini's `responseSchema` structured-output mode reduces but does **not** eliminate this — a constrained-decoding guarantee from the provider is not a validation boundary we own, and S2's Zod layer is authoritative regardless.
+- **Injection** — nothing in the model's output is ever interpolated into SQL, a URL, or a subsequent prompt. (It isn't today; the test exists so it stays that way.)
+
+W6's D4 locked "reject, don't pass through" for enums *at the `createRecipe` write boundary*, and that stays correct. The open question was the **parse** boundary: if the model returns a perfect 14-ingredient rajma recipe and calls the cuisine `"punjabi"`, does the whole parse fail?
+
+**LOCKED (D4): asymmetric — strict on structure and bounds, lenient-with-warnings on enums.** An unrecognised `cuisineTier1`/`dietaryTag` is dropped (coerced to `null` / filtered out) and recorded in `RecipeDraft.warnings`; a structural or bounds violation fails the parse and takes the §13.2.7 retry path. Rationale: this is the *identical* reasoning §12.2.6 already used on the read side ("one bad row degrades one field, never the whole query"), applied to one bad field degrading one field rather than the whole parse. Failing an 80%-correct parse over a cuisine label is the single easiest way to miss PRD §11's ≥80% acceptance target for a reason that has nothing to do with parse quality. The strictness that matters — nothing unbounded, nothing unsaveable, nothing interpolated — is unaffected.
+
+#### 13.2.6 CONFLICT, LOCKED (D5) — an AI-proposed `role` collides with W6's D1 "no default anywhere"
+
+§12.7 D1 locked: `role` is "required on create, **no server default, no pre-selected UI chip**." The AIProposal widget's entire purpose is to pre-fill fields for the user to accept or edit. If the model returns `role: "sabzi_dal"` and the Freeform review screen renders that chip selected, D1 is violated by the letter and arguably by the spirit — the user can tap Save without ever having made a role decision.
+
+Three readings were weighed: (i) the model must not propose `role` at all, and the review screen shows an empty required picker; (ii) the model may propose it, but the chip renders in a visually distinct *proposed* state and submit stays blocked until the user affirmatively confirms or changes it (one tap, but a real one); (iii) D1 is about the blank structured form only and an AI proposal is exempt.
+
+**LOCKED (D5): (ii).** **W6's D1 still holds in full — no recipe can save with a role nobody actively chose.** The proposal is an affordance, not a default. It also generalises: the same "proposed until confirmed" state is what the W18 photo-pantry and W19 cook-from-pantry `AIProposal` reviews will need, so building it here is not a one-off. `RecipeDraft.role` stays nullable either way (the model omitting it must be representable).
+
+#### 13.2.7 GAP, LOCKED (D7) — the "AI failure fallback" wireframe has no resolver-level contract behind it
+
+SD §14 gives four one-line rows ("throttled → exponential backoff 3×"; "unparseable JSON → retry once with reinforcement"; etc.) and SD §8.2 gives six numbered comment-steps. Neither is a contract: there are no timeouts, no shared deadline, no error codes, and no statement of which failures the client should offer a *retry* for versus which should route to the fallback screen. A wireframe named "AI failure fallback" cannot be built against that. `DEV_WORKFLOW.md` §3.2 already mandates the RED test ("malformed/non-JSON model output → retry once → second failure → `AIError` surfaced as a friendly message") — this section is what that test asserts against.
+
+**The contract, LOCKED as specified**, implemented in `api/src/ai/invokeModel.ts` (S2) and consumed identically by every future AI feature:
+
+**One deadline governs everything.** At handler entry, `deadline = now + AI_DEADLINE_MS` (**20,000 ms**). Every retry decision checks the remaining budget first and gives up rather than starting an attempt it cannot finish. The ceiling exists because AppSync's Lambda-resolver invocation is bounded at 30s regardless of the Lambda's own timeout (§13.2.8) — an unbounded "3× backoff" as SD §14 words it can walk straight past it and produce a generic AppSync timeout instead of any of our own error codes, which is precisely the failure the fallback screen is supposed to explain.
+
+> **The 20,000 ms figure is an estimate, not a measured number.** The draft plan intended to validate it against the cut Bedrock spike's latency measurement (§13.2.2). With that spike gone, **S2 validates it empirically instead**: S2's step 1 includes ten real Gemini 2.5 Flash calls on a representative ~4,000-character parse, recording p50/p95, and `AI_DEADLINE_MS` is set from that measurement before S2 merges. If a single attempt turns out to run 6s+, **the retry policy shrinks; the deadline does not grow** — 30s is AppSync's, not ours to negotiate. One Gemini-specific factor to measure explicitly: 2.5 Flash performs internal "thinking" by default, which inflates both output-token count and latency; S2 measures with and without `thinkingBudget: 0` and records which the prompt ships with.
+
+**Two independent, separately-bounded retry chains:**
+
+| Chain | Trigger | Policy | Exhausted → |
+|---|---|---|---|
+| Transport | HTTP 429, 503, 500, connection reset/timeout from the Gemini endpoint | up to **2 retries** (3 attempts total), jittered backoff ~500ms then ~1,500ms, deadline-gated | `AI_BUSY` |
+| Output | `JSON.parse` failure, or Zod **structural/bounds** failure (never an enum-only failure, §13.2.5) | exactly **1 reinforcement retry** — same prompt plus a "return valid JSON only, no prose, no markdown fences" system reinforcement, `temperature: 0.2` unchanged (SD §8.6) | `AI_UNPARSEABLE` |
+
+**The error taxonomy the client actually branches on** (extends `api/src/errors.ts`'s existing shape, so `graphql_error_mapper.dart` gets a real code, not a string match):
+
+| Code | Cause | Retryable by user? | Mobile destination |
+|---|---|---|---|
+| `AI_BUSY` | transport chain exhausted | **Yes** | inline retry on the input screen — the text is not lost |
+| `AI_UNPARSEABLE` | output chain exhausted (2 bad responses) | No | **AI failure fallback screen (12.1)** |
+| `AI_UNAVAILABLE` | provider rejected the credential or the request outright — HTTP 401/403, key revoked, model ID retired, quota exhausted at the account level | No | fallback screen, different copy |
+| `AI_TIMEOUT` | deadline hit with no usable response | **Yes** | inline retry |
+| `RATE_LIMITED` | our own daily cap (existing `RateLimitedError`, §13.2.9) | No, not today | distinct copy — "you've used your 20 AI parses today", **never** the generic failure screen |
+| `VALIDATION` | input rejected before any spend — empty, or >4,000 chars (SD §13.4) | n/a | inline on the input field, no Gemini call made |
+
+**The fallback screen's job is to not lose the user's work.** Its non-negotiable behaviour: the pasted text (or the entered URL) survives, and one tap opens W6's `RecipeFormScreen` seeded with whatever *was* extractable — for `AI_UNPARSEABLE` that may be nothing but an empty form, which is still strictly better than a dead end. This is also the R2 mitigation's landing point ("copy-paste fallback UX") and SD §14's "Manual entry always available" row, made concrete.
+
+**Never retried:** `RATE_LIMITED`, `VALIDATION`, `AI_UNAVAILABLE`, and any enum-only Zod failure (that path warns, §13.2.5). **The rate limit is consumed exactly ONCE per user-initiated mutation call, before the first attempt, regardless of how many transport or reinforcement retries happen inside it** — otherwise a throttled user silently loses three days' budget in one tap. This is asserted by its own named test in S2.
+
+#### 13.2.8 CRITICAL — AppSync's 30-second resolver ceiling, not Lambda's timeout, is the real bound
+
+`api-stack.ts`'s resolver Lambdas carry a generous timeout sized for Aurora auto-pause resume (~30s cold, §11.5.4). AppSync's invocation of a Lambda resolver is separately capped at **30 seconds**; past that the client gets an AppSync-level timeout, not our error envelope, and none of §13.2.7's taxonomy reaches the phone.
+
+Both W7 AI-adjacent resolvers can plausibly approach it: `parseFreeformRecipe` (Gemini latency × up to 3 attempts, plus thinking overhead) and `importRecipeFromUrl` (DNS + TLS + a slow blog + redirects). **CALL:** hard sub-budgets, all enforced client-side in the Lambda, all inside §13.2.7's single 20s deadline — **8s** total for the outbound HTTP fetch including redirects, **1MB** response cap with a streaming abort past it, and the transport/output retry chains deadline-gated as specified. S2's measured p50/p95 is what confirms 20s is the right number.
+
+#### 13.2.9 GAP, LOCKED (D8) — rate limits: one exists, one doesn't, and both are the week's actual cost control
+
+`api/src/rateLimit/dailyActionLimiter.ts` already implements exactly what SD §8.5 requires — an atomic, race-safe, per-user-per-UTC-day counter with TTL against the shared `cacheTable`. It ships in production behind `joinHousehold`. **W7 needs no new rate-limit infrastructure whatsoever**, only two `action` names and two caps, plus the `api-stack.ts` grant loop (which today grants `dynamodb:UpdateItem` to exactly two Lambdas and is asserted by a test that will fail when a third appears — as designed).
+
+That file's own doc contains the constraint that matters: *"Existing action names are load-bearing production data: changing one orphans every live counter written under the old key, so treat them as frozen strings, not cosmetic labels."* The two names are therefore a decision, not a detail.
+
+**LOCKED (D8):** `'freeformParse'` at **20/day per user** (SD §8.5's stated number, already locked in earlier planning) and `'urlImport'` at **30/day per user** (new). The remaining action names are reserved now while none are live, so the whole scheme is chosen once rather than accreted: `'photoPantry'` (W18), `'cookFromPantry'` (W19), `'staplesNote'` (W15).
+
+**Why these caps carry more weight than they look like they do, and why that is stated rather than left implicit:** the CloudWatch `$5/day` spend alarm and its DDB/CloudWatch wiring are deferred to W17/W22 (§13.1, out of scope). That means for W7 there is **no reactive spend detection at all** — nothing that notices a runaway loop, a stuck retry, or a curious user burning credit, and nothing that pages anyone. These two per-user daily caps are **THE actual preventive cost control shipping this week**, not a formality and not defence-in-depth on top of something else. At 20 parses × ≈$0.0022 (§13.2.2) the worst case is ≈$0.044/user/day, which is what makes the $300 Gemini credit a comfortable rather than a nervous number. The cap being enforced *before* the first provider call — and consumed exactly once per user call regardless of internal retries (§13.2.7) — is therefore a cost property, not just a fairness one, and S2/S3's "no provider call was made" assertions are cost-control tests, not merely validation tests.
+
+#### 13.2.10 CRITICAL — SSRF: `importRecipeFromUrl` is a server-side fetcher pointed at a user-supplied URL
+
+This is the highest-severity item in W7, the direct analogue of §12.5.2's role in W6. An authenticated user hands us a URL and we fetch it with the server's network identity. Even with D3's non-VPC placement (which removes the "reach our own private subnets" prize), the standard attack surface remains: `http://169.254.169.254/...` (the instance/container metadata endpoint), `file://`, `gopher://`, RFC1918 and loopback and link-local addresses, DNS names that resolve to private space, **redirect chains that start public and land private**, DNS-rebinding between the validation lookup and the connect, and using our egress IP as an anonymising relay against a third party.
+
+**CALL — the mandatory control set, all of it in S5, all of it RED-tested:**
+
+- Scheme allowlist: `https` only (not even `http`).
+- Reject credentials-in-URL, non-default ports, and any host that is an IP literal rather than a name.
+- Resolve DNS explicitly and **reject if any resolved address is in a private, loopback, link-local, CGNAT, or reserved range** — checked for every address returned, not just the first.
+- **Follow at most 3 redirects, re-running the full validation on every hop.** This is the control most often omitted and the one that most often matters.
+- Bind the connection to the validated address where the runtime permits it, to close the rebinding window; where it doesn't, treat the shortened window as accepted residual risk and say so in the SD §18 entry rather than implying it's closed.
+- 8s total budget, 1MB response cap with streaming abort, `Content-Type` must be HTML-ish.
+- A descriptive, contactable `User-Agent` identifying Parimaan — see §13.2.14.
+- The fetched bytes are **never** echoed back to the client. Only the parsed `RecipeDraft` is. An error never includes the response body, headers, or a resolved IP — that is an internal-network oracle.
+
+`security-reviewer` **fires** on S5 and must be given this list explicitly as the review checklist, not left to infer it.
+
+#### 13.2.11 GAP, LOCKED (D10) — R2's mitigation is written as a UX ("copy-paste fallback") with no threshold that triggers it
+
+§6 R2 sets the target at ≥16/20 and the §4 W7 DoD gate repeats it, but nothing says what happens at 12/20. Deciding that *after* seeing the number is how a spike result gets rationalised instead of acted on. **LOCKED (D10) — the rule is pre-committed here, before S1 runs:**
+
+| S1 result | Action |
+|---|---|
+| **≥16/20** | Ship as planned. URL import is the **primary path** on screen 8.1. |
+| **10–15/20** | Ship the mutation, but **paste is promoted to equal visual prominence with URL import** on screen 8.1 — not a buried fallback — and screen 8.3's failure state (now common, not exceptional) gets first-class copy pointing at the freeform path. No code is cut; emphasis and copy change. |
+| **<10/20** | **Cut the JSON-LD parser, resolver, and URL-import screen entirely — S4, S5, and S9** (~7.5 hrs). Screen 8.3 becomes a paste-assist ("open the page, copy the recipe, paste it here") routing into 8.4, and W7 ships copy-paste-only. Revisit in v1.1 with a site-specific scraper set, never with an LLM-parses-the-HTML approach (§13.2.12). |
+
+**If the <10/20 branch fires, S4/S5/S9 are marked `CUT — D10, S1 returned n/20` in §13.3 and their rows kept in §13.5.1's table with their hours struck through. They are not silently deleted from this plan.** That is this codebase's own convention for deviations — the same way W6's S8 recorded that `recipe_form_entry.dart` was skipped rather than quietly omitting it — and it is what makes a v1.1 revisit possible without re-deriving the reasoning.
+
+**This is a quality gate, not a schedule one.** D9 commits URL import at full scope for this week; the only thing that can remove it is S1's measured number falling below 10/20, and nothing about the hours.
+
+The nuance the raw count hides, which S1 must record separately: a page having `application/ld+json` with `@type: Recipe` is **not** the same as it parsing into a usable draft. S1 reports both numbers (§13.3 S1), and the thresholds above apply to the *usable-draft* number, which is the one the DoD gate actually cares about.
+
+#### 13.2.12 CALL — LLM-parsing-the-HTML is explicitly out of scope for URL import
+
+When the JSON-LD parse fails, the obvious-looking move is to feed the page's text to the model. **Not in W7, and the reason should be recorded before someone reaches for it under S1-result pressure:** it takes a third party's arbitrary HTML — the most hostile prompt-injection substrate available, and one an attacker fully controls by hosting a page — and pipes it into a model whose output we then propose to a user. It also multiplies cost per import by an unbounded factor of page length, which cuts directly against §13.2.9's point that per-user caps are this week's only cost control. The locked mitigation for a failed URL import is the *user* copying the text they can see (SD §14, R2), which keeps a human between the hostile page and the model. If this is ever revisited, it is a v1.1 design with its own threat model, not a W7 fallback branch.
+
+#### 13.2.13 NOTE — do not cache either mutation in W7
+
+SD §8.6 scopes caching to cook-from-pantry (30 min per household+pantryHash) and the staples note; freeform parse is deliberately absent, and unique inputs make it pointless anyway. URL import *looks* cacheable per URL — the same blog page yields the same draft — but caching it means storing third-party content server-side keyed by a value one user supplies and another might collide with, which is a cache-poisoning and cross-household-leak question this week does not need to answer for a saving of one HTTP GET. **CALL:** no cache in W7; revisit in W19 when the invocation layer's cache path is built for cook-from-pantry anyway.
+
+#### 13.2.14 NOTE — robots.txt, ToS, and the request we send
+
+Server-side fetching of third-party recipe pages on a user's behalf, at ≤30 requests/user/day, for content the user is about to read anyway, is ordinary user-agent-on-behalf-of-user behaviour rather than crawling — but it is worth a recorded position rather than an assumed one. **CALL:** send an honest, contactable `User-Agent` (`Parimaan/1.0 (+https://parimaan.app)`), never spoof a browser, respect `4xx`/`429` without retrying (a `429` from a blog becomes a plain user-facing failure, not a backoff loop), and do **not** fetch `robots.txt` for a single user-initiated fetch. If W13/W14 ever bulk-imports curated recipes from these sources, that is crawling and the position changes. Flagged for the founder as a business-judgment item, not a technical blocker.
+
+#### 13.2.15 NOTE — W7 ships no migration, and that is a first since W3
+
+`source_type`'s `CHECK` already accepts `'url'` and `'freeform_ai'`; `source_url TEXT` already exists. S6 needs only to add `source_url` to `insertRecipe`'s column list. Consequence: **`database-reviewer`'s "mandatory on every migration" gate does not fire anywhere in W7** — the first week that's been true since W3. Recorded so its absence reads as a fact about the week rather than a skipped step.
+
+#### 13.2.16 NOTE, forward-flag — `onRecipeChanged` needs nothing from W7
+
+A confirmed draft is created through `createRecipe`, which is already on `onRecipeChanged`'s `@aws_subscribe` mutation list (`shared/schema.graphql` line 260). URL-imported and AI-parsed recipes therefore fan out to other devices for free. No W7 subscription work — the parse mutations themselves are deliberately *not* subscribed to (nothing is persisted, and a draft is one user's private in-flight work, not household state).
+
+#### 13.2.17 NOTE — `AIProposal` is the fifth domain widget and the first with no CSS-component precedent
+
+WS-5 lists five domain widgets; `PantryRow` (W5), `RecipeCard`, `MealSlot`, `ChecklistItem` are the others. `mobile/lib/shared/ui/components/` currently holds ten primitives and no `AIProposal`. Per `DEV_WORKFLOW.md` §3.3, **goldens are for `lib/shared/ui/` design-system components only** — `AIProposal` is a domain widget and gets behaviour tests, not a golden, exactly as `PantryRow` and `RecipeCard` did. **CALL:** build it generic over "a proposed value the user accepts, edits, or rejects" rather than recipe-shaped, since W18's per-item photo-pantry review is its second consumer and W19's is its third.
+
+### 13.3 Slice breakdown
+
+**Twelve slices, one PR each.** **S1 runs first and is exempt from strict TDD** (`DEV_WORKFLOW.md` §6c) — its output is written-up numbers plus, potentially, the removal of three slices.
+
+> #### CUT before the week started — former S1, "Bedrock `ap-south-1` availability + VPC reachability spike (R1, day 1)"
+>
+> **Status: CUT, not deferred, not skipped.** The draft plan opened W7 with a day-1 spike to establish whether a Claude Haiku model ID was invocable in `ap-south-1` on the dev account, whether that invocation worked from a VPC-attached Lambda in `PRIVATE_ISOLATED` through the existing `BEDROCK_RUNTIME` interface endpoint, which of three mitigations applied if not, and what the p50/p95 parse latency was on the chosen path. It was sized at ~1.5 hrs and rated **High** risk, mostly because a fresh Bedrock model-access grant is a *calendar* blocker rather than an effort one.
+>
+> **Why it was cut:** D11 (§13.2.2) replaces Bedrock/Claude with Gemini 2.5 Flash for both of W7's AI mutations. Every question this spike existed to answer is Bedrock-specific — AWS regional model availability, account-level model access, and reachability through a regional VPC interface endpoint. Gemini is a public HTTPS API reached from a non-VPC Lambda (D3) with a Secrets-Manager-held key; there is no region gate, no access grant, and no endpoint to route through. The one genuinely provider-agnostic thing the spike would have produced — a measured latency distribution to validate §13.2.7's 20s deadline — **has been relocated into S2's step 1**, not lost.
+>
+> Recorded here rather than deleted so that (a) §6 R1's now-moot risk row has a traceable explanation, and (b) whichever future week revisits Bedrock inherits the spike's full question list ready-made.
+
+#### S1 — JSON-LD coverage spike, top-20 Indian recipe blogs (R2, day 1)
+
+- **Delivers:** §6 R2 resolved against the ≥16/20 gate, and D10's pre-committed rule executed. **Two numbers, not one:** (a) how many of 20 pages expose `application/ld+json` containing an `@type: Recipe` node; (b) how many parse into a **usable draft** — defined up front as title + ≥1 ingredient + ≥1 step. (b) is what the DoD gate and D10's thresholds apply to.
+- **Method:** the founder picks the 20 blogs (this is a product judgment about what Indian households actually cook from — Hebbar's Kitchen, Vah Reh Vah, Sanjeev Kapoor, Cook With Manali, Dassana, Archana's Kitchen and similar, plus a deliberate few regional/low-production-value sites, because the top-6 SEO winners all have perfect schema markup and would flatter the number). Fetch each page once, save the raw HTML into a fixture directory, and record per site: ld+json present? `@type` shape (string vs array vs `@graph`)? which of title/ingredients/steps/yield/times/image are present? `recipeInstructions` shape (plain string vs `[String]` vs `[HowToStep]` vs `[HowToSection]`)? ISO-8601 durations parseable? any microdata/RDFa fallback available where ld+json is absent?
+- **The saved fixtures are the deliverable that outlives the spike** — S4's test suite runs against them, which is the only way to get real-world JSON-LD messiness into a unit test without network calls in CI. Commit the fixtures (small, static HTML); note their provenance and that they're test data, not redistributed content.
+- **Files:** `api/test/fixtures/jsonld/*.html` (new, committed); `docs/E2E_MVP_PLAN.md` (§6 R2 row + a results table in §13.5).
+- **Depends on:** nothing. **Day 1.**
+- **Size / Risk:** ~2.0 hrs / **High** — the risk is entirely the result. A <10/20 outcome cuts three slices (D10) and is the single largest possible change to this week's shape.
+- **Agents:** none mandated (spike). `doc-updater` records the result, including which D10 tier fired.
+
+#### S2 — `invokeModel` AI invocation layer (Gemini 2.5 Flash) + Secrets Manager API key + the non-VPC resolver category *(new infrastructure — full pipeline)*
+
+First AI call, first third-party-API call, and first non-VPC Lambda in this codebase. Own design decision per §2.2 step 2b.
+
+| # | Step | Agent | Concrete action | Gate |
+|---|---|---|---|---|
+| 1 | Research & Reuse | *none* | **Mandatory.** Current `@google/genai` SDK version and whether its `responseMimeType: 'application/json'` + `responseSchema` structured-output mode is worth using on top of our own Zod layer (it reduces malformed output but is **not** the trust boundary, §13.2.5). Whether the SDK's own retry behaviour can carry §13.2.7's transport chain rather than hand-rolling it. Whether `thinkingConfig: { thinkingBudget: 0 }` is right for this workload. `gh search code` for Zod-validated Gemini JSON-output patterns. **Also in this step: the ten real latency calls that set `AI_DEADLINE_MS` (§13.2.7) — p50/p95 on a representative ~4,000-char parse, with and without thinking, recorded in SD §18.** | Adopt-vs-hand-roll written down; SDK/structured-output choices decided with reasons; `AI_DEADLINE_MS` set from measured data, not from the 20,000 ms estimate. |
+| 2 | Plan (novel arch) | `architect` | Record: (a) **D11's provider deviation in full** (§13.2.2) — including that W15/17/18/19 stay open, that the idle `BEDROCK_RUNTIME` endpoint is untouched, and that SD §8.4's cross-region finding remains true-but-W7-irrelevant; (b) the §13.2.7 retry/deadline/taxonomy contract, in full, as the thing every future AI feature will share; (c) the non-VPC Lambda category in `api-stack.ts` and why (§13.2.1); (d) prompts live in `api/prompts/*.ts` with a `PROMPT_VERSION` constant (SD §8.3) — logged, never containing household data at rest; (e) the secret's name, ARN plumbing, and cold-start fetch, explicitly as a copy of the `APP_ROLE_SECRET_ARN`/`parimaan/google-oauth-secret` pattern. | Decisions in SD §18. |
+| 3 | RED | `tdd-guide` | Gemini client **always stubbed** (`DEV_WORKFLOW.md` §3.2 — real calls are S2 step 1 and S12 only, never CI). Transport chain: 429 → 429 → success returns the value; three 429s → `AI_BUSY`. Provider auth: HTTP 403/401 → `AI_UNAVAILABLE` with **no** retry and **no** AWS or credential internals in the message. Output chain: non-JSON → reinforced retry → success; two bad responses → `AI_UNPARSEABLE`; **markdown-fenced JSON (` ```json `) is stripped and accepted, not treated as a failure** (the most common LLM output-format deviation, Gemini included). Deadline: a slow first attempt that leaves insufficient budget does **not** start a retry and yields `AI_TIMEOUT`. Bounds: a 10,000-ingredient response is rejected, not forwarded. Enum leniency (§13.2.5): unknown `cuisineTier1` → `null` + a warning, *not* a failure, and specifically **not** a reinforcement retry. **Rate limit consumed exactly once across all internal retries** (§13.2.7/§13.2.9). Secret: a missing/malformed `GEMINI_API_KEY_SECRET_ARN` fails loudly at cold start (mirroring `api/src/db/config.ts`'s existing behaviour and its test); the fetched key is cached per container and never logged. **CDK (§3.4, fine-grained before snapshot):** the non-VPC Lambda has **no** VPC config, **no** `lambdaSecurityGroup`, and **no** access to `appRoleSecret`; it has `secretsmanager:GetSecretValue` scoped to the **Gemini secret's ARN only**, never a wildcard; the DDB `UpdateItem` grant extends to exactly the AI/net Lambdas and no others (the existing test that asserts "exactly two" changes deliberately, with its rationale updated); **no `bedrock:*` policy is added anywhere, and `network-stack.ts` is untouched** (assert the snapshot is unchanged for that stack). | Failures shown. |
+| 4 | GREEN | *none* | `api/src/ai/{geminiClient,invokeModel,errors}.ts` — `geminiClient` is the only file that knows the provider, `invokeModel` is the provider-neutral, Zod-validated seam every resolver calls; `api/src/ai/config.ts` (Zod-validated `GEMINI_API_KEY_SECRET_ARN`, same shape as `api/src/db/config.ts`); `api/prompts/` (empty scaffold + `PROMPT_VERSION` convention); `infra/stacks/api-stack.ts` (`AI_RESOLVERS`/`NET_RESOLVERS` alongside `DB_RESOLVERS`, plus the scoped Secrets Manager grant). | Tests pass. |
+| 5 | REFACTOR | `tdd-guide` | `invokeModel` is generic over `z.ZodSchema<T>`, knows nothing about recipes, **and knows nothing about Gemini** — the provider lives behind `geminiClient`. This seam is what lets W15/W17/W18/W19 pick a different provider without touching a resolver (§13.2.2 point 6). | Clean. |
+| 6 | Domain review | `typescript-reviewer` | — | Addressed. |
+| 7 | Security | `security-reviewer` | **FIRES**, three separate triggers: AI prompt/response path; CDK IAM policy + a new secret; third-party SDK addition. Specifically: the API key is never in CDK source, never in an env var value, never logged, and never returned in an error; `secretsmanager:GetSecretValue` is ARN-scoped; no prompt or model output logged at a level that persists household content (SD §8.3); the non-VPC Lambda's IAM role is genuinely minimal (one secret + one DDB action + logs, nothing else); error messages returned to the client carry no provider or AWS internals; **the rate limit is charged before the first outbound call** (§13.2.9 — reviewed as a cost control, not only as abuse prevention). | No CRITICAL/HIGH. |
+| 8 | General | `code-reviewer` | — | Clean. |
+| 9 | Docs | `doc-updater` | SD §8.2 replaced with the real signature; §8.4 annotated per §13.2.2 point 2; §15.1's Bedrock ap-south-1 assumption annotated "not exercised in W7 (D11)"; §16's "month 5" AI-plumbing row noted as pulled forward; §6 R1 marked moot-for-W7. | Synced. |
+
+**Depends on:** nothing — **can start day 1 alongside S1.** (This is a direct benefit of cutting the former S1: the week's foundational backend slice is no longer gated behind a spike.) **Size / Risk:** ~2.5 hrs / **High** — the week's foundational backend slice; every future AI feature inherits whatever is wrong here, and it is the codebase's first integration with a non-AWS provider.
+
+#### S3 — `RecipeDraft` SDL + `parseFreeformRecipe`
+
+- **Delivers:** `RecipeDraft`/`RecipeIngredientDraft` in `shared/schema.graphql` (§13.2.3, D1); `Mutation.parseFreeformRecipe(text: String!): RecipeDraft!` — note **both** the return-type deviation and the `householdId` drop (D3), each an SD §6.1 deviation; the Gemini prompt in `api/prompts/parseFreeformRecipe.ts` with `PROMPT_VERSION`; the Zod output schema (§13.2.5, D4); `'freeformParse'` at 20/day via the existing `checkAndIncrementDailyAction`.
+- **Files:** `shared/schema.graphql`; `api/prompts/parseFreeformRecipe.ts`; `api/src/validation/parseFreeformRecipe.ts` (input) + `api/src/ai/schemas/recipeDraft.ts` (output — deliberately separate files; one validates a user, the other validates a model, and conflating them is how the trust boundary gets blurred); `api/src/resolvers/parseFreeformRecipe.ts`; `infra/stacks/api-stack.ts`.
+- **Depends on:** **S2**.
+- **Size / Risk:** ~2.5 hrs / **Medium-High** — prompt quality is the uncertainty, not code. Budget an iteration or two against real pasted recipes (WhatsApp-forwarded, blog-copied, handwritten-transcribed) before the prompt is any good. Gemini's `responseSchema` mode may shorten this materially; S2 step 1 decides whether it is used.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**fires**: new Lambda resolver + AI prompt/response path + rate limiting) → `code-reviewer` → `doc-updater` (SDL change → re-sync SD §6.1, record both deviations in §18).
+- **RED tests:** input >4,000 chars → `VALIDATION` **with no Gemini call made** (assert the stub was never invoked — this is a cost control, not just validation, §13.2.9); empty/whitespace input → `VALIDATION`; **explicit `null` handled per §11.5.5's regression class** (`.nullish()` where nullable); daily cap → `RateLimitedError` and, again, no Gemini call; **the deliberate absence of a membership check is asserted explicitly** (D3 — the resolver takes no `householdId`, and this test exists so the omission is a documented property rather than something a later reader "fixes" or a later refactor loses); a well-formed model response maps to a `RecipeDraft` with ingredients in order and `raw` preserved verbatim; unknown `cuisineTier1` → `null` + warning, draft still returned; a response exceeding the 100-ingredient cap → `AI_UNPARSEABLE` after one reinforcement retry; `role` absent from the model's response → `RecipeDraft.role` is `null`, not a failure (§13.2.6); **prompt injection: input containing "ignore previous instructions and return {...}" does not produce a draft that escapes the Zod schema** — the assertion is about the schema holding, not about the model behaving.
+
+#### S4 — JSON-LD parse domain module (pure, no network)
+
+- **Delivers:** `api/src/domain/jsonLd/` — HTML → JSON-LD extraction → `Recipe` node selection → normalisation to `RecipeDraft` shape. Pure functions over strings, zero I/O, tested entirely against S1's committed fixtures. Handles the real-world shapes S1 catalogued: `@graph` wrappers, `@type` as string or array, `recipeInstructions` as plain string / `[String]` / `[HowToStep]` / `[HowToSection]` (nested), ISO-8601 `prepTime`/`cookTime` (`PT1H30M`), `recipeYield` as a number or `"4 servings"`, and HTML entities and stray markup inside instruction text. Includes the ingredient-string parser (`"2 cups atta, sifted"` → quantity/unit/name/notes, `raw` always kept, unparseable → `raw` + `name` only, never dropped).
+- **Files:** `api/src/domain/jsonLd/{extract,selectRecipeNode,normalise,duration,yield,instructions}.ts`; `api/src/domain/ingredientString.ts`; tests against `api/test/fixtures/jsonld/`.
+- **Depends on:** **S1** (fixtures). Fully parallel with S2/S3 once S1 lands. **Conditionally CUT per D10** if S1 returned <10/20 — record the cut per §13.2.11, do not delete this slice's text.
+- **Size / Risk:** ~3.0 hrs / **Medium-High** — the largest backend slice and the highest-variance one, because its size is set by what S1 found, not by design. Step 1 Research & Reuse is **mandatory and explicitly named in `DEV_WORKFLOW.md` §2.2**: search npm for JSON-LD/microdata extractors (`cheerio` + hand-rolled `<script type="application/ld+json">` extraction, `microdata-node`, `web-auto-extractor`) and study Python's `recipe-scrapers` as **prior art for site-specific quirks, not as a dependency**. Adopt over hand-roll wherever a maintained library exists; hand-roll only the Parimaan-specific normalisation.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**fires**: third-party SDK addition — an HTML parser is parsing hostile input; check for prototype-pollution-prone JSON handling and unbounded recursion on nested `HowToSection`) → `code-reviewer`.
+- **RED tests:** each committed fixture parses to its expected draft (table-driven, one case per site); a page with no ld+json returns "no recipe found", never throws; `@graph` with a `Recipe` among five other node types selects the right one; `@type: ["Recipe","NewsArticle"]` is accepted; a `HowToSection` tree flattens to ordered steps; `PT1H30M` → 90; `"4 servings"` → 4 and `"makes 12 laddoos"` → `null` rather than a wrong number; **deeply nested JSON does not blow the stack** (an adversarial fixture, hand-written, not scraped); `"1/2 tsp हल्दी"` keeps its Devanagari name intact; an ingredient string with no parseable quantity still yields a draft ingredient with `raw` and `name`.
+
+#### S5 — `importRecipeFromUrl` resolver + SSRF-safe fetcher
+
+- **Delivers:** `Mutation.importRecipeFromUrl(url: String!): RecipeDraft!` (note the `householdId` drop, D3) on the non-VPC resolver category from S2; the §13.2.10 URL validator and bounded fetcher; S4 wired behind it; `'urlImport'` at 30/day; SD §14's "couldn't read this page" failure mapped to a code the client can branch on.
+- **Files:** `shared/schema.graphql`; `api/src/net/{safeUrl,fetchPage}.ts` (new — deliberately its own module, not inside the resolver, because it is a security control with its own test suite and later features may reuse it); `api/src/resolvers/importRecipeFromUrl.ts`; `infra/stacks/api-stack.ts`.
+- **Depends on:** **S2** (non-VPC category), **S4** (the parser). **Conditionally CUT per D10** if S1 returned <10/20.
+- **Size / Risk:** ~2.5 hrs / **High** — highest-severity security surface of the week (§13.2.10), and the only one where a defect is exploitable by an authenticated user rather than merely wrong.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**FIRES** — hand it §13.2.10's control list as the explicit checklist) → `code-reviewer` → `doc-updater`.
+- **RED tests** (the validator's suite is the point of this slice): `http://`, `file://`, `gopher://`, `ftp://` all rejected; `https://169.254.169.254/...` rejected; `https://localhost/`, `https://127.0.0.1/`, `https://[::1]/`, `https://10.0.0.1/`, `https://192.168.1.1/`, `https://100.64.0.1/` all rejected; a hostname resolving to a private address rejected (injected resolver); **a public URL 302-ing to `http://169.254.169.254/` rejected on the redirect hop** — the single most important test here; >3 redirects rejected; a 2MB response aborted at the 1MB cap; a server that accepts and then never sends aborted at 8s; `Content-Type: application/pdf` rejected; a 429 from the origin surfaces as a plain failure with no retry; **an error never contains the response body, a header, or a resolved IP**; daily cap → `RateLimitedError` before any DNS lookup; a fixture page end-to-ends into a `RecipeDraft` carrying `sourceUrl`.
+
+#### S6 — `createRecipe` provenance: the confirm path
+
+- **Delivers:** D2's locked shape — `createRecipe(householdId: ID!, input: RecipeInput!, source: RecipeSourceAttribution)`, `sourceType` restricted server-side to `url`/`freeform_ai` (absent → `'user'`, unchanged for every existing caller), `sourceUrl` required-iff-`url`, and `source_url` added to `recipeRepository.insertRecipe`'s column list.
+- **Files:** `shared/schema.graphql`; `api/src/validation/createRecipe.ts`; `api/src/resolvers/createRecipe.ts`; `api/src/repositories/recipeRepository.ts`.
+- **Depends on:** S3 (for `RecipeSource` semantics to be settled). Independent of S4/S5.
+- **Size / Risk:** ~1.0 hr / **Low-Medium**. Small, but it is the one W7 slice that touches a shipped, tested, deployed mutation — every existing `createRecipe` test must still pass **unmodified**, which is itself the strongest evidence the argument is genuinely optional.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**fires**: modifies an existing Lambda resolver's authorization-adjacent input surface) → `code-reviewer` → `doc-updater`.
+- **RED tests:** absent `source` → `sourceType: 'user'`, `sourceUrl: null` (and every W6 `createRecipe` test passes untouched); `{sourceType: url, sourceUrl}` persists both and round-trips through `Query.recipe`; `{sourceType: freeform_ai}` persists with `sourceUrl: null`; **`{sourceType: curated}` and `{sourceType: ai}` are both rejected** (`VALIDATION`) — server-owned values, and this test is what stops W13/W19's provenance from being forgeable; `url` without `sourceUrl` rejected; `sourceUrl` alongside `freeform_ai` rejected; a `sourceUrl` that isn't a valid https URL rejected (it is displayed to other household members later — it is stored, untrusted, third-party-influenced text); explicit `null` on `source` handled per §11.5.5.
+
+#### S7 — `AIProposal` widget + recipe-draft domain/state (mobile)
+
+- **Delivers:** the fifth WS-5 domain widget, built generic over "a proposed value the user accepts, edits, or rejects" (§13.2.17); the Dart `RecipeDraft`/`RecipeDraftIngredient` domain models and mapper; the Ferry operations for both parse mutations; and the shared draft-review controller both review paths use.
+- **Files:** `mobile/lib/features/recipes/presentation/ai_proposal.dart` (domain widget, **not** a `lib/shared/ui/` design-system primitive, so **no golden**, `DEV_WORKFLOW.md` §3.3); `mobile/lib/features/recipes/domain/{recipe_draft,recipe_draft_ingredient}.dart`; `.../data/recipe_draft_mapper.dart`; `.../state/recipe_draft_controller.dart`; `mobile/lib/shared/graphql/operations/{parse_freeform_recipe,import_recipe_from_url}.graphql` + regenerated `__generated__/`.
+- **Depends on:** S3 (SDL for codegen); S5's SDL if D10 keeps URL import.
+- **Size / Risk:** ~2.0 hrs / **Medium** — mirror `features/recipes/` layering exactly; the new part is representing "proposed but unconfirmed" per field, which is state design, not widget design, and belongs in `domain/` where the ≥80% target is cheapest to hit (§3.3).
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` **skips** — presentation over an already-reviewed resolver. **One exception worth stating:** the widget renders server-returned strings that originated from a model or a third-party page. Flutter has no XSS analogue, but a 50,000-character "title" is a real render problem; the bound is enforced server-side in S2, and S7 asserts the widget truncates rather than trusting it.
+- **RED tests:** a field with a proposal renders in the proposed state and is visually/semantically distinct from a user-confirmed one (assert via semantics, not pixels); accepting marks it confirmed; editing marks it confirmed *and* user-modified (this is the ≤3-edits metric's data source, §13.5.7); rejecting clears it; a null proposal renders as an ordinary empty field; `warnings` render as non-blocking notes, never as errors; an absurdly long string truncates.
+
+#### S8 — Choose method screen (8.1) + Library FAB rework
+
+- **Delivers:** wireframe 8.1 — Structured / URL import / Freeform paste. Both `recipes_library_screen.dart` FAB call sites (lines 90, 169) redirect from `AppRoutes.recipeCreate` to the new chooser; the structured option then continues to W6's existing route unchanged. **D10 sets the relative prominence of the three options** — URL primary at ≥16/20, URL and paste co-equal at 10–15/20, URL replaced by a paste-assist at <10/20.
+- **Files:** `mobile/lib/features/recipes/presentation/recipe_method_screen.dart`; `mobile/lib/app/router.dart`; `mobile/lib/features/recipes/presentation/recipes_library_screen.dart`.
+- **Depends on:** nothing. **Can start day 1** alongside S1 and S2 — the one zero-dependency Flutter slice, same role S4 played in W5.
+- **Size / Risk:** ~1.0 hr / **Low**.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** three options render; each routes correctly; the existing W6 "FAB opens the form" tests are updated deliberately (not deleted) to "FAB opens the chooser, chooser opens the form"; the option layout matches whichever D10 tier S1 landed in; if D10 landed <10/20, the URL option is present-and-disabled with a reason and announces its disabled state to screen readers (§11.2.8's precedent).
+
+#### S9 — URL import screen (8.3)
+
+- **Delivers:** wireframe 8.3 — URL field, paste-from-clipboard affordance, an honest in-flight state (this can take several seconds, and Aurora is not even in the path — a spinner with no explanation is where users assume it's broken), success → the shared draft review screen (S10) with source attribution shown, failure → the fallback (S11) with the URL preserved.
+- **Files:** `mobile/lib/features/recipes/presentation/url_import_screen.dart`; `.../state/url_import_controller.dart`; routes.
+- **Depends on:** S5, S7, S8. **Conditionally CUT per D10** if S1 returned <10/20, replaced by a paste-assist routing into S10's input.
+- **Size / Risk:** ~2.0 hrs / **Medium**.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`.
+- **RED tests:** submit disabled until the field parses as an https URL client-side (cheap pre-check; the server's is authoritative); each server error code renders its own copy per §13.2.7's table — `AI_BUSY`/`AI_TIMEOUT` offer inline retry, `RATE_LIMITED` does not and says why, a parse failure routes to the fallback; the entered URL survives every failure path; success navigates to review with `sourceUrl` populated; a slow response shows progress and the screen stays cancellable.
+
+#### S10 — Freeform input (8.4) + Freeform review (8.5)
+
+- **Delivers:** two wireframes. 8.4: a large paste field with a live character counter against the 4,000-char bound (a hard client-side stop, so a user never spends a rate-limit unit on input the server will reject — §13.2.9). 8.5: the review, built per D6 as a **seeded wrapper over W6's `RecipeFormScreen`** with `AIProposal` affordances rather than a second form implementation — the §11.2.7 seeded-form reuse pattern, **third use**. AI-proposed fields carry a visible "proposed" badge/highlight until the user touches them (this is also what D5 requires). Confirm calls `createRecipe` with S6's `source` attribution. **Both review paths (freeform and URL) use this one screen**, distinguished by an attribution line.
+- **Files:** `mobile/lib/features/recipes/presentation/{freeform_input_screen,recipe_draft_review_screen}.dart`; `.../state/freeform_parse_controller.dart`; routes.
+- **Depends on:** S3, S7, S8 (and S9 shares the review screen).
+- **Size / Risk:** ~2.5 hrs / **Medium-High** — the highest-uncertainty Flutter slice, for the same reason S8 was in W6: seeding an existing dynamic-length-list form from a partially-populated draft, where "the model proposed this" and "the user typed this" must stay distinguishable through edits.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`.
+- **RED tests:** the counter blocks submit past 4,000 chars with no request sent; pasted text survives navigation to review and back; the review seeds every populated draft field and leaves absent ones empty; proposed fields render with the badge and lose it on edit; **`role` is not silently pre-selected — an AI-proposed role renders as a proposal and submit stays blocked until the user affirmatively confirms or changes it** (§13.2.6/D5 — the test that keeps W6's D1 honest); editing a proposed field marks it user-modified; `warnings` render non-blockingly; confirm sends `createRecipe` with `source: {sourceType: freeform_ai}` (and `url` + `sourceUrl` from the URL path — assert both); a `VALIDATION` from `createRecipe` renders inline without losing the draft; **cancel discards without writing anything** (the whole point of the draft design — assert no mutation fired).
+
+#### S11 — AI failure fallback screen (12.1) + mobile error taxonomy
+
+- **Delivers:** wireframe 12.1, and the Dart side of §13.2.7 — `graphql_error_mapper.dart` extended with the AI error codes so the client branches on a code, never on message text. The screen's contract: the user's input is preserved and visible, one tap opens `RecipeFormScreen` seeded with whatever was extractable (possibly nothing), and a second affordance retries where the code is retryable.
+- **Files:** `mobile/lib/features/recipes/presentation/ai_failure_screen.dart`; `mobile/lib/shared/graphql/graphql_error_mapper.dart`; `.../domain/ai_error.dart`.
+- **Depends on:** S7, S9, S10.
+- **Size / Risk:** ~1.5 hrs / **Medium** — small in code, but it is a named wireframe with a real gate and the thing that determines whether a failed parse costs the user their pasted text.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`.
+- **RED tests:** each of the six codes renders its own copy and its own affordances; an **unknown** future code degrades to a generic-but-non-blank state (never an empty screen and never a raw GraphQL string); the preserved input is non-empty on every path that reaches this screen; "enter manually" opens the form seeded with the partial draft; retry re-invokes and, on success, navigates to review.
+
+#### S12 — Real-AWS verification, 20-parse acceptance measurement, weekly doc pass
+
+- **Delivers:** three things. (1) `RUNBOOK.md` §2's non-negotiable real-dev-stack exercise of every W7 backend slice — including at least one call with an explicit `null` for every nullable argument (§11.5.5's regression class), **one real Gemini call end-to-end from the deployed non-VPC Lambda** (which is also the only proof that the Secrets Manager fetch works outside a stub), one real URL import against a live blog, and one deliberate SSRF attempt against the deployed endpoint (the unit tests prove the validator; this proves the deployed thing runs it). (2) **The DoD gate's second half measured**: 20 real freeform parses, recording per parse whether the draft was accepted and how many fields were edited, against PRD §11's "≥80% accepted with ≤3 edits" — plus the URL-import success rate on the same 20 blogs S1 used, now through the shipped mutation rather than the spike script. (3) §4.2's mandatory weekly pass: actuals into §4's W7 row, spike results into §6's R2 row, R1 annotated moot-for-W7 per §13.1, D11's deviation propagated into SD §8.2/§8.4/§15.1/§18, `RUNBOOK.md` entries for anything the real deploy broke — including the Gemini key's rotation procedure, which is new operational surface.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 W7 actuals + §6 R1/R2 + this §13); `docs/SYSTEM_DESIGN.md` (§6.1 SDL re-sync — `RecipeDraft`, both mutations' real signatures including the `householdId` drops, `createRecipe`'s `source` arg; §8.2 rewritten per S2; §8.4 annotated; §14's four AI rows replaced by §13.2.7's table; §15.1 annotated, §15 item 4 marked resolved; §18 decisions incl. D11); `docs/RUNBOOK.md`.
+- **Depends on:** all of S2–S11.
+- **Size / Risk:** ~1.5 hrs / **Low** risk, **non-optional** — a week isn't done until its §4 row has actuals (§6d), and the acceptance measurement is half the End-of-Month-2 DoD (§8), which lands at W8, one week away.
+- **Agents:** `doc-updater`. **`security-reviewer` phase-boundary sweep does NOT fire this week** — W8 is the §2.3 exception-1 boundary, not W7. Per-slice triggers fired on S2, S3, S4, S5, S6.
+
+### 13.4 Sequencing
+
+```
+   DAY 1: THE SPIKE, THE AI FOUNDATION, AND THE ZERO-DEP SCREEN, ALL IN PARALLEL
+   ┌───────────────────────────┐  ┌──────────────────────┐  ┌──────────────────┐
+   │ S1 JSON-LD coverage       │  │ S2 invokeModel       │  │ S8 Choose method │
+   │  top-20 blogs (R2)        │  │  (Gemini 2.5 Flash)  │  │  (8.1) + FAB     │
+   │  → D10 rule fires         │  │  + Secrets Manager   │  │  (zero deps)     │
+   └────────┬──────────────────┘  │  + non-VPC category  │  └────────┬─────────┘
+            │  (+ committed        └──────────┬───────────┘           │
+            │     fixtures)                   │                       │
+   ┌────────▼──────────────────┐   ┌──────────▼───────────┐           │
+   │ S4 JSON-LD parse domain   │   │ S3 RecipeDraft SDL + │           │
+   │  module (pure, no I/O)    │   │  parseFreeformRecipe │           │
+   │  (CUT if D10 <10/20)      │   └────┬──────────┬──────┘           │
+   └────────┬──────────────────┘        │          │                  │
+            │        ┌───────────────────┘          │                  │
+   ┌────────▼────────▼─────────┐                    │                  │
+   │ S5 importRecipeFromUrl    │              ┌─────▼──────┐           │
+   │  + SSRF-safe fetcher      │              │ S6 create  │           │
+   │  (CUT if D10 <10/20)      │              │  Recipe    │           │
+   └────────────┬──────────────┘              │  source    │           │
+                │                             └─────┬──────┘           │
+                │     ┌───────────────────────┐     │                  │
+                └────►│ S7 AIProposal + draft │◄────┼──────────────────┘
+                      │  domain/state (mobile)│     │
+                      └────┬──────────────┬───┘     │
+                           │              │         │
+              ┌────────────▼────┐  ┌──────▼─────────▼────────┐
+              │ S9 URL import   │  │ S10 Freeform input +    │
+              │  screen (8.3)   │  │  Freeform review (8.5)  │
+              │  (CUT if <10/20)│  └──────┬──────────────────┘
+              └────────┬────────┘         │
+                       └────────┬─────────┘
+              ┌─────────────────▼──────────┐
+              │ S11 AI failure fallback    │
+              │  (12.1) + error taxonomy   │
+              └─────────────────┬──────────┘
+              ┌─────────────────▼──────────────────────┐
+              │ S12 real-AWS + 20-parse acceptance     │
+              │     measurement + doc pass             │
+              └────────────────────────────────────────┘
+```
+
+**Working order: S1 ∥ S2 ∥ S8 (all day 1) → S4 → S3 → S5 → S6 → S7 → S10 → S9 → S11 → S12.**
+
+Non-obvious choices, with rationale:
+
+- **Three things start on day 1, not one.** The draft plan had two blocking spikes gating everything; cutting the Bedrock spike (§13.2.2) frees the week's foundational backend slice (S2) to start immediately rather than on day 2. That is a real schedule gain from D11 and worth naming, since it partially offsets D9's overrun without cutting anything.
+- **S1 still runs first among the JSON-LD work, before a line of its production code.** The cost-asymmetry argument §12.7 D9 used for W6's S9 and §11.4 used for W5's "S8 before S7." S1's outcome can **delete three slices** (D10, ~7.5 hrs). This is not a case where building first and measuring later costs "a bit of rework"; it costs the slice. §6 already schedules R2's spike in W7 — this sequencing is compliance with a locked risk row, not a new preference.
+- **S8 on day 1 alongside the spike.** The only zero-dependency Flutter slice, exactly the role S4 played in W5. It gives the week a merged PR while the spike runs, and it de-risks the FAB rework against W6's existing router tests early rather than under end-of-week pressure. Its final option layout is a one-line change once D10's tier is known.
+- **S4 before S3, despite S3 being the DoD-gate feature.** S4's only dependency is S1's fixtures, so it can run while S2 is in review; and S4 is the week's largest and highest-variance backend slice (its size is set by what S1 found). Discovering it is a 5-hour slice rather than a 3-hour one is information the week needs early, not on day 9.
+- **S10 before S9.** They share the review screen (S10 builds it). The freeform path is also the DoD-gate path *and* the R2 fallback destination, so it must exist regardless of D10 — whereas S9 is the one screen D10 can remove.
+- **S6 early and small.** It touches a shipped, deployed mutation; getting that reviewed and merged while the mobile slices are still in flight avoids a late change to a foundation W6 already stands on.
+
+### 13.5 Risks
+
+#### 13.5.1 The week does not fit in 10 hours, and the buffer is already gone — LOCKED (D9)
+
+| Slice | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | S10 | S11 | S12 | **Total** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| hrs | 2.0 | 2.5 | 2.5 | 3.0 | 2.5 | 1.0 | 2.0 | 1.0 | 2.0 | 2.5 | 1.5 | 1.5 | **24.0** |
+
+Against ~10 hrs nominal, a **~140% overrun before any surprise** — worse than W5's ~80% (§11.5.1) and W6's 100% (§12.5.1). The §7 20-hr buffer was ~8 hrs down after W5 and formally claimed by W6's D8. There is no buffer left to spend; W7 running two-plus weeks pushes the MVP date directly rather than absorbing into slack.
+
+**LOCKED (D9): accept a multi-week W7 at FULL scope.** URL import is **committed for this week** — S4, S5 and S9 stay in W7. The alternative on the table (deferring URL import to W8 and shipping a freeform-AI-only week) was considered and **explicitly rejected by the founder**. Nothing in this plan should be read as URL import being deferred, at risk, or a candidate for a schedule-driven cut. The **only** thing that can remove it is D10's <10/20 branch, which is a quality gate on measured JSON-LD coverage, not a schedule lever (§13.2.11).
+
+Two honest counterweights, neither of which is a plan: W6's estimate came in **~42% high** against the merge-timestamp proxy (§12.5.6), so 24.0 planned may be ~14 actual on the same measure; and D11 removed 1.5 hrs of spike outright while letting S2 start on day 1 instead of day 2 (§13.4).
+
+#### 13.5.2 SSRF in `importRecipeFromUrl` is the week's highest-severity item
+
+The direct analogue of §12.5.2. A user-supplied URL fetched by our server, in a resolver with no precedent in this codebase, where the failure mode is not a wrong answer but an exploitable one. §13.2.10 lists the full control set; S5's RED suite is the enforcement; `security-reviewer` fires with that list as an explicit checklist rather than being left to infer it. The redirect-revalidation test is the one most likely to be the difference between a control set and a control set that works.
+
+#### 13.5.3 Zod on model output is a trust boundary, not input hygiene — and W7 sets the pattern for every later AI feature
+
+`invokeModel`'s validation step is where untrusted, non-deterministic, partially-attacker-influenceable content stops being text and starts being data this system acts on. W15 (staples note), W17 (vision), W18 (photo pantry), W19 (recipe generation) all inherit whatever S2 establishes — **regardless of which provider each of those weeks picks** (§13.2.2 point 6), which is exactly why the validation layer sits in provider-neutral `invokeModel` and not in `geminiClient`. The specific failure to guard against is not "the model returns garbage" — that is handled and tested — but "the model returns something *plausible* that quietly exceeds a bound," which is why the caps mirror `createRecipe`'s exactly (§13.2.5): a draft that cannot be saved must never be proposed. A provider's own structured-output mode is a convenience, never the boundary. `security-reviewer` fires on S2, S3, S4, S5, and S6.
+
+#### 13.5.4 The JSON-LD spike can delete three slices
+
+Sequenced first for exactly this reason (§13.4). D10 (§13.2.11) pre-commits what happens at each tier, so the result is acted on rather than argued about, and the <10/20 branch's cut is *recorded* rather than silently applied. Residual risk: a borderline result (e.g. exactly 10, or 16 ld+json-present but 11 usable-draft) invites re-litigation — which is precisely why D10 specifies that **the usable-draft number is the one the thresholds apply to** and why S1 reports both numbers separately.
+
+#### 13.5.5 Gemini is a provider this codebase has never called, and this is the first non-AWS integration
+
+New in this plan, and the risk D11 introduces in exchange for the ones it removes. Everything the codebase does today is AWS-SDK-shaped, IAM-authenticated, and VPC-endpoint-reachable. Gemini is none of those: an API key in Secrets Manager, plain HTTPS egress from a non-VPC Lambda, and an SDK (`@google/genai`) with its own error taxonomy that S2 must map onto §13.2.7's six codes. The mitigations are all in S2's design: the provider lives behind one file (`geminiClient.ts`) so the seam is swappable; the secret follows the *existing* `parimaan/google-oauth-secret` + `APP_ROLE_SECRET_ARN` patterns rather than a new one; and S2 step 1's ten real calls surface latency, thinking-token behaviour, and error shapes before any resolver depends on them. **The specific thing that will not be caught by stubs and is therefore S12's job: whether the deployed non-VPC Lambda can actually reach Secrets Manager and Google over public egress**, which is a one-call verification but a total blocker if wrong.
+
+#### 13.5.6 The VPC has no NAT, and this is the first week that matters
+
+§13.2.1 is a finding about the whole week, not one resolver: this architecture was designed for resolvers that talk to AWS services through VPC endpoints, and W7 is the first week with resolvers that must talk to the *internet* — both of them, post-D11. Nothing about the existing design is wrong; it simply does not extend, and the extension (a non-VPC resolver category) is a real, if small, new pattern in `api-stack.ts` with real IAM consequences. The reason it is a risk and not just a task: it is very easy to add `importRecipeFromUrl` or `parseFreeformRecipe` to `DB_RESOLVERS` by habit, deploy successfully, and then debug an 8-second timeout that looks like a slow blog or a slow model.
+
+#### 13.5.7 AppSync's 30s ceiling, plus a cold Aurora on the confirm call
+
+§13.2.8 covers the parse side. The confirm side has the other half: `createRecipe` is VPC-attached and Aurora-backed, so a user who parses successfully and then taps Save after a quiet period eats the ~30s auto-pause resume (§11.5.4) *after* having already waited several seconds for the AI. That is the worst latency sequence in the app so far. No fix in W7 — auto-pause is a locked non-negotiable cost lever (PRD §17.4) — but S10's confirm state must set expectations the way `NameHouseholdScreen.coldStartHint` already does, rather than presenting a spinner that looks hung.
+
+#### 13.5.8 The acceptance-rate gate is subjective and instrumented nowhere
+
+PRD §11 / §8's Month-2 DoD want "≥80% accepted with ≤3 edits" for freeform parse. PostHog lands in W22, so W7's S12 measurement is a founder with a spreadsheet and 20 pasted recipes, judging their own feature. Two mitigations, both cheap: fix the **20 test inputs before measuring** and keep them (a WhatsApp forward, a blog copy-paste, a handwritten transcription, an English-Hindi mix, a no-quantities recipe, a wall-of-text with no line breaks, and so on) so a later prompt or **provider** change can be re-measured against the identical set; and count edits mechanically from S7's user-modified flag rather than by recollection. Without the fixed set the number is not comparable to anything, including its own future self — and given that W15/17/18/19's provider is deliberately open (§13.2.2), a re-runnable benchmark is the main artefact that makes a future provider comparison possible at all.
+
+#### 13.5.9 No reactive cost detection ships this week
+
+The $5/day CloudWatch spend alarm is W17/W22 (§13.1). Until then, D8's per-user daily caps are the entire control surface (§13.2.9) — preventive only, with nothing watching. The residual exposure is bounded and small (≈$0.044/user/day worst case against $300 of credit), but it is *unmonitored*, which means a defect in the "charge the limit exactly once" logic would be invisible rather than merely costly. That is why S2's rate-limit-consumed-once test and S3's no-provider-call-on-rejection tests are called out as cost tests, not just correctness tests.
+
+#### 13.5.10 Legal/business posture on server-side fetching
+
+§13.2.14's call is defensible for user-initiated, rate-limited, single-page fetches, but it is a founder's judgment call about someone else's content, not an engineering one, and it changes materially if W13/W14 ever bulk-imports. Flagged, not blocking.
+
+#### 13.5.11 Lambda concurrency quota, still at 10
+
+§12.5.4's standing note. W7 adds 2–3 more functions. Nothing in W7 depends on the quota landing — S12's 20 sequential test parses will not approach it — but a naive "parse 20 recipes in parallel" measurement script would.
+
+### 13.6 W7 exit criteria
+
+- [ ] **R2 resolved:** top-20 Indian blog JSON-LD coverage measured and written up as **two** numbers — ld+json-present and usable-draft — against the ≥16/20 gate, with the D10 rule applied to whichever tier the usable-draft number lands in (S1, §13.2.11)
+- [ ] **R1 recorded as moot for W7, not silently dropped:** §6's R1 row annotated with D11's provider deviation and the reason the Bedrock ap-south-1 spike was cut, plus SD §15.1 annotated "not exercised in W7; still open for any future Bedrock week" (§13.1, §13.2.2, S12)
+- [ ] **D11's provider deviation recorded in SD §18** with its rationale, its cost figures, the explicit statement that **W15/W17/W18/W19's provider choice remains open**, and the note that `network-stack.ts`'s `BEDROCK_RUNTIME` endpoint was deliberately left untouched (S2/S12)
+- [ ] Real-world HTML fixtures from the 20 blogs committed under `api/test/fixtures/jsonld/` and driving S4's suite (S1/S4) — *or* the D10 <10/20 cut recorded, with S4/S5/S9 marked CUT and why
+- [ ] `invokeModel` shipped with §13.2.7's full contract — one deadline, two separately-bounded retry chains, six error codes — with **`AI_DEADLINE_MS` set from S2's own measured p50/p95, not from the 20,000 ms estimate**, and the measurement recorded (S2, §13.2.7)
+- [ ] The Gemini API key lives in Secrets Manager, is fetched at cold start and cached per container following the existing `APP_ROLE_SECRET_ARN` pattern, is **never** in CDK source, an env var value, a log line, or a client-facing error, and `secretsmanager:GetSecretValue` is scoped to that one ARN — asserted by a fine-grained CDK test (S2)
+- [ ] The AI and URL Lambdas are non-VPC with no `lambdaSecurityGroup` and no `appRoleSecret` access, asserted by a fine-grained CDK test; `network-stack.ts`'s snapshot is unchanged (D3, S2)
+- [ ] `RecipeDraft`/`RecipeIngredientDraft` in `shared/schema.graphql` and re-synced into SD §6.1, with the deviation from §6.1's `Recipe!` return recorded and its rationale (D1, S3/S12)
+- [ ] Both parse mutations drop `householdId`, and **the deliberate absence of a membership check is asserted by a named test** rather than merely being true (D3, S3/S5)
+- [ ] `parseFreeformRecipe` live on dev, rate-limited at 20/day via the **existing** `checkAndIncrementDailyAction`, rejecting >4,000-char input **without a provider call**, and returning a valid `RecipeDraft` for a real pasted recipe — the DoD gate's "freeform AI returns valid JSON" (S3)
+- [ ] Malformed model output → one reinforcement retry → `AI_UNPARSEABLE`, asserted by a named test (`DEV_WORKFLOW.md` §3.2's mandated AI RED test) (S2/S3)
+- [ ] **The rate limit is consumed exactly once per user-initiated call regardless of internal retries**, asserted by a named test and reviewed as a cost control (D7/D8, §13.2.9, S2)
+- [ ] Unknown enum values from the model degrade one field with a warning rather than failing the parse; structural and bounds violations still fail hard (D4, S2/S3)
+- [ ] `importRecipeFromUrl` live on dev with the full §13.2.10 SSRF control set, **including redirect-hop revalidation**, each control covered by its own RED test, and `security-reviewer` clean against that explicit checklist (S5) — *or* formally cut per D10 with the cut recorded and the paste-assist shipped in its place
+- [ ] `createRecipe` accepts `source` attribution, persists `sourceType: url|freeform_ai` + `sourceUrl`, **rejects client-claimed `curated`/`ai`**, and every W6 `createRecipe` test still passes unmodified (D2, S6)
+- [ ] `AIProposal` built and covered; proposed-vs-confirmed is distinguishable and asserted via semantics (S7)
+- [ ] Wireframes 8.1, 8.3, 8.4, 8.5, 12.1 shipped → **27/49** (S8–S11)
+- [ ] An AI-proposed `role` cannot reach `createRecipe` without an affirmative user confirmation — W6's D1 still holds through the AI path, asserted by a named test (D5, S10)
+- [ ] The Freeform/URL review screen is a seeded wrapper over W6's `RecipeFormScreen`, not a second form implementation (D6, S10)
+- [ ] Every failure path preserves the user's pasted text or entered URL; the fallback screen always offers a seeded manual form (S11) — SD §14's "manual entry always available", made real
+- [ ] SD §14's four AI failure rows replaced by §13.2.7's error-code table, and `graphql_error_mapper.dart` branches on codes, never on message text (S11/S12)
+- [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression class, all backend slices)
+- [ ] Every backend slice verified against real dev AWS, not synth — including **one real Gemini call from the deployed non-VPC Lambda** (proving the Secrets Manager fetch and public egress both work), one real URL import against a live blog, and one deliberate SSRF attempt against the **deployed** endpoint (S12)
+- [ ] **20 freeform parses measured** against PRD §11's "≥80% accepted with ≤3 edits", with the 20 test inputs fixed and kept for future re-measurement against a later prompt or provider (S12, §13.5.8)
+- [ ] `RUNBOOK.md` carries the Gemini API key rotation procedure — new operational surface this week (S12)
+- [ ] Coverage: Lambda ≥80% (enforced in CI since W5); Flutter domain+state ≥80% — re-measured, not assumed (S12)
+- [ ] `security-reviewer` clean on S2, S3, S4, S5, S6 (per-slice triggers; **no phase-boundary sweep this week** — W8 is the §2.3 boundary)
+- [ ] §4's W7 row has actual hours (per-slice merge-timestamp wall-clock, the W6 method) and carry-over notes; §6's R1 and R2 rows updated; SD §15 item 4 marked resolved and §15.1 annotated
+- [ ] **Carried, not inherited — still W6's, still open:** the physical-device two-device `onRecipeChanged` run (`RUNBOOK.md` §3) and the R7 300-item scroll spike on real low-end Android hardware (§12.5.5/§12.5.6). Neither blocks W7; both should be scheduled before W8 closes Phase 2
+
+### 13.7 W7 planning decisions (final, locked 2026-08-28)
+
+| # | Question | **Locked decision** |
+|---|---|---|
+| D1 | §13.2.3 — SD §6.1 returns `Recipe!` from both parse mutations, which cannot represent an unsaved draft. New `RecipeDraft` type, or force-fit `Recipe!`? | **New `RecipeDraft`/`RecipeIngredientDraft` SDL types.** `Recipe` has ten non-null fields a draft has no honest value for, and returning it hands every client cache and mapper something structurally indistinguishable from a persisted row. Recorded as an SD §6.1 deviation. |
+| D2 | §13.2.4 — how does "confirm" write provenance, given `createRecipe` hardcodes `sourceType: 'user'` and can't write `sourceUrl`? | **Optional `source: RecipeSourceAttribution` argument on `createRecipe`**; the client re-sends `sourceType` + `sourceUrl` at confirm time. `curated`/`ai` rejected server-side. **Not** a server-side DynamoDB draft token — that is more truthful about provenance but adds a stateful round trip and an expiry UX to protect a low-stakes self-reported label inside one household. |
+| D3 | §13.2.1 — the VPC has `natGateways: 0`, so an internet-touching resolver has no route out. Non-VPC Lambda (loses the membership check), NAT (~$32–45/mo, blows the cost DoD), or a proxy-Lambda hop? | **Non-VPC for BOTH `importRecipeFromUrl` AND `parseFreeformRecipe`, with `householdId` dropped from both signatures** rather than accepting an argument we cannot authorize. Modified from the draft's "decide `parseFreeformRecipe` separately after the Bedrock spike" by D11: neither provider has an AWS PrivateLink/interface-endpoint story, so VPC attachment buys nothing for either. Per-user daily rate limits (D8) are the real abuse control. |
+| D4 | §13.2.5 — Zod on model output: hard-fail everything, or coerce unknown enum values with a warning and hard-fail only structure/bounds? | **Asymmetric — hard-fail on structure and bounds, coerce-with-warning on unrecognised enum values.** Mirrors §12.2.6's read-side handling exactly ("one bad row degrades one field, never the whole query"). Failing an 80%-correct parse over a cuisine label is the easiest way to miss PRD §11's acceptance target for a non-quality reason. |
+| D5 | §13.2.6 — does an AI-proposed `role` violate W6 D1's "no default anywhere"? | **Propose in a visually distinct "proposed" state; submit stays blocked until the user affirmatively confirms or changes it.** W6's D1 still holds in full — **no recipe can save with a role nobody actively chose.** Generalises to W18/W19's proposal reviews. |
+| D6 | §13.3 S10 — is Freeform/URL review a new screen, or a seeded wrapper over W6's `RecipeFormScreen`? | **Seeded wrapper — third use of the §11.2.7 seeded-form-reuse pattern**, with a "proposed" badge/highlight on AI-filled fields until the user touches them (which is also what D5 requires). A second dynamic-list form implementation is the most expensive way to ship this and guarantees the two drift. |
+| D7 | §13.2.7 — approve the concrete AI failure contract: deadline, retry chains, error codes, rate-limit accounting? | **Approved as specified:** one shared deadline (**20s — an ESTIMATE, to be validated empirically by S2's own ten measured calls and set from that data before S2 merges**, since the spike that would have pre-verified it is cut); ≤2 transport retries; exactly 1 reinforcement retry on invalid/malformed JSON; six distinct error codes; and **the rate limit consumed exactly ONCE per user-initiated call regardless of internal retries.** AppSync's 30s ceiling makes SD §14's unbounded "backoff 3×" unimplementable as written. |
+| D8 | §13.2.9 — rate-limit action names and caps. | **`'freeformParse'` at 20/day per user** (SD §8.5, already locked) and **`'urlImport'` at 30/day per user** (new). `'photoPantry'`, `'cookFromPantry'`, `'staplesNote'` reserved now while none are live — the limiter's own doc treats these as frozen production keys. **Stated explicitly rather than left implicit: with the $5/day CloudWatch alarm deferred to W17/W22, these caps are THE actual preventive cost control shipping this week**, not a formality and not defence-in-depth on top of something else. |
+| D9 | §13.5.1 — ~24.0 hrs against ~10, with the §7 buffer already fully claimed by W6's D8. | **Accept a multi-week W7 at FULL scope**, consistent with W5/W6. **Deferring URL import to W8 was considered and explicitly rejected — S4, S5 and S9 stay in W7.** URL import is committed this week; the only thing that can remove it is D10's measured quality gate, never schedule pressure. |
+| D10 | §13.2.11 — pre-commit the R2 decision rule *before* the JSON-LD spike runs: what happens at ≥16, 10–15, and <10 out of 20 usable drafts? | **Pre-committed, three tiers.** ≥16/20 → ship URL import as the **primary** path. 10–15/20 → ship it, but promote copy-paste to **equal visual prominence**, not a buried fallback. <10/20 → **cut S4, S5 and S9 entirely** and ship copy-paste-only this week, with those three slices **marked CUT and the reason recorded** (matching this codebase's record-deviations-don't-silently-omit convention, e.g. W6 S8's `recipe_form_entry.dart` note) rather than deleted from the plan. |
+| D11 | §13.2.2 — which AI provider does W7 use, given SD/PRD assume Bedrock everywhere? | **Gemini 2.5 Flash, for both `parseFreeformRecipe` and the freeform-fallback path off a failed URL import.** A scoped, recorded **deviation** from SD §6 R1 / WS-7 / SD §8.2/§8.4 / SD §15.1's Bedrock assumption. Cascades: the Bedrock ap-south-1 spike is **CUT** and §6 R1 is **moot for W7**; §6 R2 is unchanged; the invocation layer becomes provider-neutral `invokeModel` over a `geminiClient` adapter; auth becomes an API key in Secrets Manager following the existing `parimaan/google-oauth-secret` + `APP_ROLE_SECRET_ARN` patterns, **not** IAM; no VPC endpoint work, and `network-stack.ts`'s idle `BEDROCK_RUNTIME` endpoint is deliberately left untouched. Cost: $0.30/M in, $2.50/M out → **≈$0.0022/parse vs ≈$0.005 on Haiku**, against **$300 of pre-existing Gemini credit** that covers W7's entire realistic usage. **The provider choice for W15/W17/W18/W19 is EXPLICITLY LEFT OPEN** and is not decided here. |
 
 ---
