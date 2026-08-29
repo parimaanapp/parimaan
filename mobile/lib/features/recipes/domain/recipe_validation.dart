@@ -22,6 +22,11 @@ const int maxRecipeStepLength = 2000;
 const int maxRecipeIngredients = 100;
 const int maxRecipeSteps = 100;
 
+/// Mirrors `api/src/validation/parseFreeformRecipe.ts`'s
+/// `MAX_FREEFORM_TEXT_LENGTH` — a hard client-side stop (W7 S10), so a user
+/// never spends a rate-limit unit on input the server will reject anyway.
+const int maxFreeformRecipeTextLength = 4000;
+
 String? validateRecipeTitle(String title) {
   final String trimmed = title.trim();
   if (trimmed.isEmpty) {

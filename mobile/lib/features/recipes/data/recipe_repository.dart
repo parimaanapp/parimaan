@@ -39,6 +39,7 @@ import '../domain/recipe.dart';
 import '../domain/recipe_draft.dart';
 import '../domain/recipe_patch.dart';
 import '../domain/recipe_role.dart';
+import '../domain/recipe_source_attribution.dart';
 import 'ai_recipe_draft_mapper.dart';
 import 'recipe_mapper.dart';
 
@@ -106,9 +107,17 @@ abstract interface class RecipeRepository {
 
   /// Creates a recipe from [draft] in [householdId] (W6 S8). Requires the
   /// caller to already be a member; `sourceType`/`createdBy` are never
-  /// sent — the server sets both from the verified caller, matching
-  /// `RecipeInput`'s own SDL shape.
-  Future<Recipe> createRecipe(String householdId, RecipeDraft draft);
+  /// sent as part of `input` — the server sets both from the verified
+  /// caller, matching `RecipeInput`'s own SDL shape. [source] (W7 S10) is
+  /// the separate, optional attribution sent when confirming an AI draft —
+  /// omitted (the default) for every structured create, resolving
+  /// server-side to `sourceType: user`, unchanged from before this
+  /// parameter existed.
+  Future<Recipe> createRecipe(
+    String householdId,
+    RecipeDraft draft, {
+    RecipeSourceAttribution? source,
+  });
 
   /// Applies [patch] to the recipe [id] and returns the whole updated row.
   /// Same `id`-only membership resolution as [favoriteRecipe]/
@@ -237,12 +246,19 @@ class FerryRecipeRepository implements RecipeRepository {
   }
 
   @override
-  Future<Recipe> createRecipe(String householdId, RecipeDraft draft) async {
+  Future<Recipe> createRecipe(
+    String householdId,
+    RecipeDraft draft, {
+    RecipeSourceAttribution? source,
+  }) async {
     final GCreateRecipeReq request = GCreateRecipeReq(
       (GCreateRecipeReqBuilder b) => b
         ..vars = (GCreateRecipeVarsBuilder()
           ..householdId = householdId
-          ..input = recipeDraftToGraphQL(draft).toBuilder()),
+          ..input = recipeDraftToGraphQL(draft).toBuilder()
+          ..source = source == null
+              ? null
+              : recipeSourceAttributionToGraphQL(source).toBuilder()),
     );
 
     final GCreateRecipeData data = await _execute(request);

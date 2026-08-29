@@ -6,6 +6,7 @@ import 'package:mobile/features/recipes/domain/recipe_draft.dart';
 import 'package:mobile/features/recipes/domain/recipe_patch.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/features/recipes/domain/recipe_source.dart';
+import 'package:mobile/features/recipes/domain/recipe_source_attribution.dart';
 import 'package:mobile/features/recipes/state/recipe_detail_controller.dart';
 import 'package:mobile/features/recipes/state/recipe_form_controller.dart';
 import 'package:mobile/features/recipes/state/recipe_library_controller.dart';
@@ -54,6 +55,30 @@ void main() {
       expect(ok, isTrue);
       expect(repository.createCalls, hasLength(1));
       expect(repository.createCalls.single.householdId, 'household-1');
+      expect(repository.createCalls.single.source, isNull);
+    });
+
+    test('threads an optional source attribution through to the repository', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        createResult: _dalRecipe,
+      );
+      final ProviderContainer container = _container(repository);
+
+      await container
+          .read(recipeFormControllerProvider.notifier)
+          .create(
+            'household-1',
+            _draft,
+            source: const RecipeSourceAttribution(
+              sourceType: RecipeSource.freeformAi,
+            ),
+          );
+
+      expect(repository.createCalls, hasLength(1));
+      expect(
+        repository.createCalls.single.source!.sourceType,
+        RecipeSource.freeformAi,
+      );
     });
 
     test('invalidates the library provider for that household on success', () async {

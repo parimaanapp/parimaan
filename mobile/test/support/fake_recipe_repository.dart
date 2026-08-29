@@ -6,6 +6,7 @@ import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/features/recipes/domain/recipe_draft.dart';
 import 'package:mobile/features/recipes/domain/recipe_patch.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
+import 'package:mobile/features/recipes/domain/recipe_source_attribution.dart';
 
 /// Hand-written [RecipeRepository] double — same rationale as
 /// `fake_pantry_repository.dart`: explicit control over completion timing
@@ -143,12 +144,17 @@ class FakeRecipeRepository implements RecipeRepository {
 
   Recipe? createResult;
   Object? createError;
-  final List<({String householdId, RecipeDraft draft})> createCalls =
-      <({String householdId, RecipeDraft draft})>[];
+  final List<({String householdId, RecipeDraft draft, RecipeSourceAttribution? source})>
+  createCalls =
+      <({String householdId, RecipeDraft draft, RecipeSourceAttribution? source})>[];
 
   @override
-  Future<Recipe> createRecipe(String householdId, RecipeDraft draft) {
-    createCalls.add((householdId: householdId, draft: draft));
+  Future<Recipe> createRecipe(
+    String householdId,
+    RecipeDraft draft, {
+    RecipeSourceAttribution? source,
+  }) {
+    createCalls.add((householdId: householdId, draft: draft, source: source));
     return _answer<Recipe>(createError, createResult, 'createResult');
   }
 

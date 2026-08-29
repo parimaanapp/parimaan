@@ -5,6 +5,7 @@ import 'package:mobile/features/recipes/domain/recipe_ingredient_draft.dart';
 import 'package:mobile/features/recipes/domain/recipe_patch.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/features/recipes/domain/recipe_source.dart';
+import 'package:mobile/features/recipes/domain/recipe_source_attribution.dart';
 import 'package:mobile/shared/graphql/__generated__/schema.schema.gql.dart';
 import 'package:mobile/shared/graphql/operations/__generated__/recipe_detail_fields.data.gql.dart';
 import 'package:mobile/shared/graphql/operations/__generated__/recipes.data.gql.dart';
@@ -159,6 +160,48 @@ void main() {
         () => recipeRoleToGraphQL(RecipeRole.unknown),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('recipeSourceToGraphQL', () {
+    test('maps every real value to its wire enum', () {
+      for (final RecipeSource source in <RecipeSource>[
+        RecipeSource.user,
+        RecipeSource.url,
+        RecipeSource.curated,
+        RecipeSource.ai,
+        RecipeSource.freeformAi,
+      ]) {
+        expect(recipeSourceToGraphQL(source).name, source.wireValue);
+      }
+    });
+
+    test('throws for RecipeSource.unknown, which has no wire value', () {
+      expect(
+        () => recipeSourceToGraphQL(RecipeSource.unknown),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('recipeSourceAttributionToGraphQL', () {
+    test('maps sourceType and sourceUrl through', () {
+      final input = recipeSourceAttributionToGraphQL(
+        const RecipeSourceAttribution(
+          sourceType: RecipeSource.url,
+          sourceUrl: 'https://example.com/rajma-chawal',
+        ),
+      );
+      expect(input.sourceType.name, 'url');
+      expect(input.sourceUrl, 'https://example.com/rajma-chawal');
+    });
+
+    test('maps a null sourceUrl through as null', () {
+      final input = recipeSourceAttributionToGraphQL(
+        const RecipeSourceAttribution(sourceType: RecipeSource.freeformAi),
+      );
+      expect(input.sourceType.name, 'freeform_ai');
+      expect(input.sourceUrl, isNull);
     });
   });
 

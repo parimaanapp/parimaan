@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/recipe_repository.dart';
 import '../domain/recipe_draft.dart';
 import '../domain/recipe_patch.dart';
+import '../domain/recipe_source_attribution.dart';
 import 'recipe_detail_controller.dart';
 import 'recipe_library_controller.dart';
 
@@ -37,11 +38,16 @@ class RecipeFormController extends AutoDisposeAsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<bool> create(String householdId, RecipeDraft draft) =>
-      _run(RecipeFormAction.create, () async {
-        await _repository.createRecipe(householdId, draft);
-        ref.invalidate(recipeLibraryControllerProvider(householdId));
-      });
+  /// [source] (W7 S10) attributes a confirmed AI draft — omitted for every
+  /// structured create, unchanged from before this parameter existed.
+  Future<bool> create(
+    String householdId,
+    RecipeDraft draft, {
+    RecipeSourceAttribution? source,
+  }) => _run(RecipeFormAction.create, () async {
+    await _repository.createRecipe(householdId, draft, source: source);
+    ref.invalidate(recipeLibraryControllerProvider(householdId));
+  });
 
   /// Named `updateRecipe`, not `update` — `AsyncNotifierBase` already
   /// declares a built-in `update` (a `state`-transform helper), and this

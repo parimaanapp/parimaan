@@ -1,10 +1,17 @@
 #import "./recipe_detail_fields.graphql"
 
 # `Mutation.createRecipe` — the parent row plus its ingredients, in one
-# transaction. `sourceType` is always `user` for a recipe created this way,
-# never client-suppliable — `RecipeInput` has no such field.
-mutation CreateRecipe($householdId: ID!, $input: RecipeInput!) {
-  createRecipe(householdId: $householdId, input: $input) {
+# transaction. `sourceType` on `RecipeInput` itself is always `user` — that
+# type has no such field. `$source` (W7 S10) is the separate, optional
+# top-level argument the freeform/URL review flow sends to attribute a
+# confirmed AI draft; every other caller omits it, resolving server-side to
+# `sourceType: user`.
+mutation CreateRecipe(
+  $householdId: ID!
+  $input: RecipeInput!
+  $source: RecipeSourceAttribution
+) {
+  createRecipe(householdId: $householdId, input: $input, source: $source) {
     ...RecipeDetailFields
   }
 }
