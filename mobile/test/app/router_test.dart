@@ -8,8 +8,10 @@ import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
+import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
 import 'package:mobile/features/recipes/presentation/freeform_input_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_detail_screen.dart';
+import 'package:mobile/features/recipes/presentation/recipe_draft_review_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_method_screen.dart';
 import 'package:mobile/features/recipes/presentation/url_import_screen.dart';
 import 'package:mobile/shared/ui/components/p_tab_bar.dart';
@@ -389,6 +391,31 @@ void main() {
         expect(_location(router), AppRoutes.recipeFreeformInput('household-1'));
         expect(find.byType(FreeformInputScreen), findsOneWidget);
         expect(find.byType(RecipeMethodScreen), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '/home/recipes/new/review stays reachable and renders RecipeDraftReviewScreen with the pushed extra',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        const AiRecipeDraft draft = AiRecipeDraft(title: 'Rajma Chawal');
+        router.go(
+          AppRoutes.recipeDraftReview('household-1'),
+          extra: (draft: draft, sourceUrl: null),
+        );
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.recipeDraftReview('household-1'));
+        expect(find.byType(RecipeDraftReviewScreen), findsOneWidget);
+        final RecipeDraftReviewScreen screen = tester.widget<RecipeDraftReviewScreen>(
+          find.byType(RecipeDraftReviewScreen),
+        );
+        expect(screen.householdId, 'household-1');
+        expect(screen.draft, draft);
       },
     );
 

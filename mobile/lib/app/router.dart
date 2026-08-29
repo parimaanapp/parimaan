@@ -28,9 +28,11 @@ import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
+import '../features/recipes/domain/ai_recipe_draft.dart';
 import '../features/recipes/domain/recipe.dart';
 import '../features/recipes/presentation/freeform_input_screen.dart';
 import '../features/recipes/presentation/recipe_detail_screen.dart';
+import '../features/recipes/presentation/recipe_draft_review_screen.dart';
 import '../features/recipes/presentation/recipe_form_screen.dart';
 import '../features/recipes/presentation/recipe_method_screen.dart';
 import '../features/recipes/presentation/recipes_library_screen.dart';
@@ -234,7 +236,22 @@ abstract final class AppRoutes {
       '/home/recipes/new/freeform';
   static String recipeFreeformInput(String householdId) =>
       '$_recipeFreeformInputPattern?householdId=$householdId';
+
+  // The shared draft-review screen (wireframe 8.5, W7 S10, D6) — both S9's
+  // URL import and S10's freeform paste push here on a successful parse.
+  // `householdId` travels as a query param, same reasoning as
+  // [recipeCreate]; the parsed [RecipeDraftReviewExtra] (an `AiRecipeDraft`
+  // plus an optional `sourceUrl`) travels as `extra`, same reasoning as
+  // [recipeEdit]'s already-loaded `Recipe` — no sensible URL encoding, no
+  // need to survive a deep link (a draft was never persisted).
+  static const String _recipeDraftReviewPattern = '/home/recipes/new/review';
+  static String recipeDraftReview(String householdId) =>
+      '$_recipeDraftReviewPattern?householdId=$householdId';
 }
+
+/// `extra` payload for [AppRoutes.recipeDraftReview] — see that route's own
+/// doc.
+typedef RecipeDraftReviewExtra = ({AiRecipeDraft draft, String? sourceUrl});
 
 /// The app's route table plus its auth guard.
 ///
@@ -468,6 +485,18 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes._recipeFreeformInputPattern,
         builder: (BuildContext context, GoRouterState state) =>
             FreeformInputScreen(householdId: _pantryHouseholdId(state)),
+      ),
+      GoRoute(
+        path: AppRoutes._recipeDraftReviewPattern,
+        builder: (BuildContext context, GoRouterState state) {
+          final RecipeDraftReviewExtra extra =
+              state.extra as RecipeDraftReviewExtra;
+          return RecipeDraftReviewScreen(
+            householdId: _pantryHouseholdId(state),
+            draft: extra.draft,
+            sourceUrl: extra.sourceUrl,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes._recipeCreatePattern,

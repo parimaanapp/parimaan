@@ -10,6 +10,7 @@ import '../domain/recipe_ingredient_draft.dart';
 import '../domain/recipe_patch.dart';
 import '../domain/recipe_role.dart';
 import '../domain/recipe_source.dart';
+import '../domain/recipe_source_attribution.dart';
 
 /// The boundary where Ferry / `built_value` types become the plain domain
 /// [Recipe] — same rule and precedent as `features/pantry/data/pantry_mapper.dart`.
@@ -135,6 +136,33 @@ GRecipeRole recipeRoleToGraphQL(RecipeRole role) => switch (role) {
     'RecipeRole.unknown has no wire value to filter by.',
   ),
 };
+
+/// The write direction of [_recipeSourceFromGraphQL], for
+/// `Mutation.createRecipe`'s optional `source` argument (W7 S10 — the only
+/// caller that ever constructs a [RecipeSourceAttribution] client-side).
+/// `unknown` has no wire value, same guard as [recipeRoleToGraphQL]; `user`/
+/// `curated`/`ai` are server-owned values the review flow never sends
+/// either, but are mapped anyway for completeness rather than narrowing
+/// this function's domain to only the two values one caller happens to use.
+GRecipeSource recipeSourceToGraphQL(RecipeSource source) => switch (source) {
+  RecipeSource.user => GRecipeSource.user,
+  RecipeSource.url => GRecipeSource.url,
+  RecipeSource.curated => GRecipeSource.curated,
+  RecipeSource.ai => GRecipeSource.ai,
+  RecipeSource.freeformAi => GRecipeSource.freeform_ai,
+  RecipeSource.unknown => throw ArgumentError(
+    'RecipeSource.unknown has no wire value to send.',
+  ),
+};
+
+/// [RecipeSourceAttribution] → `RecipeSourceAttribution` (W7 S6/S10).
+GRecipeSourceAttribution recipeSourceAttributionToGraphQL(
+  RecipeSourceAttribution source,
+) => GRecipeSourceAttribution(
+  (GRecipeSourceAttributionBuilder b) => b
+    ..sourceType = recipeSourceToGraphQL(source.sourceType)
+    ..sourceUrl = source.sourceUrl,
+);
 
 /// [RecipeDraft] → `RecipeInput` (W6 S8, `Mutation.createRecipe`).
 GRecipeInput recipeDraftToGraphQL(RecipeDraft draft) => GRecipeInput(
