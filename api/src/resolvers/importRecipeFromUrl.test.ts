@@ -127,7 +127,14 @@ describe('importRecipeFromUrl resolver', () => {
     }
     expect(deps.fetchPage).toHaveBeenCalledTimes(MAX_URL_IMPORTS_PER_DAY);
 
-    await expect(handler(buildEvent('https://www.archanaskitchen.com/mysore-masala-dosa', cognitoSub))).rejects.toBeInstanceOf(RateLimitedError);
+    // Asserts the exact message, not just the error type: a W7 S12 finding
+    // was that this shared limiter can silently leak a *different* action's
+    // rate-limit copy (e.g. joinHousehold's "Too many join attempts...")
+    // onto this resolver's own cap — `instanceof` alone would never catch
+    // that class of regression.
+    await expect(handler(buildEvent('https://www.archanaskitchen.com/mysore-masala-dosa', cognitoSub))).rejects.toThrow(
+      `You've reached today's limit of ${MAX_URL_IMPORTS_PER_DAY} recipe imports. Try again tomorrow.`,
+    );
     expect(deps.fetchPage).toHaveBeenCalledTimes(MAX_URL_IMPORTS_PER_DAY);
   });
 

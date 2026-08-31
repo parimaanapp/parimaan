@@ -36,12 +36,12 @@ describe('checkAndIncrementDailyAction', () => {
 
     for (let i = 0; i < 3; i += 1) {
       await expect(
-        checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'testAction', userId, 3, now),
+        checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'testAction', userId, 3, 'rate limited', now),
       ).resolves.toBeUndefined();
     }
 
     await expect(
-      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'testAction', userId, 3, now),
+      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'testAction', userId, 3, 'rate limited', now),
     ).rejects.toThrow(RateLimitedError);
   });
 
@@ -50,14 +50,14 @@ describe('checkAndIncrementDailyAction', () => {
     const now = fixedNow();
 
     for (let i = 0; i < 2; i += 1) {
-      await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'actionA', userId, 2, now);
+      await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'actionA', userId, 2, 'rate limited', now);
     }
     await expect(
-      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'actionA', userId, 2, now),
+      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'actionA', userId, 2, 'rate limited', now),
     ).rejects.toThrow(RateLimitedError);
 
     await expect(
-      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'actionB', userId, 2, now),
+      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'actionB', userId, 2, 'rate limited', now),
     ).resolves.toBeUndefined();
   });
 
@@ -66,13 +66,13 @@ describe('checkAndIncrementDailyAction', () => {
     const freshUser = randomUUID();
     const now = fixedNow();
 
-    await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'sharedAction', exhaustedUser, 1, now);
+    await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'sharedAction', exhaustedUser, 1, 'rate limited', now);
     await expect(
-      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'sharedAction', exhaustedUser, 1, now),
+      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'sharedAction', exhaustedUser, 1, 'rate limited', now),
     ).rejects.toThrow(RateLimitedError);
 
     await expect(
-      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'sharedAction', freshUser, 1, now),
+      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'sharedAction', freshUser, 1, 'rate limited', now),
     ).resolves.toBeUndefined();
   });
 
@@ -81,13 +81,13 @@ describe('checkAndIncrementDailyAction', () => {
     const day1 = (): Date => new Date('2026-08-19T23:59:00.000Z');
     const day2 = (): Date => new Date('2026-08-20T00:01:00.000Z');
 
-    await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'dayAction', userId, 1, day1);
+    await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'dayAction', userId, 1, 'rate limited', day1);
     await expect(
-      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'dayAction', userId, 1, day1),
+      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'dayAction', userId, 1, 'rate limited', day1),
     ).rejects.toThrow(RateLimitedError);
 
     await expect(
-      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'dayAction', userId, 1, day2),
+      checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'dayAction', userId, 1, 'rate limited', day2),
     ).resolves.toBeUndefined();
   });
 
@@ -95,7 +95,7 @@ describe('checkAndIncrementDailyAction', () => {
     const userId = randomUUID();
     const now = fixedNow();
 
-    await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'keyShapeAction', userId, 5, now);
+    await checkAndIncrementDailyAction(ddb.client, ddb.tableName, 'keyShapeAction', userId, 5, 'rate limited', now);
 
     const item = await readItem(`RATELIMIT#keyShapeAction#${userId}`, '2026-08-19');
     expect(item).toBeDefined();

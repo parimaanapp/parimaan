@@ -96,6 +96,7 @@ export const createParseFreeformRecipeHandler =
       FREEFORM_PARSE_ACTION,
       identity.cognitoSub,
       MAX_FREEFORM_PARSES_PER_DAY,
+      `You've reached today's limit of ${MAX_FREEFORM_PARSES_PER_DAY} recipe parses. Try again tomorrow.`,
       deps.now,
     );
 
