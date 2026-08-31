@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/storage/app_database.dart';
+import '../../household/state/me_households_controller.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_session.dart';
 
@@ -54,20 +55,28 @@ class AuthController extends AsyncNotifier<AuthSession> {
 
   /// Signs out locally and remotely. Never throws.
   ///
-  /// Also evicts the entire pantry read cache (W5 S7) — a household's
-  /// pantry surviving sign-out on a shared family phone would let the next
-  /// person to sign in read the previous user's data straight off disk,
-  /// before ever making a network request. Cleared unconditionally
+  /// Also evicts the entire pantry read cache (W5 S7) and invalidates
+  /// [meHouseholdsControllerProvider] (W8 S1) — a household's pantry, or its
+  /// membership list, surviving sign-out on a shared family phone would let
+  /// the next person to sign in read the previous user's data straight off
+  /// disk or out of a still-cached provider, before ever making a network
+  /// request of their own. The pantry cache is cleared unconditionally
   /// (`clearAll`, not scoped to one household) since [signOut] has no
-  /// reliable "whose data was this" to scope narrower than that.
+  /// reliable "whose data was this" to scope narrower than that;
+  /// `meHouseholdsControllerProvider` is invalidated rather than cleared —
+  /// `AsyncNotifier` has no "empty" state of its own, and `app/router.dart`'s
+  /// `_redirect` needs the *next* signed-in read to be a real, freshly-fetched
+  /// answer for whichever user just signed in, not a stale value belonging to
+  /// whoever signed out.
   ///
-  /// The cache clear is deliberately isolated from `_repository.signOut()`'s
-  /// own error handling: `_run` treats any thrown error as "signOut failed,"
-  /// which routes through `copyWithPrevious` and leaves `state.valueOrNull`
-  /// at the *previous, signed-in* session — `app/router.dart`'s redirect
-  /// gate reads exactly that. A local-storage failure here must not masquerade
-  /// as a failed account sign-out and strand the router believing the user
-  /// is still authenticated after Cognito has already signed them out.
+  /// The cache clear/invalidation is deliberately isolated from
+  /// `_repository.signOut()`'s own error handling: `_run` treats any thrown
+  /// error as "signOut failed," which routes through `copyWithPrevious` and
+  /// leaves `state.valueOrNull` at the *previous, signed-in* session —
+  /// `app/router.dart`'s redirect gate reads exactly that. A local-storage
+  /// failure here must not masquerade as a failed account sign-out and strand
+  /// the router believing the user is still authenticated after Cognito has
+  /// already signed them out.
   Future<void> signOut() => _run(() async {
     await _repository.signOut();
     try {
@@ -75,6 +84,7 @@ class AuthController extends AsyncNotifier<AuthSession> {
     } on Object {
       // Best-effort — see the method doc above.
     }
+    ref.invalidate(meHouseholdsControllerProvider);
     return const AuthSession.signedOut();
   });
 
