@@ -92,8 +92,9 @@ Future<ProviderContainer> _pumpPushed(
           final AiFailureExtra extra = state.extra as AiFailureExtra;
           return AiFailureScreen(
             householdId: 'household-1',
-            errorMessage: extra.errorMessage,
+            error: extra.error,
             preservedInput: extra.preservedInput,
+            inputLabel: extra.inputLabel,
           );
         },
       ),

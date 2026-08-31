@@ -15,6 +15,7 @@ import 'package:mobile/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_draft_review_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_method_screen.dart';
 import 'package:mobile/features/recipes/presentation/url_import_screen.dart';
+import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/components/p_tab_bar.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
@@ -428,11 +429,13 @@ void main() {
           session: testSignedInSession,
         );
 
+        const error = UrlUnreadableError("Couldn't read that page.");
         router.go(
           AppRoutes.recipeAiFailure('household-1'),
           extra: (
-            errorMessage: "Couldn't read that page.",
+            error: error,
             preservedInput: 'https://example.com/unreadable',
+            inputLabel: 'URL',
           ),
         );
         await tester.pumpAndSettle();
@@ -443,7 +446,7 @@ void main() {
           find.byType(AiFailureScreen),
         );
         expect(screen.householdId, 'household-1');
-        expect(screen.errorMessage, "Couldn't read that page.");
+        expect(screen.error, error);
         expect(screen.preservedInput, 'https://example.com/unreadable');
       },
     );

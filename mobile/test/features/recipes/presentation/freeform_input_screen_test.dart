@@ -6,6 +6,7 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/features/recipes/data/recipe_repository.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
 import 'package:mobile/features/recipes/domain/recipe_validation.dart';
+import 'package:mobile/features/recipes/presentation/ai_failure_screen.dart';
 import 'package:mobile/features/recipes/presentation/freeform_input_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_draft_review_screen.dart';
 import 'package:mobile/shared/errors/app_error.dart';
@@ -64,6 +65,21 @@ Future<ProviderContainer> _pumpPushed(
             householdId: 'household-1',
             draft: extra.draft,
             sourceUrl: extra.sourceUrl,
+          );
+        },
+      ),
+      // `FreeformInputScreen` navigates here for the two non-retryable AI
+      // codes (`AiUnparseableError`/`AiUnavailableError`, W7 S11) — same
+      // real-pattern reasoning as the review route above.
+      GoRoute(
+        path: '/home/recipes/new/ai-failure',
+        builder: (BuildContext context, GoRouterState state) {
+          final AiFailureExtra extra = state.extra as AiFailureExtra;
+          return AiFailureScreen(
+            householdId: 'household-1',
+            error: extra.error,
+            preservedInput: extra.preservedInput,
+            inputLabel: extra.inputLabel,
           );
         },
       ),
@@ -208,6 +224,50 @@ void main() {
       expect(find.byType(FreeformInputScreen), findsOneWidget);
     });
 
+    testWidgets(
+      'AI_BUSY renders inline with a retry affordance — never routed to the fallback screen',
+      (WidgetTester tester) async {
+        const error = AiBusyError('The AI service is busy. Try again in a moment.');
+        final FakeRecipeRepository repository = FakeRecipeRepository()
+          ..parseFreeformRecipeError = error;
+        await _pumpPushed(tester, repository: repository);
+
+        await tester.enterText(
+          find.byKey(FreeformInputScreen.textFieldKey),
+          'Rajma Chawal: soak rajma overnight, pressure cook...',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text(error.errorMessage), findsOneWidget);
+        expect(find.byKey(FreeformInputScreen.retryButtonKey), findsOneWidget);
+        expect(find.byType(AiFailureScreen), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'AI_TIMEOUT renders inline with a retry affordance — never routed to the fallback screen',
+      (WidgetTester tester) async {
+        const error = AiTimeoutError('The AI service took too long to respond.');
+        final FakeRecipeRepository repository = FakeRecipeRepository()
+          ..parseFreeformRecipeError = error;
+        await _pumpPushed(tester, repository: repository);
+
+        await tester.enterText(
+          find.byKey(FreeformInputScreen.textFieldKey),
+          'Rajma Chawal: soak rajma overnight, pressure cook...',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text(error.errorMessage), findsOneWidget);
+        expect(find.byKey(FreeformInputScreen.retryButtonKey), findsOneWidget);
+        expect(find.byType(AiFailureScreen), findsNothing);
+      },
+    );
+
     testWidgets('a rate-limited failure renders inline with no retry affordance', (
       WidgetTester tester,
     ) async {
@@ -231,6 +291,59 @@ void main() {
       );
       expect(find.byKey(FreeformInputScreen.retryButtonKey), findsNothing);
     });
+
+    testWidgets(
+      'AI_UNPARSEABLE routes to the AI failure fallback screen with the pasted text preserved',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository()
+          ..parseFreeformRecipeError = const AiUnparseableError(
+            'Could not understand the AI response.',
+          );
+        await _pumpPushed(tester, repository: repository);
+
+        await tester.enterText(
+          find.byKey(FreeformInputScreen.textFieldKey),
+          'Rajma Chawal: soak rajma overnight, pressure cook...',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AiFailureScreen), findsOneWidget);
+        expect(find.byKey(AiFailureScreen.preservedInputKey), findsOneWidget);
+        expect(
+          find.text('Rajma Chawal: soak rajma overnight, pressure cook...'),
+          findsOneWidget,
+        );
+        expect(find.text('Could not understand the AI response.'), findsOneWidget);
+        // No inline error/retry underneath — the fallback screen already
+        // owns showing this failure.
+        expect(find.byKey(FreeformInputScreen.retryButtonKey), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'AI_UNAVAILABLE routes to the AI failure fallback screen too, with its own copy',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository()
+          ..parseFreeformRecipeError = const AiUnavailableError(
+            'The AI service is unavailable right now.',
+          );
+        await _pumpPushed(tester, repository: repository);
+
+        await tester.enterText(
+          find.byKey(FreeformInputScreen.textFieldKey),
+          'Rajma Chawal: soak rajma overnight, pressure cook...',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AiFailureScreen), findsOneWidget);
+        expect(find.text("Recipe import isn't available right now"), findsOneWidget);
+        expect(find.text('The AI service is unavailable right now.'), findsOneWidget);
+      },
+    );
 
     testWidgets('tapping the top-bar back button actually pops', (
       WidgetTester tester,

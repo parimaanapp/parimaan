@@ -120,8 +120,9 @@ class _UrlImportScreenState extends ConsumerState<UrlImportScreen> {
       context.push(
         AppRoutes.recipeAiFailure(widget.householdId),
         extra: (
-          errorMessage: error.errorMessage,
+          error: error,
           preservedInput: _url.text.trim(),
+          inputLabel: 'URL',
         ),
       );
     }
