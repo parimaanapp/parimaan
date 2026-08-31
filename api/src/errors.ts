@@ -69,12 +69,26 @@ export class HouseholdFullError extends AppError {
 }
 
 /**
- * Thrown by `rateLimit/joinAttemptLimiter.ts` when a caller has exceeded
- * `MAX_JOIN_ATTEMPTS_PER_DAY` — the invite code is a guessable, unrate-limited
- * credential otherwise (see `domain/inviteCode.ts`'s own comment on this).
+ * Thrown by `rateLimit/dailyActionLimiter.ts`'s `checkAndIncrementDailyAction`
+ * when a caller has exceeded whichever action's own daily cap —
+ * `joinAttemptLimiter.ts` (invite-code guessing), `parseFreeformRecipe`,
+ * `importRecipeFromUrl`, and `rotateInviteCode` all share this one error
+ * class across four independent daily caps.
+ *
+ * `message` is **required, deliberately with no default** (W7 S12 finding):
+ * this class used to default to `'Too many join attempts. Try again
+ * tomorrow.'`, written when `joinHousehold` was its only caller. Once
+ * `checkAndIncrementDailyAction` became a shared, generic limiter, every
+ * other caller (`parseFreeformRecipe`/`importRecipeFromUrl`/
+ * `rotateInviteCode`) silently inherited that same join-specific copy for
+ * their own, unrelated rate limits — a real bug, caught only by S12's
+ * real-AWS pass actually hitting `parseFreeformRecipe`'s cap and reading
+ * the resulting message, not by any unit test (which only ever asserted
+ * `errorType === 'RATE_LIMITED'`, never the message content). A required
+ * parameter here is what keeps a future fifth caller from repeating it.
  */
 export class RateLimitedError extends AppError {
-  constructor(message = 'Too many join attempts. Try again tomorrow.') {
+  constructor(message: string) {
     super('RATE_LIMITED', message);
   }
 }

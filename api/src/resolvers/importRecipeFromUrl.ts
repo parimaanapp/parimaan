@@ -97,6 +97,7 @@ export const createImportRecipeFromUrlHandler =
       URL_IMPORT_ACTION,
       identity.cognitoSub,
       MAX_URL_IMPORTS_PER_DAY,
+      `You've reached today's limit of ${MAX_URL_IMPORTS_PER_DAY} recipe imports. Try again tomorrow.`,
       deps.now,
     );
 

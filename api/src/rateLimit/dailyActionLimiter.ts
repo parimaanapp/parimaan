@@ -27,6 +27,12 @@ const toUtcDateString = (date: Date): string => date.toISOString().slice(0, 10);
  * orphans every live counter written under the old key, so treat them as
  * frozen strings, not cosmetic labels.
  *
+ * `rateLimitedMessage` is the exact `RateLimitedError.message` a caller
+ * hitting *this* action's own cap sees — required, not defaulted (W7 S12
+ * finding: a shared bare-constructor default here previously leaked one
+ * caller's copy to every other caller sharing this function). Write it for
+ * the action this call site actually rate-limits, not a generic sentence.
+ *
  * `now` is injectable (defaults to the real clock) so tests can move across
  * the UTC day boundary without an actual 24-hour wait, without having to
  * fake DynamoDB's own behavior.
@@ -37,6 +43,7 @@ export const checkAndIncrementDailyAction = async (
   action: string,
   userId: string,
   max: number,
+  rateLimitedMessage: string,
   now: () => Date = () => new Date(),
 ): Promise<void> => {
   const currentDate = now();
@@ -60,7 +67,7 @@ export const checkAndIncrementDailyAction = async (
     );
   } catch (error) {
     if (error instanceof ConditionalCheckFailedException) {
-      throw new RateLimitedError();
+      throw new RateLimitedError(rateLimitedMessage);
     }
     throw error;
   }

@@ -21,13 +21,7 @@ import { MAX_INVITE_CODE_ATTEMPTS } from '../domain/inviteCodeAttempts.js';
 import { createRotateInviteCodeHandler, MAX_ROTATE_ATTEMPTS_PER_DAY } from './rotateInviteCode.js';
 import type { RotateInviteCodeResolverDeps } from './rotateInviteCode.js';
 import { createJoinHouseholdHandler } from './joinHousehold.js';
-import {
-  ForbiddenError,
-  NotFoundError,
-  RateLimitedError,
-  UnauthorizedError,
-  ValidationError,
-} from '../errors.js';
+import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from '../errors.js';
 
 /** The exact message `auth/requireHouseholdMember.ts` denies with — asserted verbatim, never re-worded here. */
 const DENIAL_MESSAGE = 'You are not a member of this household.';
@@ -343,8 +337,13 @@ describe('rotateInviteCode resolver', () => {
     }
     const codeAfterBudget = await readInviteCode(householdId);
 
+    // Asserts the exact message, not just the error type: a W7 S12 finding
+    // was that this shared limiter can silently leak a *different* action's
+    // rate-limit copy (e.g. joinHousehold's "Too many join attempts...")
+    // onto this resolver's own cap — `instanceof`/class-only checks alone
+    // would never catch that class of regression.
     await expect(handler(buildEvent(householdId, 'sub-owner-ratelimit-rotate'))).rejects.toThrow(
-      RateLimitedError,
+      `You've reached today's limit of ${MAX_ROTATE_ATTEMPTS_PER_DAY} invite code rotations. Try again tomorrow.`,
     );
     // The rejected call must never have reached the database.
     expect(await readInviteCode(householdId)).toBe(codeAfterBudget);

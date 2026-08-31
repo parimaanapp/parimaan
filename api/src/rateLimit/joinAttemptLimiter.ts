@@ -37,5 +37,6 @@ export const checkAndIncrementJoinAttempts = async (
     JOIN_ATTEMPT_ACTION,
     userId,
     MAX_JOIN_ATTEMPTS_PER_DAY,
+    'Too many join attempts. Try again tomorrow.',
     now,
   );

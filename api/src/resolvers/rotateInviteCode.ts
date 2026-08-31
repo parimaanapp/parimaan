@@ -148,6 +148,7 @@ export const createRotateInviteCodeHandler =
       ROTATE_ATTEMPT_ACTION,
       callerUser.id,
       MAX_ROTATE_ATTEMPTS_PER_DAY,
+      `You've reached today's limit of ${MAX_ROTATE_ATTEMPTS_PER_DAY} invite code rotations. Try again tomorrow.`,
       deps.now,
     );
 

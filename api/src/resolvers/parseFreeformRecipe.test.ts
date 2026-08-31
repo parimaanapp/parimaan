@@ -136,7 +136,14 @@ describe('parseFreeformRecipe resolver', () => {
     }
     expect(deps.parseWithModel).toHaveBeenCalledTimes(MAX_FREEFORM_PARSES_PER_DAY);
 
-    await expect(handler(buildEvent('a recipe', cognitoSub))).rejects.toBeInstanceOf(RateLimitedError);
+    // Asserts the exact message, not just the error type: a W7 S12 finding
+    // was that this shared limiter can silently leak a *different* action's
+    // rate-limit copy (e.g. joinHousehold's "Too many join attempts...")
+    // onto this resolver's own cap — `instanceof` alone would never catch
+    // that class of regression.
+    await expect(handler(buildEvent('a recipe', cognitoSub))).rejects.toThrow(
+      `You've reached today's limit of ${MAX_FREEFORM_PARSES_PER_DAY} recipe parses. Try again tomorrow.`,
+    );
     expect(deps.parseWithModel).toHaveBeenCalledTimes(MAX_FREEFORM_PARSES_PER_DAY);
   });
 
