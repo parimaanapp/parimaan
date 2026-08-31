@@ -1668,3 +1668,460 @@ Against the 9-slice planned subtotal (18.0h), actual landed **~29% under** (12.8
 | D11 | §13.2.2 — which AI provider does W7 use, given SD/PRD assume Bedrock everywhere? | **Gemini 3.5 Flash-Lite, for both `parseFreeformRecipe` and the freeform-fallback path off a failed URL import.** A scoped, recorded **deviation** from SD §6 R1 / WS-7 / SD §8.2/§8.4 / SD §15.1's Bedrock assumption. Cascades: the Bedrock ap-south-1 spike is **CUT** and §6 R1 is **moot for W7**; §6 R2 is unchanged; the invocation layer becomes provider-neutral `invokeModel` over a `geminiClient` adapter; auth becomes an API key in Secrets Manager following the existing `parimaan/google-oauth-secret` + `APP_ROLE_SECRET_ARN` patterns, **not** IAM; no VPC endpoint work, and `network-stack.ts`'s idle `BEDROCK_RUNTIME` endpoint is deliberately left untouched. Cost: $0.30/M in, $2.50/M out → **≈$0.0022/parse vs ≈$0.005 on Haiku**, against **$300 of pre-existing Gemini credit** that covers W7's entire realistic usage. **The provider choice for W15/W17/W18/W19 is EXPLICITLY LEFT OPEN** and is not decided here. |
 
 ---
+
+## 14. W8 detailed plan — Sync polish + Month 2 demo
+
+**Status:** LOCKED, 2026-08-31. Drafted by the **planner** agent following §11/§12/§13's structure, then walked through decision-by-decision with the founder. Eleven decisions (D1–D11) are locked below in §14.7.
+
+**Budget:** ~10 hrs nominal against Phase 2's ~40 hrs / 4 weeks (§7). Locked scope estimates **~22.0 hrs** (§14.5.1). The §7 20-hr buffer was ~8 hrs down after W5, formally claimed in full by W6 (D8), and overdrawn by W7 (D9). W8 does not spend buffer; it extends the MVP date directly. That is the honest frame for D9 below.
+
+**Pipeline:** `DEV_WORKFLOW.md` §2.1 applies unmodified to every slice. Per §11.7 Q6 this plan folds into this document rather than a `docs/plans/` file.
+
+**W8 is the `DEV_WORKFLOW.md` §2.3 phase boundary.** W6's and W7's exit criteria each say, in as many words, "no phase-boundary sweep this week — W8 is the §2.3 boundary" (§12.6, §13.6). §2.3 standing exception 1 ("end of W4, W8, W12, W16, W20, W24, full-surface review before the milestone is declared done") is therefore a **non-optional W8 deliverable with its own slice (S11)**, not a per-slice trigger. It is the first phase-boundary sweep since W4, and it covers a Phase 2 surface that grew by five RLS-protected tables, ~20 resolvers, two subscriptions, the first third-party API integration, the first non-VPC Lambda, the first secret outside the DB credential, and the first SSRF-exposed fetcher.
+
+**Process carry-over from W7 (§13.5.13):** the per-slice wall-clock method that works (PR-merge timestamps via `git log --format=%ad`) carries forward unchanged.
+
+**Two items carried, not inherited (§13.6's last bullet):** the physical-device two-device `onRecipeChanged` run (`RUNBOOK.md` §3) and the R7 300-item scroll spike on real low-end Android hardware. Both remain **W6's** obligations and are blocked on physical hardware the founder does not currently have access to. **No W8 slice depends on either**, and this plan is deliberately structured so that neither can block a W8 merge. They are listed in §14.6 as carried-open Phase-2 items so they are not quietly dropped at the phase boundary — and D8 below deals with the sharper problem that W8's *own* DoD gate has the same hardware dependency.
+
+### 14.1 What W8 is locked to deliver
+
+| Focus | Screens | Backend/infra | DoD gate |
+|---|---|---|---|
+| Sync polish + Month 2 demo | Notif preferences (finalized) → **28/49** | Reconnect backoff; refetch-on-reconnect; membership caching (30s TTL) | **End of Month 2 milestone:** 2-device sync <5s under load |
+
+**Added to W8 by this plan** (not in the §4 row):
+
+- **The router's unconditional `/first-run` redirect** (§11.2.11), named by W5, W6 and W7 in turn as "still open, still W8's first slice." It is S1.
+- **A keep-alive watchdog in `AppSyncSubscriptionClient`** (§14.2.1). Not an enhancement: without it, reconnect backoff is unreachable code for the most common real-world failure. This is the reason S2 exists before S3.
+- **An `IdTokenProvider` on the subscription client** (§14.2.3). A reconnect needs a *fresh* token; the client today can only replay the one captured at subscribe time, and the ID token is 1-hour (SD §10.2).
+- **App-lifecycle wiring** (S4). `subscription_client.dart`'s own doc claims W5 shipped "subscribe-on-foreground / unsubscribe-on-background"; what actually shipped is per-controller subscribe/dispose. Nothing in the app observes `AppLifecycleState` for the socket.
+- **Caching the caller-identity upsert, not only the membership check** (§14.2.9, D3) — the same hot path, a heavier operation, absent from the §4 row's wording.
+- **`onHouseholdChanged` and the retirement of `HouseholdSyncPolicy`'s poll** (§14.2.10, D4/D5) — closing a **Phase 1** exit criterion that is still unmet, and an operational prerequisite `RUNBOOK.md` §2 records as blocking.
+- **`notification_preferences` migration + RLS + two resolvers** (§14.2.6/§14.2.7, D1 = Option A, locked).
+- **The §2.3 phase-boundary `security-reviewer` sweep** (S11).
+
+**Out of scope** (tracked, not forgotten): **R3's 5-concurrent-client subscription soak — W11, not W8** (§6 R3, §11.5.2; this is stated emphatically because "under load" in W8's own gate invites exactly that confusion — see D6); the RDS Proxy concurrent-load spike (W11); FCM, APNs, the `fcm_token` column's real use, and push delivery (W20); the offline banner (wireframe 12.2, W12); offline write (never, §9); Drift cache for recipes (W14, §12.7 D7); `bulkAddPantryItems` on `@aws_subscribe` (W18, §11.2.1); `Query.recipes` pagination (pending the still-open R7 spike); the duplicate-recipe action (§12.2.10, still unscheduled); recipe cover images (§12.2.11, descoped); the $5/day AI cost alarm (W17/W22); PostHog instrumentation (W22); the two hardware-blocked W6 items above.
+
+### 14.2 Conflicts and gaps found in the locked docs
+
+Items marked **LOCKED (Dn)** were open decisions, now settled with the founder (§14.7). Items marked **CALL** are judgment calls implemented as stated. Items marked **NOTE** are informational or forward-flags.
+
+#### 14.2.1 CRITICAL — reconnect backoff is unreachable code without a keep-alive watchdog, so the watchdog ships first
+
+`subscription_client.dart` line 196 documents its handling of AppSync's keep-alive frame as: *"'ka' (keep-alive) and anything unrecognised are silently ignored."* `appsync_realtime_protocol.dart` never reads `connection_ack`'s `payload.connectionTimeoutMs`, which is precisely the value AppSync sends to tell a client how long it may go without a `ka` before declaring the connection dead.
+
+The consequence is the whole point of W8. The failure mode the §4 row exists to fix — a phone in a lift, a subway, a cell-to-wifi handoff — does **not** produce a TCP close. It produces silence. `onDone` never fires, `onError` never fires, `_handleChannelError`/`_handleChannelDone` never run, and the app sits on a socket that will never deliver another event, indistinguishable from a quiet household. A backoff ladder attached to `onDone`/`onError` would be correct code that never executes in the case it was written for.
+
+**CALL:** the `ka` watchdog is **S2 and lands before the backoff ladder in S3**, not alongside it. Concretely: `connection_ack`'s `connectionTimeoutMs` is read and stored (with a conservative default if absent); every inbound frame of any type resets a watchdog timer; expiry is treated as a channel failure and routed through the same path a real socket error takes. Without this ordering, S3's tests would pass and S3's feature would not work.
+
+#### 14.2.2 CRITICAL — the current teardown closes every subscriber stream, so "reconnect" cannot mean "reattach" without a design change
+
+`_handleChannelError` (lines 257–267) and `_handleChannelDone` (269–274) both iterate `_subscriptions.values`, `close()` each controller, and then `_resetConnectionState()` clears the map. `PantryController` (lines 68–72) and `RecipeLibraryController`/`RecipeDetailController` all listen with `onError: (Object _) {}` and no `onDone` handling.
+
+So today: socket dies → every live-update stream closes silently → the screen shows correct-but-frozen data forever, with no error, no indicator, and no retry, until something rebuilds the controller. That is worse than an error, because nothing distinguishes it from "nobody changed anything."
+
+There are two places reconnection could live, and the choice is consequential:
+
+| Where | Consequence |
+|---|---|
+| **In each controller** (re-listen after `onDone`) | Three call sites today, seven by W12 (`onMenuChanged`, `onShoppingListChanged`, `onHouseholdChanged`). Each reimplements backoff, jitter, and the refetch signal. Guaranteed drift. |
+| **In `AppSyncSubscriptionClient`** | One implementation. Subscriber streams must **survive** a disconnect: registrations stay in `_subscriptions`, `start` frames are re-issued after a successful reconnect, and consumers never observe a close for a transient network failure. |
+
+**CALL:** reconnection lives in `AppSyncSubscriptionClient`. This inverts the current close-on-failure contract, which is a real behavioural change to a shipped, reviewed file — `_handleChannelError`/`_handleChannelDone` stop closing controllers and instead hand off to the reconnect state machine. Closing is retained for exactly two cases: the caller cancelled, and the server sent `complete` for that id. A third case is added in §14.2.3.
+
+This is a `flutter-reviewer` slice with a state machine at its centre, and `subscription_client.dart`'s git history (three CRITICAL and two HIGH findings in W5 S8 alone — §11.5.5) is the honest prior on how likely a subtle bug is here.
+
+#### 14.2.3 CRITICAL — a reconnect needs a fresh token, and the client has no way to obtain one
+
+`subscribe({required String idToken})` captures a token string. `AppSyncWebSocketLink` reads it out of the request's `HttpLinkHeaders` context entry (line 41), which `AuthLink` populated once, at request time. SD §10.2: the ID token is 1-hour. A connection that is supposed to survive backgrounding, a tunnel, and a 60-second backoff ceiling will routinely outlive it. Replaying the captured token on reconnect yields `connection_error` and — with S3's ladder in place — an infinite retry loop against a credential that can never succeed.
+
+**LOCKED:** `AppSyncSubscriptionClient` takes an `IdTokenProvider` at construction. The typedef already exists (`auth_link.dart` line 14) and `client.dart`'s `ferryClientOverride` already has `ref.watch(authRepositoryProvider).currentIdToken` in hand at line 72 — this is wiring an existing seam, not inventing one. Every connect attempt and every re-issued `start` frame fetches a current token.
+
+`AppSyncWebSocketLink` keeps its own signed-out check unchanged, so a subscription requested while signed out still yields the identical `UnauthorizedError` a query does (that link's doc comment is explicit that this one-auth-check property is deliberate).
+
+**The third close case:** if the token provider returns null/empty, or the server answers a *fresh* token with `connection_error`, the client must **stop retrying** and close the streams with `UnauthorizedError`. An authentication failure is not a transient network failure, and looping a backoff ladder against it is how an app drains a battery while signed out.
+
+#### 14.2.4 GAP — refetch-on-reconnect is nearly free, but it interacts with the Drift cache-write invariant
+
+§11.2.12 already decided that every pushed event is a pure "something changed, refetch" signal and that `watchPantryChanges` returns `Stream<void>`. That decision makes refetch-on-reconnect almost trivial: after a reconnect's `start_ack` for a given subscription id, the client emits **one synthetic event** into that subscription's existing stream. Every consumer already handles it correctly, because every consumer already treats an event as "refetch." No controller changes, no new API.
+
+Two real wrinkles:
+
+1. **`start_ack` is currently ignored.** The client's frame switch (lines 183–198) handles `connection_ack`, `connection_error`, `data`, `error`, `complete`. AppSync's `start_ack` — the frame that says a `start` was accepted — falls into the "silently ignored" default. S3 needs it: emitting the refetch signal before the resubscribe is confirmed would refetch into a window where events are still being missed.
+2. **The reconnect refetch may not repopulate the Drift cache.** `pantry_controller.dart`'s `_hydrateThenFetch` doc (lines 77–89) records a load-bearing invariant: *only* the plain unfiltered fetch writes the cache, because `_refetch()` can run with an active `search`/`category` filter and `PantryDao.replaceAll` is a wholesale per-household overwrite. A reconnect-triggered `_refetch()` therefore leaves the offline cache holding pre-disconnect rows even though the screen is now correct.
+
+**CALL on (2):** keep the invariant, do not special-case it, and record the gap. Writing a filtered subset on reconnect would silently evict the cache — the exact bug the invariant exists to prevent — to fix a staleness window that only matters if the user then goes offline *and* kills the app *before* the next unfiltered load. The honest fix (a cache write path that knows it holds a complete set) belongs with W14's recipe-cache slice, where the two-filter-dimension version of this problem has to be solved anyway (§12.2.12).
+
+#### 14.2.5 GAP — "2-device sync <5s **under load**" is undefined, and the obvious reading is W11's job
+
+§4's W8 gate and §8's End-of-Month-2 row (d) both say "under load." §6 R3 — "AppSync subscription with 5 concurrent clients drops events" — is scheduled **W11**, and §11.5.2 says the same in as many words: *"Backoff, refetch-on-reconnect, and 5-concurrent-client load are W8 and W11 (risk R3)."* So "under load" in W8 cannot mean R3's client count, or W8 has silently absorbed a W11 spike.
+
+`RUNBOOK.md` §3's procedure — the one this gate is measured with — is a two-device, six-sample, one-item-at-a-time script. It contains no load dimension at all.
+
+**LOCKED (D6):** W8's "under load" means **event rate and recovery**, not client count: (a) a burst of ~20 rapid sequential mutations on device A, with every one observed on device B and the last one's latency timed; (b) a **forced-reconnect** sample — device B's network is dropped and restored mid-session, and the time from restore to a correct list on B is timed. Both are additive to `RUNBOOK.md` §3's existing six samples, which stay unchanged. R3's 5-client soak stays W11 and is named as out of scope in §14.1 so nobody reads an unchecked R3 box as a W8 miss (the §13.1 precedent for R1).
+
+#### 14.2.6 CRITICAL, LOCKED (D1) — "Notif preferences (finalized)" ships full backend this week
+
+What actually shipped in W4 as the "scaffold" is `mobile/lib/features/household/presentation/settings/settings_placeholder_screen.dart` — `SettingsPlaceholderScreen.notifications`, a `PEmptyState` reading *"Coming soon / Reminders and household alerts arrive with push notifications, which are not wired up yet."* It has no toggles. Its own doc comment says the row has no destination because *"notification preferences depend on FCM wiring (W20) and there is no `Notification*` type in `shared/schema.graphql` at all."*
+
+Confirmed against the codebase and the locked docs:
+
+- `notification_preferences` **DDL exists in SD §7.1** (lines 912–921: `user_id`, `household_id`, `list_changes`, `meal_reminder`, `expiry`, `activity`, `fcm_token`, PK `(user_id, household_id)`) but **has never been migrated** — no `api/migrations/*` file creates it.
+- There is **no `Notification*` type, query, or mutation** in `shared/schema.graphql`.
+- The **Phase 5 exit criteria** (§3, line 124) and the **W20 row** (§4) both own it: "Notification preferences per user per household (`notification_preferences` table)" and "`notification_preferences` reads on send."
+
+**LOCKED (D1): Option A — real backend now.** Migration + per-user RLS + `Query.notificationPreferences` + `Mutation.updateNotificationPreferences` + the real toggle screen (~5.0 hrs, S7+S8+S9). It is the only option under which the Month-2 screen-count DoD ("28/49") is honestly met, it costs ~5 hrs of a week that is already over budget (a real trade, not a free one), and every piece of it is an established pattern in this codebase — the migration copies `1787808112003_recipes.ts` comment-for-comment, the resolvers copy `updateHouseholdSettings`'s patch convention, and the screen is a Settings-row screen alongside four that already exist. It also removes the single riskiest thing about W20 (a new table, new RLS shape, and FCM plumbing all landing in one week). **`fcm_token` is deliberately NOT in the W8 SDL** — it is a device credential, W20 registers it via its own mutation, and no client ever reads it back.
+
+#### 14.2.7 CRITICAL — `notification_preferences` is missing from SD §7.1's RLS list, and its policy is a shape this codebase has never used
+
+Exactly the §12.2.2 finding again, and worse. SD §7.1's `ALTER TABLE … ENABLE ROW LEVEL SECURITY` block (lines 924–930, plus W6 S1's appended `recipe_ingredients` line) does **not** include `notification_preferences`.
+
+And unlike every other household-scoped table, the correct policy here is **not** membership-scoped. `household_settings`, `pantry_items`, `recipes` etc. all say "any member of this household may read and write." Notification preferences are **per user**: member B must not read, and certainly must not write, member A's row — and the row carries `fcm_token`, a device push credential whose leak lets another member's device be targeted directly.
+
+**CALL (following from D1 = A):** the W8 migration enables **and forces** RLS with a **user-scoped** policy — `FOR ALL USING (user_id = <caller>) WITH CHECK (user_id = <caller>)`, resolved through the same `parimaan.user_id` `set_config` that `withUserTransaction` already sets — plus explicit `GRANT … TO parimaan_app` in the *new* migration (§11.2.3's lesson). `fcm_token` is never exposed through the SDL. The RED suite must include the test that would catch the real bug: **a member of the same household reading and updating another member's row, denied.** A household-scoped policy would pass a naive test suite and be wrong.
+
+This is a `doc-updater` §4.1 trigger (SD §7.1's RLS list gains a line, second time).
+
+#### 14.2.8 CRITICAL, LOCKED (D2) — the membership cache is an authorization-weakening change and is the highest-severity item of the week
+
+Confirmed, not inferred: the cache is **server-side, Lambda-container-local, in-memory**. `api/src/auth/requireHouseholdMember.ts` lines 27–29: *"No membership-decision caching in this slice (a future 30s TTL cache is explicitly deferred, per SD §10.3) — this queries the database on every call."* SD §10.3 line 1210: *"Membership cache: Lambda-level in-memory cache with 30s TTL avoids the DB round trip on every request from the same active user."* There is nothing client-side to build and nothing in DynamoDB to build; a DDB round trip to avoid an Aurora round trip is not obviously cheaper and adds a second failure mode, so the DDB variant is rejected here explicitly rather than left as an unexamined alternative.
+
+What makes it severe is what it does to revocation. `leaveHousehold`, `deleteHousehold`, and the 5-member cap are all membership-mutating; with a 30s TTL, a **different warm Lambda container** can keep answering "yes, member" for up to 30 seconds after a removal, and there is no cross-container invalidation channel.
+
+The real exposure is narrower than that sounds, and the narrowing is the argument for shipping it — but it must be stated precisely, not hand-waved:
+
+- For every **RLS-protected** table (`pantry_items`, `recipes`, `recipe_ingredients`, `household_settings`, and W9+'s menus/lists), layer 3 is unaffected: the policy subquery reads `household_memberships` live, inside the transaction. A stale layer-2 pass still yields zero rows.
+- The genuine gap is **tables with no RLS** — `households` itself and `household_memberships` — reached by `Query.household`, `User.households`/`me`, `rotateInviteCode`, `leaveHousehold`, `deleteHousehold`. For those, `requireHouseholdMember` is the *only* gate, and `rotateInviteCode` in particular is a mutation whose result (`Household!`, containing `inviteCode`) is exactly what a just-removed member should not get.
+
+**LOCKED (D2), four parts:**
+
+1. **Positive results only.** Do not cache denials. A member who has *just* joined must not be locked out for 30s — `joinHousehold` is a core onboarding path, and a cached denial there is a support ticket for a bug that isn't real.
+2. **Membership-mutating and destructive resolvers read through**, never from cache: `joinHousehold`, `leaveHousehold`, `deleteHousehold`, `rotateInviteCode`. This is cheap (four call sites, all low-frequency) and removes every scenario in the bullet above except `Query.household`.
+3. **Best-effort local invalidation:** a container that performs a membership mutation evicts its own entries for that `(userId, householdId)`. This is partial by construction (it cannot reach other containers) and must be documented as partial, not sold as invalidation.
+4. **The ≤30s stale-authorization window is accepted, in writing**, with `security-reviewer` reviewing this slice specifically as an authorization change rather than as a performance change.
+
+**One counterintuitive finding worth recording:** the `onPantryChanged` / `onRecipeChanged` subscribe-time authorization resolvers are *not* meaningfully weakened by this cache. A subscription is authorized **once**, at subscribe time, and then holds for the life of the connection with no re-authorization — so the exposure there is already unbounded, and a 30s cache changes nothing about it. That unbounded window is a real standing finding (it is what a removed member's still-open socket rides on) and belongs to whichever week revisits subscription lifetime — flagged for W11/W20, not fixed here.
+
+#### 14.2.9 GAP, LOCKED (D3) — the identity round trip is heavier than the membership round trip, and the §4 row does not mention it
+
+Every resolver invocation in this codebase begins with `resolveCallerUser(pool, identity)` (`api/src/repositories/callerUser.ts`), which takes its own pool connection and runs `upsertUserByCognitoSub` — an `INSERT INTO users … ON CONFLICT (cognito_sub) DO UPDATE SET email = …, display_name = …, avatar_url = … RETURNING *` (`userRepository.ts` lines 48–76).
+
+That is a **write**, on every request, including every pure read, before the membership `SELECT` the §4 row is about. Under W8's own reconnect ladder it is also per-reconnect-attempt work: a burst of reconnects becomes a burst of `users` writes against an auto-paused Aurora.
+
+`recipeIngredients.ts` makes it concrete: `Recipe.ingredients` is a field resolver invoked once per parent `Recipe` object. The Detail screen selects one, so it is one invocation today — but the moment any future query selects `ingredients` across a list (W10's picker, W14's seeded library), it is N invocations and N identity upserts for one user action.
+
+**LOCKED (D3):** one shared `api/src/cache/ttlCache.ts` utility, two consumers — `requireHouseholdMember` keyed on `(userId, householdId)`, and `resolveCallerUser` keyed on `cognitoSub` — both at 30s. Cost of caching identity: a display-name or avatar change in Google takes up to 30s (and one resolver invocation) to propagate. That is not a user-visible problem in an app where the profile is read from the token anyway.
+
+#### 14.2.10 NOTE, LOCKED (D4/D5) — a **Phase 1** exit criterion is still unmet, and W8 is the last week of the phase that owns it
+
+Phase 1's DoD (§3, line 68) reads: *"Household settings persist and sync across devices via `onHouseholdChanged` subscription."* It shipped as a poll. Five places in the codebase name W8 as where that is repaid:
+
+- `mobile/lib/features/household/state/household_sync_policy.dart` lines 13, 28, 42 — *"belongs in W8's `onHouseholdChanged` subscription work instead."*
+- `mobile/lib/features/household/data/household_repository.dart` line 208 — cache invalidation *"is explicitly W8's problem once `onHouseholdChanged` lands."*
+- `infra/stacks/api-stack.ts` line 334 — *"`onHouseholdChanged`/`onHouseholdSettingsChanged` stay deferred to W8."*
+- `infra/test/api-stack.test.ts` line 217 — same assertion in a test comment.
+
+And `RUNBOOK.md` §2 records a **blocking prerequisite** created by the stopgap: `Query.household` has no rate limit, and a poll loop with N members "turns this into sustained per-second load against Aurora … with no ceiling. **Flag this as a blocking prerequisite check before the `HouseholdSyncPolicy` polling mechanism ships.**" Shipping `onHouseholdChanged` does not merely close the Phase 1 gap — it deletes the mechanism that needs the rate limit, so the prerequisite evaporates rather than being paid.
+
+**The §11.2.1 return-type constraint recurs exactly, and this time it bites harder.** AppSync requires each `@aws_subscribe`d mutation's return type to match the subscription's. Current SDL:
+
+| Mutation | Returns | Attachable to `onHouseholdChanged: Household`? |
+|---|---|---|
+| `joinHousehold` | `Household!` | Yes |
+| `rotateInviteCode` | `Household!` | Yes |
+| `updateHouseholdSettings` | `HouseholdSettings!` | **No** — and this is the one Phase 1's DoD is actually about |
+| `leaveHousehold` | `Boolean!` | **No** |
+| `deleteHousehold` | `Boolean!` | **No** |
+
+**LOCKED (D4):** change `updateHouseholdSettings` to return `Household!` (the settings remain reachable via `Household.settings`, and §11.2.12's "every push means refetch" makes the payload shape irrelevant to the client anyway) — precedent: W5's `deletePantryItem: PantryItem!` and W6's `deleteRecipe: Recipe!`. Attach `joinHousehold`, `rotateInviteCode`, and `updateHouseholdSettings`. **Leave `leaveHousehold`/`deleteHousehold` at `Boolean!` in W8**, and record the gap: a member leaving is not pushed, so another device's Members list stays stale until route entry or foreground.
+
+The reason for that asymmetry is not laziness — it is a real trap. `leaveHousehold` returning `Household!` would run `Household.members` and `Household.settings` field resolvers **for the caller who just stopped being a member**, which RLS and `requireHouseholdMember` will deny, producing a non-null field error on a mutation that actually succeeded. Solving that properly (a distinct payload type, or resolving before the membership row is deleted) is real design work that does not belong in a week already at 22 hours.
+
+**LOCKED (D5):** with `onHouseholdChanged` live, `HouseholdSyncPolicy`'s **poll cadence is removed** and the class is reduced to what still earns its keep — refetch on route entry and refetch on foreground (its own doc's items 1 and 2; item 3, the 15-second poll, goes). That is what covers the leave/delete staleness gap above, at zero sustained cost, and it closes `RUNBOOK.md` §2's prerequisite by deletion.
+
+#### 14.2.11 NOTE — the `/first-run` redirect fix is small, but it is not one line
+
+`router.dart` lines 619–635 document exactly why it was deferred: *"reading the me controller here would turn every one of them into a network-dependent test for a guard they are not exercising … Wiring this in belongs to a slice that also updates the router test harness to supply a fake household repository, not this one."*
+
+So S1's actual work is three things, not one: (a) gate the redirect on `meHouseholdsControllerProvider`'s `AsyncValue` — **three** states, not two, mirroring `_redirect`'s existing auth handling: still-loading stays on splash (a flash to `/first-run` and then to `/home` is worse than a splash), data non-empty → `/home`, data empty → `/first-run`, **error → `/first-run`** (which offers both create and join, the only safe landing when the household list is unknown); (b) add a `ref.listen` on that provider so `refreshListenable` bumps when the query settles, or the redirect never re-runs; (c) give the router test harness a default fake household repository so the existing suite stays offline.
+
+The deep-link branch (`pendingJoinCodeControllerProvider`) keeps priority over all of this, unchanged.
+
+**Why it matters beyond tidiness:** §11.2.11 records the consequence for the DoD demo — *"both devices must reach the pantry within the session in which they created/joined — a cold restart lands back on first-run."* W8's gate is a two-device timed run with a forced reconnect in it (D6). A reconnect test that requires never cold-restarting the app is not a reconnect test.
+
+#### 14.2.12 NOTE, LOCKED (D10) — reconnect state has a consumer in W12 and no UI in W8
+
+Wireframe 12.2 ("Offline banner") is a **W12** screen. W8 should therefore build no connection-status UI. But the state machine in S3 is the only place that will ever know "disconnected / retrying / connected," and retrofitting an observable onto it later is a refactor of the file with the worst bug history in the app.
+
+**LOCKED (D10):** S3 exposes connection state as a plain observable value from `AppSyncSubscriptionClient` (a `ValueListenable`/stream, no Riverpod provider, no widget), with **no consumer in W8**. W12 binds the banner to it. Cost is minutes now; the alternative is reopening the state machine in W12.
+
+### 14.3 Slice breakdown
+
+**Twelve slices, one PR each.** Sizes include strict-TDD overhead (§6a: +25–40%).
+
+#### S1 — the `/first-run` redirect + router test harness
+
+- **Delivers:** §11.2.11 closed. A signed-in user with at least one household lands on `/home`; one with none lands on `/first-run`; an unresolved me-query stays on splash. Test harness gains a default fake `householdRepositoryProvider` so existing router tests stay offline (§14.2.11).
+- **Files:** `mobile/lib/app/router.dart`; `mobile/test/app/router_test.dart`; `mobile/test/support/` (harness).
+- **Depends on:** nothing. **Can start day 1** — the zero-dependency Flutter slice, the role S4 played in W5 and S8 in W7.
+- **Size / Risk:** ~1.5 hrs / **Medium**. Risk is regression breadth, not novelty: `_redirect` is the guard every existing router test exercises, and a three-state async gate is where a splash-flash or a redirect loop is born.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` **fires** — this is auth-adjacent navigation logic (§2.3's "auth/identity" trigger); the specific question is whether any path reaches a signed-in location without a resolved session.
+- **RED tests:** signed-in + non-empty households from splash → `/home`; signed-in + empty → `/first-run`; me-query still loading → stays on splash, no flash asserted by observing the emitted location sequence, not the final one; me-query errored → `/first-run`; a pending deep-linked join code still wins over all four; navigation *within* the signed-in area is still left alone; every pre-existing router test passes with no network.
+
+#### S2 — keep-alive watchdog, `connectionTimeoutMs`, `start_ack`
+
+- **Delivers:** §14.2.1. `connection_ack`'s `payload.connectionTimeoutMs` parsed and honoured (with a conservative default when absent); a watchdog reset by every inbound frame including `ka`; expiry routed through the same path a real socket error takes; `start_ack` recognised (S3 needs it).
+- **Files:** `mobile/lib/shared/graphql/appsync_realtime_protocol.dart` (pure parse helpers); `.../subscription_client.dart`.
+- **Depends on:** nothing. Parallel with S1.
+- **Size / Risk:** ~2.0 hrs / **Medium-High**. No network needed to test — the `WebSocketChannelFactory` seam already exists (lines 15–16, 32–35) and `fake_async` fakes the timers. The risk is protocol fidelity: this is the one place W5 hand-rolled against AWS docs rather than a library.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips (no auth, no new dependency, no data path).
+- **RED tests:** `connection_ack` carrying `connectionTimeoutMs` sets the watchdog to that value; absent → the documented default; a `ka` resets it; a `data` frame also resets it (any traffic proves liveness); **silence past the timeout tears the connection down exactly as a socket error does** — the test this whole slice exists for; `start_ack` for a known id is recorded and for an unknown id is ignored; an unrecognised frame type is still tolerated (the existing property must not regress).
+
+#### S3 — reconnect with backoff, resubscribe, refetch-on-reconnect, fresh tokens *(the week's core slice)*
+
+The DoD-gate slice. Own design decision per `DEV_WORKFLOW.md` §2.2 step 2b — this is a state machine replacing a documented stopgap, not a feature.
+
+| # | Step | Agent | Concrete action | Gate |
+|---|---|---|---|---|
+| 1 | Research & Reuse | *none* | **Mandatory.** W5 S8 hand-rolled the transport after ruling out every pub.dev option (§11.3 S8 step 1 result). Re-check whether anything has appeared since for AppSync realtime **reconnection** specifically, and read `aws-amplify/amplify-flutter`'s `amplify_api_dart` WebSocket reconnect implementation as a **design reference** (its `Amplify.API` coupling still rules it out as a dependency, per SD §18). Also check `gql_websocket_link`'s own reconnect semantics for prior art on the "streams survive a disconnect" contract (§14.2.2). | Adopt-vs-hand-roll written down; the backoff/jitter parameters justified against a real reference, not invented. |
+| 2 | Plan (novel arch) | `architect` | Record: (a) §14.2.2's inverted close contract — subscriber streams survive transient failure, and the three cases where closing is still correct; (b) the ladder **1s → 2s → 5s → 15s → 60s** (§11.3 S8 step 2d's own numbers) with **jitter** and why jitter is not optional (§14.5.7); (c) §14.2.3's `IdTokenProvider` and the auth-failure terminal case (D11); (d) §14.2.4's synthetic refetch event, emitted only after `start_ack`; (e) §14.2.12's connection-state observable with no W8 consumer (D10). | Decisions in SD §18. |
+| 3 | RED | `tdd-guide` | All against the fake channel + `fake_async`, zero real sockets (§14.5.3, D7). Ladder: successive failures wait 1/2/5/15/60s and then stay at 60s; a successful `connection_ack` **resets the ladder to 1s**; jitter keeps each delay inside its declared band. Survival: a socket error does **not** close subscriber streams, and after reconnect the client re-issues a `start` for every still-registered id. Refetch: exactly **one** synthetic event per subscription per successful reconnect, emitted **after** `start_ack`, never before. Tokens: each connect attempt fetches a **fresh** token (assert the provider is called per attempt, not once); a null token terminates with `UnauthorizedError` and **stops the ladder**; a `connection_error` against a freshly-fetched token also stops it. Cancellation: a caller cancelling mid-backoff is not resurrected by the pending retry (the W5 CRITICAL this file already carries a guard for). Lifecycle: the ladder does not run while disconnected deliberately. | Failures shown. |
+| 4 | GREEN | *none* | `mobile/lib/shared/graphql/subscription_client.dart`; `.../reconnect_policy.dart` (new — the ladder as a pure, separately-testable value object, the `HouseholdSyncPolicy` precedent for keeping cadence logic free of Flutter); `.../client.dart` (inject `IdTokenProvider`). | Tests pass. |
+| 5 | REFACTOR | `tdd-guide` | The reconnect machinery stays generic over any subscription — W11/W12 add `onMenuChanged`/`onShoppingListChanged` and must add **zero** reconnect code. `subscription_client.dart` stays under 400 lines or splits. | Clean. |
+| 6 | Domain review | `flutter-reviewer` | Handed §11.5.5's own bug list from this file (a hang, a permanently-poisoned client, a use-after-cancel crash) as an explicit regression checklist — all three were connection-state-machine bugs in the code this slice rewrites. | Addressed. |
+| 7 | Security | `security-reviewer` | **FIRES** — token handling over a long-lived, now self-renewing connection. Specifically: the ID token is never logged and never in an error message; a token expiring mid-connection cannot leave an unauthorized subscriber attached; the retry ladder cannot loop against an auth failure (a battery/credential-probing concern, not just UX); `householdId` on a re-issued `start` frame comes from the client's own registration, never from a server frame. | No CRITICAL/HIGH. |
+| 8 | General | `code-reviewer` | — | Clean. |
+| 9 | Docs | `doc-updater` | SD §18; **correct `subscription_client.dart`'s own class doc** (lines 24–30 currently promise W8 will fix exactly this) and `appsync_websocket_link.dart` line 16. | Synced. |
+
+**Depends on:** **S2.** **Size / Risk:** ~3.0 hrs / **High** — highest-risk slice of the week and the one the DoD gate depends on, in the file with the worst bug history in the app.
+
+#### S4 — app-lifecycle wiring for the socket
+
+- **Delivers:** what `subscription_client.dart`'s doc already claims exists. A single app-root lifecycle observer disconnects the socket on background and reconnects on foreground; the ladder does not run while backgrounded (iOS will not fire the timers reliably anyway, and a backgrounded retry loop is pure battery cost — `HouseholdSyncPolicy`'s own idle-decay rationale).
+- **Files:** `mobile/lib/app/` (new lifecycle observer, alongside the router); `.../subscription_client.dart` (already exposes `disconnect()`, line 109).
+- **Depends on:** **S3.**
+- **Size / Risk:** ~1.0 hr / **Low-Medium**. Risk is a foreground event arriving before any subscription exists — the exact class of bug `HouseholdSyncPolicy._hasStarted` (lines 162–172) was added for.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** background → socket disconnected, ladder stopped; foreground → one reconnect attempt, ladder reset to 1s; foreground with no active subscriptions → **no** connection opened; rapid background/foreground/background does not leave two sockets or two ladders.
+
+#### S5 — `TtlCache` + membership cache (30s)
+
+- **Delivers:** §14.2.8/D2. `api/src/cache/ttlCache.ts` (module-scope, per container, the memoization shape `db/pool.ts` and `ai/geminiClient.ts` already use); `requireHouseholdMember` reads through it. Positives only; read-through bypass on the four membership-mutating resolvers; best-effort local eviction; the ≤30s window documented in the function's own doc comment, replacing lines 27–29's "explicitly deferred" note.
+- **Files:** `api/src/cache/ttlCache.ts` (new); `api/src/auth/requireHouseholdMember.ts`; `api/src/resolvers/{joinHousehold,leaveHousehold,deleteHousehold,rotateInviteCode}.ts`.
+- **Depends on:** nothing. **Can start day 1** alongside S1/S2.
+- **Size / Risk:** ~2.0 hrs / **High** — small code, large blast radius. This is the one W8 slice that *weakens* an authorization control on purpose.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**FIRES** — hand it §14.2.8's four-part contract as an explicit checklist, reviewed as an authorization change, not a performance change) → `code-reviewer` → `doc-updater` (SD §10.3 confirmed-or-amended).
+- **RED tests:** a second call inside the TTL does **not** hit the DB (assert the query stub's call count, not the return value); a call after the TTL does; **a denial is never cached** — a non-member who joins is authorized on the very next call; the cache is keyed on **both** `userId` and `householdId` (a user's membership in household A never authorizes household B, and vice versa — the test that catches a lazy single-key implementation); the four bypass resolvers query live even with a warm entry; a local membership mutation evicts its own entry; entries do not leak across users in one container (the `withUserTransaction` cross-tenant lesson, at a different layer).
+
+#### S6 — caller-identity cache
+
+- **Delivers:** §14.2.9/D3. `resolveCallerUser` reads through the same `TtlCache`, keyed on `cognitoSub`, eliminating an `INSERT … ON CONFLICT DO UPDATE` per request.
+- **Files:** `api/src/repositories/callerUser.ts`.
+- **Depends on:** **S5** (the utility).
+- **Size / Risk:** ~1.0 hr / **Medium**. Risk is that a *first-ever* login must still upsert — a cache miss is the normal path there, but a bug that caches a null would lock a new user out of their own account creation.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**fires** — identity resolution) → `code-reviewer`.
+- **RED tests:** first call upserts; second within TTL does not touch the DB; after TTL it upserts again; **a failed upsert is never cached**; two different `cognitoSub`s in one container never see each other's row (the cross-tenant test again); a changed display name propagates after the TTL.
+
+#### S7 — `notification_preferences` migration, per-user RLS, grants
+
+- **Delivers:** SD §7.1's DDL (lines 912–921) migrated, `ENABLE` + `FORCE` RLS with the **user-scoped** policy of §14.2.7, explicit `parimaan_app` grants in the new migration. No GraphQL, no app code.
+- **Files:** `api/migrations/<ts>_notification-preferences.ts` (new) — `1787808112003_recipes.ts` is the pattern to copy.
+- **Depends on:** nothing.
+- **Size / Risk:** ~1.5 hrs / **Medium-High** — a policy shape with no precedent in this repo (every existing policy is membership-scoped), and the week's second-highest-value test surface.
+- **Agents:** `tdd-guide` → `database-reviewer` (mandatory on every migration) → `security-reviewer` (**FIRES**) → `code-reviewer` → `doc-updater` (SD §7.1's RLS list).
+- **RED tests** (real Testcontainers Postgres): a user reads only their own row; **a fellow member of the same household cannot read another member's row** — the test a household-scoped policy would fail; a fellow member cannot `UPDATE` or `INSERT` a row for another user (`WITH CHECK`, §11.2.2's lesson); `parimaan_app` can CRUD at all (§11.2.3's lesson); the composite PK makes a second row for the same `(user, household)` impossible; `down()` is clean and re-runnable; the migrations-dir hash asset test still passes.
+
+#### S8 — SDL + `Query.notificationPreferences` + `Mutation.updateNotificationPreferences`
+
+- **Delivers:** a `NotificationPreferences` type over the four boolean columns, **`fcm_token` deliberately absent from the SDL entirely** (§14.2.6); a patch-input mutation following the locked convention (every field optional, absent = unchanged, explicit `null` rejected — the `updateHouseholdSettings`/`updatePantryItem` shape); defaults materialised server-side on first read so a user with no row still gets the SD-specified `TRUE` defaults rather than a null.
+- **Files:** `shared/schema.graphql`; `api/src/repositories/notificationPreferencesRepository.ts`; `api/src/mappers/`, `api/src/validation/`, `api/src/resolvers/`; `infra/stacks/api-stack.ts` (`DB_RESOLVERS`).
+- **Depends on:** **S7.**
+- **Size / Risk:** ~1.5 hrs / **Low-Medium** — well-worn path.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (**fires**: new Lambda resolvers) → `code-reviewer` → `doc-updater` (SD §6.1 gains both fields).
+- **RED tests:** a member reads only their own prefs; a first read with no row returns the defaults **without** writing a row implicitly (or writes one — decide and assert, don't leave it emergent); every nullable field tested with an **explicit `null`**, not only an absent key (§11.5.5's regression class, still the standing rule); `fcm_token` is not present anywhere in the generated schema (a real assertion against the SDL, since this is a security property, not a design preference); a non-member's `householdId` denies via `requireHouseholdMember`.
+
+#### S9 — Notif preferences screen (wireframe 4.3) → 28/49
+
+- **Delivers:** `SettingsPlaceholderScreen.notifications` **deleted, not grown** (the `_HomePlaceholderScreen` precedent, §11.3 S4), replaced by the real four-toggle screen. Because push is W20, each toggle carries honest copy that these take effect when notifications ship — the `settings_placeholder_screen.dart` honesty posture, at field level instead of screen level.
+- **Files:** `mobile/lib/features/household/presentation/settings/notification_preferences_screen.dart` (new); `.../state/notification_preferences_controller.dart`; `mobile/lib/shared/graphql/operations/notification_preferences.graphql` + regenerated `__generated__/`; `router.dart`; delete `settings_placeholder_screen.dart`'s `.notifications` factory (the `.about` factory stays — that row is still a real placeholder).
+- **Depends on:** **S8.**
+- **Size / Risk:** ~2.0 hrs / **Low-Medium**.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips (presentation over an already-reviewed resolver).
+- **RED tests:** loading/error/data states; a toggle optimistically flips and **reverts on a server error** with the error surfaced (not silently swallowed); the four toggles map to the four fields with no transposition (a table-driven test — this is exactly the bug that ships undetected); the screen is reachable from the Settings hub and the placeholder route no longer resolves; screen-reader labels state the toggle's meaning and its not-yet-active caveat.
+
+#### S10 — `onHouseholdChanged` + `HouseholdSyncPolicy` poll retirement
+
+- **Delivers:** §14.2.10/D4/D5. `updateHouseholdSettings` → `Household!` (locked-SDL change, `deletePantryItem`/`deleteRecipe` precedent); `Subscription.onHouseholdChanged(householdId: ID!): Household` `@aws_subscribe`d to `joinHousehold`/`rotateInviteCode`/`updateHouseholdSettings`; the subscribe-time authorization resolver (§11.2.9's per-field pattern, identical to `onPantryChanged`/`onRecipeChanged`); mobile `watchHouseholdChanges` → `Stream<void>` (§11.2.12) wired into `CurrentHouseholdController`; `HouseholdSyncPolicy`'s poll cadence removed, entry+foreground refetch kept. **Phase 1 DoD line closed.**
+- **Files:** `shared/schema.graphql`; `api/src/resolvers/onHouseholdChanged.ts`; `api/src/resolvers/updateHouseholdSettings.ts`; `infra/stacks/api-stack.ts` (+ its lines 334–336 comment, now wrong); `infra/test/api-stack.test.ts` (line 217's comment); `mobile/lib/features/household/{data/household_repository,state/current_household_controller,state/household_sync_policy}.dart`; `mobile/lib/shared/graphql/operations/on_household_changed.graphql`.
+- **Depends on:** **S3** — deliberately, so the new subscription inherits reconnect rather than being written against the old contract and then reworked.
+- **Size / Risk:** ~2.5 hrs / **Medium**. Mechanically the W6 S11 shape (§12.2.9: "mechanically cheap after W5 S8"), plus one locked-SDL return-type change and the deletion of a shipped mechanism.
+- **Agents:** `tdd-guide` → `typescript-reviewer` + `flutter-reviewer` **in parallel** (§6b) → `security-reviewer` (**fires**: new Lambda resolver, subscription authorizer path, CDK change) → `code-reviewer` → `doc-updater` (SD §6.1 re-sync; the return-type deviation; **correct the four stale "deferred to W8" comments** listed in §14.2.10 — the §11.2.10 lesson, second time).
+- **RED tests:** *Backend* — non-member subscribe → `ForbiddenError`; a nonexistent `householdId` denies identically (no existence oracle); `updateHouseholdSettings` still applies the same patch semantics and every existing test passes with only the return-shape assertion changed. *CDK* — the new subscription resolver exists, is Lambda-backed, VPC-attached with the shared security group; API auth mode is **still** user-pool-only. *Flutter* — a push triggers exactly one refetch; a stream error is swallowed without disturbing the last good household; **`HouseholdSyncPolicy` no longer polls** (its own `isPolling` never becomes true on a timer) while entry and foreground refetches still fire.
+
+#### S11 — §2.3 phase-boundary `security-reviewer` sweep (mandatory)
+
+- **Delivers:** the first full-surface security review since W4, covering everything Phase 2 added. Not a per-slice trigger and not skippable: §2.3 standing exception 1 names W8 explicitly, and W6/W7 both deferred to it in writing.
+- **Explicit surface list** (handed to the agent, not left to infer):
+  1. **RLS**: `pantry_items`, `recipes`, `recipe_ingredients` (the no-`household_id` parent-join policy, §12.5.2's own highest-severity flag), `notification_preferences` (the new user-scoped shape), and the **`household_settings` `WITH CHECK` audit §11.2.2 explicitly deferred as "separate backlog, not W5"** — it has never been paid, and this is the sweep it was deferred to.
+  2. **Authorization**: the S5/S6 caches as a weakening change; the `Recipe.ingredients` field resolver with no `householdId` to gate on; the deliberate absence of a membership check on `parseFreeformRecipe`/`importRecipeFromUrl` (W7 D3) re-reviewed as a standing property.
+  3. **Subscriptions**: all three subscribe-time authorizers; the **authorize-once-then-hold-for-connection-life** window (§14.2.8's closing note) as a standing finding; the new self-renewing token path.
+  4. **Third-party/secrets/egress**: the Gemini key path, the non-VPC Lambda's IAM minimality, `net/safeUrl.ts` + `fetchPage.ts`'s SSRF control set re-checked post-`DEFAULT_MAX_BYTES` change (`RUNBOOK.md` §2's W7 entry).
+  5. **Rate limits**: all four DDB daily caps and the message-leak class fixed in PR #64.
+  6. **Client-side at rest**: the Drift database (household data on a shared family phone, sign-out eviction) — reviewed once at W5 S7, re-reviewed here with recipes in it.
+- **Files:** `docs/E2E_MVP_PLAN.md` (findings recorded in §14.5); `docs/RUNBOOK.md` (anything operational); fix PRs as needed.
+- **Depends on:** every other slice being merged.
+- **Size / Risk:** ~2.0 hrs / **Medium** — the risk is what it finds. A CRITICAL here is a week-extending event by definition, and the plan should say so rather than assume a clean sweep.
+- **Agents:** `security-reviewer` (sweep), then `tdd-guide` for any fix.
+
+#### S12 — Month 2 demo: real-AWS verification, timed two-device run, Phase 2 exit audit, doc pass
+
+- **Delivers:** the DoD gate measured under D6's definition; a real-AWS pass over every W8 backend slice (the W6 S10 / W7 S12 method — direct Lambda invoke against real dev Aurora/AppSync with synthetic Cognito identities); §4.2's mandatory weekly pass (actuals into §4's W8 row); and — because this is a phase boundary — an explicit **audit of Phase 2's own exit criteria** (§3, lines 78–86) with each line marked met / not met / superseded, not assumed.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 W8 actuals, this §14, the Phase 2 audit); `docs/RUNBOOK.md` (§3 gains D6's two additional samples).
+- **Depends on:** all slices.
+- **Size / Risk:** ~2.0 hrs / **Low** risk, **non-optional** (§6d).
+- **Agents:** `doc-updater`.
+- **Note on the two-device measurement (D8):** the founder does not currently have physical-device access. **LOCKED (D8): Option A** — the timed run uses a **simulator pair against the real dev backend**, exactly the W5 §11.5.5 precedent: functionally verified, timing observed but not stopwatch-precise, the caveat recorded honestly rather than a fabricated number. The physical-device run is **re-filed at Phase 2 level** (§14.6) rather than remaining a W6 line item, so it stays visible entering Phase 3. Whatever is observed is recorded with its method named — the §11.5.5 / §12.5.6 standard.
+
+### 14.4 Sequencing
+
+```
+   DAY 1: THE ROUTER FIX, THE PROTOCOL FIX, AND THE SERVER CACHE — ALL PARALLEL
+   ┌──────────────────────┐  ┌────────────────────────┐  ┌─────────────────────┐
+   │ S1 /first-run        │  │ S2 keep-alive watchdog │  │ S5 TtlCache +       │
+   │  redirect + harness  │  │  + connectionTimeoutMs │  │  membership cache   │
+   │  (zero deps)         │  │  + start_ack           │  │  (zero deps)        │
+   └──────────────────────┘  └───────────┬────────────┘  └──────────┬──────────┘
+                                          │                          │
+                             ┌────────────▼─────────────┐  ┌─────────▼─────────┐
+                             │ S3 reconnect + backoff   │  │ S6 caller-identity│
+                             │  + resubscribe + refetch │  │  cache            │
+                             │  + fresh tokens   ★gate  │  └───────────────────┘
+                             └────────────┬─────────────┘
+                             ┌────────────▼─────────────┐
+                             │ S4 app-lifecycle wiring  │
+                             └────────────┬─────────────┘
+                             ┌────────────▼─────────────┐   ┌──────────────────┐
+                             │ S10 onHouseholdChanged   │   │ S7 notif_prefs   │
+                             │  + poll retirement       │   │  migration       │
+                             └────────────┬─────────────┘   └────────┬─────────┘
+                                          │                 ┌────────▼─────────┐
+                                          │                 │ S8 SDL + 2 resolvers│
+                                          │                 └────────┬─────────┘
+                                          │                 ┌────────▼─────────┐
+                                          │                 │ S9 prefs screen  │
+                                          │                 │   → 28/49        │
+                                          │                 └────────┬─────────┘
+                             ┌────────────▼──────────────────────────▼─────────┐
+                             │ S11 §2.3 phase-boundary security sweep (MANDATORY)│
+                             └────────────────────────┬─────────────────────────┘
+                             ┌────────────────────────▼─────────────────────────┐
+                             │ S12 real-AWS + timed 2-device + Phase 2 audit     │
+                             └──────────────────────────────────────────────────┘
+```
+
+**Working order: S1 ∥ S2 ∥ S5 (day 1) → S3 → S4 → S10 → S6 → S7 → S8 → S9 → S11 → S12.**
+
+Non-obvious choices, with rationale:
+
+- **S2 before S3, as a separate PR.** §14.2.1: without the watchdog, the backoff ladder is correct code that never runs in the case it was written for. Splitting them also keeps the highest-risk file's diff reviewable — `flutter-reviewer` found five real bugs in this file in W5 (§11.5.5), and a combined protocol + state-machine PR is how the sixth gets missed.
+- **S1 first, not last.** Same reasoning as W5's S4 and W7's S8: the only zero-dependency Flutter slice, it deletes a known stopgap three consecutive weeks have deferred, and — unlike those precedents — it is a *prerequisite for the gate*, since S12's reconnect sample involves restarting the app (§14.2.11).
+- **S5 on day 1, in parallel with the whole client chain.** Pure backend, zero dependencies, and it is the mitigation for the load S3 creates (§14.5.7) — having it merged before the reconnect ladder ships means the first real reconnect storm meets a warm cache rather than a cold Aurora.
+- **S10 after S3, not before.** `onHouseholdChanged` is mechanically cheap either way, but built before S3 it would be written against the close-on-failure contract S3 inverts, and then reworked. Building it after is also the cheapest possible proof that S3's generic reconnect is genuinely generic — a fourth subscription that needs zero reconnect code.
+- **S11 second-to-last, not last.** A CRITICAL finding needs a fix PR *and* a re-review inside the week; running the sweep after S12's doc pass would mean amending a just-written verification record.
+
+### 14.5 Risks
+
+#### 14.5.1 The week does not fit in 10 hours, and there is no buffer left at all — LOCKED (D9)
+
+| Slice | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | S10 | S11 | S12 | **Total** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| hrs | 1.5 | 2.0 | 3.0 | 1.0 | 2.0 | 1.0 | 1.5 | 1.5 | 2.0 | 2.5 | 2.0 | 2.0 | **22.0** |
+
+Against ~10 hrs nominal, a **~120% overrun before any surprise** — between W6's 100% and W7's 140%. The §7 20-hr buffer was ~8 hrs down after W5, formally claimed by W6's D8, and overdrawn by W7's D9. **There is nothing left to absorb this**; W8 running two-plus weeks pushes the MVP date directly, and it does so at the boundary where Phase 3 — already flagged as a stretch phase (§7) — begins.
+
+**LOCKED (D9): accept a multi-week W8 at full scope**, consistent with W5–W7. Two honest counterweights, neither a plan: W6 came in ~42% low against the merge-timestamp proxy (§12.5.6) and W7 similarly (§13.5.13), so 22.0 planned may be ~13 actual on the same measure; and every hour in this estimate was accepted knowingly via D1/D3/D4 rather than defaulted into. The one thing that is **not** a lever: **S11.** A phase-boundary security sweep that gets cut for schedule is the §2.3 exception failing on its first real test, and it is the only slice in this week whose absence is invisible until it matters.
+
+#### 14.5.2 The membership cache is the week's highest-severity item
+
+§14.2.8's full argument. Small code, deliberate weakening of the layer-2 authorization gate, and — critically — a change whose failure mode is *silent and time-boxed*, so it will never reproduce in a debugging session. The mitigations (positives only, read-through on the four membership-mutating resolvers, best-effort local eviction) are what make it acceptable, and `security-reviewer` reviews it against that list item-by-item rather than being left to infer the threat model. The W7 S5 precedent for handing the reviewer an explicit checklist applies verbatim.
+
+#### 14.5.3 Reconnect logic cannot be tested against real flaky networks, and pretending otherwise is the trap — LOCKED (D7)
+
+Every plausible "real" test of backoff is either non-deterministic (a real subway ride), unavailable (physical devices), or slow enough that it will be run once and never again (airplane-mode toggling by hand).
+
+**LOCKED (D7):** the gate is **deterministic unit tests against the existing `WebSocketChannelFactory` seam plus `fake_async`** — which can assert things a real network never could: that the ladder is exactly 1/2/5/15/60, that it resets on `connection_ack`, that jitter stays in band, that exactly one refetch event is emitted per reconnect, that a cancelled subscriber is not resurrected mid-backoff. That is a *stronger* gate than a manual test, not a weaker substitute for one.
+
+Layered on top, **not gating**: one manual airplane-mode-on/off pass on a simulator during S12, recorded as an observation. And a real-network reconnect sample as part of D6's forced-reconnect measurement, subject to D8's hardware reality.
+
+#### 14.5.4 W8's own DoD gate has the same hardware dependency that is already blocking two W6 items — LOCKED (D8)
+
+`RUNBOOK.md` §3's prerequisites require *"two physical devices … each on a real network connection — **not** the same Wi-Fi's loopback or a simulator/emulator pair."* W8's gate is a `RUNBOOK.md` §3 run. The founder does not currently have access to physical devices — which is exactly why W6's `onRecipeChanged` two-device box (§12.6) and the R7 scroll spike (§12.5.5) are still open, and why W7's exit criteria carried both forward (§13.6).
+
+**LOCKED (D8): Option A** — simulator pair against real dev AWS, honestly labelled, the W5 §11.5.5 precedent exactly: functionally verified, timing observed but not stopwatch-precise, physical run recorded as still outstanding. Milestone declared with a named caveat. **Under no circumstance does any W8 slice take a dependency on hardware**; every one of S1–S11 is mergeable and verifiable without a physical device, and S12 is the only place the question arises. The physical run is **re-filed at Phase 2 level** at this boundary rather than remaining a W6 line item, so it stays visible entering Phase 3 (§14.6).
+
+#### 14.5.5 Real-AWS verification cost, and the two recurring bug classes
+
+Every backend slice needs a real dev deploy (the standing convention since W4). Two specific recurrences to pre-empt, both of which have now bitten twice:
+
+- **`.optional()` vs `.nullish()`** on nullable fields (§11.5.5, re-checked in §12.6 and §13.6). S8's `NotificationPreferencesPatchInput` is this week's exposure — every nullable field tested with an explicit `null`, not only an absent key. S10's `updateHouseholdSettings` change must not disturb its existing, correct behaviour here.
+- **Aurora auto-pause cold start** (~30s on the first request after a pause). It will inflate the *first* sample of S12's timed run. Warm the backend before the stopwatch starts, and do not record a cold-start sample as a sync latency (`RUNBOOK.md` §3's "If it fails" section already says this — follow it rather than rediscovering it).
+
+The Lambda concurrency quota increase remains filed and pending (real ceiling: 10). W8 adds at most three resolver Lambdas. Nothing here depends on it, but S12's burst sample (D6's ~20 rapid mutations) is the most likely thing in the week to brush it — if the burst throttles, that is a **quota** finding, not a sync finding, and must be recorded as such rather than as a failed gate.
+
+#### 14.5.6 The `.optional()`-class trap specific to caching: a cache that hides a bug
+
+A subtler version of §14.5.5. Once S5/S6 land, a resolver that *forgot* to check membership can still look correct in a manual test, because a previously-cached positive for the same user makes the DB round trip disappear. Tests that assert "the DB was queried" (S5's RED suite does exactly this by counting stub calls) are the guard; tests that only assert the return value are not.
+
+#### 14.5.7 Backoff without jitter builds the thundering herd the runbook already anticipates
+
+`RUNBOOK.md` §2 lists, as an anticipated incident class, *"AppSync subscription reconnect storms after a push notification fan-out."* A fixed 1/2/5/15/60 ladder across N household members whose connections all dropped at the same moment (a fan-out, a cell tower, an AppSync deploy) reconnects them in lockstep — and each reconnect currently costs one `users` upsert plus one membership `SELECT` against a VPC Lambda and a possibly-paused Aurora.
+
+This is the seam that makes W8 one coherent week rather than two unrelated chores: **the reconnect ladder is what creates the load, and the membership + identity caches are what make that load cheap.** Concretely: jitter is not optional in S3, and S5 lands before S3 in the working order for exactly this reason.
+
+#### 14.5.8 Deleting `HouseholdSyncPolicy`'s poll removes a real, working safety net
+
+It is a stopgap, and §14.2.10 argues for retiring it — but it is also the only mechanism that currently makes a co-member's join or leave visible at all, and it works today. S10 replaces it with a subscription that covers join/rotate/settings and **not** leave/delete (§14.2.10's return-type wall). Retaining entry+foreground refetch is what keeps leave/delete covered.
+
+### 14.6 W8 exit criteria
+
+- [ ] Signed-in users with a household land on `/home`, not `/first-run`; the router test suite stays offline via a default fake repository (S1, §11.2.11 — open since W5, deferred by W6 and W7)
+- [ ] `connectionTimeoutMs` honoured and a keep-alive watchdog tears down a silently-dead socket — asserted by a named test, since this is the failure the whole week exists for (S2, §14.2.1)
+- [ ] Reconnect ladder is **1s → 2s → 5s → 15s → 60s** with jitter, resets on a successful `connection_ack`, and **stops** on an authentication failure rather than looping (S3, §11.5.2's own numbers, D11)
+- [ ] Subscriber streams **survive** a transient disconnect; `start` frames are re-issued for every still-registered subscription after reconnect (S3, §14.2.2)
+- [ ] Every reconnect emits **exactly one** refetch signal per subscription, **after** `start_ack` — the §11.2.12 contract extended, not reinvented (S3, §14.2.4)
+- [ ] A reconnect uses a **freshly fetched** ID token, asserted by call count, not by inspection (S3, §14.2.3)
+- [ ] Backgrounding disconnects and stops the ladder; foregrounding reconnects; neither leaves a duplicate socket (S4)
+- [ ] Membership decisions are cached per container at 30s TTL, **positives only**, with the four membership-mutating resolvers reading through, and the ≤30s stale-authorization window documented in `requireHouseholdMember`'s own doc comment — replacing its current "explicitly deferred" note (S5, D2)
+- [ ] `security-reviewer` reviewed S5 **as an authorization change** against §14.2.8's four-part checklist, item by item (S5)
+- [ ] The caller-identity upsert no longer runs on every request (S6, D3)
+- [ ] `notification_preferences` on dev with RLS **enabled and forced** and a **user-scoped** policy — verified by a same-household-different-member denial test for read, insert, and update (S7, §14.2.7)
+- [ ] `fcm_token` is provably absent from the SDL (S8)
+- [ ] Wireframe 4.3 shipped and `SettingsPlaceholderScreen.notifications` deleted → **28/49** (S9)
+- [ ] `onHouseholdChanged` live and two-device verified; `HouseholdSyncPolicy` no longer polls; the four stale "deferred to W8" comments corrected (S10, §14.2.10)
+- [ ] **Phase 1's DoD line "household settings sync via `onHouseholdChanged`" is closed** — it has been silently open since W4 (S10/S12)
+- [ ] **`DEV_WORKFLOW.md` §2.3 phase-boundary sweep run** across S11's full six-part surface list, including the `household_settings` `WITH CHECK` audit **deferred since W5 §11.2.2**; findings recorded and CRITICAL/HIGH fixed within the week (S11) — **not skippable**
+- [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression class, all backend slices)
+- [ ] Every backend slice verified against real dev AWS, not synth (S12)
+- [ ] **2-device sync <5s under D6's definition of "under load"** — burst and forced-reconnect samples added to `RUNBOOK.md` §3, with the actual numbers written down and the method named, via the D8 simulator-pair method (S12, D6/D8)
+- [ ] Coverage: Lambda ≥80% (enforced in CI since W5); Flutter domain+state ≥80% — re-measured, not assumed (S12)
+- [ ] **Phase 2's own exit criteria (§3) audited line by line** and each marked met / not met / superseded (S12) — this is a phase boundary, and §3's six lines have never been checked as a set
+- [ ] §4's W8 row has actual hours (merge-timestamp wall-clock, the W6/W7 method) and carry-over notes (S12)
+- [ ] **Carried, not inherited — still open, now re-filed at Phase 2 level per D8:** the physical-device two-device run (`RUNBOOK.md` §3) and the R7 300-item scroll spike on real low-end Android hardware. Neither blocked any W8 slice.
+
+### 14.7 W8 planning decisions (final, locked 2026-08-31)
+
+| # | Question | **Locked decision** |
+|---|---|---|
+| D1 | §14.2.6 — "Notif preferences (finalized)": is the real `notification_preferences` backend built now, is it a local-only toggle screen, or does the screen slide to W20 with the §4 count adjusted? | **Option A — real backend now.** It is the only option under which §8's End-of-Month-2 "28 screens shipped" is honestly met; every piece copies an existing pattern; it de-risks W20 (which otherwise lands a new table, a new RLS shape, and FCM together). Cost is real: ~5.0 of the week's 22.0 hrs. `fcm_token` stays out of the SDL entirely. |
+| D2 | §14.2.8 — membership cache scope: positives only? which resolvers read through? what invalidation? and is a ≤30s stale-authorization window acceptable in writing? | **Positives only; `joinHousehold`/`leaveHousehold`/`deleteHousehold`/`rotateInviteCode` read through; best-effort same-container eviction; the ≤30s window accepted and documented.** Server-side per-container in-memory, per SD §10.3 — confirmed, not chosen. DynamoDB-backed rejected: a DDB round trip to save an Aurora round trip adds a failure mode without clearly saving time. |
+| D3 | §14.2.9 — extend the same TTL cache to `resolveCallerUser`'s per-request `users` upsert, which the §4 row does not mention but which is a **write** on every request? | **Yes.** Strictly heavier than the membership `SELECT` it precedes, on the identical hot path, and it is what the reconnect ladder multiplies. Cost: a profile-field change propagates in ≤30s. |
+| D4 | §14.2.10 — does `onHouseholdChanged` ship in W8, closing a still-open **Phase 1** DoD line, and does `updateHouseholdSettings` change to return `Household!` to make it attachable? | **Yes to both.** W8 is the last week of the phase that owns it; five code comments name W8; it deletes the mechanism `RUNBOOK.md` §2 flags as needing a rate limit it never got. `leaveHousehold`/`deleteHousehold` stay `Boolean!` with the staleness gap recorded — returning `Household!` there runs member/settings field resolvers for a caller who is no longer a member. |
+| D5 | §14.2.10 — with `onHouseholdChanged` live, is `HouseholdSyncPolicy`'s 15-second poll retired, keeping only refetch-on-entry and refetch-on-foreground? | **Yes.** Closes `RUNBOOK.md` §2's blocking prerequisite by deletion rather than by adding a rate limiter. Entry+foreground refetch is what still covers the leave/delete gap D4 leaves open — do **not** remove those two as well. |
+| D6 | §14.2.5 — what does "2-device sync <5s **under load**" mean for W8, given R3's 5-concurrent-client soak is explicitly **W11**? | **Event rate and recovery, not client count:** a ~20-mutation burst with the last one timed, plus a forced-reconnect sample timed from network restore to a correct list. Both added to `RUNBOOK.md` §3 alongside its existing six samples. R3 stays W11 and is named out of scope so an unchecked R3 box is not read as a W8 miss. |
+| D7 | §14.5.3 — how is reconnect/backoff verified without real flaky networks? | **Deterministic tests against the existing fake-channel seam + `fake_async` are the gate** — they assert ladder shape, reset, jitter band, and exactly-one-refetch, none of which a real network can. A manual airplane-mode pass is an observation, layered on top, **not** gating. |
+| D8 | §14.5.4 — W8's own DoD gate is a `RUNBOOK.md` §3 physical-device run, and hardware is unavailable — the same block already holding two W6 items. | **Option A — simulator pair against real dev AWS, honestly labelled**, the W5 §11.5.5 standard verbatim. The physical run is **re-filed as a Phase 2** carried-open item (not a W6 line item) so it stays visible entering Phase 3. No W8 slice takes a hardware dependency. |
+| D9 | §14.5.1 — ~22.0 hrs against ~10, with the §7 buffer overdrawn since W7. | **Accept a multi-week W8 at full scope**, consistent with W5–W7. **S11 is not a lever under any circumstance** — a phase-boundary security sweep cut for schedule is the §2.3 exception failing its first real test. |
+| D10 | §14.2.12 — does W8 expose connection state for W12's offline banner (wireframe 12.2), even though W8 ships no UI for it? | **Yes — expose the value, ship no UI.** Minutes of work now; the alternative is reopening the app's most bug-prone state machine in W12. |
+| D11 | §14.2.3 / S3 — backoff parameters: is the ladder unbounded-with-a-60s-ceiling while foregrounded, stopped while backgrounded, and **terminal** on an authentication failure? | **Yes to all three.** The auth-failure terminal case is the important one: a ladder looping against a credential that can never succeed is a battery drain and a credential-probing pattern, not a retry. |
+
+---
