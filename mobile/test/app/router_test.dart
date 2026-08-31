@@ -6,6 +6,8 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
+import 'package:mobile/features/household/data/household_repository.dart';
+import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
@@ -20,20 +22,44 @@ import 'package:mobile/shared/ui/components/p_tab_bar.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../support/fake_auth_repository.dart';
+import '../support/fake_household_repository.dart';
+import '../support/household_fixtures.dart';
+import '../support/household_route_harness.dart'
+    show HouseholdHarness, pumpHouseholdRoute;
 
 String _location(GoRouter router) =>
     router.routerDelegate.currentConfiguration.uri.toString();
 
-/// Boots the real router against a faked repository and waits for the auth
+/// Boots the real router against faked repositories and waits for the auth
 /// controller to resolve, so assertions never race the splash redirect.
+///
+/// [households] defaults to an empty list — every pre-existing test in this
+/// file was written against the old unconditional-`/first-run` redirect
+/// (W8 S1, §14.2.11), and an empty list reproduces that exact landing without
+/// any of them having to know the household list now matters. A test that
+/// cares about the new home-vs-first-run split passes [households] or
+/// [householdsError] explicitly, or [neverResolveHouseholds] for the
+/// still-loading case — `pumpAndSettle` still terminates for that one, since
+/// nothing schedules further frames once the permanently-loading state itself
+/// settles.
 Future<GoRouter> _pumpRouter(
   WidgetTester tester, {
   required AuthSession session,
+  List<Household> households = const <Household>[],
+  Object? householdsError,
+  bool neverResolveHouseholds = false,
 }) async {
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
       authRepositoryProvider.overrideWithValue(
         stubbedAuthRepository(session: session),
+      ),
+      householdRepositoryProvider.overrideWithValue(
+        FakeHouseholdRepository(
+          myHouseholdsResult: neverResolveHouseholds ? null : households,
+          myHouseholdsError: householdsError,
+          neverCompletes: neverResolveHouseholds,
+        ),
       ),
     ],
   );
@@ -239,6 +265,111 @@ void main() {
 
       expect(_location(router), AppRoutes.firstRun);
     });
+
+    testWidgets(
+      'settles on /home, not /first-run, when the signed-in user already has a household',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+        );
+
+        expect(_location(router), AppRoutes.home);
+      },
+    );
+
+    testWidgets(
+      'navigation to /sign-in lands on /home, not /first-run, for a user with a household',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+        );
+
+        router.go(AppRoutes.signIn);
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.home);
+      },
+    );
+
+    testWidgets(
+      'stays on splash while the household list is still resolving — no flash to /first-run',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          neverResolveHouseholds: true,
+        );
+
+        // The household query never resolves in this test, so this is the
+        // guard's permanent answer, not a snapshot mid-transition — proving
+        // the loading state is read *before* any flash to /first-run, not
+        // just that the final location happens to be right.
+        expect(_location(router), AppRoutes.splash);
+      },
+    );
+
+    testWidgets(
+      'an errored household query lands on /first-run, the same as an empty list',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          householdsError: StateError('network error'),
+        );
+
+        expect(_location(router), AppRoutes.firstRun);
+      },
+    );
+
+    testWidgets(
+      'a genuine sign-in refetches the household list rather than reusing a '
+      'stale pre-login failure (flutter-reviewer finding, W8 S1)',
+      (WidgetTester tester) async {
+        // `meHouseholdsControllerProvider` starts fetching at router
+        // construction, before auth has resolved — in production that fetch
+        // fails with `UnauthorizedError` because there is no token yet, the
+        // same shape a caller with no session ever gets. Modelled here as a
+        // configured error rather than a real auth-link failure, since this
+        // test is about the redirect's response to a *stale* answer, not
+        // about `AuthLink` itself (covered by its own tests).
+        final FakeHouseholdRepository repository = FakeHouseholdRepository(
+          myHouseholdsError: StateError('no session yet'),
+        );
+        final HouseholdHarness harness = await pumpHouseholdRoute(
+          tester,
+          null,
+          session: const AuthSession.signedOut(),
+          repository: repository,
+        );
+        expect(_location(harness.router), AppRoutes.signIn);
+        expect(repository.myHouseholdsCallCount, 1);
+
+        // The real answer, now that a session actually exists — reconfigured
+        // on the same fake object, the way a real network response would
+        // simply differ once a valid token is attached to the request.
+        repository.myHouseholdsError = null;
+        repository.myHouseholdsResult = <Household>[testHousehold];
+
+        // Sign in through the same session stream the real Cognito Hub
+        // pushes through — the shape `join_deep_link_router_test.dart`
+        // already uses for its own sign-in-bounce test.
+        harness.sessions.add(testSignedInSession);
+        await tester.pumpAndSettle();
+
+        expect(_location(harness.router), AppRoutes.home);
+        expect(
+          repository.myHouseholdsCallCount,
+          2,
+          reason:
+              'a second, genuinely fresh fetch — not a cached pre-login '
+              'error reused after sign-in',
+        );
+      },
+    );
 
     // The guard must not fight navigation *within* the signed-in area — this
     // is what lets the first-run screen send the user onward after a

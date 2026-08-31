@@ -11,6 +11,7 @@ import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
+import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import 'fake_auth_repository.dart';
@@ -72,6 +73,13 @@ Future<HouseholdHarness> pumpHouseholdRoute(
         result: testHousehold,
         fetchResult: testHouseholdWithMembers,
         settingsResult: testHouseholdSettings,
+        // Router `_redirect` reads `meHouseholdsControllerProvider` on every
+        // splash/sign-in landing (W8 S1) — an unset `myHouseholdsResult`
+        // would surface as an error there instead of a clean empty answer.
+        // Every test here navigates to an explicit route past that landing,
+        // so this default is inert for them; it exists so this harness never
+        // depends on the redirect's error-handling path by accident.
+        myHouseholdsResult: const <Household>[],
       );
 
   final StreamController<Uri> links = StreamController<Uri>.broadcast();

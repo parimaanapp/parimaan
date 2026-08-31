@@ -6,6 +6,7 @@ import '../features/auth/domain/auth_session.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/state/auth_controller.dart';
+import '../features/household/domain/household.dart';
 import '../features/household/presentation/create/cuisine_regions_screen.dart';
 import '../features/household/presentation/create/cuisine_sub_bias_screen.dart';
 import '../features/household/presentation/create/dietary_allergens_screen.dart';
@@ -21,6 +22,7 @@ import '../features/household/presentation/settings/household_edit_entry.dart';
 import '../features/household/presentation/settings/members_list_screen.dart';
 import '../features/household/presentation/settings/settings_hub_screen.dart';
 import '../features/household/presentation/settings/settings_placeholder_screen.dart';
+import '../features/household/state/me_households_controller.dart';
 import '../features/household/state/pending_join_code_controller.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
@@ -289,7 +291,30 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
   // life of the router, so the session is resolved exactly once per app run.
   ref.listen<AsyncValue<AuthSession>>(
     authControllerProvider,
-    (AsyncValue<AuthSession>? _, AsyncValue<AuthSession> _) => refresh.value++,
+    (AsyncValue<AuthSession>? previous, AsyncValue<AuthSession> next) {
+      refresh.value++;
+
+      // `meHouseholdsControllerProvider` (below) is listened unconditionally,
+      // so it starts fetching at router construction — before this listener
+      // has ever seen a resolved session, and therefore before a real caller
+      // has a token to send. In production that fetch fails with
+      // `UnauthorizedError` (via `AuthLink`) and the controller caches that
+      // failure, exactly like any other `AsyncNotifier`. Without this
+      // invalidation, a user who then actually signs in would have `_redirect`
+      // read that stale pre-login failure — treated the same as "no
+      // households" — and be sent to /first-run regardless of whether they
+      // have one, which is the bug this slice exists to fix, reintroduced by
+      // a different path. Invalidating exactly on the not-signed-in →
+      // signed-in transition (not on every auth event, e.g. a Hub-pushed
+      // token refresh while already signed in) forces one genuinely fresh,
+      // now-authenticated fetch per real sign-in (W8 S1, `flutter-reviewer`
+      // finding).
+      final bool wasSignedIn = previous?.valueOrNull?.isSignedIn ?? false;
+      final bool isSignedIn = next.valueOrNull?.isSignedIn ?? false;
+      if (!wasSignedIn && isSignedIn) {
+        ref.invalidate(meHouseholdsControllerProvider);
+      }
+    },
     fireImmediately: true,
   );
 
@@ -299,6 +324,17 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
   ref.listen<String?>(
     pendingJoinCodeControllerProvider,
     (String? _, String? _) => refresh.value++,
+  );
+
+  // Same reasoning, for the household list `_redirect` now reads: the query
+  // resolves asynchronously (loading → data/error), and without this listener
+  // the guard would only ever see its very first, still-loading snapshot —
+  // stranding a signed-in user on splash forever instead of advancing them to
+  // /home or /first-run once the real answer arrives (W8 S1, §14.2.11).
+  ref.listen<AsyncValue<List<Household>>>(
+    meHouseholdsControllerProvider,
+    (AsyncValue<List<Household>>? _, AsyncValue<List<Household>> _) =>
+        refresh.value++,
   );
 
   final GoRouter router = GoRouter(
@@ -579,6 +615,13 @@ String _householdId(GoRouterState state) =>
 String _pantryHouseholdId(GoRouterState state) =>
     state.uri.queryParameters['householdId'] ?? '';
 
+/// Holds on `/splash` while an async guard is still resolving, or sends the
+/// caller there if they're elsewhere — shared by both "still loading" checks
+/// in [_redirect] below, which stay in sync by construction rather than by
+/// two copies of the same ternary agreeing to.
+String? _holdOnSplash(String location) =>
+    location == AppRoutes.splash ? null : AppRoutes.splash;
+
 /// Returns the path to move to, or `null` to stay put.
 ///
 /// Three states, not two — "still resolving" is distinct from "signed out",
@@ -588,9 +631,9 @@ String? _redirect(Ref ref, GoRouterState state) {
   final AsyncValue<AuthSession> auth = ref.read(authControllerProvider);
   final String location = state.matchedLocation;
 
-  final bool isResolving = auth.isLoading && !auth.hasValue;
-  if (isResolving) {
-    return location == AppRoutes.splash ? null : AppRoutes.splash;
+  final bool isResolvingAuth = auth.isLoading && !auth.hasValue;
+  if (isResolvingAuth) {
+    return _holdOnSplash(location);
   }
 
   // An errored session (including a config failure) is treated as signed out:
@@ -616,23 +659,33 @@ String? _redirect(Ref ref, GoRouterState state) {
       return AppRoutes.joinHousehold;
     }
 
-    // A signed-in user arriving from splash or bouncing off /sign-in lands on
-    // the first-run screen, not /home. Note this is *unconditional* for now:
-    // `MeHouseholdsController` exists and `activeHouseholdProvider` reads it,
-    // but gating *this* redirect on it is deliberately deferred — every other
-    // test in this file boots the router with no `householdRepositoryProvider`
-    // override, and reading the me controller here would turn every one of
-    // them into a network-dependent test for a guard they are not exercising.
-    // The consequence is honest but temporary — a returning user with a
-    // household still sees the choose-path screen. Wiring this in belongs to
-    // a slice that also updates the router test harness to supply a fake
-    // household repository, not this one.
-    //
     // Every other signed-in location is left alone, so navigation *within* the
     // signed-in area is not fought by the guard.
-    return location == AppRoutes.splash || location == AppRoutes.signIn
-        ? AppRoutes.firstRun
-        : null;
+    if (location != AppRoutes.splash && location != AppRoutes.signIn) {
+      return null;
+    }
+
+    // A signed-in user arriving from splash or bouncing off /sign-in lands on
+    // /home if they already have a household, or /first-run if they don't
+    // (W8 S1, §14.2.11 — this was unconditionally /first-run before, a
+    // documented stopgap since W5). Three states here too, for the identical
+    // reason the auth check above has three: "still resolving" must not be
+    // read as "no households" or a returning user with one flashes to
+    // /first-run before correcting itself to /home.
+    final AsyncValue<List<Household>> households = ref.read(
+      meHouseholdsControllerProvider,
+    );
+    final bool isResolvingHouseholds =
+        households.isLoading && !households.hasValue;
+    if (isResolvingHouseholds) {
+      return _holdOnSplash(location);
+    }
+
+    // An errored query (including a config/network failure) is treated the
+    // same as "no households yet" — /first-run offers both create and join,
+    // the only safe landing when the real answer is unknown.
+    final bool hasHouseholds = households.valueOrNull?.isNotEmpty ?? false;
+    return hasHouseholds ? AppRoutes.home : AppRoutes.firstRun;
   }
   return location == AppRoutes.signIn ? null : AppRoutes.signIn;
 }

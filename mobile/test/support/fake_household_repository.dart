@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/household/domain/household_settings_patch.dart';
@@ -39,11 +41,22 @@ class FakeHouseholdRepository implements HouseholdRepository {
     this.leaveError,
     this.deleteResult = true,
     this.deleteError,
+    this.neverCompletes = false,
   });
 
   /// Optional artificial latency applied to **every** method, for asserting
   /// the loading state.
   Duration? delay;
+
+  /// When `true`, every method's `Future` never completes — for asserting a
+  /// *permanent* loading state (e.g. a router guard's "still resolving"
+  /// branch) without racing a real timer. Deliberately not implemented via a
+  /// long [delay]: `Future.delayed` schedules a real `Timer`, which
+  /// `flutter_test` asserts is never left pending after a test's widget tree
+  /// is disposed — a delay long enough to "never" fire in test time still
+  /// leaks that Timer and fails the test on teardown. A [Completer] that is
+  /// simply never completed has no Timer to leak.
+  final bool neverCompletes;
 
   // ── createHousehold ────────────────────────────────────────────────────────
 
@@ -132,6 +145,10 @@ class FakeHouseholdRepository implements HouseholdRepository {
   // ── Implementation ─────────────────────────────────────────────────────────
 
   Future<void> _wait() async {
+    if (neverCompletes) {
+      await Completer<void>().future;
+      return;
+    }
     final Duration? delay = this.delay;
     if (delay != null) {
       await Future<void>.delayed(delay);
