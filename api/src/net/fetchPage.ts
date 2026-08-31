@@ -8,7 +8,19 @@ import { validateSafeUrl } from './safeUrl.js';
 export const USER_AGENT = 'Parimaan/1.0 (+https://parimaan.app)';
 
 export const DEFAULT_TIMEOUT_MS = 8_000;
-export const DEFAULT_MAX_BYTES = 1_000_000;
+/**
+ * 5MB (W7 S12 finding, raised from an original 1MB): a real S1-validated
+ * site (indianhealthyrecipes.com) grew past 1MB between S1's original
+ * capture and S12's live-deployment verification pass, excluding an
+ * otherwise-usable import purely on page-size drift. The cap's actual job
+ * — bounding a malicious server from streaming unbounded data into this
+ * Lambda's memory — is already mostly done by `DEFAULT_TIMEOUT_MS`'s 8s
+ * total budget; at 512MB of Lambda memory, 5MB of buffered response body
+ * is still under 1% of that, and AWS does not bill inbound transfer, so
+ * neither the memory/DoS defense nor the cost either constant exists to
+ * control moves meaningfully by going from 1MB to 5MB.
+ */
+export const DEFAULT_MAX_BYTES = 5_000_000;
 export const DEFAULT_MAX_REDIRECTS = 3;
 
 const HTML_CONTENT_TYPE_PATTERN = /text\/html|application\/xhtml\+xml/i;
