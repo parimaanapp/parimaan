@@ -40,6 +40,18 @@ class FreeformInputScreen extends ConsumerStatefulWidget {
 class _FreeformInputScreenState extends ConsumerState<FreeformInputScreen> {
   final TextEditingController _text = TextEditingController();
 
+  /// Set by [PopScope.onPopInvokedWithResult] in [build] the moment this
+  /// route actually pops — **not** the same as `!mounted`. A route's exit
+  /// transition keeps its widget (and `mounted`) alive for the duration of
+  /// the animation, so a slow in-flight `_submit()` whose `parse()` call
+  /// happens to resolve mid-transition would still see `mounted == true`
+  /// and push the review screen *on top of* wherever the user backed out
+  /// to. Routed through `PopScope`, not just the top bar's own `onBack`,
+  /// so this covers every way the route can pop — the in-app button,
+  /// Android's hardware/gesture back, and iOS's edge-swipe alike (same
+  /// fix as `UrlImportScreen`'s identical race, W7 S9).
+  bool _cancelled = false;
+
   @override
   void initState() {
     super.initState();
@@ -60,7 +72,7 @@ class _FreeformInputScreenState extends ConsumerState<FreeformInputScreen> {
     final AiRecipeDraft? draft = await ref
         .read(freeformParseControllerProvider.notifier)
         .parse(_text.text);
-    if (draft == null || !mounted) {
+    if (draft == null || !mounted || _cancelled) {
       return;
     }
     context.push(
@@ -81,90 +93,97 @@ class _FreeformInputScreenState extends ConsumerState<FreeformInputScreen> {
     // retrying immediately cannot succeed — everything else can.
     final bool offerRetry = errorMessage != null && error is! RateLimitedError;
 
-    return Scaffold(
-      backgroundColor: AppColors.paper,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            PTopBar(
-              title: 'Paste a recipe',
-              onBack: () => context.pop(),
-              backSemanticLabel: 'Back',
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.s3),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Text(
-                      'Paste a recipe from anywhere — a note, a message, a '
-                      'website — and Parimaan will structure it for you.',
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.inkMid,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s2),
-                    PInput(
-                      key: FreeformInputScreen.textFieldKey,
-                      label: 'Recipe text',
-                      controller: _text,
-                      enabled: !isBusy,
-                      minLines: 8,
-                      maxLines: 20,
-                    ),
-                    const SizedBox(height: AppSpacing.s0),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '${_text.text.length} / $maxFreeformRecipeTextLength',
-                        key: FreeformInputScreen.counterKey,
-                        style: AppTypography.label.copyWith(
-                          color: _overLimit
-                              ? AppColors.danger
-                              : AppColors.inkMid,
-                        ),
-                      ),
-                    ),
-                    if (errorMessage != null) ...<Widget>[
-                      const SizedBox(height: AppSpacing.s2),
+    return PopScope(
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) {
+          _cancelled = true;
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.paper,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              PTopBar(
+                title: 'Paste a recipe',
+                onBack: () => context.pop(),
+                backSemanticLabel: 'Back',
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.s3),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
                       Text(
-                        errorMessage,
-                        style: AppTypography.label.copyWith(
-                          color: AppColors.danger,
+                        'Paste a recipe from anywhere — a note, a message, a '
+                        'website — and Parimaan will structure it for you.',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.inkMid,
                         ),
                       ),
-                      if (offerRetry) ...<Widget>[
-                        const SizedBox(height: AppSpacing.s1),
-                        PButton(
-                          key: FreeformInputScreen.retryButtonKey,
-                          label: 'Try again',
-                          variant: PButtonVariant.secondary,
-                          onPressed: _canSubmit ? _submit : null,
+                      const SizedBox(height: AppSpacing.s2),
+                      PInput(
+                        key: FreeformInputScreen.textFieldKey,
+                        label: 'Recipe text',
+                        controller: _text,
+                        enabled: !isBusy,
+                        minLines: 8,
+                        maxLines: 20,
+                      ),
+                      const SizedBox(height: AppSpacing.s0),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '${_text.text.length} / $maxFreeformRecipeTextLength',
+                          key: FreeformInputScreen.counterKey,
+                          style: AppTypography.label.copyWith(
+                            color: _overLimit
+                                ? AppColors.danger
+                                : AppColors.inkMid,
+                          ),
                         ),
+                      ),
+                      if (errorMessage != null) ...<Widget>[
+                        const SizedBox(height: AppSpacing.s2),
+                        Text(
+                          errorMessage,
+                          style: AppTypography.label.copyWith(
+                            color: AppColors.danger,
+                          ),
+                        ),
+                        if (offerRetry) ...<Widget>[
+                          const SizedBox(height: AppSpacing.s1),
+                          PButton(
+                            key: FreeformInputScreen.retryButtonKey,
+                            label: 'Try again',
+                            variant: PButtonVariant.secondary,
+                            onPressed: _canSubmit ? _submit : null,
+                          ),
+                        ],
                       ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s3,
-                0,
-                AppSpacing.s3,
-                AppSpacing.s3,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s3,
+                  0,
+                  AppSpacing.s3,
+                  AppSpacing.s3,
+                ),
+                child: PButton(
+                  key: FreeformInputScreen.submitButtonKey,
+                  label: 'Parse recipe',
+                  isLoading: isBusy,
+                  expand: true,
+                  onPressed: _canSubmit && !isBusy ? _submit : null,
+                ),
               ),
-              child: PButton(
-                key: FreeformInputScreen.submitButtonKey,
-                label: 'Parse recipe',
-                isLoading: isBusy,
-                expand: true,
-                onPressed: _canSubmit && !isBusy ? _submit : null,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

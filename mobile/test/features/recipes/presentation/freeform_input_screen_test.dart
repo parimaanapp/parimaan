@@ -243,5 +243,38 @@ void main() {
       expect(find.byType(FreeformInputScreen), findsNothing);
       expect(find.text('open'), findsOneWidget);
     });
+
+    testWidgets(
+      'a slow parse stays cancellable — backing out mid-flight does not later push the review screen',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository()
+          ..parseFreeformRecipeResult = _rajmaDraft
+          ..delay = const Duration(milliseconds: 500);
+        await _pumpPushed(tester, repository: repository);
+
+        await tester.enterText(
+          find.byKey(FreeformInputScreen.textFieldKey),
+          'Rajma Chawal: soak rajma overnight, pressure cook...',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
+        await tester.pump();
+
+        // Still cancellable — actually tap it mid-flight, before the
+        // pending parse resolves, and confirm it really pops rather than
+        // merely being present on screen. This exercises the same
+        // `PopScope.onPopInvokedWithResult` path any pop takes — the
+        // in-app button here, but identically Android's hardware/gesture
+        // back or iOS's edge-swipe.
+        await tester.tap(find.byType(PTopBarBackButton));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(FreeformInputScreen), findsNothing);
+        expect(find.text('open'), findsOneWidget);
+        // The pending parse must not push the review screen on top of
+        // wherever the user backed out to once it resolves.
+        expect(find.byType(RecipeDraftReviewScreen), findsNothing);
+      },
+    );
   });
 }
