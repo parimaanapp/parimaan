@@ -17,11 +17,14 @@ import 'recipes_error_copy.dart';
 /// on input the server will reject anyway. Submit calls
 /// `Mutation.parseFreeformRecipe` via [FreeformParseController]; success
 /// pushes the shared review screen (S10's own "8.5") with the parsed
-/// [AiRecipeDraft] as `extra`, and a failure renders inline with a retry
-/// affordance rather than routing anywhere — this screen's own text field
-/// is already the natural place to edit and retry, so there is no
-/// separate fallback screen in this slice's own RED tests (unlike S9's
-/// URL-import failure, which has nowhere else useful to show the error).
+/// [AiRecipeDraft] as `extra`. Failure follows §13.2.7's table exactly
+/// (W7 S11): `AiBusyError`/`AiTimeoutError`/`RateLimitedError`/anything
+/// else render inline (retry offered except for `RateLimitedError`, where
+/// retrying immediately can't succeed) — this screen's own text field is
+/// already the natural place to edit and retry. `AiUnparseableError`/
+/// `AiUnavailableError` are never retried, since a second call with the
+/// identical text can't succeed differently, so those two route to the
+/// shared AI failure fallback screen instead.
 class FreeformInputScreen extends ConsumerStatefulWidget {
   const FreeformInputScreen({super.key, required this.householdId});
 
@@ -68,17 +71,46 @@ class _FreeformInputScreenState extends ConsumerState<FreeformInputScreen> {
 
   bool get _canSubmit => _text.text.trim().isNotEmpty && !_overLimit;
 
+  /// §13.2.7's table: these two codes are never retried (a second call
+  /// with the identical text can't succeed any differently), so they
+  /// route to the fallback screen (W7 S11) rather than rendering inline
+  /// with a retry button the way every other error on this screen does.
+  /// The single home for that rule — [_submit] and [build] both defer to
+  /// it rather than repeating the condition in two different forms.
+  static bool _routesToFallback(Object? error) =>
+      error is AiUnparseableError || error is AiUnavailableError;
+
   Future<void> _submit() async {
     final AiRecipeDraft? draft = await ref
         .read(freeformParseControllerProvider.notifier)
         .parse(_text.text);
-    if (draft == null || !mounted || _cancelled) {
+    if (!mounted || _cancelled) {
       return;
     }
-    context.push(
-      AppRoutes.recipeDraftReview(widget.householdId),
-      extra: (draft: draft, sourceUrl: null),
-    );
+    if (draft != null) {
+      context.push(
+        AppRoutes.recipeDraftReview(widget.householdId),
+        extra: (draft: draft, sourceUrl: null),
+      );
+      return;
+    }
+    final Object? error = ref.read(freeformParseControllerProvider).error;
+    // An or-pattern, not two separate `is` checks, so `error` promotes to
+    // their common `AppError` supertype instead of needing a manual `as`.
+    // Must stay written as a literal pattern-match (not a call to
+    // [_routesToFallback]) for that promotion to apply — [build] below,
+    // which only needs a bool and not the promoted value, is the one that
+    // defers to the shared helper.
+    if (error case AiUnparseableError() || AiUnavailableError()) {
+      context.push(
+        AppRoutes.recipeAiFailure(widget.householdId),
+        extra: (
+          error: error,
+          preservedInput: _text.text,
+          inputLabel: 'Pasted text',
+        ),
+      );
+    }
   }
 
   @override
@@ -88,7 +120,14 @@ class _FreeformInputScreenState extends ConsumerState<FreeformInputScreen> {
     );
     final bool isBusy = parseState.isLoading;
     final Object? error = parseState.error;
-    final String? errorMessage = recipeErrorMessage(error);
+    // Suppress the inline message for the two codes `_submit` already
+    // routed to the dedicated fallback screen — this screen stays
+    // underneath that push (not replaced), so without this it would show
+    // its own generic error at the same time as the fallback screen shows
+    // its differentiated one.
+    final String? errorMessage = _routesToFallback(error)
+        ? null
+        : recipeErrorMessage(error);
     // §13.2.7's table: a rate-limited caller isn't offered retry, since
     // retrying immediately cannot succeed — everything else can.
     final bool offerRetry = errorMessage != null && error is! RateLimitedError;

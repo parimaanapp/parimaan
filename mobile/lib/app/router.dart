@@ -39,6 +39,7 @@ import '../features/recipes/presentation/recipe_method_screen.dart';
 import '../features/recipes/presentation/recipes_library_screen.dart';
 import '../features/recipes/presentation/url_import_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
+import '../shared/errors/app_error.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
 abstract final class AppRoutes {
@@ -265,8 +266,14 @@ abstract final class AppRoutes {
 typedef RecipeDraftReviewExtra = ({AiRecipeDraft draft, String? sourceUrl});
 
 /// `extra` payload for [AppRoutes.recipeAiFailure] — see that route's own
-/// doc.
-typedef AiFailureExtra = ({String errorMessage, String preservedInput});
+/// doc. `inputLabel` distinguishes `UrlImportScreen`'s "URL" from
+/// `FreeformInputScreen`'s "Pasted text" (W7 S11) above the preserved
+/// input.
+typedef AiFailureExtra = ({
+  AppError error,
+  String preservedInput,
+  String inputLabel,
+});
 
 /// The app's route table plus its auth guard.
 ///
@@ -519,8 +526,9 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
           final AiFailureExtra extra = state.extra as AiFailureExtra;
           return AiFailureScreen(
             householdId: _pantryHouseholdId(state),
-            errorMessage: extra.errorMessage,
+            error: extra.error,
             preservedInput: extra.preservedInput,
+            inputLabel: extra.inputLabel,
           );
         },
       ),
