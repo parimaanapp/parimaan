@@ -607,8 +607,10 @@ type Mutation {
   # endpoint" attack), an 8s **total** budget across every hop (an
   # explicit deadline timer, not `https.request`'s own `timeout` option —
   # that option is a socket *idle* timer that a drip-feeding server can
-  # reset indefinitely, not a real deadline), and a 1MB response cap
-  # aborted mid-stream. A fetch failure and a "page has no usable Recipe
+  # reset indefinitely, not a real deadline), and a response cap aborted
+  # mid-stream (1MB at ship time; raised to 5MB in W7 S12 after a real
+  # S1-validated site grew past 1MB between spike and live verification —
+  # RUNBOOK.md §2). A fetch failure and a "page has no usable Recipe
   # JSON-LD" parse failure both surface as the identical `URL_UNREADABLE`
   # client error — never distinguished, since revealing *why* a URL was
   # rejected would itself be an internal-network reconnaissance oracle.
@@ -1016,7 +1018,31 @@ Single table, on-demand billing, sub-cent monthly.
 
 ### 8.2 Invocation shape
 
-Standard Lambda pattern for every AI call:
+> **Rewritten W7 S12** (`E2E_MVP_PLAN.md` §13.6, §18's D11 amendment below) to match what actually shipped for `parseFreeformRecipe`/the freeform-fallback path, rather than the pre-W7 Bedrock/Claude sketch this section originally carried (preserved directly below for whichever future week revisits Bedrock, since the shape — cache, rate limit, invoke, validate, one reinforcement retry, metric — is provider-agnostic and the original draft is still a reasonable starting sketch for that case).
+
+The shape actually built, `api/src/ai/invokeModel.ts` (S2), consumed identically by every AI feature: no cache (none of W7's calls are cacheable — free-text input varies per call; caching is still a real future lever, W19 §13.2.13), a per-user daily rate limit checked and consumed exactly once before the first attempt (not per retry, §13.2.9 D8), Gemini invoked via a REST call authenticated with a Secrets-Manager-held API key (not IAM), the response validated against a Zod schema with an asymmetric strict-structure/lenient-enum split (D4, §13.2.5), and the full contract — one shared deadline, two independently-bounded retry chains, six client-facing error codes — locked in `E2E_MVP_PLAN.md` §13.2.7 and reproduced in §14 below rather than duplicated here.
+
+```typescript
+async function invokeModel<T>({
+  prompt: string,
+  outputSchema: z.ZodSchema<T>,
+  deadline: number,       // shared wall-clock deadline, not a per-call timeout — §13.2.7/§13.2.8
+}): Promise<T> {
+  // 1. Fetch the Gemini API key from Secrets Manager (memoized per warm Lambda container)
+  // 2. Call the Gemini endpoint; on 429/503/500/connection error, retry up to 2×
+  //    with jittered backoff, deadline-gated → AI_BUSY if exhausted
+  // 3. Parse the response as JSON; validate against outputSchema
+  // 4. On JSON.parse failure or a Zod structural/bounds failure (never an
+  //    enum-only failure — that degrades the one field with a warning instead):
+  //    retry once with a "return valid JSON only" reinforcement → AI_UNPARSEABLE
+  //    if the retry also fails
+  // 5. Deadline exceeded at any point → AI_TIMEOUT
+  // 6. Provider rejects the credential/model/quota outright → AI_UNAVAILABLE
+  // 7. Return the validated, mapped result
+}
+```
+
+The **original pre-W7 Bedrock/Claude sketch**, kept for a future Bedrock week rather than deleted (this codebase's own record-deviations-don't-silently-overwrite convention):
 
 ```typescript
 async function invokeClaude<T>({
@@ -1045,6 +1071,8 @@ async function invokeClaude<T>({
 - Prompts should never contain PII or household data at rest — they're templates with runtime injection.
 
 ### 8.4 Cross-region fallback
+
+> **Annotated W7 S12:** not exercised in W7 — Gemini has no AWS-region model-access question at all (D11, §18), so `parseFreeformRecipe`/`importRecipeFromUrl` never hit this path. Left as-is below, unchanged, for whichever future week (W15/W17/W18/W19, still open per D11) actually revisits Bedrock, same treatment as §15 item 1.
 
 If Bedrock `ap-south-1` doesn't have the required model at build time:
 
@@ -1372,18 +1400,28 @@ Workflows:
 
 ## 14. Failure modes & fallbacks
 
+> **The four AI rows this table originally carried (Bedrock throttled / model-unavailable / unparseable-JSON, plus a placeholder URL-import row) are replaced below by the real, shipped error-code contract** — `E2E_MVP_PLAN.md` §13.2.7 (D7, W7 S2), consumed by `graphql_error_mapper.dart` on the **code**, never on message text (asserted by a named mobile test, W7 S9/S11). The original three-Bedrock-row sketch predates D11's Gemini deviation (§18) and named no codes at all — not something a mobile error mapper could branch on.
+
+| Code | Cause | User experience | Retryable by user? | Mobile destination |
+|---|---|---|---|---|
+| `AI_BUSY` | Gemini transport chain exhausted (429/503/500/connection error, up to 2 retries) | "Recipe import isn't available right now" / differentiated copy | **Yes** | Inline retry on the input screen — pasted text is never lost |
+| `AI_TIMEOUT` | shared 15s deadline (§13.2.7) hit with no usable response | differentiated copy | **Yes** | Inline retry |
+| `AI_UNPARSEABLE` | Gemini output chain exhausted (JSON.parse or structural/bounds Zod failure, plus one reinforcement retry) | "Couldn't understand that recipe" | No | AI failure fallback screen (`ai_failure_screen.dart`, W7 S11) — pasted text preserved, "enter manually" / "paste again" both offered |
+| `AI_UNAVAILABLE` | provider rejected the credential/model/quota outright | "Recipe import isn't available right now" | No | AI failure fallback screen |
+| `URL_UNREADABLE` | SSRF-rejected URL, transport failure, or no usable `Recipe` JSON-LD on the page (S5) — all three surface identically, never distinguished (§13.2.10's "never an oracle" contract) | "Couldn't read that page" | No | AI failure fallback screen, with the redundant "paste text instead" button hidden (this failure *is* the paste-instead outcome already) |
+| `RATE_LIMITED` | the caller's own daily cap for that action (§13.2.9 D8) | distinct copy naming the specific action's cap (e.g. "you've reached today's limit of 20 recipe parses") — **a real bug found and fixed in W7 S12** (`RUNBOOK.md` §2): a shared bare-constructor default previously leaked `joinHousehold`'s own copy onto every other capped action | No | Inline, never the fallback screen |
+| `VALIDATION` | input rejected before any provider call (empty, or >4,000 chars) | inline field error | n/a — no call was ever made | Inline on the input field |
+
+Non-AI failure modes, unchanged from the original draft:
+
 | Failure | User experience | Recovery |
 |---|---|---|
-| Bedrock throttled | "AI is busy, try again in a moment" | Exponential backoff 3× |
-| Bedrock model unavailable in region | Silent fallback to `us-east-1` | Automatic |
-| Bedrock returns unparseable JSON | Retry once with reinforcement | Second failure → user-facing error |
 | Aurora down | AppSync returns 503 | Mobile shows last-known cache; retry banner |
 | AppSync down | GraphQL calls fail | Mobile shows offline state, cache-only |
 | S3 upload fails | Retry with backoff (client-side) | On 3rd fail, save locally, retry next foreground |
 | WebSocket dropped | Mobile shows "reconnecting" indicator | Backoff reconnect + full refetch on reconnect |
 | Cognito down | New logins blocked | Existing sessions continue until token expiry |
 | FCM delivery fails | Notification silently lost | Non-blocking; next opening of app catches state |
-| Recipe URL import parse fails (SSRF-rejected URL, transport failure, or no usable `Recipe` JSON-LD — SHIPPED W7 S5, all three surface identically as `URL_UNREADABLE`, never distinguished) | Show "couldn't read this page" + copy-paste fallback | Manual entry always available |
 
 ---
 
@@ -1394,7 +1432,7 @@ Ranked by risk × impact:
 1. **Bedrock model availability in `ap-south-1`.** Check `us-east-1` fallback path works. → Week 1, month 5. **Not exercised in W7 (D11, `E2E_MVP_PLAN.md` §13.2.2)** — W7's AI runs on Gemini instead, a scoped deviation; still open for any future Bedrock week. A real check run during W7 S2 anyway (not this assumption's own W7 obligation, just incidental information gathered while re-evaluating the provider choice) found Claude Haiku 4.5 genuinely listed as available in `ap-south-1`, but invocation blocked on "Model use case details have not been submitted for this account" — a real console form step with no guaranteed turnaround, inherited by whichever week actually revisits Bedrock.
 2. **Aurora Serverless v2 auto-pause behavior in `ap-south-1`.** Verify pause + resume latency is acceptable (usually 15–30s cold). → Month 1.
 3. **AppSync GraphQL subscription throughput** with 5 concurrent household members editing at once. → Month 3 integration test.
-4. **JSON-LD `Recipe` schema coverage** on top-20 Indian recipe blogs. → Week 1, month 2.
+4. ~~**JSON-LD `Recipe` schema coverage** on top-20 Indian recipe blogs. → Week 1, month 2.~~ **Resolved, W7 S1/S12.** 15/20 ld+json present, 14/20 usable draft (`E2E_MVP_PLAN.md` §13.5.12) — D10's 10–15/20 middle tier fired: URL import shipped, copy-paste given equal visual prominence. Re-confirmed live through the deployed mutation in S12 (§13.5.13): 14/20 (70.0%), matching the spike exactly, after fixing a real regression (§8.4/§14's `fetchPage.ts` byte-cap note above).
 5. **RDS Proxy behavior** under Lambda concurrency spikes. → Month 3.
 
 ---
@@ -1441,9 +1479,11 @@ Design-level, ranked by decision urgency:
 
 > **Amended 2026-08-28** (W7 S3, during the `parseFreeformRecipe` mutation): §6.1 above previously showed `parseFreeformRecipe(householdId: ID!, text: String!): Recipe!`, per this doc's own original draft — shipped as `parseFreeformRecipe(text: String!): RecipeDraft!` instead (`E2E_MVP_PLAN.md` §13.2.3 D1, §13.2.1 D3, both locked ahead of this slice and now confirmed as-built). Two deviations from the original draft, both already reflected in §6.1 above rather than left to drift: (1) a new `RecipeDraft`/`RecipeIngredientDraft` output type, not `Recipe!` — a `Recipe` has ten non-null fields (id, householdId, timestamps, ...) an unsaved proposal has no honest value for, and returning it would hand every client cache/mapper something indistinguishable from a persisted row; (2) `householdId` dropped from the signature entirely, not merely unused — this resolver runs on the non-VPC Lambda category S2 built (D3: the VPC's `natGateways: 0` means an internet-reaching Lambda has no route out from inside it), so it cannot run `requireHouseholdMember`, and accepting an argument it cannot authorize would violate this codebase's own existence-oracle convention (§12.2.5's precedent). The caller is still a verified Cognito principal; the actual abuse control is a 20/day-per-user DynamoDB rate limit keyed on the Cognito `sub` directly (`'freeformParse'`, §13.2.9 D8), asserted by a named test rather than merely being true. D4 (§13.2.5) is the validation-boundary decision this slice implements: the Zod schema validating Gemini's JSON response is strict on structure/bounds (fails the whole parse, triggering `invokeModel`'s one reinforcement retry) but asymmetrically lenient on the three closed-enum fields (`cuisineTier1`/`role`/`dietaryTags`) — an unrecognised value there degrades to `null` with a warning recorded in `RecipeDraft.warnings`, never failing an otherwise-good parse over one field. D5 (§13.2.6) is why `RecipeDraft.role` stays nullable even though `RecipeInput.role` is required with no default (W6 D1): an AI-proposed role is a proposal, not a default — W6 D1 still holds in full, enforced at confirm time (S10), not here.
 
-> **Amended 2026-08-28** (W7 S5, during the `importRecipeFromUrl` mutation): same D1/D3 deviation as `parseFreeformRecipe`'s own amendment immediately above (`RecipeDraft!`, not `Recipe!`; no `householdId`) — already reflected in §6.1. The new decision this slice adds is the SSRF control set itself (§13.2.10), implemented as two deliberately separate modules (`api/src/net/safeUrl.ts`, `api/src/net/fetchPage.ts`) rather than inline in the resolver, since it is a security control with its own test suite and a later feature may reuse it: `https`-only scheme allowlist; credentials/non-default-port/IP-literal-host rejection; explicit DNS resolution checking EVERY resolved address (not just the first) against private/loopback/link-local/CGNAT/reserved ranges for both IPv4 and IPv6 — the IPv6 check specifically covers Teredo (2001:0000::/32), 6to4 (2002::/16), and NAT64 (64:ff9b::/96) tunnelling prefixes and the deprecated IPv4-compatible form (`::a.b.c.d`), found missing from an initial string-prefix-based implementation during this slice's own security review (a real public address sharing a textual prefix with a reserved range, e.g. `2001:4860::1` vs. the Teredo prefix `2001:0000::/32`, could otherwise be misjudged either way — fixed by expanding any textual IPv6 form to its 8 numeric groups before range-checking, rather than matching on the string); at most 3 redirects with the full gate re-run on every hop (closing the "public URL redirects to a private/metadata address" attack, the single most important control here); the outbound connection pinned to the DNS-validated address (closing the DNS-rebinding window between validation and connect) while TLS SNI/the `Host` header carry the original hostname; an 8-second **total** budget across every hop enforced by an explicit deadline timer — NOT Node's `https.request` `timeout` option, which is a socket *idle* timer a slow-drip server can reset indefinitely rather than a real wall-clock deadline, also found and fixed during this slice's review; a 1MB response cap aborted mid-stream; an HTML-only `Content-Type` check; and a descriptive, non-spoofed `User-Agent` (§13.2.14: `Parimaan/1.0 (+https://parimaan.app)`, no `robots.txt` fetch for a single user-initiated import, no retry on 4xx/429). A fetch failure and a "no usable `Recipe` JSON-LD on the page" parse failure both surface as the identical `URL_UNREADABLE` client error, matching SD §14's "couldn't read this page" fallback — never distinguished, since revealing *why* a URL was rejected would itself be an internal-network reconnaissance oracle. Rate-limited at 30/day per user (`'urlImport'`, §13.2.9 D8), checked before any DNS lookup. This Lambda has no Gemini secret access at all, unlike `parseFreeformRecipe` — asserted by a dedicated negative CDK test, not merely true by omission.
+> **Amended 2026-08-28** (W7 S5, during the `importRecipeFromUrl` mutation): same D1/D3 deviation as `parseFreeformRecipe`'s own amendment immediately above (`RecipeDraft!`, not `Recipe!`; no `householdId`) — already reflected in §6.1. The new decision this slice adds is the SSRF control set itself (§13.2.10), implemented as two deliberately separate modules (`api/src/net/safeUrl.ts`, `api/src/net/fetchPage.ts`) rather than inline in the resolver, since it is a security control with its own test suite and a later feature may reuse it: `https`-only scheme allowlist; credentials/non-default-port/IP-literal-host rejection; explicit DNS resolution checking EVERY resolved address (not just the first) against private/loopback/link-local/CGNAT/reserved ranges for both IPv4 and IPv6 — the IPv6 check specifically covers Teredo (2001:0000::/32), 6to4 (2002::/16), and NAT64 (64:ff9b::/96) tunnelling prefixes and the deprecated IPv4-compatible form (`::a.b.c.d`), found missing from an initial string-prefix-based implementation during this slice's own security review (a real public address sharing a textual prefix with a reserved range, e.g. `2001:4860::1` vs. the Teredo prefix `2001:0000::/32`, could otherwise be misjudged either way — fixed by expanding any textual IPv6 form to its 8 numeric groups before range-checking, rather than matching on the string); at most 3 redirects with the full gate re-run on every hop (closing the "public URL redirects to a private/metadata address" attack, the single most important control here); the outbound connection pinned to the DNS-validated address (closing the DNS-rebinding window between validation and connect) while TLS SNI/the `Host` header carry the original hostname; an 8-second **total** budget across every hop enforced by an explicit deadline timer — NOT Node's `https.request` `timeout` option, which is a socket *idle* timer a slow-drip server can reset indefinitely rather than a real wall-clock deadline, also found and fixed during this slice's review; a response cap aborted mid-stream (1MB at ship time; **raised to 5MB in W7 S12** — see the amendment below — after a real S1-validated site, `indianhealthyrecipes.com`, grew past 1MB between S1's spike capture and S12's live-deployment re-verification, silently excluding an otherwise-usable import); an HTML-only `Content-Type` check; and a descriptive, non-spoofed `User-Agent` (§13.2.14: `Parimaan/1.0 (+https://parimaan.app)`, no `robots.txt` fetch for a single user-initiated import, no retry on 4xx/429). A fetch failure and a "no usable `Recipe` JSON-LD on the page" parse failure both surface as the identical `URL_UNREADABLE` client error, matching SD §14's "couldn't read this page" fallback — never distinguished, since revealing *why* a URL was rejected would itself be an internal-network reconnaissance oracle. Rate-limited at 30/day per user (`'urlImport'`, §13.2.9 D8), checked before any DNS lookup. This Lambda has no Gemini secret access at all, unlike `parseFreeformRecipe` — asserted by a dedicated negative CDK test, not merely true by omission.
 
 > **Amended 2026-08-28** (W7 S6, during `createRecipe`'s confirm path): §6.1 above previously showed `createRecipe(householdId: ID!, input: RecipeInput!): Recipe!` with `sourceType` hardcoded to `user` (§12.2.3 D3, W6) and no way to write `sourceUrl` — the gap §13.2.4 D2 identified: neither `parseFreeformRecipe` (S3) nor `importRecipeFromUrl` (S5) had anywhere to write their draft's provenance once confirmed. Shipped exactly as D2 locked it, option (a) over the alternative server-side-draft-token design (b): a new optional `source: RecipeSourceAttribution` argument, `{sourceType: RecipeSource!, sourceUrl: String}`. Absent (every pre-W7 caller, unchanged) resolves to `sourceType: 'user'`, `sourceUrl: null` — every W6 `createRecipe` test still passes with its assertions unmodified, the strongest evidence the argument is genuinely optional. When present, `sourceType` is restricted server-side (Zod, not the GraphQL enum — `RecipeSourceAttribution.sourceType` is typed against the full `RecipeSource` enum for schema simplicity, per its own doc comment) to `url`/`freeform_ai` only: `curated` (the W13/W14 curated seeder) and `ai` (a future cook-from-pantry feature) are server-owned values a client can never claim through this argument, verified end-to-end by a named test rather than left implicit. `sourceUrl` is required exactly when `sourceType: 'url'` (rejected for every other value, including absent `source`) and must be a valid `https` URL — it is stored, untrusted, third-party-influenced text displayed to other household members later, the same trust boundary `importRecipeFromUrl`'s own `url` argument sits on. `source_url` was already an existing nullable column (added in the W6 `1787808112003_recipes` migration, never previously written) — this slice needed no new migration, only wiring it into `insertRecipe`'s column list.
+
+> **Amended 2026-08-31** (W7 S12, during the week's real-AWS verification pass): two real bugs found by actually exercising the deployed stack, neither caught by any of the week's 940+ unit/integration tests — full detail in `RUNBOOK.md` §2, referenced here for the decisions-log record. (1) `checkAndIncrementDailyAction`'s shared `RateLimitedError` construction had no message parameter and silently inherited a class-default written for `joinHousehold`'s own copy, leaking that copy onto `parseFreeformRecipe`/`importRecipeFromUrl`/`rotateInviteCode`'s unrelated caps — found live when S12's own 20-call acceptance-measurement batch hit `parseFreeformRecipe`'s cap on its 20th call. Fixed by making the message a required parameter, threaded per call site. (2) `fetchPage.ts`'s `DEFAULT_MAX_BYTES` (1MB at ship time) silently excluded `indianhealthyrecipes.com` — one of S1's own 14/20 originally-usable sites — once that site's real page grew past 1MB between S1's 2026-08-28 capture and S12's 2026-08-31 re-verification; raised to 5MB (§8.4/§14/§6.1's SDL comment above), re-verified live: 14/20 (70.0%), matching S1's original number exactly. Both fixes deployed to `Parimaan-dev-Api` and re-verified via direct Lambda invoke before this amendment was written, not merely unit-tested. **Also this pass:** the DoD gate's acceptance measurement itself — 19/20 (95.0%) freeform parses accepted against PRD §11's ≥80% bar — plus a real SSRF attempt against the deployed `importRecipeFromUrl` endpoint (5 vectors: AWS metadata IP, loopback, RFC1918 private, plain `http://`, non-default port — all 5 rejected identically). Full writeup: `E2E_MVP_PLAN.md` §13.5.13.
 
 - Region: `ap-south-1` (Mumbai) primary; `us-east-1` fallback for Bedrock only if needed.
 - Backend runtime: Node.js 20 + TypeScript on Lambda.
