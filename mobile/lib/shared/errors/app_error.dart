@@ -23,7 +23,7 @@
 ///
 /// `graphql_error_mapper.dart` never lets a raw `GraphQLError`, `LinkException`
 /// or deserialization failure escape the data layer: everything becomes one of
-/// the eight variants below, with [InternalError] as the catch-all. An
+/// the variants below, with [InternalError] as the catch-all. An
 /// `errorType` this build has never heard of maps to [InternalError] rather
 /// than throwing — a server that grows a new error type must not crash an
 /// already-shipped client.
@@ -118,6 +118,66 @@ final class RateLimitedError extends AppError {
 
   @override
   String get errorType => 'RATE_LIMITED';
+}
+
+/// `invokeModel`'s transport retry chain (up to 2 retries against
+/// 429/503/500/connection errors) was exhausted — `parseFreeformRecipe`
+/// only. Retryable: the mobile client offers an inline retry, and the
+/// pasted text is never lost (W7 §13.2.7).
+final class AiBusyError extends AppError {
+  const AiBusyError(super.errorMessage);
+
+  @override
+  String get errorType => 'AI_BUSY';
+}
+
+/// `invokeModel`'s output retry chain (exactly 1 reinforcement retry
+/// against a JSON.parse failure or a structural/bounds Zod failure — never
+/// an enum-only failure, §13.2.5) was exhausted — `parseFreeformRecipe`
+/// only. Not retryable; routes to the AI failure fallback screen (12.1).
+final class AiUnparseableError extends AppError {
+  const AiUnparseableError(super.errorMessage);
+
+  @override
+  String get errorType => 'AI_UNPARSEABLE';
+}
+
+/// The provider rejected the credential or the request outright (HTTP
+/// 401/403, revoked key, retired model, account-level quota exhausted) —
+/// `parseFreeformRecipe` only. Never retried, since retrying an auth
+/// failure just repeats it; routes to the fallback screen with copy
+/// distinct from [AiBusyError].
+final class AiUnavailableError extends AppError {
+  const AiUnavailableError(super.errorMessage);
+
+  @override
+  String get errorType => 'AI_UNAVAILABLE';
+}
+
+/// `invokeModel`'s shared deadline (`AI_DEADLINE_MS`, §13.2.7) was reached
+/// with no usable response — `parseFreeformRecipe` only. Retryable: a
+/// fresh call gets a fresh deadline.
+final class AiTimeoutError extends AppError {
+  const AiTimeoutError(super.errorMessage);
+
+  @override
+  String get errorType => 'AI_TIMEOUT';
+}
+
+/// Every failure on `importRecipeFromUrl`'s fetch/parse path — an
+/// SSRF-rejected URL, a transport failure, a wrong content-type, too many
+/// redirects, or a page with no usable `Recipe` JSON-LD — collapses to
+/// this one generic error server-side, deliberately never distinguished
+/// (§13.2.10: surfacing *why* a URL was rejected is itself an
+/// internal-network reconnaissance oracle). Not retryable with the same
+/// URL; routes to the fallback screen, same as [AiUnparseableError] — no
+/// draft was ever extracted, so the fallback's "seeded with whatever was
+/// extractable" lands on an empty form.
+final class UrlUnreadableError extends AppError {
+  const UrlUnreadableError(super.errorMessage);
+
+  @override
+  String get errorType => 'URL_UNREADABLE';
 }
 
 /// The server's `INTERNAL` fallback, and this client's own fallback for

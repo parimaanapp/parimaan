@@ -81,11 +81,14 @@ String? errorTypeOf(GraphQLError error) {
 
 /// Maps one [GraphQLError] onto its [AppError] subtype.
 ///
-/// Every `errorType` in `api/src/errors.ts` is covered. **Anything else —
-/// including a missing or non-`String` `errorType` — becomes an
-/// [InternalError] rather than throwing.** That fallback is the point: a
-/// server that grows a ninth error type must not crash a client shipped
-/// before it existed.
+/// Every `errorType` in `api/src/errors.ts` is covered — including the five
+/// AI/URL-import-specific codes (`AI_BUSY`/`AI_UNPARSEABLE`/`AI_UNAVAILABLE`/
+/// `AI_TIMEOUT`/`URL_UNREADABLE`, W7 §13.2.7, pulled forward from S11 during
+/// S9 since S9's own review screens need to branch on these codes, not
+/// message text). **Anything else — including a missing or non-`String`
+/// `errorType` — becomes an [InternalError] rather than throwing.** That
+/// fallback is the point: a server that grows a fourteenth error type must
+/// not crash a client shipped before it existed.
 AppError mapGraphQLError(GraphQLError error) {
   final String message = error.message.isEmpty
       ? genericErrorMessage
@@ -99,6 +102,11 @@ AppError mapGraphQLError(GraphQLError error) {
     'NOT_FOUND' => NotFoundError(message),
     'HOUSEHOLD_FULL' => HouseholdFullError(message),
     'RATE_LIMITED' => RateLimitedError(message),
+    'AI_BUSY' => AiBusyError(message),
+    'AI_UNPARSEABLE' => AiUnparseableError(message),
+    'AI_UNAVAILABLE' => AiUnavailableError(message),
+    'AI_TIMEOUT' => AiTimeoutError(message),
+    'URL_UNREADABLE' => UrlUnreadableError(message),
     'INTERNAL' => InternalError(message),
     _ => InternalError(message),
   };

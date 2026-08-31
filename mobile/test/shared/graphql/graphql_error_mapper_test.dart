@@ -67,6 +67,11 @@ void main() {
       'NOT_FOUND': NotFoundError,
       'HOUSEHOLD_FULL': HouseholdFullError,
       'RATE_LIMITED': RateLimitedError,
+      'AI_BUSY': AiBusyError,
+      'AI_UNPARSEABLE': AiUnparseableError,
+      'AI_UNAVAILABLE': AiUnavailableError,
+      'AI_TIMEOUT': AiTimeoutError,
+      'URL_UNREADABLE': UrlUnreadableError,
       'INTERNAL': InternalError,
     };
 

@@ -18,6 +18,11 @@ String? recipeErrorMessage(Object? error) => switch (error) {
   NotFoundError(:final String errorMessage) => errorMessage,
   HouseholdFullError(:final String errorMessage) => errorMessage,
   RateLimitedError(:final String errorMessage) => errorMessage,
+  AiBusyError(:final String errorMessage) => errorMessage,
+  AiUnparseableError(:final String errorMessage) => errorMessage,
+  AiUnavailableError(:final String errorMessage) => errorMessage,
+  AiTimeoutError(:final String errorMessage) => errorMessage,
+  UrlUnreadableError(:final String errorMessage) => errorMessage,
   InternalError(:final String errorMessage) => errorMessage,
   // Not an `AppError`. `RecipeRepository`'s contract says this cannot
   // happen; rendering a Dart exception's `toString` would be worse than the

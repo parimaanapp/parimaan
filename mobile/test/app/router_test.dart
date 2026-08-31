@@ -9,6 +9,7 @@ import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
+import 'package:mobile/features/recipes/presentation/ai_failure_screen.dart';
 import 'package:mobile/features/recipes/presentation/freeform_input_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_draft_review_screen.dart';
@@ -416,6 +417,34 @@ void main() {
         );
         expect(screen.householdId, 'household-1');
         expect(screen.draft, draft);
+      },
+    );
+
+    testWidgets(
+      '/home/recipes/new/ai-failure stays reachable and renders AiFailureScreen with the pushed extra',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(
+          AppRoutes.recipeAiFailure('household-1'),
+          extra: (
+            errorMessage: "Couldn't read that page.",
+            preservedInput: 'https://example.com/unreadable',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.recipeAiFailure('household-1'));
+        expect(find.byType(AiFailureScreen), findsOneWidget);
+        final AiFailureScreen screen = tester.widget<AiFailureScreen>(
+          find.byType(AiFailureScreen),
+        );
+        expect(screen.householdId, 'household-1');
+        expect(screen.errorMessage, "Couldn't read that page.");
+        expect(screen.preservedInput, 'https://example.com/unreadable');
       },
     );
 

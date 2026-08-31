@@ -30,6 +30,7 @@ import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
 import '../features/recipes/domain/ai_recipe_draft.dart';
 import '../features/recipes/domain/recipe.dart';
+import '../features/recipes/presentation/ai_failure_screen.dart';
 import '../features/recipes/presentation/freeform_input_screen.dart';
 import '../features/recipes/presentation/recipe_detail_screen.dart';
 import '../features/recipes/presentation/recipe_draft_review_screen.dart';
@@ -247,11 +248,25 @@ abstract final class AppRoutes {
   static const String _recipeDraftReviewPattern = '/home/recipes/new/review';
   static String recipeDraftReview(String householdId) =>
       '$_recipeDraftReviewPattern?householdId=$householdId';
+
+  // The AI failure fallback screen (wireframe 12.1, W7 S11 — a minimal, real
+  // placeholder shipped early by S9 since `URL_UNREADABLE` needs somewhere
+  // real to route to, same "route exists now, real screen lands with its
+  // own slice" shape as [recipeUrlImport]/[recipeFreeformInput] before
+  // them). `householdId` travels as a query param, same reasoning as
+  // [recipeCreate]; the [AiFailureExtra] travels as `extra`.
+  static const String _recipeAiFailurePattern = '/home/recipes/new/ai-failure';
+  static String recipeAiFailure(String householdId) =>
+      '$_recipeAiFailurePattern?householdId=$householdId';
 }
 
 /// `extra` payload for [AppRoutes.recipeDraftReview] — see that route's own
 /// doc.
 typedef RecipeDraftReviewExtra = ({AiRecipeDraft draft, String? sourceUrl});
+
+/// `extra` payload for [AppRoutes.recipeAiFailure] — see that route's own
+/// doc.
+typedef AiFailureExtra = ({String errorMessage, String preservedInput});
 
 /// The app's route table plus its auth guard.
 ///
@@ -495,6 +510,17 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             householdId: _pantryHouseholdId(state),
             draft: extra.draft,
             sourceUrl: extra.sourceUrl,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes._recipeAiFailurePattern,
+        builder: (BuildContext context, GoRouterState state) {
+          final AiFailureExtra extra = state.extra as AiFailureExtra;
+          return AiFailureScreen(
+            householdId: _pantryHouseholdId(state),
+            errorMessage: extra.errorMessage,
+            preservedInput: extra.preservedInput,
           );
         },
       ),
