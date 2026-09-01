@@ -23,8 +23,10 @@ const Duration _defaultKeepAliveTimeout = Duration(minutes: 2);
 /// [AppSyncSubscriptionClient] is injected through so tests never open a
 /// real socket. Production leaves it at the default; tests substitute a fake
 /// channel backed by their own `StreamController`s.
-typedef WebSocketChannelFactory =
-    WebSocketChannel Function(Uri uri, {Iterable<String>? protocols});
+typedef WebSocketChannelFactory = WebSocketChannel Function(
+  Uri uri, {
+  Iterable<String>? protocols,
+});
 
 /// [AppSyncSubscriptionClient]'s own connection lifecycle. A plain
 /// [ValueListenable] — not a Riverpod provider, and W8 has no UI consumer of
@@ -61,7 +63,14 @@ class AppSyncSubscriptionClient {
     required IdTokenProvider idTokenProvider,
     WebSocketChannelFactory? channelFactory,
     ReconnectPolicy? reconnectPolicy,
-  }) : _idTokenProvider = idTokenProvider,
+  })
+    // Not an initializing formal: an initializing formal's parameter name
+    // must match the field name exactly, which would force every call site
+    // to pass `_idTokenProvider:` — an unusable, privacy-defeating named
+    // argument. See the identical precedent and reasoning in
+    // `HouseholdSyncPolicy`'s own constructor.
+    // ignore: prefer_initializing_formals
+    : _idTokenProvider = idTokenProvider,
        _channelFactory = channelFactory ?? WebSocketChannel.connect,
        _reconnectPolicy = reconnectPolicy ?? ReconnectPolicy();
 
@@ -96,9 +105,8 @@ class AppSyncSubscriptionClient {
   /// missed before the first fetch), only a *re*-acknowledgment after a gap.
   final Set<String> _pendingRefetchAcks = <String>{};
 
-  final ValueNotifier<ConnectionState> _connectionState = ValueNotifier<
-    ConnectionState
-  >(ConnectionState.disconnected);
+  final ValueNotifier<ConnectionState> _connectionState =
+      ValueNotifier<ConnectionState>(ConnectionState.disconnected);
 
   /// See [ConnectionState]'s own doc.
   ValueListenable<ConnectionState> get connectionState => _connectionState;
@@ -350,7 +358,9 @@ class AppSyncSubscriptionClient {
           // as terminal without any message-string matching — see
           // [_attemptReconnect].
           _failConnection(
-            const UnauthorizedError('Could not connect to the live-updates server.'),
+            const UnauthorizedError(
+              'Could not connect to the live-updates server.',
+            ),
           );
         case 'data':
           _forwardData(decoded);
@@ -638,7 +648,9 @@ class AppSyncSubscriptionClient {
     final String? idToken = await _fetchIdTokenForReconnect();
     if (idToken == null || idToken.isEmpty) {
       _closeAllSubscriptionsWithTerminalError(
-        const UnauthorizedError('You are signed out. Sign in again to continue.'),
+        const UnauthorizedError(
+          'You are signed out. Sign in again to continue.',
+        ),
       );
       return;
     }
