@@ -1,7 +1,7 @@
 import type { AppSyncResolverEvent } from 'aws-lambda';
 import type { Pool } from 'pg';
 import { extractCallerIdentity } from '../auth/identity.js';
-import { requireHouseholdMember } from '../auth/requireHouseholdMember.js';
+import { evictMembershipCache, requireHouseholdMember } from '../auth/requireHouseholdMember.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
@@ -45,6 +45,12 @@ export const productionDeps: DeleteHouseholdResolverDeps = { getPool };
  * `ForbiddenError`, and this mutation never becomes a household-existence
  * oracle (see `auth/requireHouseholdMember.ts`'s own comment).
  *
+ * `bypassCache: true` (E2E_MVP_PLAN.md §14.2.8, D2 part 2): this is one of
+ * the four membership-mutating/destructive resolvers that must always read a
+ * live role here, never a possibly-stale cached one — deleting a household
+ * is irreversible, and this is a destructive mutation deciding its own
+ * authorization to happen at all.
+ *
  * `requireHouseholdMember` returns only the caller's `HouseholdRole`, not the
  * household row, so the name needed for the confirmation check costs one
  * `findHouseholdById` — there is no cheaper path through the existing gate.
@@ -74,7 +80,7 @@ export const createDeleteHouseholdHandler =
     return withUserTransaction(
       callerUser.id,
       async (client) => {
-        const role = await requireHouseholdMember(client, callerUser.id, householdId);
+        const role = await requireHouseholdMember(client, callerUser.id, householdId, { bypassCache: true });
         if (role !== 'primary') {
           throw new ForbiddenError(NOT_PRIMARY_MESSAGE);
         }
@@ -97,6 +103,9 @@ export const createDeleteHouseholdHandler =
 
         const deleteHousehold = deps.deleteHousehold ?? deleteHouseholdRepo;
         await deleteHousehold(client, householdId);
+        // Best-effort, this container only (D2 part 3) — see
+        // `requireHouseholdMember.ts`'s own doc on `evictMembershipCache`.
+        evictMembershipCache(callerUser.id, householdId);
         return true;
       },
       pool,
