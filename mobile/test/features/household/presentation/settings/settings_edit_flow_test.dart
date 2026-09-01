@@ -130,7 +130,6 @@ void main() {
           repository: FakeHouseholdRepository(
             result: testHousehold,
             fetchResult: stored,
-            settingsResult: testHouseholdSettings,
           ),
         );
 

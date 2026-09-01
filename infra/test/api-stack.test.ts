@@ -208,13 +208,18 @@ describe('ApiStack', () => {
 
   it('the real schema file still declares joinHousehold, updateHouseholdSettings, and the S8 onPantryChanged subscription', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/joinHousehold\(inviteCode:\s*String!\)\s*:\s*Household!/);
+    // updateHouseholdSettings returns Household!, not HouseholdSettings! — a
+    // deliberate deviation from the field's own original signature (W8 S10,
+    // E2E_MVP_PLAN.md §14.2.10 D4), so a future edit reverting it silently
+    // would fail here — same guard shape as deletePantryItem/deleteRecipe's.
     expect(REAL_SCHEMA_CONTENTS).toMatch(
-      /updateHouseholdSettings\(householdId:\s*ID!,\s*input:\s*HouseholdSettingsInput!\)\s*:\s*HouseholdSettings!/,
+      /updateHouseholdSettings\(householdId:\s*ID!,\s*input:\s*HouseholdSettingsInput!\)\s*:\s*Household!/,
     );
     expect(REAL_SCHEMA_CONTENTS).toMatch(/input HouseholdSettingsInput/);
-    // W5 S8 added exactly one Subscription field, per-field-resolver
+    // W5 S8 added the first Subscription field, per-field-resolver
     // authorized (§11.2.9 — a deliberate deviation from SD §10.4's stated
-    // connect-time authorizer). `onHouseholdChanged` stays deferred to W8.
+    // connect-time authorizer). `onHouseholdChanged` (W8 S10) is checked
+    // separately below, alongside onRecipeChanged.
     expect(REAL_SCHEMA_CONTENTS).toMatch(/type Subscription \{/);
     expect(REAL_SCHEMA_CONTENTS).toMatch(/onPantryChanged\(householdId:\s*ID!\)\s*:\s*PantryItem/);
   });
@@ -292,13 +297,25 @@ describe('ApiStack', () => {
     );
   });
 
+  it('the real schema file declares the S10 onHouseholdChanged subscription, aws_subscribe\'d to join/rotate/updateSettings only (W8 S10, D4/D5)', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/onHouseholdChanged\(householdId:\s*ID!\)\s*:\s*Household/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /@aws_subscribe\(mutations:\s*\[\s*"joinHousehold",\s*"rotateInviteCode",\s*"updateHouseholdSettings"\s*\]\)/,
+    );
+    // leaveHousehold/deleteHousehold deliberately absent from this
+    // mutation list (both return Boolean!, can't feed a Household-shaped
+    // subscription) — a future edit adding either here without also
+    // widening its return type would need this test updated deliberately,
+    // not silently.
+  });
+
   it('the real schema file still declares the S7 Query.recipe field, added mid-slice for the Detail screen (W6 S7)', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 27 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl)', () => {
+  it('declares exactly 28 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(27);
+    expect(ourFunctions(template)).toHaveLength(28);
   });
 
   it('declares the health, parseFreeformRecipe, and importRecipeFromUrl Lambdas outside the VPC, on the Node.js 24 runtime', () => {
@@ -318,10 +335,10 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares 24 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 25 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(24);
+    expect(vpcFunctions).toHaveLength(25);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -339,7 +356,7 @@ describe('ApiStack', () => {
   it('gives every VPC-attached resolver Lambda enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(24);
+    expect(vpcFunctions).toHaveLength(25);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
@@ -349,7 +366,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(24);
+    expect(vpcFunctions).toHaveLength(25);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -535,9 +552,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 27 AppSync Lambda data sources', () => {
+  it('declares exactly 28 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 27);
+    template.resourceCountIs('AWS::AppSync::DataSource', 28);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -765,6 +782,15 @@ describe('ApiStack', () => {
     });
   });
 
+  it('declares a resolver for Subscription.onHouseholdChanged', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Subscription',
+      FieldName: 'onHouseholdChanged',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
   it('declares a resolver for Mutation.parseFreeformRecipe', () => {
     const template = synth('dev');
     template.hasResourceProperties('AWS::AppSync::Resolver', {
@@ -783,9 +809,9 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 27 resolvers total', () => {
+  it('declares exactly 28 resolvers total', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 27);
+    template.resourceCountIs('AWS::AppSync::Resolver', 28);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

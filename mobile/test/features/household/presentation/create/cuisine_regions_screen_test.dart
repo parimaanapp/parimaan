@@ -168,7 +168,6 @@ void main() {
         tester,
         repository: FakeHouseholdRepository(
           result: testHousehold,
-          settingsResult: testHouseholdSettings,
           delay: const Duration(milliseconds: 200),
         ),
       );

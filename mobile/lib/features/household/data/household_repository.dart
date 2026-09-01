@@ -21,6 +21,9 @@ import '../../../shared/graphql/operations/__generated__/leave_household.req.gql
 import '../../../shared/graphql/operations/__generated__/leave_household.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/me.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/me.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_household_changed.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_household_changed.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_household_changed.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.var.gql.dart';
@@ -53,8 +56,12 @@ abstract interface class HouseholdRepository {
   Future<Household> createHousehold(String name);
 
   /// Applies [patch] to the settings of [householdId] and returns the
-  /// household's **whole** settings row — not just the patched fields, which
-  /// is what `Mutation.updateHouseholdSettings` returns.
+  /// **whole household** — not just the patched settings fields.
+  ///
+  /// Returns `Household`, not `HouseholdSettings` (W8 S10, E2E_MVP_PLAN.md
+  /// §14.2.10 D4): `Mutation.updateHouseholdSettings` itself was widened so
+  /// it can attach to `Subscription.onHouseholdChanged`; the settings remain
+  /// reachable via `Household.settings`.
   ///
   /// The patch is partial by construction: a `null` field on
   /// [HouseholdSettingsPatch] is omitted from the request entirely, leaving
@@ -63,10 +70,26 @@ abstract interface class HouseholdRepository {
   ///
   /// Requires the caller to already be a member of [householdId]; a non-member
   /// gets [ForbiddenError].
-  Future<HouseholdSettings> updateHouseholdSettings(
+  Future<Household> updateHouseholdSettings(
     String householdId,
     HouseholdSettingsPatch patch,
   );
+
+  /// Emits once every time another device joins, rotates the invite code, or
+  /// updates settings for [householdId] (`Subscription.onHouseholdChanged`,
+  /// W8 S10) — a pure "something changed, refetch" signal, not the changed
+  /// household itself. Same "every push means refetch" contract as
+  /// `PantryRepository.watchPantryChanges`/`RecipeRepository.
+  /// watchRecipeChanges` (E2E_MVP_PLAN.md §11.2.12), for the identical
+  /// reason: `@aws_subscribe` forwards whichever of the three attached
+  /// mutations' own response fired, with no event-type field to distinguish
+  /// them.
+  ///
+  /// Does **not** cover a member leaving or a household being deleted — see
+  /// the SDL's own doc on `onHouseholdChanged` for why those two mutations
+  /// are deliberately not attached. `HouseholdSyncPolicy`'s entry/foreground
+  /// refetches are what still catch up on that gap.
+  Stream<void> watchHouseholdChanges(String householdId);
 
   /// Joins the caller to the household whose invite code is [inviteCode], as a
   /// `member`, and returns it fully populated.
@@ -167,7 +190,7 @@ class FerryHouseholdRepository implements HouseholdRepository {
   }
 
   @override
-  Future<HouseholdSettings> updateHouseholdSettings(
+  Future<Household> updateHouseholdSettings(
     String householdId,
     HouseholdSettingsPatch patch,
   ) async {
@@ -180,7 +203,28 @@ class FerryHouseholdRepository implements HouseholdRepository {
     );
 
     final GUpdateHouseholdSettingsData data = await _execute(request);
-    return householdSettingsFromGraphQL(data.updateHouseholdSettings);
+    return householdFromGraphQL(data.updateHouseholdSettings);
+  }
+
+  @override
+  Stream<void> watchHouseholdChanges(String householdId) async* {
+    final GOnHouseholdChangedReq request = GOnHouseholdChangedReq(
+      (GOnHouseholdChangedReqBuilder b) => b
+        ..vars = (GOnHouseholdChangedVarsBuilder()..householdId = householdId),
+    );
+
+    await for (final OperationResponse<GOnHouseholdChangedData, GOnHouseholdChangedVars> response
+        in client.request(request)) {
+      if (response.hasErrors) {
+        throw mapOperationFailure(
+          graphqlErrors: response.graphqlErrors,
+          linkException: response.linkException,
+        );
+      }
+      if (response.data != null) {
+        yield null;
+      }
+    }
   }
 
   @override
@@ -201,13 +245,15 @@ class FerryHouseholdRepository implements HouseholdRepository {
   /// `fetchPolicy: FetchPolicy.NoCache` is the load-bearing part. Ferry's
   /// default for a query is `CacheFirst`, which would answer the second and
   /// every subsequent call from the normalised cache without touching the
-  /// network — turning `HouseholdSyncPolicy`'s 15-second poll into a 15-second
-  /// re-read of a value that can never change. `NoCache` rather than
-  /// `NetworkOnly` because this response is deliberately **not** written back
-  /// into the cache either: cache invalidation across household-scoped screens
-  /// is explicitly W8's problem once `onHouseholdChanged` lands, and a poll
-  /// that silently rewrites shared cache entries underneath other screens is
-  /// exactly the coupling this slice is scoped to avoid.
+  /// network — turning a route-entry/foreground/`onHouseholdChanged`-push
+  /// refetch into a re-read of a value that can never change. `NoCache`
+  /// rather than `NetworkOnly` because this response is deliberately **not**
+  /// written back into the cache either: cache invalidation across
+  /// household-scoped screens stays out of scope even now that
+  /// `onHouseholdChanged` has landed (W8 S10) — the subscription only
+  /// signals "refetch," it never patches ferry's normalised cache, and a
+  /// refetch that silently rewrites shared cache entries underneath other
+  /// screens is exactly the coupling this repository stays scoped to avoid.
   @override
   Future<Household> fetchHousehold(String householdId) async {
     final GHouseholdReq request = GHouseholdReq(

@@ -68,6 +68,81 @@ void main() {
     });
   });
 
+  group('CurrentHouseholdController — live updates (W8 S10)', () {
+    test('subscribes to watchHouseholdChanges for the household it is keyed on', () async {
+      final FakeHouseholdRepository repository = FakeHouseholdRepository(
+        fetchResult: testHousehold,
+      );
+      final ProviderContainer container = _container(repository);
+
+      await container.read(
+        currentHouseholdControllerProvider('household-1').future,
+      );
+
+      expect(repository.watchCalls, <String>['household-1']);
+    });
+
+    test('a pushed change event triggers a refetch', () async {
+      final FakeHouseholdRepository repository = FakeHouseholdRepository(
+        fetchResult: testHousehold,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentHouseholdControllerProvider('household-1').future,
+      );
+      expect(repository.fetchCalls, hasLength(1));
+
+      repository.watchControllers['household-1']!.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.fetchCalls, hasLength(2));
+    });
+
+    test('an error on the change stream is swallowed — the household stays as last fetched', () async {
+      final FakeHouseholdRepository repository = FakeHouseholdRepository(
+        fetchResult: testHousehold,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentHouseholdControllerProvider('household-1').future,
+      );
+
+      repository.watchControllers['household-1']!.addError(
+        const ForbiddenError('You are not a member of this household.'),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final AsyncValue<Household> state = container.read(
+        currentHouseholdControllerProvider('household-1'),
+      );
+      expect(state.hasError, isFalse);
+      expect(state.value, testHousehold);
+      // No second fetch — an errored change-stream event is not a "something
+      // changed" signal.
+      expect(repository.fetchCalls, hasLength(1));
+    });
+
+    test('disposing the container cancels the change subscription — no refetch after', () async {
+      final FakeHouseholdRepository repository = FakeHouseholdRepository(
+        fetchResult: testHousehold,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentHouseholdControllerProvider('household-1').future,
+      );
+
+      container.dispose();
+      // Broadcast controllers accept `.add` with no listeners without
+      // throwing — this only proves the controller-side subscription is
+      // gone by asserting no refetch call landed, not that `.add` itself
+      // would have failed.
+      repository.watchControllers['household-1']!.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.fetchCalls, hasLength(1));
+    });
+  });
+
   group('CurrentHouseholdController — refresh', () {
     test('re-reads from the server', () async {
       final FakeHouseholdRepository repository = FakeHouseholdRepository(
@@ -134,7 +209,7 @@ void main() {
     );
 
     test(
-      'never throws, even though the poll timer cannot catch anything',
+      'never throws — an escaping exception from a fire-and-forget caller would be an unhandled async error',
       () async {
         final FakeHouseholdRepository repository = FakeHouseholdRepository(
           fetchResult: testHousehold,

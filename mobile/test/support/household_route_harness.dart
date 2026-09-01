@@ -72,7 +72,6 @@ Future<HouseholdHarness> pumpHouseholdRoute(
       FakeHouseholdRepository(
         result: testHousehold,
         fetchResult: testHouseholdWithMembers,
-        settingsResult: testHouseholdSettings,
         // Router `_redirect` reads `meHouseholdsControllerProvider` on every
         // splash/sign-in landing (W8 S1) — an unset `myHouseholdsResult`
         // would surface as an error there instead of a clean empty answer.

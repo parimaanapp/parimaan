@@ -43,12 +43,13 @@ export 'household_wizard_data.dart';
 ///
 /// ## What the server's response is *not* used for
 ///
-/// `updateHouseholdSettings` returns the household's whole settings row. That
-/// value is deliberately discarded rather than folded back into the draft: the
-/// draft is what the user is currently editing, and overwriting it with a
-/// server round trip's snapshot would clobber any edit made while the request
-/// was in flight. The server remains the authority on what is *stored*; this
-/// controller is the authority on what is *being edited*.
+/// `updateHouseholdSettings` returns the whole `Household` (W8 S10 widened
+/// it from just the settings row). That value is deliberately discarded
+/// rather than folded back into the draft: the draft is what the user is
+/// currently editing, and overwriting it with a server round trip's
+/// snapshot would clobber any edit made while the request was in flight.
+/// The server remains the authority on what is *stored*; this controller is
+/// the authority on what is *being edited*.
 class HouseholdWizardController extends AsyncNotifier<HouseholdWizardData> {
   /// `read`, not `watch` — same reasoning as `CreateHouseholdController`:
   /// building this notifier must not construct a GraphQL client, so a screen

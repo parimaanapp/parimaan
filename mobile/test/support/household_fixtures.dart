@@ -209,10 +209,12 @@ Map<String, dynamic> deleteHouseholdWireData({bool result = true}) =>
 /// The exact JSON AppSync returns for the `UpdateHouseholdSettings` operation
 /// defined in `lib/shared/graphql/operations/update_household_settings.graphql`.
 ///
-/// The mutation returns `HouseholdSettings!` — the *whole* settings object,
-/// not just the patched fields — so this fixture is a complete settings row,
-/// and the two `AWSJSON` fields are JSON **strings** for the same reason
-/// [createHouseholdWireData]'s are.
+/// The mutation returns the **whole `Household`**, not just settings (W8
+/// S10, E2E_MVP_PLAN.md §14.2.10 D4 — widened so it can attach to
+/// `Subscription.onHouseholdChanged`) — this fixture wraps [householdWireNode]
+/// with its `settings` block replaced by the patched values, mirroring the
+/// other four `Household`-returning operations. The two `AWSJSON` fields are
+/// JSON **strings** for the same reason [createHouseholdWireData]'s are.
 Map<String, dynamic> updateHouseholdSettingsWireData({
   String householdId = 'household-1',
   List<String> mealsEnabled = const <String>['breakfast', 'lunch', 'dinner'],
@@ -222,19 +224,21 @@ Map<String, dynamic> updateHouseholdSettingsWireData({
   List<String> dietaryTags = const <String>['veg', 'eggetarian'],
   List<String> allergens = const <String>['peanut'],
   List<String> skipIngredients = const <String>['mustard oil'],
-}) => <String, dynamic>{
-  'updateHouseholdSettings': <String, dynamic>{
-    '__typename': 'HouseholdSettings',
-    'householdId': householdId,
-    'mealsEnabled': mealsEnabled,
-    'mealStructure': mealStructure,
-    'cuisineTier1': cuisineTier1,
-    'cuisineTier2Weights': cuisineTier2Weights,
-    'dietaryTags': dietaryTags,
-    'allergens': allergens,
-    'skipIngredients': skipIngredients,
-  },
-};
+}) {
+  final Map<String, dynamic> household = householdWireNode(id: householdId)
+    ..['settings'] = <String, dynamic>{
+      '__typename': 'HouseholdSettings',
+      'householdId': householdId,
+      'mealsEnabled': mealsEnabled,
+      'mealStructure': mealStructure,
+      'cuisineTier1': cuisineTier1,
+      'cuisineTier2Weights': cuisineTier2Weights,
+      'dietaryTags': dietaryTags,
+      'allergens': allergens,
+      'skipIngredients': skipIngredients,
+    };
+  return <String, dynamic>{'updateHouseholdSettings': household};
+}
 
 /// A ready-made domain [Household] for tests that only need *a* household and
 /// do not care about the wire round trip.
@@ -269,7 +273,9 @@ final Household testHousehold = Household(
 );
 
 /// The domain [HouseholdSettings] matching [updateHouseholdSettingsWireData]'s
-/// defaults, for tests that need a settings value without a wire round trip.
+/// own settings-field defaults, for tests that need a settings value without
+/// a wire round trip. Compare against a mapped result's `.settings`, not the
+/// whole `Household` — `Household`'s own `operator==` compares by `id` only.
 const HouseholdSettings testHouseholdSettings = HouseholdSettings(
   householdId: 'household-1',
   mealsEnabled: <String>['breakfast', 'lunch', 'dinner'],
