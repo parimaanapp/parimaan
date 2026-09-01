@@ -951,6 +951,19 @@ ALTER TABLE household_settings ENABLE ROW LEVEL SECURITY;
 --     USING (recipe_id IN (SELECT id FROM recipes))
 --     WITH CHECK (recipe_id IN (SELECT id FROM recipes));
 ALTER TABLE recipe_ingredients ENABLE ROW LEVEL SECURITY;
+-- Added W8 S7 (E2E_MVP_PLAN.md §14.2.7) — also missing from this list
+-- originally. `notification_preferences` is the only table below whose
+-- policy is NOT membership-scoped: it is per-user. A fellow member of the
+-- same household must not read or write another member's row — both
+-- because preferences are personal and because the row carries
+-- `fcm_token`, a device push credential whose leak lets another member's
+-- device be targeted directly. `ENABLE` + `FORCE`, both `USING` and
+-- `WITH CHECK` on `user_id` alone:
+--   CREATE POLICY notification_preferences_own_row ON notification_preferences
+--     FOR ALL
+--     USING (user_id = current_setting('parimaan.user_id')::UUID)
+--     WITH CHECK (user_id = current_setting('parimaan.user_id')::UUID);
+ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Example RLS policy: pantry_items
 CREATE POLICY pantry_household_member ON pantry_items
