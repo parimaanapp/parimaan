@@ -107,3 +107,21 @@ Map<String, Object?> startFrame({
 /// `{"id", "type":"stop"}` — unregisters one subscription without closing
 /// the shared connection (other subscriptions on it may still be active).
 Map<String, Object?> stopFrame(String id) => <String, Object?>{'id': id, 'type': 'stop'};
+
+/// Extracts `payload.connectionTimeoutMs` from a decoded `connection_ack`
+/// frame — the value AppSync uses to tell the client how long it may go
+/// without a `ka` (keep-alive) frame before the server considers the
+/// connection dead (W8 S2, §14.2.1). `null` when absent, malformed, or
+/// non-positive (a zero/negative value would arm a keep-alive watchdog that
+/// fires immediately, since the caller feeds this straight into a `Timer`
+/// duration — treated the same as "the server didn't tell us," not passed
+/// through), so the caller can fall back to its own conservative default
+/// rather than trusting an unexpected shape or value.
+int? connectionAckTimeoutMs(Map<String, Object?> decoded) {
+  final Object? payload = decoded['payload'];
+  if (payload is! Map<String, Object?>) {
+    return null;
+  }
+  final Object? value = payload['connectionTimeoutMs'];
+  return value is int && value > 0 ? value : null;
+}

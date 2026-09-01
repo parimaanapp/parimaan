@@ -85,4 +85,70 @@ void main() {
       expect(stopFrame('sub-1'), <String, Object?>{'id': 'sub-1', 'type': 'stop'});
     });
   });
+
+  group('connectionAckTimeoutMs', () {
+    test('reads payload.connectionTimeoutMs when present', () {
+      expect(
+        connectionAckTimeoutMs(<String, Object?>{
+          'type': 'connection_ack',
+          'payload': <String, Object?>{'connectionTimeoutMs': 300000},
+        }),
+        300000,
+      );
+    });
+
+    test('is null when payload is absent', () {
+      expect(
+        connectionAckTimeoutMs(<String, Object?>{'type': 'connection_ack'}),
+        isNull,
+      );
+    });
+
+    test('is null when payload is not a Map', () {
+      expect(
+        connectionAckTimeoutMs(<String, Object?>{
+          'type': 'connection_ack',
+          'payload': 'not a map',
+        }),
+        isNull,
+      );
+    });
+
+    test('is null when connectionTimeoutMs is absent from payload', () {
+      expect(
+        connectionAckTimeoutMs(<String, Object?>{
+          'type': 'connection_ack',
+          'payload': <String, Object?>{},
+        }),
+        isNull,
+      );
+    });
+
+    test('is null when connectionTimeoutMs is not an int', () {
+      expect(
+        connectionAckTimeoutMs(<String, Object?>{
+          'type': 'connection_ack',
+          'payload': <String, Object?>{'connectionTimeoutMs': '300000'},
+        }),
+        isNull,
+      );
+    });
+
+    test('is null when connectionTimeoutMs is zero or negative — never arms an immediately-firing watchdog', () {
+      expect(
+        connectionAckTimeoutMs(<String, Object?>{
+          'type': 'connection_ack',
+          'payload': <String, Object?>{'connectionTimeoutMs': 0},
+        }),
+        isNull,
+      );
+      expect(
+        connectionAckTimeoutMs(<String, Object?>{
+          'type': 'connection_ack',
+          'payload': <String, Object?>{'connectionTimeoutMs': -1000},
+        }),
+        isNull,
+      );
+    });
+  });
 }
