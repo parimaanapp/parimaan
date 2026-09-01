@@ -18,6 +18,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -47,6 +48,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -86,6 +88,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -128,6 +131,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -155,6 +159,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -172,10 +177,11 @@ void main() {
       expect(channel.closed, isTrue);
     });
 
-    test('connection_error surfaces as an InternalError to the pending subscribe', () async {
+    test('connection_error surfaces as an UnauthorizedError to the pending subscribe', () async {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -189,8 +195,13 @@ void main() {
       channel.emit(const <String, Object?>{'type': 'connection_error'});
       await pumpEventQueue();
 
+      // Mapped as an auth failure, not a generic transport error (W8 S3,
+      // §14.2.2): `connection_init` carries nothing but the auth header, so
+      // a server-side rejection of it realistically means a bad/expired
+      // credential — this is what lets the reconnect ladder recognise a
+      // `connection_error` against a freshly-fetched token as terminal.
       expect(errors, hasLength(1));
-      expect(errors.single, isA<InternalError>());
+      expect(errors.single, isA<UnauthorizedError>());
     });
 
     test(
@@ -199,6 +210,7 @@ void main() {
         final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
         final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
           httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
           channelFactory: (Uri uri, {Iterable<String>? protocols}) {
             final FakeWebSocketChannel channel = FakeWebSocketChannel();
             channels.add(channel);
@@ -238,6 +250,7 @@ void main() {
         final FakeWebSocketChannel channel = FakeWebSocketChannel();
         final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
           httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
           channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
         );
 
@@ -261,10 +274,48 @@ void main() {
       });
     });
 
+    test(
+      'a real transport error during a still-pending first connect never leaks its own message (which may embed the token-bearing connect URI) to the caller',
+      () async {
+        final FakeWebSocketChannel channel = FakeWebSocketChannel();
+        final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+          httpGraphQlUrl: _httpUrl,
+          idTokenProvider: () async => 'fresh-token',
+          channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
+        );
+
+        final List<Object> errors = <Object>[];
+        final StreamSubscription<Response> sub = client
+            .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+            .listen((_) {}, onError: errors.add);
+        addTearDown(sub.cancel);
+        await pumpEventQueue();
+
+        // A raw platform exception, the kind a real `WebSocketException`
+        // commonly carries — including the failed connect URI, which itself
+        // embeds the id token in its `header` query parameter
+        // (`appSyncConnectUri`). This must never reach the caller verbatim
+        // (security-reviewer HIGH finding).
+        channel.emitError(
+          Exception('Connection to wss://abc/graphql?header=eyJob3N0IjoiYWJjIiwiQXV0aG9yaXphdGlvbiI6InNlY3JldC10b2tlbiJ9 failed'),
+        );
+        await pumpEventQueue();
+
+        expect(errors, hasLength(1));
+        expect(errors.single, isA<InternalError>());
+        expect(
+          (errors.single as InternalError).toString(),
+          isNot(contains('secret-token')),
+          reason: 'the sanitized error must not carry the raw transport exception text',
+        );
+      },
+    );
+
     test('cancelling while still connecting does not register or crash — no start frame is sent', () async {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -287,6 +338,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -320,28 +372,422 @@ void main() {
       expect(received, hasLength(1));
     });
 
-    test('a channel-level error closes every active subscriber and resets connection state', () async {
-      final FakeWebSocketChannel channel = FakeWebSocketChannel();
-      final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
-        httpGraphQlUrl: _httpUrl,
-        channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
+    test(
+      'a channel-level error on an established connection leaves the subscriber stream open — it is not closed',
+      () async {
+        final FakeWebSocketChannel channel = FakeWebSocketChannel();
+        final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+          httpGraphQlUrl: _httpUrl,
+          idTokenProvider: () async => 'fresh-token',
+          channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
+        );
+
+        final List<Object> errors = <Object>[];
+        bool done = false;
+        final StreamSubscription<Response> sub = client
+            .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+            .listen((_) {}, onError: errors.add, onDone: () => done = true);
+        addTearDown(sub.cancel);
+        await pumpEventQueue();
+        channel.emit(const <String, Object?>{'type': 'connection_ack'});
+        await pumpEventQueue();
+
+        channel.emitError(StateError('socket reset'));
+        await pumpEventQueue();
+
+        // W8 S3's inverted close contract (§14.2.2): an established
+        // connection dying is now a transient event the reconnect ladder
+        // handles, not something that closes the caller's own stream — the
+        // opposite of W5/S2's original behaviour.
+        expect(errors, isEmpty);
+        expect(done, isFalse);
+        // The transport itself is still torn down, even though the
+        // subscriber survives.
+        expect(channel.closed, isTrue);
+      },
+    );
+
+    group('reconnect (W8 S3)', () {
+      test(
+        'an established connection dying reconnects with a fresh token, resubscribes the same id, '
+        'and emits exactly one refetch signal once the resubscribe is acknowledged',
+        () {
+          fakeAsync((FakeAsync async) {
+            final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
+            int tokenFetchCount = 0;
+            final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+              httpGraphQlUrl: _httpUrl,
+              idTokenProvider: () async {
+                tokenFetchCount++;
+                return 'reconnect-token-$tokenFetchCount';
+              },
+              channelFactory: (Uri uri, {Iterable<String>? protocols}) {
+                final FakeWebSocketChannel channel = FakeWebSocketChannel();
+                channels.add(channel);
+                return channel;
+              },
+            );
+
+            final List<Response> received = <Response>[];
+            final List<Object> errors = <Object>[];
+            client
+                .subscribe(
+                  query: _query,
+                  variables: <String, Object?>{'householdId': 'a'},
+                  idToken: 'original-token',
+                )
+                .listen(received.add, onError: errors.add);
+            async.flushMicrotasks();
+            channels.single.emit(const <String, Object?>{'type': 'connection_ack'});
+            async.flushMicrotasks();
+            final String id = channels.single.sentFrames.last['id']! as String;
+            channels.single.emit(<String, Object?>{'type': 'start_ack', 'id': id});
+            async.flushMicrotasks();
+            expect(tokenFetchCount, 0, reason: 'the original subscribe token came from the caller, not the provider');
+
+            // The transport dies.
+            channels.single.emitError(StateError('socket reset'));
+            async.flushMicrotasks();
+            expect(received, isEmpty, reason: 'no refetch yet — the reconnect has not happened');
+            expect(errors, isEmpty);
+
+            // Advance past the ladder's first, jittered ~1s rung.
+            async.elapse(const Duration(milliseconds: 1300));
+            async.flushMicrotasks();
+
+            expect(channels, hasLength(2), reason: 'a brand new connect attempt was made');
+            expect(tokenFetchCount, 1, reason: 'the reconnect fetched a fresh token, not the original one');
+
+            channels.last.emit(const <String, Object?>{'type': 'connection_ack'});
+            async.flushMicrotasks();
+
+            final Map<String, Object?> resentStart = channels.last.sentFrames.firstWhere(
+              (Map<String, Object?> f) => f['type'] == 'start',
+            );
+            expect(resentStart['id'], id, reason: 'the same subscription id is resubscribed, not a new one');
+            final Map<String, Object?> auth =
+                (resentStart['payload']! as Map<String, Object?>)['extensions']! as Map<String, Object?>;
+            expect(
+              (auth['authorization']! as Map<String, Object?>)['Authorization'],
+              'reconnect-token-1',
+              reason: 'the resubscribe carries the freshly-fetched token, not the original subscribe token',
+            );
+            expect(received, isEmpty, reason: 'no refetch until the resubscribe is actually acknowledged');
+
+            channels.last.emit(<String, Object?>{'type': 'start_ack', 'id': id});
+            async.flushMicrotasks();
+
+            expect(received, hasLength(1), reason: 'exactly one synthetic refetch signal after the reconnect');
+          });
+        },
       );
 
-      final List<Object> errors = <Object>[];
-      bool done = false;
-      final StreamSubscription<Response> sub = client
-          .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
-          .listen((_) {}, onError: errors.add, onDone: () => done = true);
-      addTearDown(sub.cancel);
-      await pumpEventQueue();
-      channel.emit(const <String, Object?>{'type': 'connection_ack'});
-      await pumpEventQueue();
+      test('a null token from the provider on reconnect closes every subscriber with UnauthorizedError', () {
+        fakeAsync((FakeAsync async) {
+          final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
+          final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+            httpGraphQlUrl: _httpUrl,
+            idTokenProvider: () async => null,
+            channelFactory: (Uri uri, {Iterable<String>? protocols}) {
+              final FakeWebSocketChannel channel = FakeWebSocketChannel();
+              channels.add(channel);
+              return channel;
+            },
+          );
 
-      channel.emitError(StateError('socket reset'));
-      await pumpEventQueue();
+          final List<Object> errors = <Object>[];
+          bool done = false;
+          client
+              .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+              .listen((_) {}, onError: errors.add, onDone: () => done = true);
+          async.flushMicrotasks();
+          channels.single.emit(const <String, Object?>{'type': 'connection_ack'});
+          async.flushMicrotasks();
 
-      expect(errors, hasLength(1));
-      expect(done, isTrue);
+          channels.single.emitError(StateError('socket reset'));
+          async.flushMicrotasks();
+          expect(errors, isEmpty, reason: 'still transient at this point — the ladder has not run yet');
+
+          async.elapse(const Duration(milliseconds: 1300));
+          async.flushMicrotasks();
+
+          expect(channels, hasLength(1), reason: 'a null token never reaches _ensureConnected — no new connect attempt');
+          expect(errors, hasLength(1));
+          expect(errors.single, isA<UnauthorizedError>());
+          expect(done, isTrue);
+        });
+      });
+
+      test(
+        'a connection_error against a freshly-fetched reconnect token closes every subscriber and stops the ladder',
+        () {
+          fakeAsync((FakeAsync async) {
+            final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
+            final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+              httpGraphQlUrl: _httpUrl,
+              idTokenProvider: () async => 'still-bad-token',
+              channelFactory: (Uri uri, {Iterable<String>? protocols}) {
+                final FakeWebSocketChannel channel = FakeWebSocketChannel();
+                channels.add(channel);
+                return channel;
+              },
+            );
+
+            final List<Object> errors = <Object>[];
+            client
+                .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+                .listen((_) {}, onError: errors.add);
+            async.flushMicrotasks();
+            channels.single.emit(const <String, Object?>{'type': 'connection_ack'});
+            async.flushMicrotasks();
+
+            channels.single.emitError(StateError('socket reset'));
+            async.flushMicrotasks();
+            async.elapse(const Duration(milliseconds: 1300));
+            async.flushMicrotasks();
+            expect(channels, hasLength(2));
+
+            // The reconnect attempt's own connect is rejected too.
+            channels.last.emit(const <String, Object?>{'type': 'connection_error'});
+            async.flushMicrotasks();
+
+            expect(errors, hasLength(1));
+            expect(errors.single, isA<UnauthorizedError>());
+
+            // No further reconnect attempt — the ladder stopped rather than
+            // retrying forever against a token that will never become valid.
+            async.elapse(const Duration(seconds: 90));
+            expect(channels, hasLength(2));
+          });
+        },
+      );
+
+      test(
+        'cancelling the only subscriber during the backoff wait prevents the pending retry from resurrecting the connection',
+        () {
+          fakeAsync((FakeAsync async) {
+            final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
+            int tokenFetchCount = 0;
+            final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+              httpGraphQlUrl: _httpUrl,
+              idTokenProvider: () async {
+                tokenFetchCount++;
+                return 'reconnect-token';
+              },
+              channelFactory: (Uri uri, {Iterable<String>? protocols}) {
+                final FakeWebSocketChannel channel = FakeWebSocketChannel();
+                channels.add(channel);
+                return channel;
+              },
+            );
+
+            final StreamSubscription<Response> sub = client
+                .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+                .listen((_) {}, onError: (Object _) {});
+            async.flushMicrotasks();
+            channels.single.emit(const <String, Object?>{'type': 'connection_ack'});
+            async.flushMicrotasks();
+
+            channels.single.emitError(StateError('socket reset'));
+            async.flushMicrotasks();
+
+            // The caller cancels while still mid-backoff, before the pending
+            // reconnect timer has fired.
+            unawaited(sub.cancel());
+            async.flushMicrotasks();
+
+            async.elapse(const Duration(seconds: 90));
+
+            expect(channels, hasLength(1), reason: 'no reconnect attempt was made for a cancelled subscriber');
+            expect(tokenFetchCount, 0);
+          });
+        },
+      );
+
+      test('the reconnect ladder does not run while explicitly disconnected via disconnect()', () {
+        fakeAsync((FakeAsync async) {
+          final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
+          int tokenFetchCount = 0;
+          final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+            httpGraphQlUrl: _httpUrl,
+            idTokenProvider: () async {
+              tokenFetchCount++;
+              return 'reconnect-token';
+            },
+            channelFactory: (Uri uri, {Iterable<String>? protocols}) {
+              final FakeWebSocketChannel channel = FakeWebSocketChannel();
+              channels.add(channel);
+              return channel;
+            },
+          );
+
+          client
+              .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+              .listen((_) {}, onError: (Object _) {});
+          async.flushMicrotasks();
+          channels.single.emit(const <String, Object?>{'type': 'connection_ack'});
+          async.flushMicrotasks();
+
+          // An explicit disconnect() call, not a channel death — S3's ladder
+          // must not treat this the same as a transient failure worth
+          // retrying (S4's future app-backgrounding call site relies on
+          // this: backgrounding must not itself trigger a reconnect storm).
+          unawaited(client.disconnect());
+          async.flushMicrotasks();
+
+          async.elapse(const Duration(seconds: 90));
+
+          expect(channels, hasLength(1), reason: 'disconnect() must not arm the reconnect ladder');
+          expect(tokenFetchCount, 0);
+        });
+      });
+
+      test(
+        'disconnect() called mid-backoff cancels the already-scheduled reconnect — it does not still fire later',
+        () {
+          fakeAsync((FakeAsync async) {
+            final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
+            int tokenFetchCount = 0;
+            final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+              httpGraphQlUrl: _httpUrl,
+              idTokenProvider: () async {
+                tokenFetchCount++;
+                return 'reconnect-token';
+              },
+              channelFactory: (Uri uri, {Iterable<String>? protocols}) {
+                final FakeWebSocketChannel channel = FakeWebSocketChannel();
+                channels.add(channel);
+                return channel;
+              },
+            );
+
+            client
+                .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+                .listen((_) {}, onError: (Object _) {});
+            async.flushMicrotasks();
+            channels.single.emit(const <String, Object?>{'type': 'connection_ack'});
+            async.flushMicrotasks();
+
+            // The transport dies, arming a reconnect timer...
+            channels.single.emitError(StateError('socket reset'));
+            async.flushMicrotasks();
+
+            // ...and then, before that timer fires, the caller explicitly
+            // disconnects (still with a subscriber registered — unlike the
+            // cancellation test above, this is `disconnect()`, not the last
+            // subscriber leaving).
+            unawaited(client.disconnect());
+            async.flushMicrotasks();
+
+            async.elapse(const Duration(seconds: 90));
+
+            expect(
+              channels,
+              hasLength(1),
+              reason: 'the reconnect timer armed before disconnect() must not still fire afterward',
+            );
+            expect(tokenFetchCount, 0);
+          });
+        },
+      );
+
+      test(
+        'a fresh subscribe() racing a reconnect attempt is not swept into the resubscribe-all step',
+        () {
+          fakeAsync((FakeAsync async) {
+            final List<FakeWebSocketChannel> channels = <FakeWebSocketChannel>[];
+            final Completer<String> reconnectTokenCompleter = Completer<String>();
+            int tokenFetchCount = 0;
+            final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
+              httpGraphQlUrl: _httpUrl,
+              idTokenProvider: () {
+                tokenFetchCount++;
+                // The first fetch (the reconnect's own) suspends until the
+                // test explicitly completes it below — modelling a real
+                // `IdTokenProvider` that takes genuine wall-clock time,
+                // which is the window a fresh `subscribe()` can race into.
+                return tokenFetchCount == 1
+                    ? reconnectTokenCompleter.future
+                    : Future<String>.value('later-token');
+              },
+              channelFactory: (Uri uri, {Iterable<String>? protocols}) {
+                final FakeWebSocketChannel channel = FakeWebSocketChannel();
+                channels.add(channel);
+                return channel;
+              },
+            );
+
+            final List<Response> firstReceived = <Response>[];
+            client
+                .subscribe(query: _query, variables: <String, Object?>{'householdId': 'a'}, idToken: 't')
+                .listen(firstReceived.add, onError: (Object _) {});
+            async.flushMicrotasks();
+            channels.single.emit(const <String, Object?>{'type': 'connection_ack'});
+            async.flushMicrotasks();
+            final String firstId = channels.single.sentFrames.last['id']! as String;
+            channels.single.emit(<String, Object?>{'type': 'start_ack', 'id': firstId});
+            async.flushMicrotasks();
+
+            // The transport dies, and the ladder's first rung elapses,
+            // starting a reconnect attempt whose own token fetch is now
+            // suspended on `reconnectTokenCompleter`.
+            channels.single.emitError(StateError('socket reset'));
+            async.flushMicrotasks();
+            async.elapse(const Duration(milliseconds: 1300));
+            async.flushMicrotasks();
+            expect(tokenFetchCount, 1, reason: 'the reconnect attempt has started fetching a fresh token');
+
+            // While that fetch is still pending, a caller opens a brand-new,
+            // unrelated subscription — its own onListen races ahead and
+            // registers/sends its own `start` frame directly, all before the
+            // reconnect's own token fetch resolves.
+            final List<Response> secondReceived = <Response>[];
+            client
+                .subscribe(query: _query, variables: <String, Object?>{'householdId': 'b'}, idToken: 't')
+                .listen(secondReceived.add, onError: (Object _) {});
+            async.flushMicrotasks();
+
+            // Now let the reconnect's own token fetch resolve and the
+            // reconnect actually complete.
+            reconnectTokenCompleter.complete('reconnect-token');
+            async.flushMicrotasks();
+            expect(channels, hasLength(2), reason: 'the shared reconnect attempt opened one new connection');
+            channels.last.emit(const <String, Object?>{'type': 'connection_ack'});
+            async.flushMicrotasks();
+
+            // The brand-new subscription's id must appear exactly once in
+            // the sent `start` frames on the new channel (its own original
+            // send) — resubscribe-all must not have swept it up and sent a
+            // second, duplicate `start` for it.
+            final String secondId = channels.last.sentFrames
+                .firstWhere((Map<String, Object?> f) => f['type'] == 'start')['id']! as String;
+            final int secondIdStartCount = channels.last.sentFrames
+                .where((Map<String, Object?> f) => f['type'] == 'start' && f['id'] == secondId)
+                .length;
+            expect(secondIdStartCount, 1, reason: 'no duplicate start frame for the newly-registered subscription');
+
+            // And its first-ever start_ack must not trigger a refetch —
+            // there is nothing it could have missed.
+            channels.last.emit(<String, Object?>{'type': 'start_ack', 'id': secondId});
+            async.flushMicrotasks();
+            expect(
+              secondReceived,
+              isEmpty,
+              reason: "a brand-new subscription's very first start_ack must never emit a refetch signal",
+            );
+
+            // The original, genuinely-reconnected subscription still gets
+            // its own resubscribe and refetch as normal.
+            final int firstIdStartCountOnNewChannel = channels.last.sentFrames
+                .where((Map<String, Object?> f) => f['type'] == 'start' && f['id'] == firstId)
+                .length;
+            expect(firstIdStartCountOnNewChannel, 1);
+            channels.last.emit(<String, Object?>{'type': 'start_ack', 'id': firstId});
+            async.flushMicrotasks();
+            expect(firstReceived, hasLength(1), reason: 'the genuinely-reconnected subscription still gets its refetch');
+          });
+        },
+      );
     });
 
     test(
@@ -377,6 +823,7 @@ void main() {
             ..closeGate = closeGate.future;
           final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
             httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
             channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
           );
 
@@ -402,10 +849,12 @@ void main() {
           closeGate.complete();
           async.flushMicrotasks();
 
-          // Exactly one error reached the subscriber, and the transport was
-          // closed exactly once — no corruption, no double-execution, no
-          // crash from either trigger.
-          expect(errors, hasLength(1));
+          // The subscriber survives a transient failure (W8 S3's inverted
+          // close contract) — what this test actually verifies is that the
+          // transport was closed exactly once despite two independent
+          // triggers racing each other, no corruption, no double-execution,
+          // no crash from either.
+          expect(errors, isEmpty);
           expect(channel.closeCallCount, 1, reason: 'no redundant second close() call');
         });
       },
@@ -418,6 +867,7 @@ void main() {
           ..closeError = StateError('already broken');
         final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
           httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
           channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
         );
 
@@ -433,9 +883,10 @@ void main() {
         // best-effort, but if `_isTearingDown` were left stuck `true` by it
         // (the code-reviewer MEDIUM finding this covers), every subsequent
         // call in this test would silently no-op instead of reconnecting.
+        // The subscriber itself survives (W8 S3's inverted close contract).
         channel.emitError(StateError('socket reset'));
         await pumpEventQueue();
-        expect(firstErrors, hasLength(1));
+        expect(firstErrors, isEmpty);
         await first.cancel();
 
         // A fresh subscribe — proof the client is not wedged: it starts a
@@ -467,6 +918,7 @@ void main() {
           final FakeWebSocketChannel channel = FakeWebSocketChannel();
           final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
             httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
             channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
           );
 
@@ -489,18 +941,20 @@ void main() {
 
           // Just past it, with no further traffic in between.
           async.elapse(const Duration(milliseconds: 200));
-          expect(errors, hasLength(1));
-          expect(errors.single, isA<InternalError>());
-          expect(done, isTrue);
+          // The subscriber survives — the keep-alive timeout routes through
+          // the same transient-failure path as a real socket error (W8 S3's
+          // inverted close contract), so this is not subscriber-visible.
+          expect(errors, isEmpty);
+          expect(done, isFalse);
 
-          // Not just subscriber-visible: the real transport must actually be
-          // torn down too, not merely have its local bookkeeping cleared —
-          // an orphaned, still-open socket left connected to AppSync
-          // indefinitely was the Flutter-review HIGH finding this covers.
-          // One more flush: the timeout's own teardown chain
-          // (`_channelSubscription.cancel()` then `_channel.sink.close()`)
-          // is itself async, and its completion is a further microtask
-          // beyond the `elapse` call that fired the Timer.
+          // What *is* observable: the real transport is actually torn down,
+          // not merely local bookkeeping cleared — an orphaned, still-open
+          // socket left connected to AppSync indefinitely was the
+          // Flutter-review HIGH finding this covers. One more flush: the
+          // timeout's own teardown chain (`_channelSubscription.cancel()`
+          // then `_channel.sink.close()`) is itself async, and its
+          // completion is a further microtask beyond the `elapse` call that
+          // fired the Timer.
           async.flushMicrotasks();
           expect(channel.closed, isTrue);
         });
@@ -514,6 +968,7 @@ void main() {
           final FakeWebSocketChannel channel = FakeWebSocketChannel();
           final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
             httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
             channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
           );
 
@@ -530,7 +985,11 @@ void main() {
           expect(errors, isEmpty);
 
           async.elapse(const Duration(seconds: 2));
-          expect(errors, hasLength(1));
+          // The subscriber survives (W8 S3's inverted close contract) — the
+          // transport being actually torn down is the observable signal.
+          async.flushMicrotasks();
+          expect(errors, isEmpty);
+          expect(channel.closed, isTrue);
         });
       },
     );
@@ -540,6 +999,7 @@ void main() {
         final FakeWebSocketChannel channel = FakeWebSocketChannel();
         final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
           httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
           channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
         );
 
@@ -564,7 +1024,12 @@ void main() {
         expect(errors, isEmpty, reason: 'the ka should have reset the 5s window');
 
         async.elapse(const Duration(milliseconds: 200));
-        expect(errors, hasLength(1), reason: 'now genuinely silent past the reset window');
+        async.flushMicrotasks();
+        // The subscriber survives (W8 S3's inverted close contract) — the
+        // transport being torn down is the observable "did it actually fire"
+        // signal now that a keep-alive timeout no longer errors the caller.
+        expect(errors, isEmpty);
+        expect(channel.closed, isTrue, reason: 'now genuinely silent past the reset window');
       });
     });
 
@@ -573,6 +1038,7 @@ void main() {
         final FakeWebSocketChannel channel = FakeWebSocketChannel();
         final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
           httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
           channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
         );
 
@@ -607,6 +1073,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -631,6 +1098,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 
@@ -654,6 +1122,7 @@ void main() {
         final FakeWebSocketChannel channel = FakeWebSocketChannel();
         final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
           httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
           channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
         );
 
@@ -687,6 +1156,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient client = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'fresh-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
 

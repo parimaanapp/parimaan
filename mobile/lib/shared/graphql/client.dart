@@ -36,7 +36,10 @@ Client buildFerryClient({
     AppSyncWebSocketLink(
       subscriptionClient:
           subscriptionClient ??
-          AppSyncSubscriptionClient(httpGraphQlUrl: config.graphQlUrl),
+          AppSyncSubscriptionClient(
+            httpGraphQlUrl: config.graphQlUrl,
+            idTokenProvider: idTokenProvider,
+          ),
     ),
     HttpLink(config.graphQlUrl, parser: const AppSyncResponseParser()),
   ]);
@@ -66,6 +69,7 @@ Override ferryClientOverride(AppConfig config) =>
     ferryClientProvider.overrideWith((Ref ref) {
       final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
         httpGraphQlUrl: config.graphQlUrl,
+        idTokenProvider: ref.watch(authRepositoryProvider).currentIdToken,
       );
       final Client client = buildFerryClient(
         config: config,
