@@ -7,7 +7,9 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../errors/app_error.dart';
 import 'appsync_realtime_protocol.dart';
+import 'auth_link.dart';
 import 'graphql_error_mapper.dart';
+import 'reconnect_policy.dart';
 
 /// Fallback keep-alive window when a `connection_ack` omits
 /// `payload.connectionTimeoutMs` (not observed in practice, but the field is
@@ -24,35 +26,82 @@ const Duration _defaultKeepAliveTimeout = Duration(minutes: 2);
 typedef WebSocketChannelFactory =
     WebSocketChannel Function(Uri uri, {Iterable<String>? protocols});
 
+/// [AppSyncSubscriptionClient]'s own connection lifecycle. A plain
+/// [ValueListenable] — not a Riverpod provider, and W8 has no UI consumer of
+/// it (§14.2.12, D10: the offline-banner wireframe that will consume this is
+/// a later week's work). Exposed now anyway, since this class is the only
+/// place that actually knows this state; retrofitting an observable onto its
+/// state machine later would be a far more invasive change than exposing the
+/// value it already tracks internally.
+enum ConnectionState { disconnected, connecting, connected }
+
 /// Owns **one multiplexed WebSocket connection for the whole app**
 /// (E2E_MVP_PLAN.md §11.3 S8 step 2b) — every concurrent subscription shares
 /// it, distinguished by AppSync's per-subscription `id`, exactly like the
 /// real AppSync JS/Amplify clients do. Connects lazily on the first
 /// [subscribe] call; disconnects once the last subscriber cancels.
 ///
-/// W5 scope is deliberately narrow (§11.3 S8 step 2d): subscribe when a
-/// screen starts listening, unsubscribe when it stops. No reconnect backoff
-/// and no invalidate-and-refetch-on-reconnect — both are W8. A token that
-/// expires mid-connection is also W8's problem: this slice reconnects with a
-/// fresh token only because [subscribe] is called again by a *new*
-/// `PantryController.build()`, not because this client detects expiry
-/// itself.
+/// W8 S3 adds reconnect-with-backoff (§14.2.2/§14.3 S3): when an
+/// **established** connection dies, subscriber streams survive the
+/// disconnect — the inverse of W5's original contract, which closed them
+/// immediately — and this client retries with [ReconnectPolicy]'s ladder,
+/// re-fetching a fresh token via the injected [idTokenProvider] for every
+/// attempt (a stale token cached from the original `subscribe()` call is
+/// never reused), resubscribing every still-registered id, and emitting
+/// exactly one synthetic refetch event per subscription once its resubscribe
+/// is acknowledged (§14.2.4 — a push while disconnected is otherwise lost,
+/// so the client cannot assume its local state is current after a gap). A
+/// null token, or a `connection_error` against a freshly-fetched token, is
+/// treated as an unrecoverable auth failure: the ladder stops and every
+/// subscriber closes with [UnauthorizedError] rather than retrying forever
+/// against a credential that will never become valid on its own.
 class AppSyncSubscriptionClient {
   AppSyncSubscriptionClient({
     required this.httpGraphQlUrl,
+    required IdTokenProvider idTokenProvider,
     WebSocketChannelFactory? channelFactory,
-  }) : _channelFactory = channelFactory ?? WebSocketChannel.connect;
+    ReconnectPolicy? reconnectPolicy,
+  }) : _idTokenProvider = idTokenProvider,
+       _channelFactory = channelFactory ?? WebSocketChannel.connect,
+       _reconnectPolicy = reconnectPolicy ?? ReconnectPolicy();
 
   final String httpGraphQlUrl;
+  final IdTokenProvider _idTokenProvider;
   final WebSocketChannelFactory _channelFactory;
+  final ReconnectPolicy _reconnectPolicy;
 
   WebSocketChannel? _channel;
   StreamSubscription<Object?>? _channelSubscription;
   Completer<void>? _connectionAck;
   Timer? _connectTimeoutTimer;
   int _nextSubscriptionId = 0;
-  final Map<String, StreamController<Response>> _subscriptions =
-      <String, StreamController<Response>>{};
+  final Map<String, _SubscriptionRegistration> _subscriptions =
+      <String, _SubscriptionRegistration>{};
+
+  /// True once `connection_ack` has landed for the *current* connection
+  /// episode. Captured before a teardown resets it — that captured value is
+  /// what decides whether a dying connection is a fresh-connect failure
+  /// (already surfaced to its own caller via [subscribe]'s own `onListen`
+  /// catch, nothing further to do) or an established connection dying, which
+  /// is what should actually trigger [_scheduleReconnect].
+  bool _isConnected = false;
+
+  Timer? _reconnectTimer;
+
+  /// Subscription ids currently mid-resubscribe after a reconnect — a
+  /// `start_ack` for one of these means "this id is back," which is when the
+  /// synthetic refetch event fires (§14.2.4). Deliberately separate from
+  /// [_acknowledgedSubscriptionIds]: a subscription's very first-ever
+  /// `start_ack` must never trigger a refetch (there is nothing to have
+  /// missed before the first fetch), only a *re*-acknowledgment after a gap.
+  final Set<String> _pendingRefetchAcks = <String>{};
+
+  final ValueNotifier<ConnectionState> _connectionState = ValueNotifier<
+    ConnectionState
+  >(ConnectionState.disconnected);
+
+  /// See [ConnectionState]'s own doc.
+  ValueListenable<ConnectionState> get connectionState => _connectionState;
 
   /// The keep-alive window currently in force — the server's own
   /// `connectionTimeoutMs` once a `connection_ack` has supplied one, or
@@ -72,16 +121,13 @@ class AppSyncSubscriptionClient {
   /// Subscription ids whose `start` frame has been confirmed by the server's
   /// `start_ack` on the *current* connection. Cleared on every reconnect
   /// (`_resetConnectionState`) — a stale acknowledgment from before a
-  /// disconnect must never count after one. Not yet consumed by anything in
-  /// this slice; S3 gates its reconnect-refetch signal on a resubscribe's
-  /// `start_ack` actually landing, not merely on the `start` frame having
-  /// been sent (§14.2.4).
+  /// disconnect must never count after one.
   final Set<String> _acknowledgedSubscriptionIds = <String>{};
 
   /// Whether [id]'s `start` frame has been acknowledged on the current
-  /// connection. Exposed for S3's own tests, and this slice's own — there is
-  /// no other externally-observable signal that a `start_ack` was received
-  /// and matched to a real, still-registered subscription.
+  /// connection. Exposed for this file's own tests — there is no other
+  /// externally-observable signal that a `start_ack` was received and
+  /// matched to a real, still-registered subscription.
   @visibleForTesting
   bool isSubscriptionAcknowledged(String id) =>
       _acknowledgedSubscriptionIds.contains(id);
@@ -92,11 +138,11 @@ class AppSyncSubscriptionClient {
   /// fixing it). Two distinct hazards, both closed by the same flag:
   ///
   /// 1. Closing a subscriber's controller — which [_handleChannelError]/
-  ///    [_handleChannelDone] both do — triggers that same controller's own
-  ///    `onCancel` below, asynchronously, as a side effect of
-  ///    `StreamController.close()`. Unguarded, `onCancel` would see
-  ///    `_subscriptions` empty (this teardown already cleared it) and start
-  ///    a *second*, concurrent `_disconnect()` — racing the first teardown's
+  ///    [_handleChannelDone] both did in W8 S2 — triggers that same
+  ///    controller's own `onCancel` below, asynchronously, as a side effect
+  ///    of `StreamController.close()`. Unguarded, `onCancel` would see
+  ///    `_subscriptions` empty (a teardown already cleared it) and start a
+  ///    *second*, concurrent `_disconnect()` — racing the first teardown's
   ///    own `_closeChannel()` call for which one gets to read `_channel`
   ///    before the other's `_resetConnectionState()` nulls it out from
   ///    under it.
@@ -104,12 +150,7 @@ class AppSyncSubscriptionClient {
   ///    independently by the *same* real WebSocket abnormal closure (an
   ///    `onError` and an `onDone` firing for one underlying event is a real,
   ///    not merely theoretical, transport behaviour), or either can race the
-  ///    keep-alive watchdog's own synthetic error. Unguarded, a second call
-  ///    would re-iterate the *same*, not-yet-cleared `_subscriptions` map and
-  ///    call `controller.addError`/`.close()` on controllers whose `.close()`
-  ///    is already in flight from the first call — `StreamController` throws
-  ///    a synchronous `StateError` for events added after `close()`, which
-  ///    nothing here awaits or catches, surfacing as an unhandled zone error.
+  ///    keep-alive watchdog's own synthetic error.
   ///
   /// Checked (not just set) at the very start of [_handleChannelError],
   /// [_handleChannelDone], and [_disconnect] themselves — not only inside
@@ -122,8 +163,9 @@ class AppSyncSubscriptionClient {
   /// Registers one subscription on the shared connection, opening it first
   /// if this is the only active subscriber. The returned stream emits one
   /// [Response] per pushed event (or a `Response` carrying [GraphQLError]s
-  /// for a subscribe-time denial) and closes when the caller cancels it or
-  /// the server sends `complete`.
+  /// for a subscribe-time denial) and stays open across a transient
+  /// disconnect (W8 S3, §14.2.2) — it only closes when the caller cancels
+  /// it, the server sends `complete`, or reconnection fails terminally.
   Stream<Response> subscribe({
     required String query,
     required Map<String, Object?> variables,
@@ -153,7 +195,11 @@ class AppSyncSubscriptionClient {
         if (cancelled) {
           return;
         }
-        _subscriptions[id] = controller;
+        _subscriptions[id] = _SubscriptionRegistration(
+          controller: controller,
+          query: query,
+          variables: variables,
+        );
         _channel!.sink.add(
           jsonEncode(
             startFrame(
@@ -170,6 +216,16 @@ class AppSyncSubscriptionClient {
         cancelled = true;
         _subscriptions.remove(id);
         _acknowledgedSubscriptionIds.remove(id);
+        _pendingRefetchAcks.remove(id);
+        if (_subscriptions.isEmpty) {
+          // Nobody left to reconnect for — a pending backoff timer firing
+          // later would otherwise fetch a fresh token and reconnect for no
+          // listener at all (§14.3 S3's own cancellation-during-backoff
+          // case). `_attemptReconnect` itself also checks this, so this is
+          // a hygiene improvement, not the only thing preventing it.
+          _reconnectTimer?.cancel();
+          _reconnectTimer = null;
+        }
         // Both skipped once a channel-error/done teardown is already
         // underway: that teardown is what closed this controller in the
         // first place (triggering this very `onCancel`), the channel is
@@ -186,8 +242,11 @@ class AppSyncSubscriptionClient {
     return controller.stream;
   }
 
-  /// Closes the connection immediately, regardless of active subscribers —
-  /// the unsubscribe-on-background half of W5's scope (§11.3 S8 step 2d).
+  /// Closes the connection immediately, regardless of active subscribers.
+  /// Subscriptions themselves are **not** removed (W8 S3, §14.2.2's inverted
+  /// close contract) — only the transport is torn down. A future caller
+  /// (S4's app-lifecycle wiring) can rely on this to mean "network gone,
+  /// listeners intact," not "everyone must resubscribe from scratch."
   Future<void> disconnect() => _disconnect();
 
   Future<void> _ensureConnected(String idToken) {
@@ -203,6 +262,7 @@ class AppSyncSubscriptionClient {
       return existingAck.future;
     }
 
+    _connectionState.value = ConnectionState.connecting;
     final WebSocketChannel channel = _channelFactory(
       appSyncConnectUri(httpGraphQlUrl, idToken: idToken),
       protocols: const <String>['graphql-ws'],
@@ -237,12 +297,12 @@ class AppSyncSubscriptionClient {
   /// Fails the in-flight (or just-established) connection attempt for
   /// **every** awaiter of [_connectionAck] — not just whichever caller
   /// happened to trigger the underlying [_ensureConnected] call — then tears
-  /// the connection down so the next [subscribe] starts a fresh attempt
-  /// rather than replaying a cached failure forever (the second Flutter-
-  /// review CRITICAL finding: a `connection_error` that only completed the
+  /// the connection down so the next connect attempt starts fresh rather
+  /// than replaying a cached failure forever (the second Flutter-review
+  /// CRITICAL finding: a `connection_error` that only completed the
   /// completer, without also clearing `_channel`/`_connectionAck`, left
-  /// every later `subscribe()` call permanently seeing a "connection" that
-  /// was already dead).
+  /// every later attempt permanently seeing a "connection" that was already
+  /// dead).
   void _failConnection(Object error) {
     final Completer<void>? ack = _connectionAck;
     if (ack != null && !ack.isCompleted) {
@@ -268,10 +328,29 @@ class AppSyncSubscriptionClient {
           _keepAliveTimeout = timeoutMs != null
               ? Duration(milliseconds: timeoutMs)
               : _defaultKeepAliveTimeout;
+          _isConnected = true;
+          _connectionState.value = ConnectionState.connected;
+          // Any successful connect — the very first one, or a reconnect
+          // after backoff — clears pending retry state. A `subscribe()` call
+          // racing ahead of a still-pending backoff timer (its own
+          // `_ensureConnected` reuses the shared `_connectionAck` if one is
+          // already in flight, or starts a fresh attempt otherwise) must not
+          // leave a stale timer armed to fire again later against a
+          // connection that is now healthy.
+          _reconnectTimer?.cancel();
+          _reconnectTimer = null;
+          _reconnectPolicy.reset();
           _connectionAck?.complete();
         case 'connection_error':
+          // Mapped as an auth failure, not a generic transport error: this
+          // client's `connection_init` carries nothing but the AppSync auth
+          // header (§14.2.2's own reasoning), so a server-side rejection of
+          // it realistically means a bad or expired credential. That is
+          // what lets the reconnect ladder (§14.3 S3) recognise this outcome
+          // as terminal without any message-string matching — see
+          // [_attemptReconnect].
           _failConnection(
-            const InternalError('Could not connect to the live-updates server.'),
+            const UnauthorizedError('Could not connect to the live-updates server.'),
           );
         case 'data':
           _forwardData(decoded);
@@ -297,8 +376,24 @@ class AppSyncSubscriptionClient {
 
   void _handleStartAck(Map<String, Object?> message) {
     final String? id = message['id'] as String?;
-    if (id != null && _subscriptions.containsKey(id)) {
-      _acknowledgedSubscriptionIds.add(id);
+    if (id == null) {
+      return;
+    }
+    final _SubscriptionRegistration? registration = _subscriptions[id];
+    if (registration == null) {
+      return;
+    }
+    _acknowledgedSubscriptionIds.add(id);
+    if (_pendingRefetchAcks.remove(id)) {
+      // This id's `start` was re-issued by a reconnect's own resubscribe,
+      // not a subscription's first-ever registration — a push may have been
+      // missed during the gap, so the caller must refetch (§14.2.4). A
+      // synthetic event carrying no data of its own; the caller's own
+      // refetch is what actually supplies fresh state, the same as every
+      // other push already routes through `_forwardData`.
+      registration.controller.add(
+        const Response(data: null, response: <String, dynamic>{}),
+      );
     }
   }
 
@@ -358,69 +453,50 @@ class AppSyncSubscriptionClient {
     if (id == null) {
       return;
     }
-    unawaited(_subscriptions.remove(id)?.close());
+    unawaited(_subscriptions.remove(id)?.controller.close());
   }
 
   StreamController<Response>? _controllerFor(Map<String, Object?> message) =>
-      _subscriptions[message['id'] as String?];
+      _subscriptions[message['id'] as String?]?.controller;
 
   /// A channel-level error (not an AppSync protocol `error` frame — an
-  /// actual socket failure) tears the connection down the same way
-  /// [_handleChannelDone] does. Previously this only pushed the error onto
-  /// every subscriber without resetting `_subscriptions`/`_channel`/
-  /// `_connectionAck` (Flutter-review HIGH finding): subscribers were left
-  /// permanently unclosed unless `onDone` also happened to fire afterward
-  /// (not guaranteed), and a fresh `subscribe()` in the meantime would
-  /// wrongly believe the dead connection was still healthy.
-  ///
-  /// Also closes the real transport (W8 S2 Flutter-review HIGH finding): this
-  /// used to only clear local bookkeeping via [_resetConnectionState], never
-  /// [_channelSubscription]/[_channel] themselves — a gap [_disconnect]
-  /// alone closed. That was comparatively low-risk while this method's only
-  /// caller was a genuine `onError` from an already-dying transport, but the
-  /// keep-alive watchdog (§14.2.1) can now call it while the socket is still
-  /// fully open (a false-positive timeout, or a connection that has gone
-  /// silent without the OS ever reporting the TCP session as closed) —
-  /// leaving that socket connected indefinitely, and its still-live
-  /// `StreamSubscription` free to keep calling back into this same client
-  /// instance (including resetting a *new* connection's watchdog with
-  /// frames that belong to the old, orphaned one) unless it is actually torn
-  /// down here.
+  /// actual socket failure) tears the transport down. Unlike W5/W8-S2,
+  /// subscriber controllers are **not** closed here (§14.2.2's inverted
+  /// close contract) — an established connection dying is now a transient
+  /// event the reconnect ladder handles; only
+  /// [_closeAllSubscriptionsWithTerminalError] (an unrecoverable auth
+  /// failure) or the caller's own cancellation ever closes a subscriber's
+  /// stream.
   Future<void> _handleChannelError(Object error) async {
     // A real abnormal closure can fire `onError` and `onDone` for the same
     // underlying event, and the keep-alive watchdog's own synthetic error
     // can race either — re-entering an already-in-flight teardown here would
-    // re-iterate `_subscriptions` before it's cleared and call
-    // `addError`/`.close()` on a controller whose `.close()` is already in
-    // flight, which throws (§14.2.1's own re-entrancy finding).
+    // re-run this same cleanup twice.
     if (_isTearingDown) {
       return;
     }
     _isTearingDown = true;
+    final bool wasEstablished = _isConnected;
     final Completer<void>? ack = _connectionAck;
     if (ack != null && !ack.isCompleted) {
-      ack.completeError(error);
+      // Never propagate the raw transport [error] to a still-pending
+      // connect's own caller: `appSyncConnectUri` embeds the (reversibly
+      // base64'd, not encrypted) id token in the socket's own connect URI,
+      // and platform `WebSocketException`s commonly include that failed URI
+      // verbatim in their message text — a first-connect failure otherwise
+      // reaches `subscribe()`'s own caller via this completer unmodified,
+      // risking a token leak into any future error-reporting/telemetry that
+      // logs a subscription stream's error (security-reviewer HIGH finding).
+      // An established connection dying never reaches a subscriber at all
+      // any more (§14.2.2's inverted close contract), so this sanitization
+      // only ever matters for the still-pending-first-connect case.
+      ack.completeError(
+        const InternalError('Could not connect to the live-updates server.'),
+      );
     }
-    for (final StreamController<Response> controller in _subscriptions.values) {
-      controller.addError(error);
-      unawaited(controller.close());
-    }
-    // `_closeChannel()` reaches real I/O (`sink.close()`) that this
-    // codebase's own fake test double cannot model throwing, but a real,
-    // already-broken `web_socket_channel` sink can. A close failure is
-    // swallowed as best-effort — there's nothing further to *do* about it,
-    // and nothing awaits this method's own return for it to usefully
-    // propagate to — but `_resetConnectionState()` in `finally` must still
-    // run regardless: without it, a throw here would leave `_isTearingDown`
-    // stuck `true` forever, turning every later teardown call into a silent
-    // no-op and permanently preventing the client from ever reconnecting
-    // (code-reviewer MEDIUM finding).
-    try {
-      await _closeChannel();
-    } on Object {
-      // Best-effort — see above.
-    } finally {
-      _resetConnectionState();
+    await _closeChannelAndResetState();
+    if (wasEstablished && _subscriptions.isNotEmpty) {
+      _scheduleReconnect();
     }
   }
 
@@ -430,18 +506,10 @@ class AppSyncSubscriptionClient {
       return;
     }
     _isTearingDown = true;
-    for (final StreamController<Response> controller in _subscriptions.values) {
-      unawaited(controller.close());
-    }
-    // See [_handleChannelError] for the identical try/on/finally shape and
-    // why each part of it is needed (a close failure is best-effort and
-    // swallowed; the state reset must still run regardless, in `finally`).
-    try {
-      await _closeChannel();
-    } on Object {
-      // Best-effort — see [_handleChannelError].
-    } finally {
-      _resetConnectionState();
+    final bool wasEstablished = _isConnected;
+    await _closeChannelAndResetState();
+    if (wasEstablished && _subscriptions.isNotEmpty) {
+      _scheduleReconnect();
     }
   }
 
@@ -464,8 +532,38 @@ class AppSyncSubscriptionClient {
     await _channel?.sink.close();
   }
 
+  /// Shared by every teardown path ([_handleChannelError],
+  /// [_handleChannelDone], [_disconnect]) — each previously repeated this
+  /// same try/on/finally verbatim (code-reviewer MEDIUM finding); now a
+  /// single copy to keep in sync. [_closeChannel] reaches real I/O
+  /// (`sink.close()`) that this codebase's own fake test double cannot model
+  /// throwing, but a real, already-broken `web_socket_channel` sink can. A
+  /// close failure is swallowed as best-effort — there's nothing further to
+  /// *do* about it, and nothing awaits this call's own return for it to
+  /// usefully propagate to — but [_resetConnectionState] in `finally` must
+  /// still run regardless: without it, a throw here would leave
+  /// `_isTearingDown` stuck `true` forever, turning every later teardown
+  /// call into a silent no-op and permanently preventing the client from
+  /// ever reconnecting.
+  Future<void> _closeChannelAndResetState() async {
+    try {
+      await _closeChannel();
+    } on Object {
+      // Best-effort — see this method's own doc.
+    } finally {
+      _resetConnectionState();
+    }
+  }
+
+  /// Resets per-connection-episode bookkeeping. Deliberately does **not**
+  /// clear [_subscriptions] (W8 S3, §14.2.2's inverted close contract) — a
+  /// transient teardown must leave registered subscriptions in place so a
+  /// scheduled reconnect can resubscribe them; only
+  /// [_closeAllSubscriptionsWithTerminalError] (a terminal outcome) or a
+  /// caller's own cancellation ever removes an entry. Also deliberately does
+  /// not touch [_reconnectTimer]/[_reconnectPolicy] — those are owned by the
+  /// reconnect-scheduling logic, not by per-connection teardown.
   void _resetConnectionState() {
-    _subscriptions.clear();
     _channel = null;
     _connectionAck = null;
     _connectTimeoutTimer?.cancel();
@@ -475,10 +573,22 @@ class AppSyncSubscriptionClient {
     _keepAliveWatchdog = null;
     _keepAliveTimeout = _defaultKeepAliveTimeout;
     _acknowledgedSubscriptionIds.clear();
+    _pendingRefetchAcks.clear();
+    _isConnected = false;
     _isTearingDown = false;
+    _connectionState.value = ConnectionState.disconnected;
   }
 
   Future<void> _disconnect() async {
+    // An explicit disconnect must win over a reconnect already scheduled
+    // from an earlier transient failure — otherwise a caller who
+    // deliberately disconnects (S4's future app-backgrounding call site)
+    // could still see the client silently reconnect moments later from a
+    // timer armed before this call (flutter-reviewer MEDIUM finding).
+    // Unconditional, ahead of the teardown guard below: a pending timer can
+    // exist independently of whether a teardown is currently in flight.
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     // See the identical guard, and why it's needed, in [_handleChannelError]
     // — a caller of the public [disconnect] can race an already-in-flight
     // teardown the same way `onError`/`onDone` can race each other.
@@ -486,15 +596,140 @@ class AppSyncSubscriptionClient {
       return;
     }
     _isTearingDown = true;
-    // See [_handleChannelError] for the identical try/on/finally shape and
-    // why each part of it is needed (a close failure is best-effort and
-    // swallowed; the state reset must still run regardless, in `finally`).
+    await _closeChannelAndResetState();
+  }
+
+  /// Arms the next reconnect attempt after [ReconnectPolicy]'s own delay —
+  /// called only when an *established* connection died with at least one
+  /// subscriber still registered (see [_handleChannelError]/
+  /// [_handleChannelDone]).
+  void _scheduleReconnect() {
+    _connectionState.value = ConnectionState.disconnected;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(_reconnectPolicy.nextDelay(), () {
+      unawaited(_attemptReconnect());
+    });
+  }
+
+  /// Fetches a fresh token, reconnects, and resubscribes every still-
+  /// registered id — or, on failure, either schedules the next rung of the
+  /// backoff ladder (a transient failure) or closes every subscriber with
+  /// [UnauthorizedError] (an unrecoverable one).
+  Future<void> _attemptReconnect() async {
+    _reconnectTimer = null;
+    if (_subscriptions.isEmpty) {
+      // Every subscriber cancelled during the backoff wait — nothing left to
+      // reconnect for. A pending retry must not resurrect a connection
+      // nobody wants anymore (§14.3 S3's own cancellation-during-backoff
+      // case).
+      return;
+    }
+    // Snapshotted *before* the token-fetch await below, which is a real
+    // suspension point (the real `IdTokenProvider` can take genuine
+    // wall-clock time). A brand-new `subscribe()` call racing ahead during
+    // that gap registers itself in `_subscriptions` and sends its own first
+    // `start` frame directly — it must not also be swept into
+    // `_resubscribeAll` as if it were a survivor of the dead connection, or
+    // it would receive a duplicate `start` frame and a spurious refetch
+    // signal on what is actually its very first-ever `start_ack`
+    // (flutter-reviewer HIGH finding).
+    final Set<String> idsToResubscribe = _subscriptions.keys.toSet();
+    _connectionState.value = ConnectionState.connecting;
+    final String? idToken = await _fetchIdTokenForReconnect();
+    if (idToken == null || idToken.isEmpty) {
+      _closeAllSubscriptionsWithTerminalError(
+        const UnauthorizedError('You are signed out. Sign in again to continue.'),
+      );
+      return;
+    }
     try {
-      await _closeChannel();
+      await _ensureConnected(idToken);
+    } on UnauthorizedError catch (error) {
+      // A freshly-fetched token was rejected — retrying with the same
+      // provider would just fail the same way forever (§14.3 S3).
+      _closeAllSubscriptionsWithTerminalError(error);
+      return;
     } on Object {
-      // Best-effort — see [_handleChannelError].
-    } finally {
-      _resetConnectionState();
+      // Any other failure (a connect timeout, a still-unreachable network)
+      // is transient — try again after the next backoff delay.
+      _scheduleReconnect();
+      return;
+    }
+    _resubscribeAll(idToken, idsToResubscribe);
+  }
+
+  Future<String?> _fetchIdTokenForReconnect() async {
+    try {
+      return await _idTokenProvider();
+    } on Object {
+      return null;
     }
   }
+
+  /// Re-issues a `start` frame for every subscription that both survived the
+  /// dead connection ([idsToResubscribe], snapshotted before this reconnect
+  /// attempt's own token fetch) and is still registered now, using its own
+  /// originally-registered query/variables and the just-fetched token
+  /// (never a token cached from the original `subscribe()` call — §14.3
+  /// S3's "fresh token on every attempt"). Marks each such id pending a
+  /// refetch signal, delivered once its `start_ack` actually lands (see
+  /// [_handleStartAck]). A brand-new subscription registered *during* this
+  /// reconnect attempt (not in [idsToResubscribe]) already sent its own
+  /// first `start` frame directly from `subscribe()`'s own `onListen` and
+  /// must not be re-sent here nor marked pending a refetch — it has no prior
+  /// connection to have missed anything from.
+  void _resubscribeAll(String idToken, Set<String> idsToResubscribe) {
+    final String host = appSyncApiHost(httpGraphQlUrl);
+    for (final MapEntry<String, _SubscriptionRegistration> entry
+        in _subscriptions.entries) {
+      if (!idsToResubscribe.contains(entry.key)) {
+        continue;
+      }
+      _pendingRefetchAcks.add(entry.key);
+      _channel!.sink.add(
+        jsonEncode(
+          startFrame(
+            id: entry.key,
+            query: entry.value.query,
+            variables: entry.value.variables,
+            idToken: idToken,
+            host: host,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Terminal outcome: closes every subscriber with [error] and abandons the
+  /// reconnect ladder entirely — used only for an unrecoverable auth
+  /// failure (a null token, or a `connection_error` against a
+  /// freshly-fetched one), where retrying would loop against a credential
+  /// that will never become valid on its own (§14.3 S3).
+  void _closeAllSubscriptionsWithTerminalError(Object error) {
+    for (final _SubscriptionRegistration registration
+        in _subscriptions.values) {
+      registration.controller.addError(error);
+      unawaited(registration.controller.close());
+    }
+    _subscriptions.clear();
+    _pendingRefetchAcks.clear();
+    _reconnectPolicy.reset();
+    _connectionState.value = ConnectionState.disconnected;
+  }
+}
+
+/// One caller's registration on the shared connection — enough to re-issue
+/// its `start` frame verbatim on a reconnect (W8 S3), which a bare
+/// `StreamController` alone can't do since the query/variables it was
+/// opened with are otherwise discarded after the initial `start` send.
+class _SubscriptionRegistration {
+  _SubscriptionRegistration({
+    required this.controller,
+    required this.query,
+    required this.variables,
+  });
+
+  final StreamController<Response> controller;
+  final String query;
+  final Map<String, Object?> variables;
 }

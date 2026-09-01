@@ -32,6 +32,7 @@ void main() {
       final _RecordingLink terminating = _RecordingLink();
       final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'the-id-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => FakeWebSocketChannel(),
       );
       final Link link = Link.from(<Link>[
@@ -50,6 +51,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'the-id-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
       final Link link = Link.from(<Link>[
@@ -77,6 +79,7 @@ void main() {
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
       final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
         httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'the-id-token',
         channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
       );
       final AppSyncWebSocketLink link = AppSyncWebSocketLink(
