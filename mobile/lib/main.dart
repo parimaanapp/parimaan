@@ -30,7 +30,7 @@ void main() {
         // Reads `authRepositoryProvider` for id tokens, so it must be
         // overridden after it — Riverpod resolves lazily, but keeping the
         // order readable matters more than the mechanics here.
-        ferryClientOverride(config),
+        ...ferryClientOverride(config),
         appDatabaseOverride(),
       ],
     ),
