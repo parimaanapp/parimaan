@@ -14,6 +14,26 @@ class FakeWebSocketChannel with StreamChannelMixin<Object?> implements WebSocket
   final List<Map<String, Object?>> sentFrames = <Map<String, Object?>>[];
   bool closed = false;
 
+  /// How many times `sink.close()` has been invoked — a redundant second
+  /// teardown calling this again is exactly the failure shape an
+  /// `_isTearingDown`-style guard exists to prevent, so a test can assert
+  /// this stays at 1 rather than only checking [closed] (which a second
+  /// close call would leave unchanged, silently hiding the redundancy).
+  int closeCallCount = 0;
+
+  /// When set, `sink.close()` suspends on this future before marking
+  /// [closed] — lets a test hold one teardown's own close call open long
+  /// enough to deterministically race a second, independent trigger against
+  /// it, rather than hoping real timing happens to overlap.
+  Future<void>? closeGate;
+
+  /// When set, `sink.close()` throws this instead of completing — the shape
+  /// a real, already-broken `web_socket_channel` sink can produce, which
+  /// this fake otherwise cannot model. Lets a test prove teardown state
+  /// (e.g. `AppSyncSubscriptionClient`'s own `_isTearingDown`) is still
+  /// cleaned up even when closing the real transport itself fails.
+  Object? closeError;
+
   @override
   Stream<Object?> get stream => _incoming.stream;
 
@@ -62,6 +82,15 @@ class _FakeWebSocketSink implements WebSocketSink {
 
   @override
   Future<dynamic> close([int? closeCode, String? closeReason]) async {
+    _channel.closeCallCount++;
+    final Future<void>? gate = _channel.closeGate;
+    if (gate != null) {
+      await gate;
+    }
+    final Object? error = _channel.closeError;
+    if (error != null) {
+      throw error;
+    }
     _channel.closed = true;
   }
 
