@@ -15,8 +15,10 @@ export const productionDeps: MeResolverDeps = { getPool };
 
 /**
  * Direct-Lambda resolver for `Query.me`: extracts and validates the caller's
- * Cognito identity, upserts their `users` row (first-login creates it,
- * every login refreshes it), and returns the mapped `User` — deliberately
+ * Cognito identity, resolves their `users` row via `resolveCallerUser`
+ * (first-login upserts it; a login within the caller-identity cache's 30s
+ * TTL — W8 S6, `repositories/callerUser.ts` — is served the cached row
+ * rather than re-upserting), and returns the mapped `User` — deliberately
  * without a `households` key (see `resolvers/userHouseholds.ts`, the
  * separate field resolver that breaks the User↔HouseholdMembership↔User
  * cycle).

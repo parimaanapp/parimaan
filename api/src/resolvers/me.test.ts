@@ -1,10 +1,11 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { Pool } from 'pg';
 import type { AppSyncResolverEvent } from 'aws-lambda';
 import { startTestDatabase, truncateAll } from '../testing/postgres.js';
 import type { TestDatabase } from '../testing/postgres.js';
 import { createMeHandler } from './me.js';
 import { UnauthorizedError } from '../errors.js';
+import { resetCallerUserCacheForTesting } from '../repositories/callerUser.js';
 
 const buildEvent = (
   identityOverrides: Record<string, unknown> | null,
@@ -58,6 +59,14 @@ describe('me resolver', () => {
     await truncateAll(db.adminClient);
   });
 
+  beforeEach(() => {
+    // Every test in this file authenticates as the same 'fake-user-sub' —
+    // without this, W8 S6's caller-identity cache would serve a later
+    // test's `resolveCallerUser` call from an earlier test's cached row,
+    // even though `truncateAll` just wiped the underlying table.
+    resetCallerUserCacheForTesting();
+  });
+
   const countUsers = async (): Promise<number> => {
     const result = await db.adminClient.query('SELECT 1 FROM users');
     return result.rows.length;
@@ -90,11 +99,16 @@ describe('me resolver', () => {
     expect(await countUsers()).toBe(1);
   });
 
-  it('second login with the same sub still yields one row, reflecting a changed name', async () => {
+  it('second login with the same sub still yields one row; a changed name is served stale until the caller-identity cache clears (W8 S6)', async () => {
     await handler(buildEvent({ name: 'First Name' }));
     const result = await handler(buildEvent({ name: 'Second Name' }));
     expect(await countUsers()).toBe(1);
-    expect(result.displayName).toBe('Second Name');
+    expect(result.displayName).toBe('First Name');
+
+    resetCallerUserCacheForTesting();
+    const afterCacheClears = await handler(buildEvent({ name: 'Second Name' }));
+    expect(await countUsers()).toBe(1);
+    expect(afterCacheClears.displayName).toBe('Second Name');
   });
 
   it('two concurrent invocations with the same sub still yield one row (ON CONFLICT race)', async () => {
