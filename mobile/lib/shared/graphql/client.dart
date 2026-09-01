@@ -60,23 +60,55 @@ final Provider<Client> ferryClientProvider = Provider<Client>(
   ),
 );
 
-/// The production [Client] for [config], wired to the app's real
-/// [AuthRepository] for tokens.
+/// Injection point for the single app-wide [AppSyncSubscriptionClient] — the
+/// same instance [ferryClientProvider]'s client is wired over, exposed
+/// separately so the app-lifecycle observer (W8 S4) can call
+/// [AppSyncSubscriptionClient.disconnect]/[AppSyncSubscriptionClient.reconnectNow]
+/// on it directly, without needing a route from the Ferry [Client] back down
+/// to the transport it happens to use. Same no-default shape as
+/// [ferryClientProvider] and for the identical reason.
+final Provider<AppSyncSubscriptionClient> subscriptionClientProvider =
+    Provider<AppSyncSubscriptionClient>(
+      (Ref ref) => throw UnimplementedError(
+        'subscriptionClientProvider must be overridden — see main.dart '
+        '(production) or override it directly in the ProviderScope under '
+        'test (see test/app/subscription_lifecycle_observer_test.dart).',
+      ),
+    );
+
+/// The production [Client] and [AppSyncSubscriptionClient] for [config],
+/// wired to the app's real [AuthRepository] for tokens.
 ///
-/// A function rather than a provider so `main.dart` stays the only place that
-/// chooses an environment, exactly as it already is for `AuthRepository`.
-Override ferryClientOverride(AppConfig config) =>
+/// A function rather than providers directly so `main.dart` stays the only
+/// place that chooses an environment, exactly as it already is for
+/// `AuthRepository`. Returns both overrides together — [subscriptionClientProvider]
+/// must expose the *same instance* [ferryClientProvider]'s client is built
+/// over, not a second, independently-constructed one, so building them apart
+/// would either duplicate the socket or force a fragile ordering dependency
+/// between two separate override calls.
+List<Override> ferryClientOverride(AppConfig config) {
+  return <Override>[
+    subscriptionClientProvider.overrideWith((Ref ref) {
+      final AppSyncSubscriptionClient subscriptionClient =
+          AppSyncSubscriptionClient(
+            httpGraphQlUrl: config.graphQlUrl,
+            idTokenProvider: ref.watch(authRepositoryProvider).currentIdToken,
+          );
+      ref.onDispose(subscriptionClient.disconnect);
+      return subscriptionClient;
+    }),
+    // Reads `subscriptionClientProvider` rather than constructing its own
+    // `AppSyncSubscriptionClient` — the app-lifecycle observer's calls
+    // through that provider must reach the exact same instance this client
+    // subscribes over, not an independent second one.
     ferryClientProvider.overrideWith((Ref ref) {
-      final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
-        httpGraphQlUrl: config.graphQlUrl,
-        idTokenProvider: ref.watch(authRepositoryProvider).currentIdToken,
-      );
       final Client client = buildFerryClient(
         config: config,
         idTokenProvider: ref.watch(authRepositoryProvider).currentIdToken,
-        subscriptionClient: subscriptionClient,
+        subscriptionClient: ref.watch(subscriptionClientProvider),
       );
       ref.onDispose(client.dispose);
-      ref.onDispose(subscriptionClient.disconnect);
       return client;
-    });
+    }),
+  ];
+}
