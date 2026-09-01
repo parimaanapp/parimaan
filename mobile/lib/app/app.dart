@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../shared/ui/theme.dart';
 import 'join_deep_link_listener.dart';
 import 'router.dart';
+import 'subscription_lifecycle_observer.dart';
 
 /// The app root: a [ProviderScope] over the routed [MaterialApp].
 ///
@@ -18,14 +19,18 @@ class ParimaanApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The deep-link listener wraps the router rather than living inside it: it
-    // only needs a `WidgetRef` and a place to be mounted for the app's whole
-    // life, and keeping it outside means `goRouterProvider` has no dependency
-    // on the `app_links` plugin — which is what lets every router test build a
-    // real router with no platform channels available.
+    // The deep-link listener and the subscription-lifecycle observer both
+    // wrap the router rather than living inside it: neither needs anything
+    // but a `WidgetRef` and a place to be mounted for the app's whole life,
+    // and keeping them outside means `goRouterProvider` has no dependency on
+    // `app_links` or on `subscriptionClientProvider` — which is what lets
+    // every router test build a real router with no platform channels or
+    // GraphQL client available.
     return ProviderScope(
       overrides: overrides,
-      child: const JoinDeepLinkListener(child: _RoutedApp()),
+      child: const JoinDeepLinkListener(
+        child: SubscriptionLifecycleObserver(child: _RoutedApp()),
+      ),
     );
   }
 }

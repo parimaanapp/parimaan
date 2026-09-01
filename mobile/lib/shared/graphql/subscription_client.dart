@@ -57,6 +57,14 @@ enum ConnectionState { disconnected, connecting, connected }
 /// treated as an unrecoverable auth failure: the ladder stops and every
 /// subscriber closes with [UnauthorizedError] rather than retrying forever
 /// against a credential that will never become valid on its own.
+///
+/// W8 S4 adds app-lifecycle wiring (§14.3 S4): [disconnect] and
+/// [reconnectNow] are the two entry points the app-root lifecycle observer
+/// (`subscription_lifecycle_observer.dart`) drives — background calls
+/// [disconnect], foreground calls [reconnectNow]. The two are serialized
+/// against each other (see [_enqueueLifecycleOperation]) since a rapid
+/// background/foreground pair can otherwise arrive faster than either call's
+/// own async teardown/connect settles.
 class AppSyncSubscriptionClient {
   AppSyncSubscriptionClient({
     required this.httpGraphQlUrl,
@@ -78,6 +86,33 @@ class AppSyncSubscriptionClient {
   final IdTokenProvider _idTokenProvider;
   final WebSocketChannelFactory _channelFactory;
   final ReconnectPolicy _reconnectPolicy;
+
+  /// Serializes the two *externally callable* lifecycle entry points,
+  /// [disconnect] and [reconnectNow] — the only two calls the app-lifecycle
+  /// observer (W8 S4) issues, and the ones a rapid background/foreground/
+  /// background sequence can otherwise interleave. Both `_isConnected` and
+  /// `_isTearingDown` only settle once a teardown's own async close actually
+  /// finishes; without this queue, a `reconnectNow()` call arriving while an
+  /// immediately-preceding `disconnect()` is still mid-close would read
+  /// `_isConnected` as still `true` (not yet reset) and silently no-op,
+  /// permanently swallowing the foreground signal it was supposed to act on.
+  /// Internal, teardown-triggered reconnects (the ladder's own `Timer`) are
+  /// deliberately not queued through here — those already serialize
+  /// correctly against each other via `_isTearingDown`, and are never
+  /// triggered by two calls arriving back-to-back with no elapsed time the
+  /// way a lifecycle callback pair can.
+  Future<void> _lifecycleOperationQueue = Future<void>.value();
+
+  Future<void> _enqueueLifecycleOperation(Future<void> Function() operation) {
+    final Future<void> result = _lifecycleOperationQueue.then(
+      (_) => operation(),
+    );
+    // Swallow so one failed operation doesn't poison the queue for the next
+    // — the caller of *this* call still observes the real result via
+    // `result`, returned below.
+    _lifecycleOperationQueue = result.catchError((Object _) {});
+    return result;
+  }
 
   WebSocketChannel? _channel;
   StreamSubscription<Object?>? _channelSubscription;
@@ -186,6 +221,20 @@ class AppSyncSubscriptionClient {
       onListen: () async {
         try {
           await _ensureConnected(idToken);
+        } on _ConnectAbortedByDisconnect {
+          // Never surfaced verbatim — see [_ConnectAbortedByDisconnect]'s
+          // own doc. A public, generic error: the caller (a screen whose
+          // subscribe raced an app-background event) gets a real,
+          // actionable failure rather than a silently hanging stream.
+          if (!cancelled) {
+            controller.addError(
+              const InternalError(
+                'Disconnected before the connection was established.',
+              ),
+            );
+            await controller.close();
+          }
+          return;
         } on Object catch (error) {
           if (!cancelled) {
             controller.addError(error);
@@ -252,10 +301,63 @@ class AppSyncSubscriptionClient {
 
   /// Closes the connection immediately, regardless of active subscribers.
   /// Subscriptions themselves are **not** removed (W8 S3, §14.2.2's inverted
-  /// close contract) — only the transport is torn down. A future caller
-  /// (S4's app-lifecycle wiring) can rely on this to mean "network gone,
-  /// listeners intact," not "everyone must resubscribe from scratch."
-  Future<void> disconnect() => _disconnect();
+  /// close contract) — only the transport is torn down. The app-lifecycle
+  /// observer (W8 S4) relies on this to mean "network gone, listeners
+  /// intact," not "everyone must resubscribe from scratch."
+  ///
+  /// Aborts any in-flight connect attempt **immediately**, ahead of
+  /// [_enqueueLifecycleOperation]'s own queue position — otherwise a
+  /// `disconnect()` arriving while a queued [reconnectNow]'s own handshake
+  /// is still pending would sit behind it for up to the full connect
+  /// timeout before the transport actually starts tearing down, undercutting
+  /// the whole point of backgrounding (a live socket left trying to connect
+  /// in the background is exactly the battery/Aurora-load cost this class
+  /// exists to avoid — code-reviewer MEDIUM finding). The actual teardown
+  /// (closing the socket, resetting state) still goes through the queue as
+  /// before, so it only runs once whatever operation was ahead of it has
+  /// genuinely finished.
+  Future<void> disconnect() {
+    final Completer<void>? ack = _connectionAck;
+    if (ack != null && !ack.isCompleted) {
+      ack.completeError(const _ConnectAbortedByDisconnect());
+    }
+    return _enqueueLifecycleOperation(_disconnect);
+  }
+
+  /// Forces an immediate reconnect attempt for every still-registered
+  /// subscription, bypassing any pending backoff wait and resetting
+  /// [ReconnectPolicy] back to its first rung (W8 S4, §14.3 S4) — the
+  /// app-foreground case: a user who reopens the app after any length of
+  /// time in the background deserves an immediate retry, not whatever rung
+  /// the ladder happened to be sitting on when it was backgrounded. Queued
+  /// against [disconnect] — see [_enqueueLifecycleOperation].
+  ///
+  /// A no-op in the cases that would otherwise do something wrong: no
+  /// registered subscriptions at all (nothing to reconnect for — mirrors
+  /// [_attemptReconnect]'s own guard, and covers "foreground with no active
+  /// subscriptions opens no connection"), or a connection that is already
+  /// established *or already being attempted* (`_connectionAck != null`
+  /// covers both — calling this while genuinely still connected would still
+  /// route through [_ensureConnected]'s shared-completer reuse and open no
+  /// *second* transport, but it would needlessly re-issue a `start` frame
+  /// and a synthetic refetch for every subscription that never actually
+  /// lost its connection at all; calling it while a connect attempt — the
+  /// ladder's own non-queued `_attemptReconnect()`, triggered independently
+  /// by its `Timer` — is already in flight would instead race a *second*,
+  /// concurrent `_attemptReconnect()` against it, both eventually
+  /// re-subscribing every id and sending duplicate `start` frames once the
+  /// shared completer resolves — flutter-review HIGH finding).
+  Future<void> reconnectNow() => _enqueueLifecycleOperation(_reconnectNow);
+
+  Future<void> _reconnectNow() async {
+    if (_subscriptions.isEmpty || _connectionAck != null) {
+      return;
+    }
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectPolicy.reset();
+    await _attemptReconnect();
+  }
 
   Future<void> _ensureConnected(String idToken) {
     final Completer<void>? existingAck = _connectionAck;
@@ -606,6 +708,17 @@ class AppSyncSubscriptionClient {
       return;
     }
     _isTearingDown = true;
+    // A connection attempt can be genuinely in flight when this is called —
+    // a fresh `subscribe()`'s own `onListen`, or an in-flight ladder
+    // `_attemptReconnect()`, both `await _ensureConnected(...)`'s shared
+    // completer. Failing it here, before tearing the transport down, is
+    // what lets that awaiter resolve at all instead of hanging forever
+    // (flutter-review HIGH finding) — `_resetConnectionState()` below would
+    // otherwise null `_connectionAck` out from under it, uncompleted.
+    final Completer<void>? ack = _connectionAck;
+    if (ack != null && !ack.isCompleted) {
+      ack.completeError(const _ConnectAbortedByDisconnect());
+    }
     await _closeChannelAndResetState();
   }
 
@@ -656,6 +769,13 @@ class AppSyncSubscriptionClient {
     }
     try {
       await _ensureConnected(idToken);
+    } on _ConnectAbortedByDisconnect {
+      // An explicit disconnect() aborted this very attempt mid-flight (e.g.
+      // the app backgrounded before this attempt's own handshake finished)
+      // — that call already cancelled any pending reconnect timer, and the
+      // ladder must not itself resurrect one right after (§14.3 S4: it does
+      // not run while deliberately disconnected).
+      return;
     } on UnauthorizedError catch (error) {
       // A freshly-fetched token was rejected — retrying with the same
       // provider would just fail the same way forever (§14.3 S3).
@@ -728,6 +848,24 @@ class AppSyncSubscriptionClient {
     _reconnectPolicy.reset();
     _connectionState.value = ConnectionState.disconnected;
   }
+}
+
+/// Thrown internally to fail a still-pending [Completer] the moment an
+/// explicit [AppSyncSubscriptionClient.disconnect] call aborts an in-flight
+/// connection attempt (W8 S4) — never left silently hanging (flutter-review
+/// HIGH finding: without this, a `disconnect()` racing a still-connecting
+/// `_ensureConnected` used to null out `_connectionAck` without ever
+/// completing it, leaving that awaiter — a fresh `subscribe()`'s own
+/// `onListen`, or an in-flight ladder `_attemptReconnect()` — suspended
+/// forever). A distinct type, not a generic [InternalError], specifically so
+/// [_attemptReconnect] can tell "deliberately disconnected mid-attempt"
+/// (must not reschedule — the ladder does not run while backgrounded) apart
+/// from a genuine transient failure like a connect timeout (must
+/// reschedule) without relying on any shared, timing-sensitive flag.
+/// [subscribe]'s own `onListen` catch maps this to a public [InternalError]
+/// before it ever reaches a subscriber — this type itself is never surfaced.
+class _ConnectAbortedByDisconnect implements Exception {
+  const _ConnectAbortedByDisconnect();
 }
 
 /// One caller's registration on the shared connection — enough to re-issue
