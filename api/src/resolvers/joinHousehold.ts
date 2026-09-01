@@ -3,6 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { extractCallerIdentity } from '../auth/identity.js';
+import { evictMembershipCache } from '../auth/requireHouseholdMember.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
@@ -76,6 +77,12 @@ export const productionDeps: JoinHouseholdResolverDeps = {
  * Deliberately has NO `requireHouseholdMember` gate anywhere in this
  * resolver — the caller is by definition not yet a member, that's the whole
  * point of this mutation (same as `createHousehold`, which also has none).
+ *
+ * Still calls `evictMembershipCache` after a successful join
+ * (E2E_MVP_PLAN.md §14.2.8, D2 part 3): this is one of the four
+ * membership-mutating/destructive resolvers whose mutation must clear this
+ * container's own stale cache entry for `(userId, householdId)` — best-
+ * effort, container-local only.
  */
 const JOIN_INSERT_SAVEPOINT = 'join_household_insert_attempt';
 
@@ -162,6 +169,7 @@ export const createJoinHouseholdHandler =
         }
 
         await joinAsMember(client, household.id, callerUser.id, deps);
+        evictMembershipCache(callerUser.id, household.id);
 
         return buildGraphQLHousehold(client, household);
       },

@@ -3,7 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { extractCallerIdentity } from '../auth/identity.js';
-import { requireHouseholdMember } from '../auth/requireHouseholdMember.js';
+import { evictMembershipCache, requireHouseholdMember } from '../auth/requireHouseholdMember.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
@@ -127,6 +127,12 @@ const rotateToFreshCode = async (
  * Not idempotent, unlike `joinHousehold`: every successful call invalidates
  * the previous code for everyone holding it. That is the entire point of the
  * mutation, and why it is rate-limited more tightly than joining.
+ *
+ * `bypassCache: true` on `requireHouseholdMember` (E2E_MVP_PLAN.md §14.2.8,
+ * D2 part 2): this is one of the four membership-mutating/destructive
+ * resolvers that must always read a live role, never a possibly-stale
+ * cached one — the `Household!` this returns includes `inviteCode`, exactly
+ * what a just-removed member should never receive.
  */
 export const createRotateInviteCodeHandler =
   (deps: RotateInviteCodeResolverDeps) =>
@@ -155,7 +161,7 @@ export const createRotateInviteCodeHandler =
     return withUserTransaction(
       callerUser.id,
       async (client) => {
-        await requireHouseholdMember(client, callerUser.id, householdId);
+        await requireHouseholdMember(client, callerUser.id, householdId, { bypassCache: true });
 
         const household = await findHouseholdById(client, householdId);
         if (household === null) {
@@ -172,6 +178,9 @@ export const createRotateInviteCodeHandler =
         }
 
         const rotated = await rotateToFreshCode(client, household, deps);
+        // Best-effort, this container only (D2 part 3) — see
+        // `requireHouseholdMember.ts`'s own doc on `evictMembershipCache`.
+        evictMembershipCache(callerUser.id, householdId);
         return buildGraphQLHousehold(client, rotated);
       },
       pool,

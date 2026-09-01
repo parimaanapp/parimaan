@@ -1,6 +1,7 @@
 import type { AppSyncResolverEvent } from 'aws-lambda';
 import type { Pool } from 'pg';
 import { extractCallerIdentity } from '../auth/identity.js';
+import { evictMembershipCache } from '../auth/requireHouseholdMember.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
@@ -52,6 +53,12 @@ export const productionDeps: LeaveHouseholdResolverDeps = { getPool };
  * (the caller can only ever affect their own membership row), so the abuse
  * shape `joinHousehold`/`rotateInviteCode` are limited against does not
  * exist here.
+ *
+ * Still calls `evictMembershipCache` after an actual deletion
+ * (E2E_MVP_PLAN.md §14.2.8, D2 part 3): a genuinely-removed member's stale
+ * "yes, member" cache entry in this container must not outlive their own
+ * leave call by even the ≤30s window. Not called on the already-not-a-member
+ * short-circuit — there is nothing cached to evict, and nothing changed.
  */
 export const createLeaveHouseholdHandler =
   (deps: LeaveHouseholdResolverDeps) =>
@@ -92,6 +99,7 @@ export const createLeaveHouseholdHandler =
         // not a member of this household", which is exactly what the caller
         // asked for — success, not an error.
         await deleteNonPrimaryMembership(client, householdId, callerUser.id);
+        evictMembershipCache(callerUser.id, householdId);
         return true;
       },
       pool,
