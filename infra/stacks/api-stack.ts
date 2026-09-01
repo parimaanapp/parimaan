@@ -230,6 +230,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Subscription',
     fieldName: 'onHouseholdChanged',
   },
+  {
+    id: 'NotificationPreferences',
+    entryFile: 'notificationPreferences.ts',
+    typeName: 'Query',
+    fieldName: 'notificationPreferences',
+  },
+  {
+    id: 'UpdateNotificationPreferences',
+    entryFile: 'updateNotificationPreferences.ts',
+    typeName: 'Mutation',
+    fieldName: 'updateNotificationPreferences',
+  },
 ];
 
 /**

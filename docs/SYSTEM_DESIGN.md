@@ -357,6 +357,19 @@ type HouseholdMembership {
 enum HouseholdRole { primary member }
 enum SubscriptionStatus { free trial active past_due cancelled }
 
+# SHIPPED W8 S8 (§14.2.6/§14.2.7 D1). Per-user, not household-scoped — the
+# caller's own row only, never a fellow member's (see notification_preferences'
+# per-user RLS policy, §7.1, W8 S7). fcm_token is deliberately NOT a field
+# here — a device push credential, W20 registers it via its own mutation, no
+# client ever reads it back.
+type NotificationPreferences {
+  householdId: ID!
+  listChanges: Boolean!
+  mealReminder: Boolean!
+  expiry: Boolean!
+  activity: Boolean!
+}
+
 type HouseholdSettings {
   householdId: ID!
   mealsEnabled: [MealType!]!
@@ -541,6 +554,10 @@ type Query {
   menu(householdId: ID!, weekStartDate: AWSDateTime!): Menu
   shoppingList(householdId: ID!, id: ID): ShoppingList
   cookFromPantry(householdId: ID!, vibe: String): [Recipe!]!   # AI
+  # SHIPPED W8 S8. Always the CALLER's own row for householdId — no argument
+  # for a target user. A caller with no row yet gets the TRUE defaults
+  # computed in place, never an implicit write.
+  notificationPreferences(householdId: ID!): NotificationPreferences!
 }
 
 # ---------- Mutations ----------
@@ -640,6 +657,14 @@ type Mutation {
 
   # Upload URL
   getPantryPhotoUploadUrl(householdId: ID!): PresignedUpload!
+
+  # Notification preferences. SHIPPED W8 S8 (§14.2.6 D1). Always writes the
+  # CALLER's own (userId, householdId) row — no argument for a target user.
+  # The first successful call for a pair both creates and applies the patch
+  # in one INSERT ... ON CONFLICT DO UPDATE; every call after that is a
+  # genuine partial update (absent field = unchanged, explicit null rejected,
+  # the updateHouseholdSettings/updatePantryItem convention).
+  updateNotificationPreferences(householdId: ID!, input: NotificationPreferencesPatchInput!): NotificationPreferences!
 }
 
 type PresignedUpload {

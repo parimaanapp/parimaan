@@ -1710,6 +1710,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiNotificationPreferencesDataSource8654A40E": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "NotificationPreferencesFnF3B9ECE0",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "NotificationPreferencesDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiNotificationPreferencesDataSourceServiceRole3A76473A",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiNotificationPreferencesDataSourceServiceRole3A76473A": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiNotificationPreferencesDataSourceServiceRoleDefaultPolicyE94A155D": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "NotificationPreferencesFnF3B9ECE0",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "NotificationPreferencesFnF3B9ECE0",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiNotificationPreferencesDataSourceServiceRoleDefaultPolicyE94A155D",
+        "Roles": [
+          {
+            "Ref": "ApiNotificationPreferencesDataSourceServiceRole3A76473A",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiNotificationPreferencesResolver7ED1B36C": {
+      "DependsOn": [
+        "ApiNotificationPreferencesDataSource8654A40E",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "NotificationPreferencesDataSource",
+        "FieldName": "notificationPreferences",
+        "Kind": "UNIT",
+        "TypeName": "Query",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiOnHouseholdChangedDataSource4CF093B9": {
       "Properties": {
         "ApiId": {
@@ -2745,6 +2850,19 @@ type Query {
   identically with \`NOT_FOUND\`.
   """
   recipe(id: ID!): Recipe!
+
+  """
+  Returns the caller's own notification preferences for \`householdId\`.
+  Requires the caller to already be a member of \`householdId\`. A caller with
+  no row yet (never having saved a preference) gets the SD-specified \`TRUE\`
+  defaults computed in place — this query never implicitly writes a row
+  (E2E_MVP_PLAN.md §14.2.8's S8 RED-test list: "decide and assert, don't
+  leave it emergent" — decided as a pure read, no write-on-read side effect).
+  \`fcm_token\` is deliberately absent from \`NotificationPreferences\` entirely
+  (§14.2.6) — it is a device push credential, W20 registers it via its own
+  mutation, and no client ever reads it back.
+  """
+  notificationPreferences(householdId: ID!): NotificationPreferences!
 }
 
 type Mutation {
@@ -2944,6 +3062,19 @@ type Mutation {
   \`source: {sourceType: url, sourceUrl}\` to persist the confirmed draft.
   """
   importRecipeFromUrl(url: String!): RecipeDraft!
+
+  """
+  Applies a partial patch to the caller's own notification preferences for
+  \`householdId\` — every \`input\` field is optional, and an absent field
+  leaves that column unchanged (an explicit \`null\` is rejected, the
+  \`updateHouseholdSettings\`/\`updatePantryItem\` convention). Requires the
+  caller to already be a member of \`householdId\`. The first successful call
+  for a \`(caller, householdId)\` pair materialises the row (defaulting every
+  field not present in this patch to \`TRUE\`); every call after that is a
+  genuine partial update. Always scoped to the CALLER's own row — there is
+  no way to patch another member's preferences through this mutation.
+  """
+  updateNotificationPreferences(householdId: ID!, input: NotificationPreferencesPatchInput!): NotificationPreferences!
 }
 
 type Subscription {
@@ -3086,6 +3217,33 @@ input HouseholdSettingsInput {
   dietaryTags: [DietaryTag!]
   allergens: [String!]
   skipIngredients: [String!]
+}
+
+"""
+The caller's own notification preferences for one household
+(E2E_MVP_PLAN.md §14.2.6/§14.2.7). \`fcm_token\` is deliberately NOT a field
+here — it is a device push credential, stored server-side (\`notification_
+preferences.fcm_token\`, SD §7.1) for W20's use, but no client ever reads it
+back through the API.
+"""
+type NotificationPreferences {
+  householdId: ID!
+  listChanges: Boolean!
+  mealReminder: Boolean!
+  expiry: Boolean!
+  activity: Boolean!
+}
+
+"""
+A partial patch for \`Mutation.updateNotificationPreferences\` — every field is
+optional (absent = "leave unchanged"). Sending an explicit \`null\` for any
+field is rejected server-side; clearing a field is not a supported operation.
+"""
+input NotificationPreferencesPatchInput {
+  listChanges: Boolean
+  mealReminder: Boolean
+  expiry: Boolean
+  activity: Boolean
 }
 
 """
@@ -3547,6 +3705,111 @@ input RecipePatchInput {
         },
         "DataSourceName": "UpdateHouseholdSettingsDataSource",
         "FieldName": "updateHouseholdSettings",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiUpdateNotificationPreferencesDataSource8CEB4EB3": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "UpdateNotificationPreferencesFn3BF1587B",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "UpdateNotificationPreferencesDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiUpdateNotificationPreferencesDataSourceServiceRole13453CFE",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiUpdateNotificationPreferencesDataSourceServiceRole13453CFE": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiUpdateNotificationPreferencesDataSourceServiceRoleDefaultPolicy2798492E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "UpdateNotificationPreferencesFn3BF1587B",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "UpdateNotificationPreferencesFn3BF1587B",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiUpdateNotificationPreferencesDataSourceServiceRoleDefaultPolicy2798492E",
+        "Roles": [
+          {
+            "Ref": "ApiUpdateNotificationPreferencesDataSourceServiceRole13453CFE",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiUpdateNotificationPreferencesResolver5D3CB3AB": {
+      "DependsOn": [
+        "ApiSchema510EECD7",
+        "ApiUpdateNotificationPreferencesDataSource8CEB4EB3",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "UpdateNotificationPreferencesDataSource",
+        "FieldName": "updateNotificationPreferences",
         "Kind": "UNIT",
         "TypeName": "Mutation",
       },
@@ -5584,6 +5847,140 @@ input RecipePatchInput {
       },
       "Type": "AWS::IAM::Role",
     },
+    "NotificationPreferencesFnF3B9ECE0": {
+      "DependsOn": [
+        "NotificationPreferencesFnServiceRoleDefaultPolicyE708AC4A",
+        "NotificationPreferencesFnServiceRole495405FA",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "NotificationPreferencesFnServiceRole495405FA",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "NotificationPreferencesFnServiceRole495405FA": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "NotificationPreferencesFnServiceRoleDefaultPolicyE708AC4A": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "NotificationPreferencesFnServiceRoleDefaultPolicyE708AC4A",
+        "Roles": [
+          {
+            "Ref": "NotificationPreferencesFnServiceRole495405FA",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "OnHouseholdChangedFnD0BD5C39": {
       "DependsOn": [
         "OnHouseholdChangedFnServiceRoleDefaultPolicyDCCEBB3C",
@@ -7081,6 +7478,140 @@ input RecipePatchInput {
         ],
       },
       "Type": "AWS::IAM::Role",
+    },
+    "UpdateNotificationPreferencesFn3BF1587B": {
+      "DependsOn": [
+        "UpdateNotificationPreferencesFnServiceRoleDefaultPolicyA47F1C3B",
+        "UpdateNotificationPreferencesFnServiceRoleC9840678",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "UpdateNotificationPreferencesFnServiceRoleC9840678",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "UpdateNotificationPreferencesFnServiceRoleC9840678": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "UpdateNotificationPreferencesFnServiceRoleDefaultPolicyA47F1C3B": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "UpdateNotificationPreferencesFnServiceRoleDefaultPolicyA47F1C3B",
+        "Roles": [
+          {
+            "Ref": "UpdateNotificationPreferencesFnServiceRoleC9840678",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "UpdatePantryItemFnB2955288": {
       "DependsOn": [
