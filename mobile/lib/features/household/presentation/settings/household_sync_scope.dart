@@ -6,22 +6,23 @@ import '../../state/household_sync_policy.dart';
 
 /// Binds a [HouseholdSyncPolicy] to the lifetime of a household-scoped screen.
 ///
-/// Wraps its [child] and does three things while it is mounted:
+/// Wraps its [child] and does two things while it is mounted:
 ///
 ///  * `start()`s the policy on mount — the refetch-on-route-entry trigger.
 ///  * Forwards `AppLifecycleState` changes, so foregrounding refetches.
-///  * Reports user interaction, so the poll does not decay under someone's
-///    finger.
 ///
-/// Everything about *cadence* lives in `HouseholdSyncPolicy`; this widget only
-/// supplies the three signals a plain Dart class cannot see for itself. Keeping
-/// the policy free of Flutter (beyond the `AppLifecycleState` enum) is what
-/// lets its whole cadence be tested under `fake_async` with no widget tree.
+/// A live `onHouseholdChanged` push (W8 S10) is what keeps the roster fresh
+/// while this screen stays mounted — `CurrentHouseholdController` subscribes
+/// to that directly, independent of this widget. This scope's own job is
+/// narrower now than it was pre-W8 S10 (when it also tracked pointer-down
+/// interaction to revive an idle-decaying poll): with no poll left,
+/// `HouseholdSyncPolicy` has no idle cadence to keep alive, so there is no
+/// third signal for this widget to supply.
 ///
-/// The interaction signal is a [Listener] on the pointer-down phase rather than
-/// a `GestureDetector`: pointer-down never competes in the gesture arena, so
-/// wrapping a screen in this can never swallow a tap meant for a button
-/// underneath it.
+/// Everything about *when* a refetch fires lives in `HouseholdSyncPolicy`;
+/// this widget only supplies the two signals a plain Dart class cannot see
+/// for itself. Keeping the policy free of Flutter (beyond the
+/// `AppLifecycleState` enum) is what lets it be tested with no widget tree.
 class HouseholdSyncScope extends ConsumerStatefulWidget {
   const HouseholdSyncScope({
     super.key,
@@ -62,15 +63,13 @@ class _HouseholdSyncScopeState extends ConsumerState<HouseholdSyncScope>
   /// Re-reads the household this scope is keyed on.
   ///
   /// `refresh()` never throws (its own contract), which matters here because
-  /// this runs from a `Timer` where an escaping exception would surface as an
-  /// unhandled async error rather than as anything the user could act on.
+  /// this can run from a lifecycle callback where an escaping exception
+  /// would surface as an unhandled async error rather than as anything the
+  /// user could act on.
   Future<void> _refetch() => ref
       .read(currentHouseholdControllerProvider(widget.householdId).notifier)
       .refresh();
 
   @override
-  Widget build(BuildContext context) => Listener(
-    onPointerDown: (PointerDownEvent _) => _policy.markActive(),
-    child: widget.child,
-  );
+  Widget build(BuildContext context) => widget.child;
 }

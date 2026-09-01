@@ -200,12 +200,13 @@ void main() {
     test('maps the wire payload to the plain-Dart domain settings', () async {
       final subject = _subject(_ok);
 
-      final HouseholdSettings settings = await subject.repository
+      final Household household = await subject.repository
           .updateHouseholdSettings(
             'household-1',
             HouseholdSettingsPatch.meals(<MealType>{MealType.lunch}),
           );
 
+      final HouseholdSettings settings = household.settings;
       expect(settings.householdId, 'household-1');
       expect(settings.mealsEnabled, <String>['breakfast', 'lunch', 'dinner']);
       expect(settings.cuisineTier1, <String>['north_indian', 'south_indian']);
@@ -217,18 +218,18 @@ void main() {
     test('keeps both AWSJSON fields as raw JSON strings', () async {
       final subject = _subject(_ok);
 
-      final HouseholdSettings settings = await subject.repository
+      final Household household = await subject.repository
           .updateHouseholdSettings(
             'household-1',
             HouseholdSettingsPatch.meals(<MealType>{MealType.lunch}),
           );
 
       expect(
-        settings.mealStructureJson,
+        household.settings.mealStructureJson,
         '{"lunch":{"carb":2,"sabzi_dal":2,"accompaniment":1}}',
       );
       expect(
-        settings.cuisineTier2WeightsJson,
+        household.settings.cuisineTier2WeightsJson,
         '{"punjabi":"more","marathi":"normal"}',
       );
     });
@@ -238,13 +239,30 @@ void main() {
       () async {
         final subject = _subject(_ok);
 
-        final HouseholdSettings settings = await subject.repository
+        final Household household = await subject.repository
             .updateHouseholdSettings(
               'household-1',
               HouseholdSettingsPatch.meals(<MealType>{MealType.lunch}),
             );
 
-        expect(settings, testHouseholdSettings);
+        expect(household.settings, testHouseholdSettings);
+      },
+    );
+
+    test(
+      'returns the whole household, not just settings — the whole point of the widened return shape (W8 S10)',
+      () async {
+        final subject = _subject(_ok);
+
+        final Household household = await subject.repository
+            .updateHouseholdSettings(
+              'household-1',
+              HouseholdSettingsPatch.meals(<MealType>{MealType.lunch}),
+            );
+
+        expect(household.id, 'household-1');
+        expect(household.name, 'Kulkarni Kitchen');
+        expect(household.members, isNotEmpty);
       },
     );
 
@@ -258,14 +276,14 @@ void main() {
         },
       );
 
-      final HouseholdSettings settings = await subject.repository
+      final Household household = await subject.repository
           .updateHouseholdSettings(
             'household-1',
             HouseholdSettingsPatch.meals(<MealType>{MealType.lunch}),
           );
 
-      expect(settings.mealsEnabled, hasLength(2));
-      expect(settings.mealsEnabled.first, 'lunch');
+      expect(household.settings.mealsEnabled, hasLength(2));
+      expect(household.settings.mealsEnabled.first, 'lunch');
     });
   });
 

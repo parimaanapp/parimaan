@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/household_repository.dart';
@@ -9,35 +11,59 @@ import 'me_households_controller.dart';
 /// The server-backed read of one household, keyed by its id.
 ///
 /// This is what the Settings hub and the Members list render, and what
-/// `HouseholdSyncPolicy` refreshes. It is a *family* rather than a single
-/// provider because a household id is the only sensible key: a user in two
-/// households must be able to have both cached independently, and keying on
-/// "whichever household is on screen" would make the two overwrite each other.
+/// `HouseholdSyncPolicy`'s entry/foreground refetches and a live
+/// `onHouseholdChanged` push (W8 S10) all call [refresh] on. It is a
+/// *family* rather than a single provider because a household id is the
+/// only sensible key: a user in two households must be able to have both
+/// cached independently, and keying on "whichever household is on screen"
+/// would make the two overwrite each other.
 ///
 /// `build` calls `fetchHousehold`, which is `FetchPolicy.NoCache` — so every
 /// first read and every [refresh] genuinely hits the network. See
-/// `HouseholdRepository.fetchHousehold` for why a cached poll is not a poll.
+/// `HouseholdRepository.fetchHousehold` for why this stays uncached even
+/// though a live push (not a timer) is what triggers most refetches now.
 class CurrentHouseholdController
     extends FamilyAsyncNotifier<Household, String> {
   /// `read`, not `watch` — consistent with every other controller here.
   HouseholdRepository get _repository => ref.read(householdRepositoryProvider);
 
+  /// Not `late final` — same reasoning as `PantryController`'s identical
+  /// field: `build()` can run more than once on the same notifier instance
+  /// (`ref.invalidate` on sign-in, `AuthController.signOut()`), and a second
+  /// assignment to a `late final` field throws `LateInitializationError`.
+  StreamSubscription<void>? _changeSubscription;
+
   @override
-  Future<Household> build(String householdId) =>
-      _repository.fetchHousehold(householdId);
+  Future<Household> build(String householdId) {
+    // Live updates (W8 S10) — subscribed for as long as this controller
+    // (and so the screen watching it) is alive, cancelled on dispose. Same
+    // "every push means refetch, errors swallowed" contract as
+    // `PantryController`'s own `watchPantryChanges` wiring — a live-update
+    // channel that never connects must not fail the household read this
+    // controller already got from `fetchHousehold` below.
+    unawaited(_changeSubscription?.cancel());
+    _changeSubscription = _repository
+        .watchHouseholdChanges(householdId)
+        .listen((_) => unawaited(refresh()), onError: (Object _) {});
+    ref.onDispose(() => unawaited(_changeSubscription?.cancel()));
+
+    return _repository.fetchHousehold(householdId);
+  }
 
   /// Re-reads the household from the server.
   ///
   /// **Never throws** — the outcome lands in `state`, matching every other
-  /// controller in this feature. That matters more here than elsewhere:
-  /// `HouseholdSyncPolicy` calls this from a `Timer`, where an escaping
-  /// exception would surface as an unhandled async error rather than as
-  /// anything a user could act on.
+  /// controller in this feature. That matters more here than elsewhere: both
+  /// `HouseholdSyncPolicy` (entry/foreground triggers) and this controller's
+  /// own `watchHouseholdChanges` listener above call this fire-and-forget,
+  /// with no caller awaiting the result — an escaping exception from either
+  /// would surface as an unhandled async error rather than as anything a
+  /// user could act on.
   ///
-  /// Loading and error states are built with `copyWithPrevious`, so a poll
-  /// that fails leaves the last good roster on screen instead of blanking a
-  /// screen the user is reading. A background refresh that wipes the content
-  /// it was refreshing is worse than one that quietly fails.
+  /// Loading and error states are built with `copyWithPrevious`, so a
+  /// refresh that fails leaves the last good roster on screen instead of
+  /// blanking a screen the user is reading. A background refresh that wipes
+  /// the content it was refreshing is worse than one that quietly fails.
   Future<void> refresh() async {
     final AsyncValue<Household> previous = state;
     state = const AsyncLoading<Household>().copyWithPrevious(previous);

@@ -224,6 +224,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Subscription',
     fieldName: 'onRecipeChanged',
   },
+  {
+    id: 'OnHouseholdChanged',
+    entryFile: 'onHouseholdChanged.ts',
+    typeName: 'Subscription',
+    fieldName: 'onHouseholdChanged',
+  },
 ];
 
 /**
@@ -331,9 +337,6 @@ const NET_RESOLVERS: readonly NonVpcResolverEntry[] = [
  *   `bulkAddPantryItems` deliberately is not (§11.2.1 — a list payload can't
  *   fan out to this subscription's single-`PantryItem` shape).
  *
- * `onHouseholdChanged`/`onHouseholdSettingsChanged` stay deferred to W8 (a
- * natural follow-on once the WebSocket link exists) — `HouseholdSyncPolicy`
- * keeps polling until then.
  * - `Query.recipes`, `Recipe.ingredients` — W6 slice S2
  *   (E2E_MVP_PLAN.md §12.3). `Query.recipes` is member-gated the same way
  *   as `Query.pantry`, with `recipes`' RLS policy (S1) as layer-3
@@ -378,6 +381,25 @@ const NET_RESOLVERS: readonly NonVpcResolverEntry[] = [
  *   pattern as `updateRecipe`/`deleteRecipe`/`favoriteRecipe`/
  *   `setInRotation` — no `householdId`, a nonexistent id and a real id in
  *   another household both surface as the identical `NotFoundError`.
+ * - `Subscription.onHouseholdChanged` — W8 slice S10 (E2E_MVP_PLAN.md
+ *   §14.2.10, D4/D5) — closes the Phase 1 DoD line ("Household settings
+ *   persist and sync across devices via `onHouseholdChanged` subscription")
+ *   that had shipped only as `HouseholdSyncPolicy`'s poll. Identical
+ *   subscribe-time Lambda-resolver authorization shape as
+ *   `onPantryChanged`/`onRecipeChanged` above. `@aws_subscribe`d to
+ *   `joinHousehold`/`rotateInviteCode`/`updateHouseholdSettings` only —
+ *   `updateHouseholdSettings` had to widen its own return type from
+ *   `HouseholdSettings!` to `Household!` for this (a locked-SDL change,
+ *   D4). `leaveHousehold`/`deleteHousehold` are deliberately NOT attached:
+ *   both return `Boolean!`, a structural type mismatch against a
+ *   `Household`-shaped subscription regardless of authorization, and even
+ *   setting that aside, either would need to hydrate a `Household` (members
+ *   + settings, via `buildGraphQLHousehold`) for a caller who has just
+ *   stopped being a member — the same thing `requireHouseholdMember` would
+ *   deny them at that point. See the SDL's own doc comment on this field for
+ *   the full reasoning. A member leaving/a household being deleted stays a
+ *   poll-free but *push*-free staleness gap, closed on next route entry or
+ *   foreground instead.
  *
  * Only `_health` stays out of the VPC (no DB access needed) — the rest are
  * VPC-attached, connecting to Aurora as the least-privileged `parimaan_app`

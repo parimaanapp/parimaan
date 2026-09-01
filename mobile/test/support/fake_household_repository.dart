@@ -72,9 +72,11 @@ class FakeHouseholdRepository implements HouseholdRepository {
   // ── updateHouseholdSettings ────────────────────────────────────────────────
 
   /// Returned by [updateHouseholdSettings] when [settingsError] is null.
-  /// Defaults to whatever [result]'s settings are, so a test that only cares
-  /// about *which* patch was sent never has to set it.
-  HouseholdSettings? settingsResult;
+  /// Returns `Household`, not `HouseholdSettings` (W8 S10, E2E_MVP_PLAN.md
+  /// §14.2.10 D4 — the real mutation was widened). Falls back to [result],
+  /// so a test that only cares about *which* patch was sent never has to
+  /// set it separately.
+  Household? settingsResult;
 
   /// Thrown by [updateHouseholdSettings] when set.
   Object? settingsError;
@@ -103,8 +105,9 @@ class FakeHouseholdRepository implements HouseholdRepository {
   Household? fetchResult;
   Object? fetchError;
 
-  /// Every household id [fetchHousehold] was called with, in order. This is
-  /// what `HouseholdSyncPolicy`'s tests count to assert a poll cadence.
+  /// Every household id [fetchHousehold] was called with, in order — what a
+  /// `HouseholdSyncPolicy`/`CurrentHouseholdController` test counts to
+  /// assert a refetch actually fired.
   final List<String> fetchCalls = <String>[];
 
   // ── fetchMyHouseholds ──────────────────────────────────────────────────────
@@ -142,6 +145,20 @@ class FakeHouseholdRepository implements HouseholdRepository {
   final List<({String householdId, String confirmationName})> deleteCalls =
       <({String householdId, String confirmationName})>[];
 
+  // ── watchHouseholdChanges ──────────────────────────────────────────────────
+
+  /// One controller per `householdId` a test has called
+  /// [watchHouseholdChanges] for, so a test can `.add(null)`/`.addError(...)`
+  /// to simulate a live `onHouseholdChanged` push without any real
+  /// subscription transport (same shape as `FakePantryRepository`'s own
+  /// `watchControllers`). Never emits on its own — a test opts in explicitly.
+  final Map<String, StreamController<void>> watchControllers =
+      <String, StreamController<void>>{};
+
+  /// Every `householdId` [watchHouseholdChanges] was called with, in order —
+  /// asserts a controller's `build()` actually subscribed.
+  final List<String> watchCalls = <String>[];
+
   // ── Implementation ─────────────────────────────────────────────────────────
 
   Future<void> _wait() async {
@@ -174,14 +191,14 @@ class FakeHouseholdRepository implements HouseholdRepository {
   }
 
   @override
-  Future<HouseholdSettings> updateHouseholdSettings(
+  Future<Household> updateHouseholdSettings(
     String householdId,
     HouseholdSettingsPatch patch,
   ) {
     settingsCalls.add((householdId: householdId, patch: patch));
-    return _answer<HouseholdSettings>(
+    return _answer<Household>(
       settingsError,
-      settingsResult ?? result?.settings,
+      settingsResult ?? result,
       'settingsResult',
     );
   }
@@ -231,5 +248,13 @@ class FakeHouseholdRepository implements HouseholdRepository {
       confirmationName: confirmationName,
     ));
     return _answer<bool>(deleteError, deleteResult, 'deleteResult');
+  }
+
+  @override
+  Stream<void> watchHouseholdChanges(String householdId) {
+    watchCalls.add(householdId);
+    return watchControllers
+        .putIfAbsent(householdId, () => StreamController<void>.broadcast())
+        .stream;
   }
 }

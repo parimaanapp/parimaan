@@ -551,7 +551,10 @@ type Mutation {
   joinHousehold(inviteCode: String!): Household!
   rotateInviteCode(householdId: ID!): Household!
   leaveHousehold(householdId: ID!): Boolean!
-  updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): HouseholdSettings!
+  # Returns Household!, not HouseholdSettings! (W8 S10, E2E_MVP_PLAN.md
+  # §14.2.10 D4 — widened so it can attach to Subscription.onHouseholdChanged
+  # below; settings remain reachable via Household.settings).
+  updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): Household!
 
   # Pantry
   addPantryItem(householdId: ID!, input: PantryItemInput!): PantryItem!
@@ -660,10 +663,9 @@ type Subscription {
   # `onPantryChanged` **is implemented** (W5 S8) — the first field in this
   # type to go live, authorized by a per-field Lambda resolver rather than
   # this section's stated connect-time authorizer (§10.4 deviation,
-  # E2E_MVP_PLAN.md §11.2.9). `onMenuChanged`/`onShoppingListChanged`/
-  # `onHouseholdChanged` below remain aspirational (`onHouseholdChanged`
-  # deferred to W8; the other two to W11/W12, alongside the mutations they
-  # subscribe to). The pushed payload carries no event-type discriminator —
+  # E2E_MVP_PLAN.md §11.2.9). `onMenuChanged`/`onShoppingListChanged` below
+  # remain aspirational (W11/W12, alongside the mutations they subscribe
+  # to). The pushed payload carries no event-type discriminator —
   # see E2E_MVP_PLAN.md §11.2.12 for why the mobile client treats every push
   # as "refetch", not a local add/update/delete patch — the same constraint
   # applies to every subscription field in this type, not just this one.
@@ -689,11 +691,19 @@ type Subscription {
       "markPurchased", "haveIt"
     ])
 
+  # `onHouseholdChanged` **is implemented** (W8 S10, E2E_MVP_PLAN.md
+  # §14.2.10 D4/D5 — closes Phase 1's DoD line, previously shipped only as
+  # `HouseholdSyncPolicy`'s poll). Same per-field-authorizer pattern as
+  # `onPantryChanged`/`onRecipeChanged` above. The mutation list here is
+  # NOT what this doc originally sketched: `leaveHousehold` was in the
+  # original draft and is deliberately absent from what shipped —
+  # `leaveHousehold`/`deleteHousehold` both return `Boolean!`, a structural
+  # type mismatch against this field's `Household` shape, and even setting
+  # that aside would need to hydrate a `Household` for a caller who has
+  # just stopped being a member. A member leaving/a household being deleted
+  # is an accepted staleness gap, closed on next route entry or foreground.
   onHouseholdChanged(householdId: ID!): Household
-    @aws_subscribe(mutations: [
-      "updateHouseholdSettings", "rotateInviteCode",
-      "joinHousehold", "leaveHousehold"
-    ])
+    @aws_subscribe(mutations: ["joinHousehold", "rotateInviteCode", "updateHouseholdSettings"])
 }
 
 # input types omitted for brevity — mirror the Type shapes, EXCEPT where
@@ -1147,9 +1157,7 @@ lib/
 - On app start: hydrate UI from Drift, then fetch fresh via GraphQL.
 - Mutations go straight to network (no offline queue in MVP).
 
-**Real-time sync:** `ferry` itself ships no AppSync transport — AppSync's real-time protocol is not plain `graphql-ws` (see E2E_MVP_PLAN.md §11.3 S8 step 1's adopt-vs-hand-roll research). Hand-rolled in `shared/graphql/`: `appsync_realtime_protocol.dart` (pure frame-shape helpers), `subscription_client.dart` (`AppSyncSubscriptionClient` — the one multiplexed WebSocket connection for the whole app), and `appsync_websocket_link.dart` (the `gql_link` `Link`, chained after `AuthLink`, that routes `subscription` operations to it and forwards everything else to `HttpLink`). W5 (S8) ships only `onPantryChanged`, subscribed for as long as the watching controller is alive and unsubscribed on its disposal — no reconnect logic yet. Reconnect logic is **W8**:
-- Backoff 1s → 2s → 5s → 15s → 60s
-- On reconnect, invalidate local cache for that household and refetch.
+**Real-time sync:** `ferry` itself ships no AppSync transport — AppSync's real-time protocol is not plain `graphql-ws` (see E2E_MVP_PLAN.md §11.3 S8 step 1's adopt-vs-hand-roll research). Hand-rolled in `shared/graphql/`: `appsync_realtime_protocol.dart` (pure frame-shape helpers), `subscription_client.dart` (`AppSyncSubscriptionClient` — the one multiplexed WebSocket connection for the whole app), and `appsync_websocket_link.dart` (the `gql_link` `Link`, chained after `AuthLink`, that routes `subscription` operations to it and forwards everything else to `HttpLink`). W5 (S8) shipped only `onPantryChanged`, with no reconnect logic — `onRecipeChanged` (W6 S11) followed the same shape. **Reconnect with backoff shipped in W8** (S3, §14.2.2/§14.3 S3 — see the decisions-log amendment below for the full design), and app-lifecycle wiring (disconnect on background, reconnect on foreground) in W8 S4: a subscriber stream now survives a transient disconnect on an established connection rather than closing immediately, retried via `ReconnectPolicy`'s ladder (**1s → 2s → 5s → 15s → 60s, ±20% jitter**), fetching a fresh token per attempt and resubscribing every still-registered subscription, with exactly one synthetic refetch signal emitted per subscription once its resubscribe is acknowledged — **not** a bulk local-cache invalidation, since the Ferry cache is never written into by subscriptions at all (§11.2.12's own "every push means refetch" convention). `onHouseholdChanged` (W8 S10) is the third and, as of Phase 2, final subscription field to ship.
 
 **Image handling:**
 - `image_picker` for camera / gallery.
@@ -1490,6 +1498,8 @@ Design-level, ranked by decision urgency:
 > **Amended 2026-09-01** (W8 S4, during app-lifecycle wiring): a new `mobile/lib/app/subscription_lifecycle_observer.dart` wraps the app root (alongside the existing `JoinDeepLinkListener`) and drives `AppSyncSubscriptionClient`'s two public entry points off real `AppLifecycleState` transitions (`E2E_MVP_PLAN.md` §14.3 S4) — `paused`/`detached` call `disconnect()`, `resumed` calls a new `reconnectNow()` (bypasses the backoff ladder's wait and resets `ReconnectPolicy` to its first rung), `inactive`/`hidden` are deliberately ignored as momentary, not-really-backgrounded interruptions. `reconnectNow()` no-ops when there are no registered subscriptions or a connection is already established/in-flight. `mobile/lib/shared/graphql/client.dart`'s `ferryClientOverride()` now returns `List<Override>` (was a single `Override`) so a new `subscriptionClientProvider` can expose the *same* `AppSyncSubscriptionClient` instance the Ferry `Client` is built over, letting the observer reach it without a route back down through the GraphQL client. Three real races found and fixed during this slice's own flutter-review pass, all reachable by the lifecycle wiring this slice introduces, not pre-existing: (1) `disconnect()`/`reconnectNow()` are now serialized against each other (`_lifecycleOperationQueue`, a simple `Future`-chaining queue) — without it, a `reconnectNow()` arriving while an immediately-preceding `disconnect()` was still mid-close would read stale connection state and silently no-op, permanently swallowing the foreground signal; (2) `disconnect()` now fails any pending `connection_ack` completer with a new private `_ConnectAbortedByDisconnect` sentinel before tearing down — previously it could abandon an in-flight connect attempt's completer uncompleted, hanging whichever caller (a fresh `subscribe()`, or the ladder's own `_attemptReconnect()`) was awaiting it forever; the ladder's own catch treats this sentinel as "do not reschedule" (the ladder must not run while deliberately disconnected) while `subscribe()`'s own catch maps it to a public `InternalError`; (3) `disconnect()` fails that same pending completer *immediately*, ahead of its own queue position, so a `disconnect()` arriving while a queued `reconnectNow()`'s handshake is still pending tears the transport down right away rather than waiting behind it for up to the full connect timeout. `reconnectNow()`'s own no-op guard was also widened from checking only `_isConnected` to `_connectionAck != null` (a strict superset covering "connecting" too), closing a duplicate-`start`-frame race against the ladder's own independently-triggered reconnect attempts.
 
 > **Amended 2026-09-01** (W8 S5, during the membership TTL cache): §10.3's own sketch above ("Membership cache: Lambda-level in-memory cache with 30s TTL avoids the DB round trip on every request from the same active user") is now **implemented as specified**, confirmed rather than deviated — `api/src/cache/ttlCache.ts` (a small, dependency-free, generic `TtlCache<K,V>`, the same module-scope-memoization shape `db/pool.ts`'s pooled connection and `ai/geminiClient.ts`'s memoized key already use, extended to hold many keyed entries) sits in front of `requireHouseholdMember` (`api/src/auth/requireHouseholdMember.ts`), keyed on `` `${userId}:${householdId}` `` (collision-safe because both are always UUIDs). Reviewed and locked as an **authorization-weakening change**, not a performance change (`E2E_MVP_PLAN.md` §14.2.8, D2 — CRITICAL, the week's highest-severity item), with a four-part contract verified by a dedicated security-review pass, all four PASS: (1) only positive results are ever cached — a denial is never written to the cache, so a member who has just joined is never locked out for 30s; (2) the four membership-mutating/destructive resolvers (`joinHousehold`, `leaveHousehold`, `deleteHousehold`, `rotateInviteCode`) always read live — `deleteHousehold`/`rotateInviteCode` (the two that actually call `requireHouseholdMember`) pass a new `{ bypassCache: true }` option; `joinHousehold`/`leaveHousehold` have no gate to bypass at all (by design, unrelated to this cache); (3) all four call a new `evictMembershipCache(userId, householdId)` after their own successful mutation — best-effort, this Lambda execution environment's own cache only, never reaching other warm containers; (4) the accepted ≤30s stale-authorization window is documented in `requireHouseholdMember.ts`'s own doc comment together with why it's safe: every RLS-protected table (`pantry_items`, `recipes`, `recipe_ingredients`, `household_settings`) still gets a live RLS check regardless of a stale layer-2 pass, so the genuine exposure is narrowed to the tables with no RLS of their own (`households`, `household_memberships`), which is the class of query this gate is the *sole* protection for.
+
+> **Amended 2026-09-01** (W8 S10, during `onHouseholdChanged` + poll retirement): closes Phase 1's own DoD line ("Household settings persist and sync across devices via `onHouseholdChanged` subscription"), previously shipped only as `mobile/lib/features/household/state/household_sync_policy.dart`'s 15-second poll (`E2E_MVP_PLAN.md` §14.2.10, D4/D5). `Mutation.updateHouseholdSettings` widened its return type from `HouseholdSettings!` to `Household!` (a locked-SDL change, D4) so it can attach to the new `Subscription.onHouseholdChanged(householdId: ID!): Household`, `@aws_subscribe`d to `joinHousehold`/`rotateInviteCode`/`updateHouseholdSettings` — same subscribe-time Lambda-resolver authorization shape as `onPantryChanged`/`onRecipeChanged` (identical `requireHouseholdMember` gate, reading through the W8 S5 membership cache like every other subscribe-time authorizer). **`leaveHousehold`/`deleteHousehold` are deliberately NOT attached**, a real deviation from this doc's own original §6.1 sketch (which listed `leaveHousehold` on the mutation list) — both return `Boolean!`, a structural type mismatch against a `Household`-shaped subscription (AppSync requires an `@aws_subscribe`d mutation's return type to match the subscription field's) regardless of authorization, and even setting that aside, either would need to hydrate a `Household` for a caller who has just stopped being a member — the same thing `requireHouseholdMember` would deny them at that point. A member leaving/a household being deleted stays an accepted staleness gap, closed on next route entry or foreground rather than by a push. On the mobile side, `HouseholdSyncPolicy`'s poll cadence and idle-decay machinery (`pollInterval`, `idleTimeout`, `markActive()`, `isPolling`, the `Timer.periodic`) were deleted outright rather than left dormant — what remains is refetch-on-route-entry and refetch-on-foreground only, the two triggers a live push cannot itself provide (a screen that wasn't mounted to receive a push, and the socket disconnecting while backgrounded per W8 S4). Reviewed by a dedicated security-review pass (fired per the plan — new Lambda resolver, subscription authorizer path, CDK change): confirmed the widened `Household` payload leaks nothing new to household members (the same `buildGraphQLHousehold` helper `Query.household`/`joinHousehold`/`rotateInviteCode` already return, including co-members' emails, an already-accepted exposure within one household under this app's trust model), and confirmed this slice does not worsen the standing "authorize once, hold for connection life" exposure already documented for `onPantryChanged`/`onRecipeChanged` (§14.2.8's own closing note).
 
 - Region: `ap-south-1` (Mumbai) primary; `us-east-1` fallback for Bedrock only if needed.
 - Backend runtime: Node.js 20 + TypeScript on Lambda.

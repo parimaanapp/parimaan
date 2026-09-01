@@ -3,27 +3,23 @@ import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/household/state/household_sync_policy.dart';
 
-/// Builds a policy plus the counter its refetch increments.
-///
-/// Every test drives this inside `fakeAsync`, so no test waits on a real
-/// 15-second timer — the whole point of `fake_async` here. A cadence test
-/// written with real `Future.delayed`s would take minutes and be flaky on CI.
-({HouseholdSyncPolicy policy, List<int> calls}) _subject({
-  Duration pollInterval = HouseholdSyncPolicy.defaultPollInterval,
-  Duration idleTimeout = HouseholdSyncPolicy.defaultIdleTimeout,
-}) {
+/// Builds a policy plus the counter its refetch increments. Every test
+/// drives this inside `fakeAsync` even though there is no cadence left to
+/// fake time for — it is what lets a "no timer was ever armed" assertion be
+/// made with confidence (`async.elapse` would surface one if it existed),
+/// and it keeps this file's shape consistent with the class's own
+/// pre-W8-S10 test suite for anyone diffing the two.
+({HouseholdSyncPolicy policy, List<int> calls}) _subject() {
   final List<int> calls = <int>[];
   final HouseholdSyncPolicy policy = HouseholdSyncPolicy(
     refetch: () async => calls.add(calls.length),
-    pollInterval: pollInterval,
-    idleTimeout: idleTimeout,
   );
   return (policy: policy, calls: calls);
 }
 
 void main() {
   group('HouseholdSyncPolicy — route entry', () {
-    test('start() refetches immediately, before any timer elapses', () {
+    test('start() refetches immediately', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
@@ -40,142 +36,73 @@ void main() {
       });
     });
 
-    test('a second start() does not stack a second poll timer', () {
-      fakeAsync((FakeAsync async) {
-        final subject = _subject();
-
-        subject.policy.start();
-        subject.policy.start();
-        async.flushMicrotasks();
-        // Two entry refetches (each start is a route entry), but the cadence
-        // afterwards must still be one-per-interval, not two.
-        final int afterStarts = subject.calls.length;
-
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval);
-        expect(subject.calls.length - afterStarts, 1);
-
-        subject.policy.dispose();
-      });
-    });
-  });
-
-  group('HouseholdSyncPolicy — poll cadence', () {
-    test('polls once per interval while active', () {
+    test('a second start() once the first has settled refetches again — each call is a genuine route entry', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
         subject.policy.start();
         async.flushMicrotasks();
-        expect(subject.calls, hasLength(1));
+        subject.policy.start();
+        async.flushMicrotasks();
 
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval);
         expect(subject.calls, hasLength(2));
 
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval);
-        expect(subject.calls, hasLength(3));
-
         subject.policy.dispose();
       });
     });
 
-    test('does not poll before a full interval has elapsed', () {
+    test('two start() calls back-to-back overlap into one in-flight refetch, not two concurrent ones', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
+        // Both calls land before the first refetch has had a chance to
+        // settle — the in-flight guard (shared with the overlap-protection
+        // tests below) means the second is suppressed rather than firing a
+        // concurrent second request.
+        subject.policy.start();
         subject.policy.start();
         async.flushMicrotasks();
 
-        async.elapse(
-          HouseholdSyncPolicy.defaultPollInterval - const Duration(seconds: 1),
-        );
-
         expect(subject.calls, hasLength(1));
-        subject.policy.dispose();
-      });
-    });
 
-    test('stop() ends the cadence', () {
-      fakeAsync((FakeAsync async) {
-        final subject = _subject();
-
-        subject.policy.start();
-        async.flushMicrotasks();
-        subject.policy.stop();
-
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval * 5);
-
-        expect(subject.calls, hasLength(1));
         subject.policy.dispose();
       });
     });
   });
 
-  group('HouseholdSyncPolicy — decay to off after idle', () {
-    test('stops polling once the idle timeout is reached', () {
+  group('HouseholdSyncPolicy — no poll cadence (W8 S10 retirement)', () {
+    test('no timer is ever armed — waiting does not trigger any further refetch', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
         subject.policy.start();
         async.flushMicrotasks();
+        final int afterStart = subject.calls.length;
 
-        // 2 minutes of idle at a 15s cadence is 8 polls, and then silence.
-        async.elapse(HouseholdSyncPolicy.defaultIdleTimeout);
-        final int atDecay = subject.calls.length;
-
-        async.elapse(HouseholdSyncPolicy.defaultIdleTimeout * 3);
+        // A long wait with nothing else happening. Pre-W8-S10 this class
+        // would have polled repeatedly across this window; now the only way
+        // `calls` grows is another explicit start()/resumed trigger.
+        async.elapse(const Duration(hours: 6));
 
         expect(
           subject.calls.length,
-          atDecay,
-          reason: 'a screen nobody is looking at must not poll forever',
+          afterStart,
+          reason: 'onHouseholdChanged replaces polling — this class no longer arms a Timer at all',
         );
-        expect(subject.policy.isPolling, isFalse);
 
         subject.policy.dispose();
       });
     });
 
-    test('markActive() resets the idle countdown and keeps polling', () {
+    test('stop() is a harmless no-op — there is no cadence left for it to end', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
         subject.policy.start();
         async.flushMicrotasks();
 
-        // Sit just short of decay, then interact.
-        async.elapse(
-          HouseholdSyncPolicy.defaultIdleTimeout -
-              HouseholdSyncPolicy.defaultPollInterval,
-        );
-        expect(subject.policy.isPolling, isTrue);
-        subject.policy.markActive();
-
-        // Another almost-full idle window: still alive because the clock reset.
-        async.elapse(
-          HouseholdSyncPolicy.defaultIdleTimeout -
-              HouseholdSyncPolicy.defaultPollInterval,
-        );
-
-        expect(subject.policy.isPolling, isTrue);
-        subject.policy.dispose();
-      });
-    });
-
-    test('markActive() on a decayed policy revives the cadence', () {
-      fakeAsync((FakeAsync async) {
-        final subject = _subject();
-
-        subject.policy.start();
-        async.flushMicrotasks();
-        async.elapse(HouseholdSyncPolicy.defaultIdleTimeout * 2);
-        expect(subject.policy.isPolling, isFalse);
-        final int whileDecayed = subject.calls.length;
-
-        subject.policy.markActive();
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval);
-
-        expect(subject.calls.length, greaterThan(whileDecayed));
-        expect(subject.policy.isPolling, isTrue);
+        expect(() => subject.policy.stop(), returnsNormally);
+        expect(subject.calls, hasLength(1), reason: 'stop() itself never refetches');
 
         subject.policy.dispose();
       });
@@ -183,14 +110,12 @@ void main() {
   });
 
   group('HouseholdSyncPolicy — app lifecycle', () {
-    test('resumed refetches immediately and revives a decayed policy', () {
+    test('resumed refetches immediately for a started policy', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
         subject.policy.start();
         async.flushMicrotasks();
-        async.elapse(HouseholdSyncPolicy.defaultIdleTimeout * 2);
-        expect(subject.policy.isPolling, isFalse);
         final int beforeResume = subject.calls.length;
 
         subject.policy.onLifecycleChanged(AppLifecycleState.resumed);
@@ -201,36 +126,34 @@ void main() {
           beforeResume + 1,
           reason: 'the household may have changed while backgrounded',
         );
-        expect(subject.policy.isPolling, isTrue);
 
         subject.policy.dispose();
       });
     });
 
-    test('paused stops the cadence — a backgrounded app must not poll', () {
+    test('paused does not refetch — there is no cadence for it to stop', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
         subject.policy.start();
         async.flushMicrotasks();
+        final int beforePause = subject.calls.length;
+
         subject.policy.onLifecycleChanged(AppLifecycleState.paused);
-        final int whilePaused = subject.calls.length;
+        async.flushMicrotasks();
 
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval * 4);
-
-        expect(subject.calls.length, whilePaused);
-        expect(subject.policy.isPolling, isFalse);
+        expect(subject.calls.length, beforePause);
 
         subject.policy.dispose();
       });
     });
 
-    test('a lifecycle change before start() does not begin polling', () {
+    test('a resumed event before start() does not refetch — the policy owns no screen yet', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
         subject.policy.onLifecycleChanged(AppLifecycleState.resumed);
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval * 3);
+        async.flushMicrotasks();
 
         expect(
           subject.calls,
@@ -244,33 +167,32 @@ void main() {
   });
 
   group('HouseholdSyncPolicy — overlap and teardown', () {
-    test('a slow refetch is never overlapped by the next tick', () {
+    test('a slow refetch suppresses an overlapping one from firing concurrently', () {
       fakeAsync((FakeAsync async) {
         int started = 0;
         int finished = 0;
         final HouseholdSyncPolicy policy = HouseholdSyncPolicy(
           refetch: () async {
             started++;
-            // Three times the poll interval: without in-flight suppression
-            // this would pile requests onto a cold Aurora instance.
-            await Future<void>.delayed(
-              HouseholdSyncPolicy.defaultPollInterval * 3,
-            );
+            await Future<void>.delayed(const Duration(seconds: 5));
             finished++;
           },
         );
 
         policy.start();
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval * 2);
+        // A resumed event lands while the first refetch is still in flight.
+        policy.onLifecycleChanged(AppLifecycleState.resumed);
+        async.flushMicrotasks();
 
-        expect(started, 1);
+        expect(started, 1, reason: 'the in-flight guard suppresses the overlapping trigger');
         expect(finished, 0);
 
+        async.elapse(const Duration(seconds: 5));
         policy.dispose();
       });
     });
 
-    test('a refetch that throws does not kill the cadence', () {
+    test('a refetch that throws does not break a later trigger', () {
       fakeAsync((FakeAsync async) {
         int calls = 0;
         final HouseholdSyncPolicy policy = HouseholdSyncPolicy(
@@ -282,19 +204,20 @@ void main() {
 
         policy.start();
         async.flushMicrotasks();
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval * 2);
+        policy.onLifecycleChanged(AppLifecycleState.resumed);
+        async.flushMicrotasks();
 
         expect(
           calls,
-          3,
-          reason: 'a poll is best-effort; one failure must not stop the rest',
+          2,
+          reason: 'a refetch is best-effort; one failure must not stop the next trigger',
         );
 
         policy.dispose();
       });
     });
 
-    test('dispose() stops everything and makes further calls inert', () {
+    test('dispose() makes further calls inert', () {
       fakeAsync((FakeAsync async) {
         final subject = _subject();
 
@@ -304,12 +227,10 @@ void main() {
         final int atDispose = subject.calls.length;
 
         subject.policy.start();
-        subject.policy.markActive();
         subject.policy.onLifecycleChanged(AppLifecycleState.resumed);
-        async.elapse(HouseholdSyncPolicy.defaultPollInterval * 5);
+        async.flushMicrotasks();
 
         expect(subject.calls.length, atDispose);
-        expect(subject.policy.isPolling, isFalse);
       });
     });
   });

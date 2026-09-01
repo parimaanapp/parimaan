@@ -1,0 +1,12 @@
+# `Subscription.onHouseholdChanged` — pushed whenever another device joins,
+# rotates the invite code, or updates settings for `householdId` (W8 S10,
+# E2E_MVP_PLAN.md §14.2.10 D4/D5). `id` is the only field selected:
+# `HouseholdRepository.watchHouseholdChanges` never reads the pushed
+# payload, only that one arrived — the "every push means refetch" decision
+# (§11.2.12), same as `PantryRepository.watchPantryChanges`/
+# `RecipeRepository.watchRecipeChanges`'s identical shape.
+subscription OnHouseholdChanged($householdId: ID!) {
+  onHouseholdChanged(householdId: $householdId) {
+    id
+  }
+}

@@ -34,7 +34,6 @@ Future<
 _started() async {
   final FakeHouseholdRepository repository = FakeHouseholdRepository(
     result: testHousehold,
-    settingsResult: testHouseholdSettings,
   );
   final ProviderContainer container = _container(repository);
   await container.read(householdWizardControllerProvider.future);
@@ -337,7 +336,6 @@ void main() {
         'throughout', () async {
       final FakeHouseholdRepository repository = FakeHouseholdRepository(
         result: testHousehold,
-        settingsResult: testHouseholdSettings,
         delay: const Duration(milliseconds: 10),
       );
       final ProviderContainer container = _container(repository);
@@ -434,7 +432,6 @@ void main() {
         'crash and not a request', () async {
       final FakeHouseholdRepository repository = FakeHouseholdRepository(
         result: testHousehold,
-        settingsResult: testHouseholdSettings,
       );
       final ProviderContainer container = _container(repository);
       await container.read(householdWizardControllerProvider.future);

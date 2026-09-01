@@ -172,6 +172,9 @@ describe('updateHouseholdSettings resolver', () => {
   });
 
   // --- 3. happy path ---
+  //
+  // Return shape is `Household!`, not `HouseholdSettings!` (W8 S10, D4) —
+  // every field this file's tests care about now lives under `.settings`.
 
   it('happy path: updates only the provided fields as a member (primary role)', async () => {
     const owner = await createUser('sub-owner-happy');
@@ -182,8 +185,9 @@ describe('updateHouseholdSettings resolver', () => {
       buildEvent(householdId, { allergens: ['peanuts', 'shellfish'] }, 'sub-owner-happy'),
     );
 
-    expect(result.allergens).toEqual(['peanuts', 'shellfish']);
-    expect(result.mealsEnabled).toEqual(['breakfast', 'lunch', 'dinner']);
+    expect(result.id).toBe(householdId);
+    expect(result.settings.allergens).toEqual(['peanuts', 'shellfish']);
+    expect(result.settings.mealsEnabled).toEqual(['breakfast', 'lunch', 'dinner']);
   });
 
   it('happy path: a non-primary member can also update settings', async () => {
@@ -200,7 +204,7 @@ describe('updateHouseholdSettings resolver', () => {
     const result = await handler(
       buildEvent(householdId, { skipIngredients: ['cilantro'] }, 'sub-member-update'),
     );
-    expect(result.skipIngredients).toEqual(['cilantro']);
+    expect(result.settings.skipIngredients).toEqual(['cilantro']);
   });
 
   it('accepts and round-trips a mealStructure AWSJSON string', async () => {
@@ -215,9 +219,28 @@ describe('updateHouseholdSettings resolver', () => {
         'sub-owner-json',
       ),
     );
-    expect(JSON.parse(result.mealStructure)).toEqual({
+    expect(JSON.parse(result.settings.mealStructure)).toEqual({
       lunch: { carb: 2, sabzi_dal: 1, accompaniment: 0 },
     });
+  });
+
+  it('the returned Household also carries its members, not only settings — the whole point of the widened return shape', async () => {
+    const owner = await createUser('sub-owner-members-shape');
+    const member = await createUser('sub-member-members-shape');
+    const householdId = await createHousehold(owner, 'MSH234');
+    await withUserTransaction(
+      owner.id,
+      (client) => insertMembership(client, { householdId, userId: member.id, role: 'member' }),
+      pool,
+    );
+
+    const handler = createUpdateHouseholdSettingsHandler({ getPool: async () => pool });
+    const result = await handler(
+      buildEvent(householdId, { allergens: ['peanuts'] }, 'sub-owner-members-shape'),
+    );
+
+    expect(result.members).toHaveLength(2);
+    expect(result.members.map((m) => m.user.id).sort()).toEqual([member.id, owner.id].sort());
   });
 
   // --- 4. edge cases ---

@@ -1,4 +1,4 @@
-#import "./household_settings_fields.graphql"
+#import "./household_fields.graphql"
 
 # `Mutation.updateHouseholdSettings` — applies a PARTIAL patch to one
 # household's settings.
@@ -11,19 +11,18 @@
 # The setup wizard calls this once per step ("patch per step"), so most calls
 # carry exactly one field.
 #
-# Unlike `create_household.graphql` this selects only `HouseholdSettings` —
-# that is the mutation's whole return type. Nothing about the household's
-# identity, invite code or membership can change through this path, so there
-# is no wider shape to re-fetch. Imports `household_settings_fields.graphql`
-# directly, not `household_fields.graphql` — the latter also defines
-# `HouseholdFields`, which this operation never spreads, and a real GraphQL
-# server rejects a document that defines a fragment it never uses (see that
-# file's doc for the concrete error this produced).
+# Selects the full `HouseholdFields` fragment, not just settings (W8 S10,
+# E2E_MVP_PLAN.md §14.2.10 D4 — the mutation itself now returns `Household!`,
+# widened so it can attach to `Subscription.onHouseholdChanged`). Nothing
+# about the household's identity, invite code, or membership actually
+# changes through this path, but the wider shape is what the return type now
+# is — same fragment as `create_household.graphql`/`join_household.graphql`/
+# `rotate_invite_code.graphql`, one mapper for all five.
 mutation UpdateHouseholdSettings(
   $householdId: ID!
   $input: HouseholdSettingsInput!
 ) {
   updateHouseholdSettings(householdId: $householdId, input: $input) {
-    ...HouseholdSettingsFields
+    ...HouseholdFields
   }
 }

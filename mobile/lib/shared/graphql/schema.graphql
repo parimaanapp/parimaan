@@ -123,9 +123,12 @@ type Mutation {
   Applies a partial patch to a household's settings — every `input` field is
   optional, and an absent field leaves that column unchanged (an explicit
   `null` is rejected). Requires the caller to already be a member of
-  `householdId`.
+  `householdId`. Returns the full `Household!`, not just its settings (W8
+  S10, E2E_MVP_PLAN.md §14.2.10 D4) — the settings remain reachable via
+  `Household.settings`, and the widened shape is what lets this mutation
+  attach to `Subscription.onHouseholdChanged`.
   """
-  updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): HouseholdSettings!
+  updateHouseholdSettings(householdId: ID!, input: HouseholdSettingsInput!): Household!
 
   """
   Replaces a household's invite code with a freshly-generated one and returns
@@ -324,6 +327,29 @@ type Subscription {
     @aws_subscribe(
       mutations: ["createRecipe", "updateRecipe", "deleteRecipe", "favoriteRecipe", "setInRotation"]
     )
+
+  """
+  Pushes the household to every other connected device in `householdId` on a
+  join, an invite-code rotation, or a settings change (W8 S10,
+  E2E_MVP_PLAN.md §14.2.10 D4/D5 — closes Phase 1's DoD line, previously
+  shipped only as `HouseholdSyncPolicy`'s poll). Same subscribe-time
+  Lambda-resolver authorization pattern as `onPantryChanged`/
+  `onRecipeChanged` (SD §10.4 deviation, §11.2.9): a non-member or
+  nonexistent `householdId` is denied identically. `leaveHousehold`/
+  `deleteHousehold` are deliberately NOT on this mutation list — both return
+  `Boolean!`, a structural type mismatch against a `Household`-shaped
+  subscription regardless of authorization (AppSync requires an
+  `@aws_subscribe`d mutation's return type to match the subscription
+  field's), and even setting that aside, either would need to hydrate a
+  `Household` (members + settings, via `buildGraphQLHousehold`) for a
+  caller who has just stopped being a member — the same thing
+  `requireHouseholdMember` would deny them at that point. A member
+  leaving/a household being deleted is a known, accepted staleness gap
+  (§14.2.10) — another device's view catches up on next route entry or
+  foreground, not via a push.
+  """
+  onHouseholdChanged(householdId: ID!): Household
+    @aws_subscribe(mutations: ["joinHousehold", "rotateInviteCode", "updateHouseholdSettings"])
 }
 
 type User {

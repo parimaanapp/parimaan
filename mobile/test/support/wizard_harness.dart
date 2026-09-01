@@ -44,7 +44,6 @@ Future<WizardHarness> pumpWizardRoute(
       repository ??
       FakeHouseholdRepository(
         result: testHousehold,
-        settingsResult: testHouseholdSettings,
         // See `household_route_harness.dart`'s identical default — the
         // router's `_redirect` reads `meHouseholdsControllerProvider` on
         // every splash landing (W8 S1), and this harness always navigates

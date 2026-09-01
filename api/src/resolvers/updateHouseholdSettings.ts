@@ -5,13 +5,16 @@ import { requireHouseholdMember } from '../auth/requireHouseholdMember.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
-import { updateSettingsPartial as updateSettingsPartialRepo } from '../repositories/householdRepository.js';
+import {
+  findHouseholdById,
+  updateSettingsPartial as updateSettingsPartialRepo,
+} from '../repositories/householdRepository.js';
 import type { SettingsPatch } from '../repositories/householdRepository.js';
-import { toGraphQLSettings } from '../mappers/household.js';
-import type { GraphQLSettings } from '../mappers/household.js';
+import type { GraphQLHousehold } from '../mappers/household.js';
 import { updateHouseholdSettingsArgsSchema } from '../validation/updateHouseholdSettings.js';
 import type { HouseholdSettingsInput } from '../validation/updateHouseholdSettings.js';
 import { NotFoundError, ValidationError } from '../errors.js';
+import { buildGraphQLHousehold } from './householdView.js';
 import { withErrorHandling } from './withErrorHandling.js';
 
 /**
@@ -43,12 +46,24 @@ export const productionDeps: UpdateHouseholdSettingsResolverDeps = { getPool };
  * `requireHouseholdMember` (the primary, layer-2 authorization gate — see
  * that module's own comment on why RLS alone isn't relied on here), then a
  * single partial `UPDATE` via `updateSettingsPartial`.
+ *
+ * Returns `Household!`, not `HouseholdSettings!` (W8 S10, E2E_MVP_PLAN.md
+ * §14.2.10 D4 — a locked-SDL change): `@aws_subscribe`-attaching this
+ * mutation to `Subscription.onHouseholdChanged: Household` requires the
+ * return types to match, and the settings themselves remain reachable via
+ * `Household.settings` — the `deletePantryItem: PantryItem!` /
+ * `deleteRecipe: Recipe!` precedent for widening a mutation's return shape
+ * to feed a subscription applies here too. `settings` is looked up via a
+ * fresh `findHouseholdById` rather than reusing the just-written patch,
+ * since `buildGraphQLHousehold` needs the full `HouseholdRow` (name,
+ * inviteCode, ...) to build the response, not merely the settings row this
+ * mutation itself touches.
  */
 export const createUpdateHouseholdSettingsHandler =
   (deps: UpdateHouseholdSettingsResolverDeps) =>
   async (
     event: AppSyncResolverEvent<{ householdId: unknown; input: unknown }>,
-  ): Promise<GraphQLSettings> => {
+  ): Promise<GraphQLHousehold> => {
     const identity = extractCallerIdentity(event.identity);
 
     const parsedArgs = updateHouseholdSettingsArgsSchema.safeParse(event.arguments);
@@ -74,7 +89,14 @@ export const createUpdateHouseholdSettingsHandler =
           // defensive, not a reachable-in-practice branch.
           throw new NotFoundError('Household settings not found.');
         }
-        return toGraphQLSettings(settings);
+
+        const household = await findHouseholdById(client, householdId);
+        if (household === null) {
+          // Same defensive, not-reachable-in-practice reasoning as above —
+          // requireHouseholdMember already proved the household exists.
+          throw new NotFoundError('Household not found.');
+        }
+        return buildGraphQLHousehold(client, household);
       },
       pool,
     );
