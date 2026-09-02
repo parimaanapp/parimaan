@@ -83,6 +83,11 @@ jobs:
       # when the failure output matches this exact signature — any other
       # infra test failure fails the build immediately on the first
       # attempt, so a genuine regression is never masked.
+      #
+      # PR #86 burned all 10 attempts twice in a row — back-to-back retries
+      # with no gap don't give a runner under *sustained* (not transient)
+      # contention any time to recover, so a short backoff is inserted
+      # between attempts.
       - name: Unit tests (infra, retried on the known vitest-worker IPC-heartbeat flake)
         run: |
           set -o pipefail
@@ -100,7 +105,8 @@ jobs:
               echo "::error::infra unit tests failed with an error other than the known vitest-worker onTaskUpdate flake — not retrying."
               exit 1
             fi
-            echo "::warning::infra unit tests hit the known vitest-worker onTaskUpdate IPC-heartbeat timeout (attempt $attempt/$max_attempts) — every real test passed; retrying. See infra/vitest.config.ts."
+            echo "::warning::infra unit tests hit the known vitest-worker onTaskUpdate IPC-heartbeat timeout (attempt $attempt/$max_attempts) — every real test passed; retrying after a backoff. See infra/vitest.config.ts."
+            sleep $((attempt * 5))
             attempt=$((attempt + 1))
           done
 
