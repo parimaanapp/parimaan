@@ -25,8 +25,8 @@ import '../features/household/presentation/settings/settings_hub_screen.dart';
 import '../features/household/presentation/settings/settings_placeholder_screen.dart';
 import '../features/household/state/me_households_controller.dart';
 import '../features/household/state/pending_join_code_controller.dart';
-import '../features/home/presentation/home_screen.dart';
 import '../features/menu/presentation/recipe_picker_stub_screen.dart';
+import '../features/menu/presentation/today_screen.dart';
 import '../features/menu/presentation/weekly_plan_screen.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
 import '../features/pantry/domain/pantry_item.dart';
@@ -177,17 +177,19 @@ abstract final class AppRoutes {
   // `extra` — it has no sensible URL encoding and does not need to survive a
   // deep link.
 
-  // ── Weekly plan (wireframe screen "Weekly plan" — W9 S5) ─────────────────
+  // ── Weekly plan (wireframe screen "Weekly plan" — W9 S5/S6) ──────────────
   //
-  // A flat, pushed route outside the shell, same reasoning as pantry
-  // add/edit: its own full-screen chrome, no bottom tab bar. Whether this
-  // becomes a shell tab (a fourth bottom-nav destination) or stays reached
-  // from Home is S6's own IA call, not locked here (E2E_MVP_PLAN.md §15.3
-  // S6's own doc). No `weekStartDate` in the URL — the screen always shows
+  // A shell tab, not a flat pushed route: `app_shell.dart`'s own comment
+  // named "Plan (W9)" as the one tab this week was always going to add,
+  // ahead of S5 actually landing it — S6 (which owns the IA decision per
+  // E2E_MVP_PLAN.md §15.3) resolves that forward reference rather than
+  // inventing a new one. Sibling-branch path shape, same as [pantry]/
+  // [recipes]'s own doc on why the path nests under `/home` without being
+  // a CHILD route. No `weekStartDate` in the URL — the screen always shows
   // the CURRENT week (`domain/current_week.dart`'s client-side "today"
   // computation); a specific-week deep link is not a need this slice has.
 
-  static const String weeklyPlan = '/home/menu/weekly-plan';
+  static const String weeklyPlan = '/home/plan';
 
   /// Where tapping an empty slot on [weeklyPlan] lands today — the honest
   /// "coming soon" stand-in for W10's real recipe picker
@@ -500,7 +502,16 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (BuildContext context, GoRouterState state) =>
-                    const HomeScreen(),
+                    const TodayScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.weeklyPlan,
+                builder: (BuildContext context, GoRouterState state) =>
+                    const WeeklyPlanScreen(),
               ),
             ],
           ),
@@ -523,11 +534,6 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             ],
           ),
         ],
-      ),
-      GoRoute(
-        path: AppRoutes.weeklyPlan,
-        builder: (BuildContext context, GoRouterState state) =>
-            const WeeklyPlanScreen(),
       ),
       GoRoute(
         path: AppRoutes.recipePickerStub,

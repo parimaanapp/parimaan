@@ -8,6 +8,8 @@ import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
+import 'package:mobile/features/menu/presentation/today_screen.dart';
+import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
@@ -107,20 +109,19 @@ void main() {
       expect(_location(router), AppRoutes.signIn);
     });
 
-    testWidgets(
-      'deep navigation to /home/recipes is redirected to /sign-in',
-      (WidgetTester tester) async {
-        final GoRouter router = await _pumpRouter(
-          tester,
-          session: const AuthSession.signedOut(),
-        );
+    testWidgets('deep navigation to /home/recipes is redirected to /sign-in', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: const AuthSession.signedOut(),
+      );
 
-        router.go(AppRoutes.recipes);
-        await tester.pumpAndSettle();
+      router.go(AppRoutes.recipes);
+      await tester.pumpAndSettle();
 
-        expect(_location(router), AppRoutes.signIn);
-      },
-    );
+      expect(_location(router), AppRoutes.signIn);
+    });
 
     testWidgets(
       'deep navigation to /home/recipes/:recipeId is redirected to /sign-in',
@@ -383,13 +384,24 @@ void main() {
       );
 
       router.go(AppRoutes.home);
-      await tester.pumpAndSettle();
+      // `pump`, not `pumpAndSettle` — same reason as `/home/pantry`'s own
+      // reachability test below: with no household stubbed in this
+      // harness, `TodayScreen` shows its own `CircularProgressIndicator`
+      // (household == null), whose indeterminate animation never settles.
+      // Two pumps: one for the navigation/shell-branch transition, one for
+      // the newly-built branch's first frame.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(_location(router), AppRoutes.home);
-      expect(find.text('Signed in'), findsOne);
+      // No household stubbed in this harness — `TodayScreen` shows its own
+      // loading state rather than the former `HomeScreen`'s static "Signed
+      // in" text (W9 S6: `TodayScreen` replaced `HomeScreen` as the Home
+      // tab's real content).
+      expect(find.byKey(TodayScreen.loadingKey), findsOneWidget);
     });
 
-    testWidgets('/home renders a three-item PTabBar', (
+    testWidgets('/home renders a four-item PTabBar', (
       WidgetTester tester,
     ) async {
       final GoRouter router = await _pumpRouter(
@@ -398,10 +410,15 @@ void main() {
       );
 
       router.go(AppRoutes.home);
-      await tester.pumpAndSettle();
+      // Same reason as the reachability test above — two pumps, one for
+      // the navigation/shell-branch transition, one for the newly-built
+      // branch's first frame.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(PTabBar), findsOneWidget);
       expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Plan'), findsOneWidget);
       expect(find.text('Pantry'), findsOneWidget);
       expect(find.text('Recipes'), findsOneWidget);
     });
@@ -443,35 +460,40 @@ void main() {
       expect(_location(router), AppRoutes.recipes);
     });
 
-    testWidgets('/home/pantry/add stays reachable and renders AddMethodScreen', (
-      WidgetTester tester,
-    ) async {
-      final GoRouter router = await _pumpRouter(
-        tester,
-        session: testSignedInSession,
-      );
+    testWidgets(
+      '/home/pantry/add stays reachable and renders AddMethodScreen',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
 
-      router.go(AppRoutes.pantryAddChooseMethod('household-1'));
-      await tester.pumpAndSettle();
+        router.go(AppRoutes.pantryAddChooseMethod('household-1'));
+        await tester.pumpAndSettle();
 
-      expect(_location(router), AppRoutes.pantryAddChooseMethod('household-1'));
-      expect(find.byType(AddMethodScreen), findsOneWidget);
-    });
+        expect(
+          _location(router),
+          AppRoutes.pantryAddChooseMethod('household-1'),
+        );
+        expect(find.byType(AddMethodScreen), findsOneWidget);
+      },
+    );
 
-    testWidgets('/home/pantry/add/manual stays reachable and renders ManualAddScreen', (
-      WidgetTester tester,
-    ) async {
-      final GoRouter router = await _pumpRouter(
-        tester,
-        session: testSignedInSession,
-      );
+    testWidgets(
+      '/home/pantry/add/manual stays reachable and renders ManualAddScreen',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
 
-      router.go(AppRoutes.pantryManualAdd('household-1'));
-      await tester.pumpAndSettle();
+        router.go(AppRoutes.pantryManualAdd('household-1'));
+        await tester.pumpAndSettle();
 
-      expect(_location(router), AppRoutes.pantryManualAdd('household-1'));
-      expect(find.byType(ManualAddScreen), findsOneWidget);
-    });
+        expect(_location(router), AppRoutes.pantryManualAdd('household-1'));
+        expect(find.byType(ManualAddScreen), findsOneWidget);
+      },
+    );
 
     testWidgets(
       '/home/recipes/new/method stays reachable and renders RecipeMethodScreen, householdId threaded through',
@@ -487,7 +509,9 @@ void main() {
         expect(_location(router), AppRoutes.recipeChooseMethod('household-1'));
         expect(find.byType(RecipeMethodScreen), findsOneWidget);
         expect(
-          tester.widget<RecipeMethodScreen>(find.byType(RecipeMethodScreen)).householdId,
+          tester
+              .widget<RecipeMethodScreen>(find.byType(RecipeMethodScreen))
+              .householdId,
           'household-1',
         );
       },
@@ -544,9 +568,10 @@ void main() {
 
         expect(_location(router), AppRoutes.recipeDraftReview('household-1'));
         expect(find.byType(RecipeDraftReviewScreen), findsOneWidget);
-        final RecipeDraftReviewScreen screen = tester.widget<RecipeDraftReviewScreen>(
-          find.byType(RecipeDraftReviewScreen),
-        );
+        final RecipeDraftReviewScreen screen = tester
+            .widget<RecipeDraftReviewScreen>(
+              find.byType(RecipeDraftReviewScreen),
+            );
         expect(screen.householdId, 'household-1');
         expect(screen.draft, draft);
       },
@@ -582,96 +607,146 @@ void main() {
       },
     );
 
-    testWidgets('/home/recipes/:recipeId stays reachable and renders RecipeDetailScreen', (
-      WidgetTester tester,
-    ) async {
+    testWidgets(
+      '/home/recipes/:recipeId stays reachable and renders RecipeDetailScreen',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.recipeDetail('recipe-1'));
+        // Not `pumpAndSettle`: `RecipeDetailScreen`'s spinner never settles
+        // with no household data stubbed in this harness — same reasoning as
+        // the `/home/pantry` reachability test above. Two pumps, not one:
+        // unlike a shell-branch swap, this is a real pushed-route page
+        // transition (this route lives outside the shell, like
+        // `pantryManualAdd`), which needs a frame for the transition itself
+        // before the new page's own build settles.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(_location(router), AppRoutes.recipeDetail('recipe-1'));
+        expect(find.byType(RecipeDetailScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets('tapping the Pantry tab switches branch and preserves Home '
+        'branch state', (WidgetTester tester) async {
       final GoRouter router = await _pumpRouter(
         tester,
         session: testSignedInSession,
       );
 
-      router.go(AppRoutes.recipeDetail('recipe-1'));
-      // Not `pumpAndSettle`: `RecipeDetailScreen`'s spinner never settles
-      // with no household data stubbed in this harness — same reasoning as
-      // the `/home/pantry` reachability test above. Two pumps, not one:
-      // unlike a shell-branch swap, this is a real pushed-route page
-      // transition (this route lives outside the shell, like
-      // `pantryManualAdd`), which needs a frame for the transition itself
-      // before the new page's own build settles.
+      router.go(AppRoutes.home);
+      // `pump`, not `pumpAndSettle` — `TodayScreen`'s own spinner never
+      // settles with no household data stubbed in this harness. Two pumps:
+      // one for the navigation/shell-branch transition itself, one for the
+      // newly-built branch's first frame — one alone leaves the widget
+      // tree mid-transition, with `PTabBar`/`TodayScreen` not yet present
+      // to find.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      expect(_location(router), AppRoutes.home);
 
-      expect(_location(router), AppRoutes.recipeDetail('recipe-1'));
-      expect(find.byType(RecipeDetailScreen), findsOneWidget);
+      await tester.tap(find.text('Pantry'));
+      // Same reason as the test above: PantryListScreen's spinner never
+      // settles with no household data stubbed in this harness.
+      await tester.pump();
+      expect(_location(router), AppRoutes.pantry);
+
+      // A StatefulShellRoute keeps every branch's widget tree alive in an
+      // IndexedStack rather than disposing it on switch — this is the
+      // property that makes the shell "stateful" rather than a plain
+      // rebuild-per-tab layout. `skipOffstage: false` because the whole
+      // point of the assertion is that Home's tree survives while it is
+      // the *unpainted* branch — the default `find.text` would only prove
+      // the opposite.
+      expect(
+        find.byKey(TodayScreen.loadingKey, skipOffstage: false),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Home'));
+      // `pump`, not `pumpAndSettle` — same reason as this test's own
+      // initial navigation to /home: `TodayScreen`'s spinner never settles
+      // with no household data stubbed in this harness.
+      await tester.pump();
+      expect(_location(router), AppRoutes.home);
     });
 
-    testWidgets(
-      'tapping the Pantry tab switches branch and preserves Home '
-      'branch state',
-      (WidgetTester tester) async {
-        final GoRouter router = await _pumpRouter(
-          tester,
-          session: testSignedInSession,
-        );
+    testWidgets('tapping the Plan tab switches branch and preserves Home '
+        'branch state', (WidgetTester tester) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
 
-        router.go(AppRoutes.home);
-        await tester.pumpAndSettle();
-        expect(_location(router), AppRoutes.home);
+      router.go(AppRoutes.home);
+      // Same reason as the Pantry-tab test above.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_location(router), AppRoutes.home);
 
-        await tester.tap(find.text('Pantry'));
-        // Same reason as the test above: PantryListScreen's spinner never
-        // settles with no household data stubbed in this harness.
-        await tester.pump();
-        expect(_location(router), AppRoutes.pantry);
+      await tester.tap(find.text('Plan'));
+      // Same reason as the Pantry-tab test above: `WeeklyPlanScreen`'s
+      // own spinner never settles with no household data stubbed in this
+      // harness.
+      await tester.pump();
+      expect(_location(router), AppRoutes.weeklyPlan);
+      expect(find.byType(WeeklyPlanScreen), findsOneWidget);
 
-        // A StatefulShellRoute keeps every branch's widget tree alive in an
-        // IndexedStack rather than disposing it on switch — this is the
-        // property that makes the shell "stateful" rather than a plain
-        // rebuild-per-tab layout. `skipOffstage: false` because the whole
-        // point of the assertion is that Home's tree survives while it is
-        // the *unpainted* branch — the default `find.text` would only prove
-        // the opposite.
-        expect(
-          find.text('Signed in', skipOffstage: false),
-          findsOneWidget,
-        );
+      // Same IndexedStack-keeps-every-branch-alive assertion as the
+      // Pantry-tab test above.
+      expect(
+        find.byKey(TodayScreen.loadingKey, skipOffstage: false),
+        findsOneWidget,
+      );
 
-        await tester.tap(find.text('Home'));
-        await tester.pumpAndSettle();
-        expect(_location(router), AppRoutes.home);
-      },
-    );
+      await tester.tap(find.text('Home'));
+      await tester.pump();
+      expect(_location(router), AppRoutes.home);
+    });
 
-    testWidgets(
-      'tapping the Recipes tab switches branch and preserves Home '
-      'branch state',
-      (WidgetTester tester) async {
-        final GoRouter router = await _pumpRouter(
-          tester,
-          session: testSignedInSession,
-        );
+    testWidgets('tapping the Recipes tab switches branch and preserves Home '
+        'branch state', (WidgetTester tester) async {
+      final GoRouter router = await _pumpRouter(
+        tester,
+        session: testSignedInSession,
+      );
 
-        router.go(AppRoutes.home);
-        await tester.pumpAndSettle();
-        expect(_location(router), AppRoutes.home);
+      router.go(AppRoutes.home);
+      // `pump`, not `pumpAndSettle` — `TodayScreen`'s own spinner never
+      // settles with no household data stubbed in this harness. Two pumps:
+      // one for the navigation/shell-branch transition itself, one for the
+      // newly-built branch's first frame — one alone leaves the widget
+      // tree mid-transition, with `PTabBar`/`TodayScreen` not yet present
+      // to find.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_location(router), AppRoutes.home);
 
-        await tester.tap(find.text('Recipes'));
-        // Same reason as the Pantry-tab test above: RecipesLibraryScreen's
-        // spinner never settles with no household data stubbed in this
-        // harness.
-        await tester.pump();
-        expect(_location(router), AppRoutes.recipes);
+      await tester.tap(find.text('Recipes'));
+      // Same reason as the Pantry-tab test above: RecipesLibraryScreen's
+      // spinner never settles with no household data stubbed in this
+      // harness. Two pumps, same transition-then-first-frame reasoning as
+      // this test's own initial navigation to /home.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_location(router), AppRoutes.recipes);
 
-        expect(
-          find.text('Signed in', skipOffstage: false),
-          findsOneWidget,
-        );
+      expect(
+        find.byKey(TodayScreen.loadingKey, skipOffstage: false),
+        findsOneWidget,
+      );
 
-        await tester.tap(find.text('Home'));
-        await tester.pumpAndSettle();
-        expect(_location(router), AppRoutes.home);
-      },
-    );
+      await tester.tap(find.text('Home'));
+      // `pump`, not `pumpAndSettle` — same reason as this test's own
+      // initial navigation to /home: `TodayScreen`'s spinner never settles
+      // with no household data stubbed in this harness.
+      await tester.pump();
+      expect(_location(router), AppRoutes.home);
+    });
 
     testWidgets('/join stays reachable and is not bounced back', (
       WidgetTester tester,

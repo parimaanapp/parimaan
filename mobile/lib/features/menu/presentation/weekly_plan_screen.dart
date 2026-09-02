@@ -29,7 +29,7 @@ const List<String> _weekdayNames = <String>[
   'Sunday',
 ];
 
-/// Wireframe screen "Weekly plan" (E2E_MVP_PLAN.md §15.1/§15.3 S5) — a
+/// Wireframe screen "Weekly plan" (E2E_MVP_PLAN.md §15.1/§15.3 S5/S6) — a
 /// 7-day grid, each day showing its household-configured meal slots, each
 /// slot filled or addable. Rendered as seven stacked day SECTIONS in one
 /// vertical scroll, not seven side-by-side columns — a judgment call (no
@@ -38,8 +38,12 @@ const List<String> _weekdayNames = <String>[
 /// flagged here rather than presented as locked, same as every other
 /// undocumented-in-the-wireframe call this codebase makes explicitly.
 ///
+/// The "Plan" shell tab (S6) — no back button, same as `PantryListScreen`/
+/// `RecipesLibraryScreen`'s own tab-root `PTopBar`s (a tab is a peer of
+/// Home, not a screen pushed on top of it).
+///
 /// Resolves its household via [activeHouseholdProvider], same convention as
-/// `PantryListScreen`/`HomeScreen` — this route carries no `:householdId`
+/// `PantryListScreen`/`TodayScreen` — this route carries no `:householdId`
 /// path segment.
 class WeeklyPlanScreen extends ConsumerWidget {
   const WeeklyPlanScreen({super.key});
@@ -86,11 +90,7 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        PTopBar(
-          title: 'Weekly plan',
-          onBack: () => context.go(AppRoutes.home),
-          backSemanticLabel: 'Back to home',
-        ),
+        const PTopBar(title: 'Weekly plan'),
         Expanded(
           // A value wins over a spinner if one exists — `valueOrNull`, not
           // `value` (SettingsHubScreen's own established shape) — both

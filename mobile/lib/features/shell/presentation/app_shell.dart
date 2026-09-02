@@ -6,9 +6,11 @@ import '../../../shared/ui/components/p_tab_bar.dart';
 /// The signed-in app's persistent chrome: an [IndexedStack]-backed bottom
 /// tab bar over the [StatefulShellRoute] branches in `router.dart`.
 ///
-/// Three tabs — Plan (W9) and List (W11) are later weeks' work, not missing
-/// pieces of this one. Each addition is its own slice, not a growth of this
-/// file.
+/// Four tabs — List (W11) is a later week's work, not a missing piece of
+/// this one. Plan landed in W9 S6, per this file's own comment naming it
+/// ahead of time as the one planned addition this slice was always going
+/// to make; each further addition is still its own slice, not a growth of
+/// this file.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -19,6 +21,11 @@ class AppShell extends StatelessWidget {
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
       label: 'Home',
+    ),
+    PTabBarItem(
+      icon: Icons.calendar_today_outlined,
+      activeIcon: Icons.calendar_today,
+      label: 'Plan',
     ),
     PTabBarItem(
       icon: Icons.inventory_2_outlined,
