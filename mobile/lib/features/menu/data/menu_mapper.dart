@@ -2,6 +2,8 @@ import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
 import '../../../shared/graphql/operations/__generated__/menu_fields.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/menu_item_fields.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/menu_recipe_fields.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/proposed_menu_item_fields.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/unfilled_slot_fields.data.gql.dart';
 import '../../recipes/data/recipe_mapper.dart';
 import '../../recipes/domain/recipe.dart';
 import '../domain/menu.dart';
@@ -92,3 +94,26 @@ GMealType _mealSlotToGraphQL(String mealSlot) => switch (mealSlot) {
   'dinner' => GMealType.dinner,
   _ => throw ArgumentError('Unrecognized MealType wire value: $mealSlot'),
 };
+
+/// The `UnfilledSlot` counterpart to [menuFromGraphQL] — a fragment
+/// interface (`UnfilledSlotFields`), shared by `AutoFillPreviewResult` and
+/// `AutoFillResult` (W10 §16.2.3).
+UnfilledSlot unfilledSlotFromGraphQL(GUnfilledSlotFields data) =>
+    UnfilledSlot(
+      dayOfWeek: data.dayOfWeek,
+      mealSlot: data.mealSlot.name,
+      slotRole: recipeRoleFromGraphQL(data.slotRole),
+    );
+
+/// The `ProposedMenuItem` counterpart to [menuItemFromGraphQL] —
+/// `AutoFillPreviewResult.items`' own shape (W10 §16.2.1). Reuses
+/// [_menuRecipeFromGraphQL] for the same list-scale `Recipe` selection
+/// `MenuItemFields` embeds.
+ProposedMenuItem proposedMenuItemFromGraphQL(GProposedMenuItemFields data) =>
+    ProposedMenuItem(
+      recipeId: data.recipeId,
+      recipe: _menuRecipeFromGraphQL(data.recipe),
+      dayOfWeek: data.dayOfWeek,
+      mealSlot: data.mealSlot.name,
+      slotRole: recipeRoleFromGraphQL(data.slotRole),
+    );

@@ -1,0 +1,9 @@
+# The one canonical `UnfilledSlot` selection set — shared by
+# `AutoFillPreviewResult.unfilledSlots` and `AutoFillResult.unfilledSlots`
+# (W10 §16.2.3), same "one fragment, one generated interface, one mapper"
+# reasoning as `MenuItemFields`.
+fragment UnfilledSlotFields on UnfilledSlot {
+  dayOfWeek
+  mealSlot
+  slotRole
+}

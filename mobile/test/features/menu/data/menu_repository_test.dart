@@ -252,4 +252,149 @@ void main() {
       },
     );
   });
+
+  group('FerryMenuRepository.autoFillPreview', () {
+    test('sends the AutoFillPreview query with menuId, maps items/filledCount/unfilledSlots', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': autoFillPreviewWireData(
+            items: <Map<String, dynamic>>[
+              proposedMenuItemWireNode(recipeId: 'recipe-1', dayOfWeek: 0, mealSlot: 'lunch', slotRole: 'carb'),
+            ],
+            unfilledSlots: <Map<String, dynamic>>[
+              unfilledSlotWireNode(dayOfWeek: 1, mealSlot: 'lunch', slotRole: 'sabzi_dal'),
+            ],
+          ),
+        },
+      );
+
+      final AutoFillPreviewResult result = await subject.repository.autoFillPreview('menu-1');
+
+      final Request sent = subject.link.requests.single;
+      expect(sent.operation.operationName, 'AutoFillPreview');
+      expect(sent.variables['menuId'], 'menu-1');
+      expect(result.items, hasLength(1));
+      expect(result.items.single.recipeId, 'recipe-1');
+      expect(result.items.single.recipe.title, 'Rajma');
+      expect(result.filledCount, 1);
+      expect(result.unfilledSlots, hasLength(1));
+      expect(result.unfilledSlots.single.dayOfWeek, 1);
+      expect(result.unfilledSlots.single.slotRole, RecipeRole.sabziDal);
+    });
+
+    test('writes nothing to Ferry\'s cache — always network, matching fetchMenu\'s own NoCache contract', () async {
+      // Calling twice with a fresh subject each time and asserting two
+      // real network requests were sent (not one request + one cache hit)
+      // is the observable proxy for FetchPolicy.NoCache from outside the
+      // repository.
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': autoFillPreviewWireData()},
+      );
+
+      await subject.repository.autoFillPreview('menu-1');
+      await subject.repository.autoFillPreview('menu-1');
+
+      expect(subject.link.requests, hasLength(2));
+    });
+
+    test('a partial proposal (some slots unfilled) surfaces cleanly, not an error', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': autoFillPreviewWireData(
+            items: <Map<String, dynamic>>[],
+            filledCount: 0,
+            unfilledSlots: <Map<String, dynamic>>[unfilledSlotWireNode()],
+          ),
+        },
+      );
+
+      final AutoFillPreviewResult result = await subject.repository.autoFillPreview('menu-1');
+      expect(result.items, isEmpty);
+      expect(result.filledCount, 0);
+      expect(result.unfilledSlots, hasLength(1));
+    });
+  });
+
+  group('FerryMenuRepository.autoFillWeek', () {
+    test('sends the AutoFillWeek mutation with menuId/overwrite/items and maps the full result', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': autoFillWeekWireData(
+            menu: menuWireNode(items: <Map<String, dynamic>>[menuItemWireNode()]),
+            filledCount: 1,
+          ),
+        },
+      );
+
+      final NewMenuItem draft = NewMenuItem(
+        recipeId: 'recipe-1',
+        dayOfWeek: 0,
+        mealSlot: 'lunch',
+        slotRole: RecipeRole.sabziDal,
+      );
+      final AutoFillResult result = await subject.repository.autoFillWeek(
+        'menu-1',
+        overwrite: true,
+        items: <NewMenuItem>[draft],
+      );
+
+      final Request sent = subject.link.requests.single;
+      expect(sent.operation.operationName, 'AutoFillWeek');
+      expect(sent.variables['menuId'], 'menu-1');
+      expect(sent.variables['overwrite'], isTrue);
+      final List<dynamic> items = sent.variables['items'] as List<dynamic>;
+      expect(items, hasLength(1));
+      final Map<String, dynamic> sentItem = items.single as Map<String, dynamic>;
+      expect(sentItem['recipeId'], 'recipe-1');
+      expect(sentItem['mealSlot'], 'lunch');
+      expect(sentItem['slotRole'], 'sabzi_dal');
+      expect(result.menu.items, hasLength(1));
+      expect(result.filledCount, 1);
+    });
+
+    test('an empty items list sends an empty array, not null', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': autoFillWeekWireData(filledCount: 0)},
+      );
+
+      await subject.repository.autoFillWeek('menu-1', overwrite: false, items: const <NewMenuItem>[]);
+
+      final Request sent = subject.link.requests.single;
+      expect(sent.variables['items'], isEmpty);
+    });
+
+    test('filledCount lower than the submitted item count (a live re-validation skip) surfaces via unfilledSlots, not an error', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': autoFillWeekWireData(
+            menu: menuWireNode(items: const <Map<String, dynamic>>[]),
+            filledCount: 0,
+            unfilledSlots: <Map<String, dynamic>>[unfilledSlotWireNode()],
+          ),
+        },
+      );
+
+      final AutoFillResult result = await subject.repository.autoFillWeek(
+        'menu-1',
+        overwrite: false,
+        items: <NewMenuItem>[
+          NewMenuItem(recipeId: 'recipe-1', dayOfWeek: 0, mealSlot: 'lunch', slotRole: RecipeRole.sabziDal),
+        ],
+      );
+
+      expect(result.filledCount, 0);
+      expect(result.unfilledSlots, hasLength(1));
+    });
+
+    test('a server rejection of the whole call surfaces as a typed AppError, not swallowed', () async {
+      final subject = _subject(
+        (Request _) => _errorBody('FORBIDDEN', 'You are not a member of this household.'),
+      );
+
+      await expectLater(
+        subject.repository.autoFillWeek('menu-1', overwrite: false, items: const <NewMenuItem>[]),
+        throwsA(isA<ForbiddenError>()),
+      );
+    });
+  });
 }

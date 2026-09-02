@@ -261,4 +261,137 @@ void main() {
       expect(repository.fetchCalls, hasLength(2));
     });
   });
+
+  group('CurrentMenuController.previewAutoFill', () {
+    test('previews against the current menu id and returns the proposal — mutates NOTHING in state', () async {
+      final AutoFillPreviewResult preview = AutoFillPreviewResult(
+        items: <ProposedMenuItem>[
+          ProposedMenuItem(
+            recipeId: 'recipe-1',
+            recipe: testMenuRecipe,
+            dayOfWeek: 0,
+            mealSlot: 'lunch',
+            slotRole: RecipeRole.sabziDal,
+          ),
+        ],
+        filledCount: 1,
+        unfilledSlots: const <UnfilledSlot>[],
+      );
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+        previewResult: preview,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(currentMenuControllerProvider(key).future);
+
+      final AutoFillPreviewResult result = await container
+          .read(currentMenuControllerProvider(key).notifier)
+          .previewAutoFill();
+
+      expect(result, preview);
+      expect(repository.previewCalls, <String>[testEmptyMenu.id]);
+      // No refresh, no state change — a pure read.
+      expect(repository.fetchCalls, hasLength(1));
+      expect(
+        container.read(currentMenuControllerProvider(key)).requireValue,
+        testEmptyMenu,
+      );
+    });
+
+    test('a preview failure throws — the caller must see it', () async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+        previewError: const ForbiddenError('Not a member.'),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(currentMenuControllerProvider(key).future);
+
+      await expectLater(
+        container
+            .read(currentMenuControllerProvider(key).notifier)
+            .previewAutoFill(),
+        throwsA(isA<ForbiddenError>()),
+      );
+    });
+
+    test('calling twice produces two independent network calls — no caching of a proposal', () async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+        previewResult: const AutoFillPreviewResult(
+          items: <ProposedMenuItem>[],
+          filledCount: 0,
+          unfilledSlots: <UnfilledSlot>[],
+        ),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(currentMenuControllerProvider(key).future);
+      final CurrentMenuController notifier = container.read(
+        currentMenuControllerProvider(key).notifier,
+      );
+
+      await notifier.previewAutoFill();
+      await notifier.previewAutoFill();
+
+      expect(repository.previewCalls, hasLength(2));
+    });
+  });
+
+  group('CurrentMenuController.commitAutoFill', () {
+    test('commits against the current menu id and sets state directly from the result — no extra refresh round trip', () async {
+      final AutoFillResult commitResult = AutoFillResult(
+        menu: testMenuWithItems,
+        filledCount: 1,
+        unfilledSlots: const <UnfilledSlot>[],
+      );
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+        autoFillResult: commitResult,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(currentMenuControllerProvider(key).future);
+
+      final NewMenuItem draft = NewMenuItem(
+        recipeId: 'recipe-1',
+        dayOfWeek: 0,
+        mealSlot: 'lunch',
+        slotRole: RecipeRole.sabziDal,
+      );
+      final AutoFillResult result = await container
+          .read(currentMenuControllerProvider(key).notifier)
+          .commitAutoFill(overwrite: true, items: <NewMenuItem>[draft]);
+
+      expect(result, commitResult);
+      expect(repository.autoFillCalls, hasLength(1));
+      expect(repository.autoFillCalls.single.$1, testEmptyMenu.id);
+      expect(repository.autoFillCalls.single.$2, isTrue);
+      expect(repository.autoFillCalls.single.$3, <NewMenuItem>[draft]);
+      // State updated directly from the result's own menu — fetchMenu is
+      // NOT called again (unlike addMenuItem/removeMenuItem's refresh()).
+      expect(repository.fetchCalls, hasLength(1));
+      expect(
+        container.read(currentMenuControllerProvider(key)).requireValue,
+        testMenuWithItems,
+      );
+    });
+
+    test('a commit failure throws — the caller must see it, state is left unchanged', () async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+        autoFillError: const ConflictError('This meal slot is full.'),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(currentMenuControllerProvider(key).future);
+
+      await expectLater(
+        container
+            .read(currentMenuControllerProvider(key).notifier)
+            .commitAutoFill(overwrite: false, items: const <NewMenuItem>[]),
+        throwsA(isA<ConflictError>()),
+      );
+      expect(
+        container.read(currentMenuControllerProvider(key)).requireValue,
+        testEmptyMenu,
+      );
+    });
+  });
 }

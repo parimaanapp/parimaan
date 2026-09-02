@@ -1,12 +1,20 @@
+import 'package:built_collection/built_collection.dart';
 import 'package:ferry/ferry.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/errors/app_error.dart';
+import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
 import '../../../shared/graphql/client.dart';
 import '../../../shared/graphql/graphql_error_mapper.dart';
 import '../../../shared/graphql/operations/__generated__/add_menu_item.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/add_menu_item.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/add_menu_item.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/auto_fill_preview.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/auto_fill_preview.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/auto_fill_preview.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/auto_fill_week.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/auto_fill_week.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/auto_fill_week.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.var.gql.dart';
@@ -67,6 +75,34 @@ abstract interface class MenuRepository {
   /// never an error — matching `HouseholdRepository.leaveHousehold`'s
   /// precedent, not `PantryRepository.deletePantryItem`'s.
   Future<bool> removeMenuItem(String id);
+
+  /// Proposes recipes for every currently-empty slot on [menuId]'s menu —
+  /// a pure read, writes NOTHING (W10 §16.2.1, D3 — a deliberate dry-run
+  /// deviation from a single write-and-return mutation). Safe to call
+  /// repeatedly for a free "regenerate": each call is an
+  /// independently-random proposal, never the same twice (D11).
+  ///
+  /// **Always goes to the network**, never ferry's cache — same
+  /// `FetchPolicy.NoCache` reasoning as [fetchMenu]: a proposal that's
+  /// silently served stale would defeat the whole point of "regenerate."
+  Future<AutoFillPreviewResult> autoFillPreview(String menuId);
+
+  /// Commits [items] (typically an accepted or edited [autoFillPreview]
+  /// proposal) to [menuId]'s menu. [overwrite] `true` deletes every
+  /// existing item without a `madeAt` set first — an item the household
+  /// already cooked is never deleted regardless of [overwrite].
+  ///
+  /// Every item in [items] is re-validated against LIVE server state
+  /// rather than trusted from wherever it came from — one that no longer
+  /// fits is silently skipped, not an error (best-effort partial commit);
+  /// [AutoFillResult.filledCount]/`unfilledSlots` report exactly what
+  /// happened, which can legitimately differ from what a prior
+  /// [autoFillPreview] call promised.
+  Future<AutoFillResult> autoFillWeek(
+    String menuId, {
+    required bool overwrite,
+    required List<NewMenuItem> items,
+  });
 }
 
 /// Ferry-backed [MenuRepository].
@@ -125,6 +161,52 @@ class FerryMenuRepository implements MenuRepository {
 
     final GRemoveMenuItemData data = await _execute(request);
     return data.removeMenuItem;
+  }
+
+  @override
+  Future<AutoFillPreviewResult> autoFillPreview(String menuId) async {
+    final GAutoFillPreviewReq request = GAutoFillPreviewReq(
+      (GAutoFillPreviewReqBuilder b) => b
+        ..vars = (GAutoFillPreviewVarsBuilder()..menuId = menuId)
+        ..fetchPolicy = FetchPolicy.NoCache,
+    );
+
+    final GAutoFillPreviewData data = await _execute(request);
+    return AutoFillPreviewResult(
+      items: data.autoFillPreview.items
+          .map(proposedMenuItemFromGraphQL)
+          .toList(growable: false),
+      filledCount: data.autoFillPreview.filledCount,
+      unfilledSlots: data.autoFillPreview.unfilledSlots
+          .map(unfilledSlotFromGraphQL)
+          .toList(growable: false),
+    );
+  }
+
+  @override
+  Future<AutoFillResult> autoFillWeek(
+    String menuId, {
+    required bool overwrite,
+    required List<NewMenuItem> items,
+  }) async {
+    final GAutoFillWeekReq request = GAutoFillWeekReq(
+      (GAutoFillWeekReqBuilder b) => b
+        ..vars = (GAutoFillWeekVarsBuilder()
+          ..menuId = menuId
+          ..overwrite = overwrite
+          ..items = ListBuilder<GMenuItemInput>(
+            items.map(menuItemInputToGraphQL),
+          )),
+    );
+
+    final GAutoFillWeekData data = await _execute(request);
+    return AutoFillResult(
+      menu: menuFromGraphQL(data.autoFillWeek.menu),
+      filledCount: data.autoFillWeek.filledCount,
+      unfilledSlots: data.autoFillWeek.unfilledSlots
+          .map(unfilledSlotFromGraphQL)
+          .toList(growable: false),
+    );
   }
 
   /// See `HouseholdRepository`'s identical `_execute` for the full

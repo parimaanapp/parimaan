@@ -15,6 +15,10 @@ class FakeMenuRepository implements MenuRepository {
     this.addError,
     this.removeResult = true,
     this.removeError,
+    this.previewResult,
+    this.previewError,
+    this.autoFillResult,
+    this.autoFillError,
     this.delay,
   });
 
@@ -62,6 +66,19 @@ class FakeMenuRepository implements MenuRepository {
   Object? removeError;
   final List<String> removeCalls = <String>[];
 
+  // ── autoFillPreview ────────────────────────────────────────────────────
+
+  AutoFillPreviewResult? previewResult;
+  Object? previewError;
+  final List<String> previewCalls = <String>[];
+
+  // ── autoFillWeek ───────────────────────────────────────────────────────
+
+  AutoFillResult? autoFillResult;
+  Object? autoFillError;
+  final List<(String menuId, bool overwrite, List<NewMenuItem> items)>
+  autoFillCalls = <(String, bool, List<NewMenuItem>)>[];
+
   @override
   Future<Menu?> fetchMenu(String householdId, DateTime weekStartDate) async {
     fetchCalls.add((householdId, weekStartDate));
@@ -108,5 +125,37 @@ class FakeMenuRepository implements MenuRepository {
     if (delay != null) await Future<void>.delayed(delay!);
     if (removeError != null) throw removeError!;
     return removeResult;
+  }
+
+  @override
+  Future<AutoFillPreviewResult> autoFillPreview(String menuId) async {
+    previewCalls.add(menuId);
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (previewError != null) throw previewError!;
+    final AutoFillPreviewResult? result = previewResult;
+    if (result == null) {
+      throw StateError(
+        'FakeMenuRepository.autoFillPreview: no previewResult configured.',
+      );
+    }
+    return result;
+  }
+
+  @override
+  Future<AutoFillResult> autoFillWeek(
+    String menuId, {
+    required bool overwrite,
+    required List<NewMenuItem> items,
+  }) async {
+    autoFillCalls.add((menuId, overwrite, items));
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (autoFillError != null) throw autoFillError!;
+    final AutoFillResult? result = autoFillResult;
+    if (result == null) {
+      throw StateError(
+        'FakeMenuRepository.autoFillWeek: no autoFillResult configured.',
+      );
+    }
+    return result;
   }
 }

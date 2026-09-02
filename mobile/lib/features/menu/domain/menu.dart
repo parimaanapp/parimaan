@@ -112,3 +112,99 @@ class NewMenuItem {
   final RecipeRole slotRole;
   final int? servingsOverride;
 }
+
+/// One slot `autoFillPreview`/`autoFillWeek` could not fill (W10 §16.2.3,
+/// D5) — either the household has no in-rotation recipes for [slotRole] at
+/// all, or (only reachable via a commit's own live re-validation) the slot
+/// stopped being available between when a proposal was generated and when
+/// it was committed. Never distinguishes the two reasons — see each
+/// repository method's own doc for what's actually knowable at that point.
+class UnfilledSlot {
+  const UnfilledSlot({
+    required this.dayOfWeek,
+    required this.mealSlot,
+    required this.slotRole,
+  });
+
+  final int dayOfWeek;
+
+  /// Raw `MealType` wire value — see [MenuItem.mealSlot]'s doc for why.
+  final String mealSlot;
+
+  final RecipeRole slotRole;
+
+  @override
+  String toString() =>
+      'UnfilledSlot(dayOfWeek: $dayOfWeek, mealSlot: $mealSlot, slotRole: ${slotRole.name})';
+}
+
+/// One recipe `autoFillPreview` proposes for one empty slot — NOT YET
+/// written to `menu_items` (W10 §16.2.1's dry-run design). Deliberately
+/// carries the same four fields [NewMenuItem] does (minus
+/// `servingsOverride`, which a proposal never sets) so a
+/// [ProposedMenuItem] converts straight into a [NewMenuItem] for
+/// `autoFillWeek`'s own `items` argument — see [ProposedMenuItem.toDraft].
+class ProposedMenuItem {
+  const ProposedMenuItem({
+    required this.recipeId,
+    required this.recipe,
+    required this.dayOfWeek,
+    required this.mealSlot,
+    required this.slotRole,
+  });
+
+  final String recipeId;
+  final Recipe recipe;
+  final int dayOfWeek;
+
+  /// Raw `MealType` wire value — see [MenuItem.mealSlot]'s doc for why.
+  final String mealSlot;
+
+  final RecipeRole slotRole;
+
+  /// The [NewMenuItem] this proposal becomes when submitted to
+  /// `autoFillWeek` — verbatim if accepted as-is, or a caller may build a
+  /// different [NewMenuItem] for the same slot instead (a manual swap).
+  NewMenuItem toDraft() => NewMenuItem(
+    recipeId: recipeId,
+    dayOfWeek: dayOfWeek,
+    mealSlot: mealSlot,
+    slotRole: slotRole,
+  );
+
+  @override
+  String toString() =>
+      'ProposedMenuItem(recipeId: $recipeId, dayOfWeek: $dayOfWeek, mealSlot: $mealSlot, slotRole: ${slotRole.name})';
+}
+
+/// `Query.autoFillPreview`'s result — a proposal, not yet written. See
+/// `MenuRepository.autoFillPreview`'s own doc for the dry-run contract.
+class AutoFillPreviewResult {
+  const AutoFillPreviewResult({
+    required this.items,
+    required this.filledCount,
+    required this.unfilledSlots,
+  });
+
+  final List<ProposedMenuItem> items;
+  final int filledCount;
+  final List<UnfilledSlot> unfilledSlots;
+}
+
+/// `Mutation.autoFillWeek`'s result — the committed [menu], plus how many
+/// of the submitted items actually landed. `filledCount` can legitimately
+/// be LOWER than the number of items submitted: `autoFillWeek` re-validates
+/// every item against live state rather than trusting the caller's own
+/// proposal, and silently skips anything that no longer fits (W10 §16.2.1,
+/// D6 — best-effort partial, never an error).
+class AutoFillResult {
+  const AutoFillResult({
+    required this.menu,
+    required this.filledCount,
+    required this.unfilledSlots,
+  });
+
+  final Menu menu;
+  final int filledCount;
+  final List<UnfilledSlot> unfilledSlots;
+}

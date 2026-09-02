@@ -38,17 +38,23 @@ class FakeRecipeRepository implements RecipeRepository {
   /// state.
   Duration? delay;
 
-  /// Every `(householdId, role, isFavorite)` triple, in order.
-  final List<({String householdId, RecipeRole? role, bool? isFavorite})>
-  calls = <({String householdId, RecipeRole? role, bool? isFavorite})>[];
+  /// Every `(householdId, role, isFavorite, inRotation)` quadruple, in order.
+  final List<({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>
+  calls = <({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>[];
 
   @override
   Future<List<Recipe>> fetchRecipes(
     String householdId, {
     RecipeRole? role,
     bool? isFavorite,
+    bool? inRotation,
   }) async {
-    calls.add((householdId: householdId, role: role, isFavorite: isFavorite));
+    calls.add((
+      householdId: householdId,
+      role: role,
+      isFavorite: isFavorite,
+      inRotation: inRotation,
+    ));
     final Duration? delay = this.delay;
     if (delay != null) {
       await Future<void>.delayed(delay);

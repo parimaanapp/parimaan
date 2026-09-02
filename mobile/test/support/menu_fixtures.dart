@@ -165,3 +165,67 @@ Map<String, dynamic> addMenuItemWireData({Map<String, dynamic>? item}) =>
 
 Map<String, dynamic> removeMenuItemWireData({bool result = true}) =>
     <String, dynamic>{'removeMenuItem': result};
+
+/// The exact JSON AppSync returns for the shared `UnfilledSlotFields`
+/// fragment — W10 §16.2.3.
+Map<String, dynamic> unfilledSlotWireNode({
+  int dayOfWeek = 0,
+  String mealSlot = 'lunch',
+  String slotRole = 'sabzi_dal',
+}) => <String, dynamic>{
+  '__typename': 'UnfilledSlot',
+  'dayOfWeek': dayOfWeek,
+  'mealSlot': mealSlot,
+  'slotRole': slotRole,
+};
+
+/// The exact JSON AppSync returns for the shared `ProposedMenuItemFields`
+/// fragment — W10 §16.2.1.
+Map<String, dynamic> proposedMenuItemWireNode({
+  String recipeId = 'recipe-1',
+  int dayOfWeek = 0,
+  String mealSlot = 'lunch',
+  String slotRole = 'sabzi_dal',
+  Map<String, dynamic>? recipe,
+}) => <String, dynamic>{
+  '__typename': 'ProposedMenuItem',
+  'recipeId': recipeId,
+  'dayOfWeek': dayOfWeek,
+  'mealSlot': mealSlot,
+  'slotRole': slotRole,
+  'recipe': recipe ?? menuRecipeWireNode(id: recipeId),
+};
+
+/// `Query.autoFillPreview`'s own response shape.
+Map<String, dynamic> autoFillPreviewWireData({
+  List<Map<String, dynamic>>? items,
+  int? filledCount,
+  List<Map<String, dynamic>>? unfilledSlots,
+}) {
+  final List<Map<String, dynamic>> resolvedItems = items ?? <Map<String, dynamic>>[];
+  return <String, dynamic>{
+    'autoFillPreview': <String, dynamic>{
+      '__typename': 'AutoFillPreviewResult',
+      'items': resolvedItems,
+      'filledCount': filledCount ?? resolvedItems.length,
+      'unfilledSlots': unfilledSlots ?? <Map<String, dynamic>>[],
+    },
+  };
+}
+
+/// `Mutation.autoFillWeek`'s own response shape.
+Map<String, dynamic> autoFillWeekWireData({
+  Map<String, dynamic>? menu,
+  int? filledCount,
+  List<Map<String, dynamic>>? unfilledSlots,
+}) {
+  final Map<String, dynamic> resolvedMenu = menu ?? menuWireNode();
+  return <String, dynamic>{
+    'autoFillWeek': <String, dynamic>{
+      '__typename': 'AutoFillResult',
+      'menu': resolvedMenu,
+      'filledCount': filledCount ?? (resolvedMenu['items'] as List<dynamic>).length,
+      'unfilledSlots': unfilledSlots ?? <Map<String, dynamic>>[],
+    },
+  };
+}

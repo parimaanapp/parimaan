@@ -47,8 +47,8 @@ void main() {
       expect(recipes, <Recipe>[_dalRecipe]);
       expect(
         repository.calls,
-        <({String householdId, RecipeRole? role, bool? isFavorite})>[
-          (householdId: 'household-1', role: null, isFavorite: null),
+        <({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>[
+          (householdId: 'household-1', role: null, isFavorite: null, inRotation: null),
         ],
       );
     });

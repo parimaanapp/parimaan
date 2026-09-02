@@ -147,6 +147,45 @@ class CurrentMenuController extends FamilyAsyncNotifier<Menu, MenuKey> {
       throw state.error!;
     }
   }
+
+  /// Proposes recipes for every empty slot on the current menu — a pure
+  /// read, mutates NOTHING in `state` (W10 §16.2.1's dry-run design). Safe
+  /// to call repeatedly for a free "regenerate": each call is an
+  /// independently-random proposal, never the same twice.
+  ///
+  /// **Throws** on failure, same contract as [addMenuItem] — a widget
+  /// mid-interaction (the Auto-fill preview screen) needs the rejection at
+  /// the `await` site.
+  Future<AutoFillPreviewResult> previewAutoFill() async {
+    final Menu menu = await future;
+    return _repository.autoFillPreview(menu.id);
+  }
+
+  /// Commits [items] (typically an accepted or edited [previewAutoFill]
+  /// proposal) via `autoFillWeek`, updating `state` directly from the
+  /// response's own [AutoFillResult.menu] — unlike [addMenuItem]/
+  /// [removeMenuItem], which call [refresh] after mutating, `autoFillWeek`'s
+  /// own response already IS the full, authoritative menu (not just one
+  /// item), so a second round trip to re-fetch it would be redundant.
+  ///
+  /// **Throws** on failure, same contract as [addMenuItem] — including a
+  /// server rejection of the whole call (not to be confused with
+  /// [AutoFillResult.unfilledSlots], which reports individual items that
+  /// didn't commit WITHOUT the call itself failing — see that field's own
+  /// doc).
+  Future<AutoFillResult> commitAutoFill({
+    required bool overwrite,
+    required List<NewMenuItem> items,
+  }) async {
+    final Menu menu = await future;
+    final AutoFillResult result = await _repository.autoFillWeek(
+      menu.id,
+      overwrite: overwrite,
+      items: items,
+    );
+    state = AsyncData<Menu>(result.menu);
+    return result;
+  }
 }
 
 final AsyncNotifierProviderFamily<CurrentMenuController, Menu, MenuKey>
