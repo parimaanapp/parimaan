@@ -72,16 +72,17 @@ describe('recipeRepository', () => {
     client: PoolClient,
     householdId: string,
     createdBy: string,
-    overrides: { title?: string; role?: string; isFavorite?: boolean } = {},
+    overrides: { title?: string; role?: string; isFavorite?: boolean; inRotation?: boolean } = {},
   ): Promise<{ id: string }> => {
     const result = await client.query<{ id: string }>(
-      `INSERT INTO recipes (household_id, source_type, title, role, is_favorite, created_by)
-       VALUES ($1, 'user', $2, $3, $4, $5) RETURNING id`,
+      `INSERT INTO recipes (household_id, source_type, title, role, is_favorite, in_rotation, created_by)
+       VALUES ($1, 'user', $2, $3, $4, $5, $6) RETURNING id`,
       [
         householdId,
         overrides.title ?? 'Rajma',
         overrides.role ?? 'sabzi_dal',
         overrides.isFavorite ?? false,
+        overrides.inRotation ?? true,
         createdBy,
       ],
     );
@@ -114,6 +115,30 @@ describe('recipeRepository', () => {
     expect(rows.map((r) => r.title)).toEqual(['Aloo Gobi', 'Baingan Bharta', 'Zucchini Sabzi']);
   });
 
+  it('orders favorite > rotation > title — the W10 §16.2.5 ordering fix, a fixture that fails if any two keys transpose', async () => {
+    const owner = await createUser();
+    const householdId = await createHouseholdWithMember(owner);
+
+    await asUser(owner.id, async (client) => {
+      // Neither favorite nor rotation: sorts last regardless of title.
+      await insertRecipe(client, householdId, owner.id, { title: 'Aaa Not Favorite Not Rotation', isFavorite: false, inRotation: false });
+      // In rotation but not favorite: sorts after every favorite, before the above.
+      await insertRecipe(client, householdId, owner.id, { title: 'Zzz Rotation Only', isFavorite: false, inRotation: true });
+      // Favorite but NOT in rotation: still sorts ahead of a non-favorite, even one in rotation — favorite is the primary key.
+      await insertRecipe(client, householdId, owner.id, { title: 'Bbb Favorite Not Rotation', isFavorite: true, inRotation: false });
+      // Favorite AND in rotation: sorts first among favorites by title.
+      await insertRecipe(client, householdId, owner.id, { title: 'Aaa Favorite And Rotation', isFavorite: true, inRotation: true });
+    });
+
+    const rows = await asUser(owner.id, (client) => findRecipes(client, householdId));
+    expect(rows.map((r) => r.title)).toEqual([
+      'Aaa Favorite And Rotation',
+      'Bbb Favorite Not Rotation',
+      'Zzz Rotation Only',
+      'Aaa Not Favorite Not Rotation',
+    ]);
+  });
+
   it('filters by role', async () => {
     const owner = await createUser();
     const householdId = await createHouseholdWithMember(owner);
@@ -142,6 +167,39 @@ describe('recipeRepository', () => {
       findRecipes(client, householdId, { isFavorite: true }),
     );
     expect(rows.map((r) => r.title)).toEqual(['Rajma']);
+  });
+
+  it('filters by inRotation', async () => {
+    const owner = await createUser();
+    const householdId = await createHouseholdWithMember(owner);
+
+    await asUser(owner.id, async (client) => {
+      await insertRecipe(client, householdId, owner.id, { title: 'In Rotation', inRotation: true });
+      await insertRecipe(client, householdId, owner.id, { title: 'Not In Rotation', inRotation: false });
+    });
+
+    const inRotationOnly = await asUser(owner.id, (client) =>
+      findRecipes(client, householdId, { inRotation: true }),
+    );
+    expect(inRotationOnly.map((r) => r.title)).toEqual(['In Rotation']);
+
+    const outOfRotationOnly = await asUser(owner.id, (client) =>
+      findRecipes(client, householdId, { inRotation: false }),
+    );
+    expect(outOfRotationOnly.map((r) => r.title)).toEqual(['Not In Rotation']);
+  });
+
+  it('an absent inRotation filter (the `{}` default) returns both in- and out-of-rotation recipes', async () => {
+    const owner = await createUser();
+    const householdId = await createHouseholdWithMember(owner);
+
+    await asUser(owner.id, async (client) => {
+      await insertRecipe(client, householdId, owner.id, { title: 'In Rotation', inRotation: true });
+      await insertRecipe(client, householdId, owner.id, { title: 'Not In Rotation', inRotation: false });
+    });
+
+    const rows = await asUser(owner.id, (client) => findRecipes(client, householdId));
+    expect(rows).toHaveLength(2);
   });
 
   it('maps every recipes column, including numeric-typed fields as numbers', async () => {

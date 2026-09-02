@@ -31,7 +31,7 @@ export const productionDeps: RecipesResolverDeps = { getPool };
 export const createRecipesHandler =
   (deps: RecipesResolverDeps) =>
   async (
-    event: AppSyncResolverEvent<{ householdId: unknown; role: unknown; isFavorite: unknown }>,
+    event: AppSyncResolverEvent<{ householdId: unknown; role: unknown; isFavorite: unknown; inRotation: unknown }>,
   ): Promise<GraphQLRecipe[]> => {
     const identity = extractCallerIdentity(event.identity);
 
@@ -39,7 +39,7 @@ export const createRecipesHandler =
     if (!parsedArgs.success) {
       throw new ValidationError(parsedArgs.error.issues[0]?.message ?? 'Invalid input.');
     }
-    const { householdId, role, isFavorite } = parsedArgs.data;
+    const { householdId, role, isFavorite, inRotation } = parsedArgs.data;
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
@@ -54,12 +54,15 @@ export const createRecipesHandler =
         // `null` (key present, explicit null — the real AppSync/Ferry wire
         // shape for an unset nullable variable), and both must mean "no
         // filter" here.
-        const filter: { role?: string; isFavorite?: boolean } = {};
+        const filter: { role?: string; isFavorite?: boolean; inRotation?: boolean } = {};
         if (role != null) {
           filter.role = role;
         }
         if (isFavorite != null) {
           filter.isFavorite = isFavorite;
+        }
+        if (inRotation != null) {
+          filter.inRotation = inRotation;
         }
 
         const rows = await findRecipes(client, householdId, filter);
