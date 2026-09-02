@@ -38,5 +38,16 @@ export default defineConfig({
     // output entirely but still prints it for a failing one, so debugging
     // a real failure isn't affected.
     silent: 'passed-only',
+    // Forces a single worker instead of one per CPU core. Every synth-heavy
+    // test above already pays the esbuild-bundling stdout cost onto its
+    // worker's own IPC channel back to the main thread; running several of
+    // those workers at once on a GitHub Actions shared (2-core) runner means
+    // they contend for the same CPU while each is trying to relay that
+    // volume, which is a plausible aggravating factor in the "[vitest-worker]:
+    // Timeout calling 'onTaskUpdate'" flake documented above suddenly going
+    // from occasional to near-100% on PR #80 (12 attempts, 0 passes) even
+    // though the same suite was consistently green locally. The infra suite
+    // is only 6 files / ~175 tests, so serializing it costs little.
+    maxWorkers: 1,
   },
 });
