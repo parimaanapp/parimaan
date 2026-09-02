@@ -1,11 +1,15 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/router.dart';
+import 'package:mobile/features/household/data/notification_preferences_repository.dart';
+import 'package:mobile/features/household/domain/notification_preferences.dart';
 import 'package:mobile/features/household/presentation/settings/settings_hub_screen.dart';
 import 'package:mobile/features/household/state/current_household_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 
 import '../../../../support/fake_household_repository.dart';
+import '../../../../support/fake_notification_preferences_repository.dart';
 import '../../../../support/household_fixtures.dart';
 import '../../../../support/household_route_harness.dart';
 
@@ -99,13 +103,43 @@ void main() {
     );
 
     testWidgets(
-      'the stub rows open a real "coming soon" screen, not a dead tap',
+      'Notifications navigates to the real four-toggle screen (W8 S9), not '
+      'a stub',
+      (WidgetTester tester) async {
+        final HouseholdHarness harness = await pumpHouseholdRoute(
+          tester,
+          _route,
+          overrides: <Override>[
+            notificationPreferencesRepositoryProvider.overrideWithValue(
+              FakeNotificationPreferencesRepository(
+                fetchResult: const NotificationPreferences(
+                  householdId: 'household-1',
+                  listChanges: true,
+                  mealReminder: true,
+                  expiry: true,
+                  activity: true,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await _reveal(tester, SettingsHubScreen.notificationsRowKey);
+        await tester.tap(find.byKey(SettingsHubScreen.notificationsRowKey));
+        await tester.pumpAndSettle();
+
+        expect(
+          location(harness.router),
+          '/household/household-1/settings/notifications',
+        );
+        expect(find.text('Coming soon'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the remaining stub row opens a real "coming soon" screen, not a dead tap',
       (WidgetTester tester) async {
         for (final (Key key, String path) in <(Key, String)>[
-          (
-            SettingsHubScreen.notificationsRowKey,
-            '/household/household-1/settings/notifications',
-          ),
           (
             SettingsHubScreen.aboutRowKey,
             '/household/household-1/settings/about',

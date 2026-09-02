@@ -1,0 +1,10 @@
+# The whole `NotificationPreferences` row. `fcmToken` is not selected because
+# it is not a field on the type at all (W8 S8, E2E_MVP_PLAN.md §14.2.6) —
+# it is a device push credential, never exposed through the SDL.
+fragment NotificationPreferencesFields on NotificationPreferences {
+  householdId
+  listChanges
+  mealReminder
+  expiry
+  activity
+}
