@@ -100,6 +100,19 @@ type Query {
   identically with `NOT_FOUND`.
   """
   recipe(id: ID!): Recipe!
+
+  """
+  Returns the caller's own notification preferences for `householdId`.
+  Requires the caller to already be a member of `householdId`. A caller with
+  no row yet (never having saved a preference) gets the SD-specified `TRUE`
+  defaults computed in place — this query never implicitly writes a row
+  (E2E_MVP_PLAN.md §14.2.8's S8 RED-test list: "decide and assert, don't
+  leave it emergent" — decided as a pure read, no write-on-read side effect).
+  `fcm_token` is deliberately absent from `NotificationPreferences` entirely
+  (§14.2.6) — it is a device push credential, W20 registers it via its own
+  mutation, and no client ever reads it back.
+  """
+  notificationPreferences(householdId: ID!): NotificationPreferences!
 }
 
 type Mutation {
@@ -299,6 +312,19 @@ type Mutation {
   `source: {sourceType: url, sourceUrl}` to persist the confirmed draft.
   """
   importRecipeFromUrl(url: String!): RecipeDraft!
+
+  """
+  Applies a partial patch to the caller's own notification preferences for
+  `householdId` — every `input` field is optional, and an absent field
+  leaves that column unchanged (an explicit `null` is rejected, the
+  `updateHouseholdSettings`/`updatePantryItem` convention). Requires the
+  caller to already be a member of `householdId`. The first successful call
+  for a `(caller, householdId)` pair materialises the row (defaulting every
+  field not present in this patch to `TRUE`); every call after that is a
+  genuine partial update. Always scoped to the CALLER's own row — there is
+  no way to patch another member's preferences through this mutation.
+  """
+  updateNotificationPreferences(householdId: ID!, input: NotificationPreferencesPatchInput!): NotificationPreferences!
 }
 
 type Subscription {
@@ -441,6 +467,33 @@ input HouseholdSettingsInput {
   dietaryTags: [DietaryTag!]
   allergens: [String!]
   skipIngredients: [String!]
+}
+
+"""
+The caller's own notification preferences for one household
+(E2E_MVP_PLAN.md §14.2.6/§14.2.7). `fcm_token` is deliberately NOT a field
+here — it is a device push credential, stored server-side (`notification_
+preferences.fcm_token`, SD §7.1) for W20's use, but no client ever reads it
+back through the API.
+"""
+type NotificationPreferences {
+  householdId: ID!
+  listChanges: Boolean!
+  mealReminder: Boolean!
+  expiry: Boolean!
+  activity: Boolean!
+}
+
+"""
+A partial patch for `Mutation.updateNotificationPreferences` — every field is
+optional (absent = "leave unchanged"). Sending an explicit `null` for any
+field is rejected server-side; clearing a field is not a supported operation.
+"""
+input NotificationPreferencesPatchInput {
+  listChanges: Boolean
+  mealReminder: Boolean
+  expiry: Boolean
+  activity: Boolean
 }
 
 """

@@ -1,0 +1,16 @@
+#import "./notification_preferences_fields.graphql"
+
+# `Mutation.updateNotificationPreferences` — applies a PARTIAL patch to the
+# CALLER's own row for `householdId`. Every field of
+# `NotificationPreferencesPatchInput` is optional and an absent field leaves
+# that column unchanged; an explicit `null` is rejected server-side. The
+# first successful call for a (caller, household) pair both creates and
+# patches the row in one statement (W8 S8).
+mutation UpdateNotificationPreferences(
+  $householdId: ID!
+  $input: NotificationPreferencesPatchInput!
+) {
+  updateNotificationPreferences(householdId: $householdId, input: $input) {
+    ...NotificationPreferencesFields
+  }
+}

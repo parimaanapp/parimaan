@@ -6,12 +6,13 @@ import '../../../../shared/ui/colors.dart';
 import '../../../../shared/ui/components/components.dart';
 
 /// The honest stand-in for a Settings row whose screen is a later slice —
-/// "Notifications" and "About Parimaan".
+/// today, just "About Parimaan".
 ///
-/// Both rows are in the wireframe and neither has a destination yet:
-/// notification preferences depend on FCM wiring (W20) and there is no
-/// `Notification*` type in `shared/schema.graphql` at all, while "About" needs
-/// version, licence and policy copy that does not exist.
+/// "Notifications" used this same shape until W8 S9 shipped the real
+/// four-toggle screen (`notification_preferences_screen.dart`) — see that
+/// slice for why the underlying preferences depend on FCM wiring (W20)
+/// while the toggles themselves ship now. "About" still has no destination:
+/// it needs version, licence and policy copy that does not exist yet.
 ///
 /// A real route with a real [PEmptyState] rather than a disabled row or a dead
 /// tap. A row that does nothing when tapped reads as a bug; one that opens a
@@ -35,17 +36,6 @@ class SettingsPlaceholderScreen extends StatelessWidget {
   final String householdId;
 
   static const Key emptyStateKey = Key('settings-placeholder');
-
-  /// Wireframe 4.1's "Notifications" row.
-  factory SettingsPlaceholderScreen.notifications({
-    required String householdId,
-  }) => SettingsPlaceholderScreen(
-    householdId: householdId,
-    title: 'Notifications',
-    body:
-        'Reminders and household alerts arrive with push notifications, which '
-        'are not wired up yet.',
-  );
 
   /// Wireframe 4.1's "About Parimaan" row.
   factory SettingsPlaceholderScreen.about({required String householdId}) =>

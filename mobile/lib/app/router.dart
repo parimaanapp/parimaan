@@ -20,6 +20,7 @@ import '../features/household/presentation/join/enter_code_screen.dart';
 import '../features/household/presentation/join/household_full_screen.dart';
 import '../features/household/presentation/settings/household_edit_entry.dart';
 import '../features/household/presentation/settings/members_list_screen.dart';
+import '../features/household/presentation/settings/notification_preferences_screen.dart';
 import '../features/household/presentation/settings/settings_hub_screen.dart';
 import '../features/household/presentation/settings/settings_placeholder_screen.dart';
 import '../features/household/state/me_households_controller.dart';
@@ -289,34 +290,33 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
 
   // Also the subscription that keeps the auth controller alive for the whole
   // life of the router, so the session is resolved exactly once per app run.
-  ref.listen<AsyncValue<AuthSession>>(
-    authControllerProvider,
-    (AsyncValue<AuthSession>? previous, AsyncValue<AuthSession> next) {
-      refresh.value++;
+  ref.listen<AsyncValue<AuthSession>>(authControllerProvider, (
+    AsyncValue<AuthSession>? previous,
+    AsyncValue<AuthSession> next,
+  ) {
+    refresh.value++;
 
-      // `meHouseholdsControllerProvider` (below) is listened unconditionally,
-      // so it starts fetching at router construction — before this listener
-      // has ever seen a resolved session, and therefore before a real caller
-      // has a token to send. In production that fetch fails with
-      // `UnauthorizedError` (via `AuthLink`) and the controller caches that
-      // failure, exactly like any other `AsyncNotifier`. Without this
-      // invalidation, a user who then actually signs in would have `_redirect`
-      // read that stale pre-login failure — treated the same as "no
-      // households" — and be sent to /first-run regardless of whether they
-      // have one, which is the bug this slice exists to fix, reintroduced by
-      // a different path. Invalidating exactly on the not-signed-in →
-      // signed-in transition (not on every auth event, e.g. a Hub-pushed
-      // token refresh while already signed in) forces one genuinely fresh,
-      // now-authenticated fetch per real sign-in (W8 S1, `flutter-reviewer`
-      // finding).
-      final bool wasSignedIn = previous?.valueOrNull?.isSignedIn ?? false;
-      final bool isSignedIn = next.valueOrNull?.isSignedIn ?? false;
-      if (!wasSignedIn && isSignedIn) {
-        ref.invalidate(meHouseholdsControllerProvider);
-      }
-    },
-    fireImmediately: true,
-  );
+    // `meHouseholdsControllerProvider` (below) is listened unconditionally,
+    // so it starts fetching at router construction — before this listener
+    // has ever seen a resolved session, and therefore before a real caller
+    // has a token to send. In production that fetch fails with
+    // `UnauthorizedError` (via `AuthLink`) and the controller caches that
+    // failure, exactly like any other `AsyncNotifier`. Without this
+    // invalidation, a user who then actually signs in would have `_redirect`
+    // read that stale pre-login failure — treated the same as "no
+    // households" — and be sent to /first-run regardless of whether they
+    // have one, which is the bug this slice exists to fix, reintroduced by
+    // a different path. Invalidating exactly on the not-signed-in →
+    // signed-in transition (not on every auth event, e.g. a Hub-pushed
+    // token refresh while already signed in) forces one genuinely fresh,
+    // now-authenticated fetch per real sign-in (W8 S1, `flutter-reviewer`
+    // finding).
+    final bool wasSignedIn = previous?.valueOrNull?.isSignedIn ?? false;
+    final bool isSignedIn = next.valueOrNull?.isSignedIn ?? false;
+    if (!wasSignedIn && isSignedIn) {
+      ref.invalidate(meHouseholdsControllerProvider);
+    }
+  }, fireImmediately: true);
 
   // A pending deep-linked invite code also has to re-run the guard: it arrives
   // asynchronously, possibly while the user is sitting on /sign-in, and the
@@ -421,9 +421,7 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.settingsNotificationsPattern,
         builder: (BuildContext context, GoRouterState state) =>
-            SettingsPlaceholderScreen.notifications(
-              householdId: _householdId(state),
-            ),
+            NotificationPreferencesScreen(householdId: _householdId(state)),
       ),
       GoRoute(
         path: AppRoutes.settingsAboutPattern,
