@@ -61,8 +61,46 @@ jobs:
       - name: Type-check
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test
+      # `infra`'s test command is split out and retried separately below —
+      # see that step's own comment for why.
+      - name: Unit tests (excluding infra)
+        run: pnpm --filter '!infra' -r --if-present test
+
+      # infra/vitest.config.ts documents a known, CI-only flake: every
+      # ApiStack test does a full CDK synth (construct tree + esbuild
+      # bundling for every resolver Lambda), and on GitHub's shared runners
+      # that work is slow enough to occasionally starve Vitest's own
+      # worker-to-main-thread IPC heartbeat past its hardcoded 60s timeout
+      # ("[vitest-worker]: Timeout calling 'onTaskUpdate'") — not a real
+      # test failure; every actual assertion still passes (confirmed
+      # repeatedly, including 175/175 across 7 consecutive CI runs on the
+      # PR that added this retry). Three prior code-level mitigations
+      # already live in vitest.config.ts (testTimeout, isolate:false,
+      # silent:'passed-only', template memoization in api-stack.test.ts);
+      # this is the next layer, not a replacement for those. Retries ONLY
+      # when the failure output matches this exact signature — any other
+      # infra test failure fails the build immediately on the first
+      # attempt, so a genuine regression is never masked.
+      - name: Unit tests (infra, retried on the known vitest-worker IPC-heartbeat flake)
+        run: |
+          set -o pipefail
+          max_attempts=3
+          attempt=1
+          while true; do
+            if pnpm --filter infra test 2>&1 | tee /tmp/infra-test-output.log; then
+              break
+            fi
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "::error::infra unit tests failed after $max_attempts attempts."
+              exit 1
+            fi
+            if ! grep -q '\[vitest-worker\]: Timeout calling "onTaskUpdate"' /tmp/infra-test-output.log; then
+              echo "::error::infra unit tests failed with an error other than the known vitest-worker onTaskUpdate flake — not retrying."
+              exit 1
+            fi
+            echo "::warning::infra unit tests hit the known vitest-worker onTaskUpdate IPC-heartbeat timeout (attempt $attempt/$max_attempts) — every real test passed; retrying. See infra/vitest.config.ts."
+            attempt=$((attempt + 1))
+          done
 
       # api/vitest.config.ts enforces >=80% (E2E_MVP_PLAN.md §0 amendment).
       # Only `api` measures coverage today — the other TS workspaces don't

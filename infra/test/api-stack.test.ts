@@ -309,13 +309,29 @@ describe('ApiStack', () => {
     // not silently.
   });
 
+  it('the real schema file declares the S8 notificationPreferences query and updateNotificationPreferences mutation (W8 S8, §14.2.6)', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(/notificationPreferences\(householdId:\s*ID!\)\s*:\s*NotificationPreferences!/);
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /updateNotificationPreferences\(householdId:\s*ID!,\s*input:\s*NotificationPreferencesPatchInput!\)\s*:\s*NotificationPreferences!/,
+    );
+  });
+
+  it('the real schema file never declares an fcmToken field — it is a device push credential, W20 registers it, no client reads it back (W8 §14.2.6)', () => {
+    // A field-declaration pattern specifically (`fcmToken:`), not a bare
+    // string search — the schema's own doc comments legitimately reference
+    // the underlying `fcm_token` DB column (snake_case, backticked prose) to
+    // explain why it is absent from the GraphQL type; that mention is not
+    // itself an exposure.
+    expect(REAL_SCHEMA_CONTENTS).not.toMatch(/\bfcmToken\s*:/);
+  });
+
   it('the real schema file still declares the S7 Query.recipe field, added mid-slice for the Detail screen (W6 S7)', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 28 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged)', () => {
+  it('declares exactly 30 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(28);
+    expect(ourFunctions(template)).toHaveLength(30);
   });
 
   it('declares the health, parseFreeformRecipe, and importRecipeFromUrl Lambdas outside the VPC, on the Node.js 24 runtime', () => {
@@ -335,10 +351,10 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares 25 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 27 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(25);
+    expect(vpcFunctions).toHaveLength(27);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -356,7 +372,7 @@ describe('ApiStack', () => {
   it('gives every VPC-attached resolver Lambda enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(25);
+    expect(vpcFunctions).toHaveLength(27);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
@@ -366,7 +382,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(25);
+    expect(vpcFunctions).toHaveLength(27);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -552,9 +568,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 28 AppSync Lambda data sources', () => {
+  it('declares exactly 30 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 28);
+    template.resourceCountIs('AWS::AppSync::DataSource', 30);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -791,6 +807,24 @@ describe('ApiStack', () => {
     });
   });
 
+  it('declares a resolver for Query.notificationPreferences', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Query',
+      FieldName: 'notificationPreferences',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.updateNotificationPreferences', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'updateNotificationPreferences',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
   it('declares a resolver for Mutation.parseFreeformRecipe', () => {
     const template = synth('dev');
     template.hasResourceProperties('AWS::AppSync::Resolver', {
@@ -809,9 +843,9 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 28 resolvers total', () => {
+  it('declares exactly 30 resolvers total', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 28);
+    template.resourceCountIs('AWS::AppSync::Resolver', 30);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {
