@@ -119,6 +119,24 @@ export const findRecipeById = async (client: PoolClient, id: string): Promise<Re
   return row === undefined ? null : mapRecipeRow(row);
 };
 
+/**
+ * Batch read, for a caller (`menuRepository.ts`'s `findMenuItems`, W9 S2)
+ * that already has a set of recipe ids and wants their full rows in one
+ * round trip rather than N. `= ANY($1::uuid[])` rather than N parameter
+ * placeholders — the id count varies per call and this avoids building a
+ * dynamic `IN (...)` string. RLS still applies per-row exactly as it does
+ * for `findRecipeById`; an id the caller isn't authorized for is simply
+ * absent from the result, not an error, matching `findRecipeById`'s own
+ * "RLS alone gates this" contract. An empty `ids` array returns an empty
+ * result rather than every row — `= ANY('{}'::uuid[])` matches nothing.
+ */
+export const findRecipesByIds = async (client: PoolClient, ids: readonly string[]): Promise<RecipeRow[]> => {
+  const result = await client.query<RawRecipeRow>(`SELECT * FROM recipes WHERE id = ANY($1::uuid[])`, [
+    ids,
+  ]);
+  return result.rows.map(mapRecipeRow);
+};
+
 export interface RecipeIngredientRow {
   id: string;
   recipeId: string;
