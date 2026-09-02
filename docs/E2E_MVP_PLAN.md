@@ -2161,7 +2161,7 @@ Run against the explicit six-part surface list (§14.3 S11), covering everything
 
 ## 15. W9 detailed plan — 7-day calendar UI
 
-**Status:** drafted autonomously (no live founder walkthrough — every other week's plan in this document was locked with the founder in a real back-and-forth; this one was not, since none was available in this session). Structured the same way as §11–§14 and held to the same bar, but every decision below that isn't already fixed by §3/§7's original scope is a judgment call, not a negotiated one, and is flagged as such rather than presented as settled. Locked-with-the-founder should re-read §15.7 specifically before implementation starts, if a re-read is possible before this plan is acted on further.
+**Status:** drafted and implemented autonomously (no live founder walkthrough — every other week's plan in this document was locked with the founder in a real back-and-forth; this one was not, since none was available in this session). Structured the same way as §11–§14 and held to the same bar, but every decision below that isn't already fixed by §3/§7's original scope was a judgment call, not a negotiated one, and is flagged as such rather than presented as settled. All 7 slices (S1–S7) are implemented, reviewed, and merged into `main` as of this section's own §15.8; the real-AWS deploy/verification pass is deliberately held for the founder's explicit go-ahead (§15.8). Locked-with-the-founder should still read §15.7 (decisions) and §15.8 (results) before authorizing that deploy.
 
 ### 15.1 What W9 is locked to deliver
 
@@ -2292,16 +2292,16 @@ S3 enforces it server-side (the source of truth); S5 mirrors it client-side (so 
 
 ### 15.6 W9 exit criteria
 
-- [ ] `menus`/`menu_items` migrated with RLS enabled and forced on both, `menu_items`' parent-join policy denies a non-member via the direct-query path specifically, not just through `menus` (S1)
-- [ ] `slot_role`'s CHECK constraint matches `RecipeRole`'s seven values exactly, confirmed against the real deployed schema, not just the migration source (S1, S7)
-- [ ] `createMenu` is idempotent — a second call for the same week never creates a second row (S2)
-- [ ] `Query.menu` for a week with no menu returns `null`, never an implicit row (S2)
-- [ ] `addMenuItem`'s cap enforcement rejects an over-cap add server-side, verified against real dev AWS, not just Testcontainers (S3, S7)
-- [ ] `addMenuItem` rejects a `recipeId` from a different household (S3)
-- [ ] Weekly plan screen's slot grid honors `mealsEnabled`/`mealStructure` exactly, table-driven test across all four meal types (S5)
-- [ ] Today morning/Today empty correctly select "today" across all 7 possible day-of-week values, not one hardcoded day (S6)
-- [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression class, restated every week since W5 — `MenuItemInput.servingsOverride` is this week's exposure)
-- [ ] §4's W9 row has actual hours (merge-timestamp proxy) and this plan's own §15.7 decisions reviewed against what actually shipped, same closing-audit shape §14.5.10 gave W8 (S7)
+- [x] `menus`/`menu_items` migrated with RLS enabled and forced on both, `menu_items`' parent-join policy denies a non-member via the direct-query path specifically, not just through `menus` (S1) — 19 tests, `api/src/db/migrations.menus.test.ts`
+- [ ] `slot_role`'s CHECK constraint matches `RecipeRole`'s seven values exactly, confirmed against the real deployed schema, not just the migration source (S1, S7) — **open**: confirmed against the migration source and Testcontainers only; real-deploy confirmation is part of the real-AWS pass held for the end-of-batch deploy (§15.8)
+- [x] `createMenu` is idempotent — a second call for the same week never creates a second row (S2)
+- [x] `Query.menu` for a week with no menu returns `null`, never an implicit row (S2)
+- [ ] `addMenuItem`'s cap enforcement rejects an over-cap add server-side, verified against real dev AWS, not just Testcontainers (S3, S7) — **open**: confirmed against Testcontainers, including a concurrent-request race test (S3's own review pipeline caught the original TOCTOU gap and it's closed with a `pg_advisory_xact_lock`); real-dev-AWS confirmation held for the same reason as the line above
+- [x] `addMenuItem` rejects a `recipeId` from a different household (S3)
+- [x] Weekly plan screen's slot grid honors `mealsEnabled`/`mealStructure` exactly, table-driven test across all four meal types (S5)
+- [x] Today morning/Today empty correctly select "today" across all 7 possible day-of-week values, not one hardcoded day (S6)
+- [x] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression class, restated every week since W5 — `MenuItemInput.servingsOverride` is this week's exposure) — closed during S7's own pass, see §15.8
+- [x] §4's W9 row has actual hours (merge-timestamp proxy) and this plan's own §15.7 decisions reviewed against what actually shipped, same closing-audit shape §14.5.10 gave W8 (S7) — see §15.8
 
 ### 15.7 W9 planning decisions (drafted autonomously — flagged, not locked, pending a founder read)
 
@@ -2312,5 +2312,21 @@ S3 enforces it server-side (the source of truth); S5 mirrors it client-side (so 
 | D3 | Does "today's-agenda query" mean a new SDL field, or reusing `Query.menu`? | **Reusing `Query.menu`, filtered client-side on `dayOfWeek`** (§15.2.5). The whole week's payload is small and bounded; a second resolver returning a subset of the same rows is duplicate surface for no correctness gain at this data volume. |
 | D4 | Does `menu_items.slot_role` get the `CHECK` constraint SD §7.1's literal DDL text omits? | **Yes** (§15.2.1) — the same class of gap W6's `1787811731724_fix-recipes-cuisine-tier1-check.ts` already fixed once for `recipes.cuisine_tier1`, now caught before shipping rather than after. |
 | D5 | Does the recipe-deletion cascade into `menu_items` (§15.2.3) get changed or warned-about this week? | **No — shipped as SD specifies, gap recorded, not fixed.** Re-scoping `deleteRecipe`'s own cascade behavior is bigger than this slice; flagged as backlog for whichever week next touches recipe deletion. |
+| D6 | Is "Plan" a bottom-nav tab, or reached from Home? | **A tab (S6), correcting S5's own interim choice.** S5 shipped a "Weekly plan" button on the Home placeholder screen, deliberately deferring the IA call per this section's own D-table shape. Mid-S6, `app_shell.dart`'s own pre-existing doc comment — "Plan (W9) ... later weeks' work" — was found to have already named this tab ahead of time; S6 honors that rather than re-deciding it, and the button is gone. |
 
----
+### 15.8 S7 result — actuals, real-AWS verification (deferred), exit-criteria review
+
+**Actuals vs. planned (merge-timestamp proxy — same method as §12.5.6/§13.5.13/§14.5.10, not a literal hours log):** first W9 merge (S1, `#80`) 2026-09-02T05:58:32Z to last pre-S7 merge (S6, `#85`) 2026-09-02T11:32:32Z — **~5.6 hours elapsed wall-clock** for S1–S6 against 10.5 hrs planned (§15.3: 1.5+1.5+2.0+1.5+2.5+1.5), a **~47% overrun on the estimate** (i.e. actual came in well under planned) — same direction and a similar magnitude to W6's ~42% high and W7's similar reading (§12.5.6/§13.5.13), not a new pattern. S7 itself, being the closing slice, cannot include its own merge timestamp in this measure, the same limitation every prior week's actuals section has recorded.
+
+**Real-AWS verification: explicitly deferred, not skipped.** Every prior week's own S7/S10/S12-equivalent slice ran a live direct-Lambda-invoke pass against real dev Aurora/AppSync in the same slice that closed the week. This week does not, by the founder's own explicit instruction earlier in this session: merge every slice into `main` as it lands, but hold the actual `cdk deploy`/live-invoke pass until told to deploy — the whole batch (W9's backend + a live-verification pass) ships as one deploy at the end, not mid-week. Concretely, this means:
+- `slot_role`'s `CHECK` constraint (S1) is confirmed against the migration source and the Testcontainers suite (19 tests, `api/src/db/migrations.menus.test.ts`) — **not yet against the real deployed schema**.
+- `addMenuItem`'s cap enforcement (S3) is confirmed against Testcontainers (including the concurrent-request race test added after the S3 review pipeline flagged it) — **not yet live against real dev AWS**.
+- The `menu_items` parent-join RLS non-member-denial-via-direct-query test (S1's own §15.6 line) is likewise Testcontainers-only so far.
+
+Both open exit-criteria lines below stay open for exactly this reason, and both — plus the rest of Phase 3's own real-AWS pass — are the explicit next step once the founder authorizes the deploy.
+
+**Missing nullable-argument coverage found and fixed during this closing pass:** §15.6's own exit-criteria line named `MenuItemInput.servingsOverride` as this week's §11.5.5-class exposure, but no test in `addMenuItem.test.ts` actually sent an explicit `null` for it before this pass — every existing test either omitted the field or supplied a real number. Added (`api/src/resolvers/addMenuItem.test.ts`): a case sending `servingsOverride: null` explicitly and asserting it's accepted and round-trips as `null` — confirming the `.nullish()` (not `.optional()`) schema choice in `validation/menu.ts` behaves as intended for a plain optional creation field (not a patch field, so there's no absent-vs-null distinction to get wrong the way `updateHouseholdSettings`-style patches have — but the exit criterion asked for a test, not just a correct-by-inspection schema, and now there is one). 1079/1079 API tests passing with this addition.
+
+**§15.7 decisions reviewed against what actually shipped:** D1 (no `onMenuChanged`) — held; no subscription shipped, no `Subscription.onMenuChanged` in the SDL. D2 (client-side "today") — held exactly as decided; `domain/current_week.dart`'s `currentWeekStartDate`/`domain/today.dart`'s `todaysItems` both take `DateTime.now()` with no server round trip. D3 (reuse `Query.menu`) — held; no new SDL field, `todaysItems` filters client-side as decided. D4 (`slot_role` CHECK added) — shipped exactly as decided (S1). D5 (recipe-deletion cascade left alone) — held; `1788100000000_menus.ts`'s `recipe_id` FK is still a plain `ON DELETE CASCADE`, gap still recorded, not fixed. D6 (Plan as a tab, added mid-week) — see D6's own row above; this is the one decision this section added rather than reviewed, since it didn't exist when §15.7 was first drafted.
+
+§15.6's own exit-criteria checklist (above) is updated in place to its final state, following the W8 precedent (§14.6) of one checklist finalized once actuals are known, not a duplicate list.

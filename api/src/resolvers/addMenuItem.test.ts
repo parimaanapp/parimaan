@@ -215,6 +215,28 @@ describe('addMenuItem resolver (Mutation.addMenuItem)', () => {
     expect(result.slotRole).toBe('sabzi_dal');
   });
 
+  it('accepts an explicit null for servingsOverride, the same as omitting it entirely (§11.5.5 regression class)', async () => {
+    const owner = await createUser('sub-ami-owner-nullso');
+    const householdId = await createHouseholdWithOwner(owner, 'AMU234');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    const recipeId = await withUserTransaction(
+      owner.id,
+      (client) => addRecipe(client, householdId, owner.id, { title: 'Rajma', role: 'sabzi_dal' }),
+      pool,
+    );
+
+    const handler = createAddMenuItemHandler(baseDeps);
+    const result = await handler(
+      buildEvent(
+        menuId,
+        { recipeId, dayOfWeek: 1, mealSlot: 'lunch', slotRole: 'sabzi_dal', servingsOverride: null },
+        'sub-ami-owner-nullso',
+      ),
+    );
+
+    expect(result.servingsOverride).toBeNull();
+  });
+
   it('rejects the next add once a (day, slot, role) triple is at its configured cap', async () => {
     // DEFAULT_MEAL_STRUCTURE caps lunch/sabzi_dal at 2 (domain/householdDefaults.ts).
     const owner = await createUser('sub-ami-owner-cap');
