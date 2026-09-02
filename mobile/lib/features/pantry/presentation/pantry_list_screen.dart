@@ -19,7 +19,7 @@ import 'pantry_row.dart';
 /// shell (S4); reads the network only, no local cache and no subscription
 /// (both later slices — S7, S8).
 ///
-/// Resolves its household the same way `HomeScreen` does — via
+/// Resolves its household the same way `TodayScreen` does — via
 /// `activeHouseholdProvider` — rather than taking a `householdId`
 /// constructor parameter, since the shell route this renders under carries
 /// no `:householdId` path segment.
@@ -110,25 +110,26 @@ class _PantryForHousehold extends ConsumerWidget {
         const SizedBox(height: AppSpacing.s2),
         Expanded(
           child: switch ((pantry.valueOrNull, pantry.error)) {
-            (final List<PantryItem> items, _) when items.isNotEmpty =>
-              ListView(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
-                children: <Widget>[
-                  for (final PantryItem item in items)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.s1),
-                      child: PantryRow(
+            (final List<PantryItem> items, _) when items.isNotEmpty => ListView(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+              children: <Widget>[
+                for (final PantryItem item in items)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.s1),
+                    child: PantryRow(
+                      item: item,
+                      onTap: () => context.push(
+                        AppRoutes.pantryManualAdd(householdId),
+                        extra: item,
+                      ),
+                      onDelete: () => showDeletePantryItemDialog(
+                        context: context,
                         item: item,
-                        onTap: () => context.push(
-                          AppRoutes.pantryManualAdd(householdId),
-                          extra: item,
-                        ),
-                        onDelete: () =>
-                            showDeletePantryItemDialog(context: context, item: item),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
             (final List<PantryItem> items, _) when items.isEmpty => Center(
               key: PantryListScreen.emptyStateKey,
               child: PEmptyState(
@@ -151,9 +152,8 @@ class _PantryForHousehold extends ConsumerWidget {
                 action: PButton(
                   label: 'Try again',
                   variant: PButtonVariant.secondary,
-                  onPressed: () => ref.invalidate(
-                    pantryControllerProvider(householdId),
-                  ),
+                  onPressed: () =>
+                      ref.invalidate(pantryControllerProvider(householdId)),
                 ),
               ),
             ),
