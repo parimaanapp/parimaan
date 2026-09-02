@@ -76,7 +76,7 @@ Future<ProviderContainer> _pump(
       GoRoute(
         path: AppRoutes.recipePicker,
         builder: (BuildContext context, GoRouterState state) =>
-            RecipePickerScreen(extra: state.extra! as RecipePickerExtra),
+            RecipePickerScreen(extra: state.extra as RecipePickerExtra),
       ),
     ],
   );
@@ -188,6 +188,13 @@ void main() {
           find.descendant(of: filledCard, matching: find.byIcon(Icons.add)),
           findsNothing,
         );
+
+        // A filled slot has no view/replace/remove destination yet — it
+        // must NOT route into the "add" picker the way an empty slot does
+        // (no double-add into an already-filled slot).
+        await tester.tap(filledCard);
+        await tester.pumpAndSettle();
+        expect(find.byType(RecipePickerScreen), findsNothing);
       },
     );
 

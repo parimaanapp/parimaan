@@ -53,92 +53,115 @@ class RecipePickerScreen extends ConsumerWidget {
   }
 }
 
-class _PickerForHousehold extends ConsumerWidget {
+class _PickerForHousehold extends ConsumerStatefulWidget {
   const _PickerForHousehold({required this.household, required this.extra});
 
   final Household household;
   final RecipePickerExtra extra;
 
-  Future<void> _selectRecipe(
-    BuildContext context,
-    WidgetRef ref,
-    Recipe recipe,
-  ) async {
-    final RecipeRepository recipeRepository = ref.read(recipeRepositoryProvider);
-    final Recipe detail;
+  @override
+  ConsumerState<_PickerForHousehold> createState() =>
+      _PickerForHouseholdState();
+}
+
+class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
+  // Guards `_selectRecipe`'s multi-step async chain (detail fetch → warning
+  // dialog → addMenuItem) against a second tap landing mid-flight —
+  // `RecipeCard.onTap` has no built-in disabled state, so without this a
+  // fast double-tap could fire two concurrent adds into the same slot (W10
+  // S5 review finding).
+  bool _isSelecting = false;
+
+  Future<void> _selectRecipe(BuildContext context, Recipe recipe) async {
+    if (_isSelecting) return;
+    setState(() => _isSelecting = true);
     try {
-      detail = await recipeRepository.fetchRecipeDetail(recipe.id);
-    } on AppError catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.errorMessage)));
-      }
-      return;
-    }
-
-    final List<RecipeIngredient> ingredients =
-        detail.ingredients ?? const <RecipeIngredient>[];
-    final List<String> allergenMatches = matchedIngredientWarningTerms(
-      ingredients,
-      household.settings.allergens,
-    );
-    final List<String> skipMatches = matchedIngredientWarningTerms(
-      ingredients,
-      household.settings.skipIngredients,
-    );
-
-    if (allergenMatches.isNotEmpty || skipMatches.isNotEmpty) {
-      if (!context.mounted) return;
-      final bool proceed = await showIngredientWarningDialog(
-        context: context,
-        allergenMatches: allergenMatches,
-        skipMatches: skipMatches,
+      final RecipeRepository recipeRepository = ref.read(
+        recipeRepositoryProvider,
       );
-      if (!proceed) return;
-    }
-
-    if (!context.mounted) return;
-    final MenuKey menuKey = menuKeyFor(household.id, currentWeekStartDate());
-    try {
-      await ref
-          .read(currentMenuControllerProvider(menuKey).notifier)
-          .addMenuItem(
-            NewMenuItem(
-              recipeId: recipe.id,
-              dayOfWeek: extra.dayOfWeek,
-              mealSlot: extra.mealSlot,
-              slotRole: extra.slotRole,
-            ),
-          );
-    } on AppError catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.errorMessage)));
+      final Recipe detail;
+      try {
+        detail = await recipeRepository.fetchRecipeDetail(recipe.id);
+      } on AppError catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error.errorMessage)));
+        }
+        return;
       }
-      return;
-    }
-    if (context.mounted) {
-      context.pop();
+
+      final List<RecipeIngredient> ingredients =
+          detail.ingredients ?? const <RecipeIngredient>[];
+      final List<String> allergenMatches = matchedIngredientWarningTerms(
+        ingredients,
+        widget.household.settings.allergens,
+      );
+      final List<String> skipMatches = matchedIngredientWarningTerms(
+        ingredients,
+        widget.household.settings.skipIngredients,
+      );
+
+      if (allergenMatches.isNotEmpty || skipMatches.isNotEmpty) {
+        if (!context.mounted) return;
+        final bool proceed = await showIngredientWarningDialog(
+          context: context,
+          allergenMatches: allergenMatches,
+          skipMatches: skipMatches,
+        );
+        if (!proceed) return;
+      }
+
+      if (!context.mounted) return;
+      final MenuKey menuKey = menuKeyFor(
+        widget.household.id,
+        currentWeekStartDate(),
+      );
+      try {
+        await ref
+            .read(currentMenuControllerProvider(menuKey).notifier)
+            .addMenuItem(
+              NewMenuItem(
+                recipeId: recipe.id,
+                dayOfWeek: widget.extra.dayOfWeek,
+                mealSlot: widget.extra.mealSlot,
+                slotRole: widget.extra.slotRole,
+              ),
+            );
+      } on AppError catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error.errorMessage)));
+        }
+        return;
+      }
+      if (context.mounted) {
+        context.pop();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSelecting = false);
+      }
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final RecipePickerKey key = (
-      householdId: household.id,
-      slotRole: extra.slotRole,
+      householdId: widget.household.id,
+      slotRole: widget.extra.slotRole,
     );
     final AsyncValue<List<Recipe>> recipes = ref.watch(
       recipePickerControllerProvider(key),
     );
+    final String roleLabel = widget.extra.slotRole.displayLabel.toLowerCase();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         PTopBar(
-          title: 'Add a ${extra.slotRole.displayLabel.toLowerCase()}',
+          title: 'Add a $roleLabel',
           onBack: () => context.pop(),
           backSemanticLabel: 'Back to weekly plan',
         ),
@@ -148,13 +171,13 @@ class _PickerForHousehold extends ConsumerWidget {
                 ? Center(
                     key: RecipePickerScreen.emptyStateKey,
                     child: PEmptyState(
-                      headline: 'No ${extra.slotRole.displayLabel.toLowerCase()} recipes yet',
+                      headline: 'No $roleLabel recipes yet',
                       body: 'Add one from the Recipes tab, then come back to plan this slot.',
                       action: PButton(
                         label: 'Add a recipe',
                         variant: PButtonVariant.secondary,
                         onPressed: () => context.push(
-                          AppRoutes.recipeChooseMethod(household.id),
+                          AppRoutes.recipeChooseMethod(widget.household.id),
                         ),
                       ),
                     ),
@@ -166,7 +189,9 @@ class _PickerForHousehold extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: RecipeCard(
                         recipe: value[index],
-                        onTap: () => _selectRecipe(context, ref, value[index]),
+                        onTap: _isSelecting
+                            ? null
+                            : () => _selectRecipe(context, value[index]),
                       ),
                     ),
                   ),

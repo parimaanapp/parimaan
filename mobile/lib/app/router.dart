@@ -555,7 +555,7 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.recipePicker,
         builder: (BuildContext context, GoRouterState state) =>
-            RecipePickerScreen(extra: state.extra! as RecipePickerExtra),
+            RecipePickerScreen(extra: state.extra as RecipePickerExtra),
       ),
       GoRoute(
         path: AppRoutes._pantryAddChooseMethodPattern,

@@ -79,7 +79,7 @@ Future<ProviderContainer> _pump(
       GoRoute(
         path: AppRoutes.recipePicker,
         builder: (BuildContext context, GoRouterState state) =>
-            RecipePickerScreen(extra: state.extra! as RecipePickerExtra),
+            RecipePickerScreen(extra: state.extra as RecipePickerExtra),
       ),
       GoRoute(
         path: '/home/recipes/new/method',
@@ -222,6 +222,38 @@ void main() {
       expect(draft.slotRole, RecipeRole.accompaniment);
       // Success pops back to the Weekly plan.
       expect(find.text('Weekly plan stub'), findsOneWidget);
+    });
+
+    testWidgets('a fetchRecipeDetail failure surfaces inline and never calls addMenuItem', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository recipeRepository = FakeRecipeRepository(
+        result: <Recipe>[_recipe('recipe-1', 'Dal')],
+        detailError: const ForbiddenError('Not a member.'),
+      );
+      final FakeMenuRepository menuRepository = FakeMenuRepository(
+        fetchResult: Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: currentWeekStartDate(),
+          items: const <MenuItem>[],
+        ),
+        addResult: testMenuItem,
+      );
+      await _pump(
+        tester,
+        recipeRepository: recipeRepository,
+        menuRepository: menuRepository,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Dal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Not a member.'), findsOneWidget);
+      expect(menuRepository.addCalls, isEmpty);
+      // Never navigated away — the picker is still here.
+      expect(find.byType(RecipePickerScreen), findsOneWidget);
     });
 
     testWidgets('a cap-rejection surfaces inline, not silently — the picker stays open', (
@@ -402,6 +434,159 @@ void main() {
       expect(menuRepository.addCalls, isEmpty);
       // Still on the picker — no navigation away.
       expect(find.byType(RecipePickerScreen), findsOneWidget);
+    });
+
+    testWidgets('a skip-ingredient-only match warns (marker, not a hidden recipe) and still allows proceeding', (
+      WidgetTester tester,
+    ) async {
+      final Household householdWithSkip = Household(
+        id: 'household-1',
+        name: testMenuHousehold.name,
+        inviteCode: testMenuHousehold.inviteCode,
+        primaryUserId: testMenuHousehold.primaryUserId,
+        subscriptionStatus: testMenuHousehold.subscriptionStatus,
+        settings: HouseholdSettings(
+          householdId: 'household-1',
+          mealsEnabled: testMenuHousehold.settings.mealsEnabled,
+          mealStructureJson: testMenuHousehold.settings.mealStructureJson,
+          cuisineTier1: testMenuHousehold.settings.cuisineTier1,
+          cuisineTier2WeightsJson: testMenuHousehold.settings.cuisineTier2WeightsJson,
+          dietaryTags: testMenuHousehold.settings.dietaryTags,
+          allergens: const <String>[],
+          skipIngredients: const <String>['cilantro'],
+        ),
+        members: testMenuHousehold.members,
+      );
+
+      final Recipe recipeWithCilantro = Recipe(
+        id: 'recipe-1',
+        householdId: 'household-1',
+        sourceType: RecipeSource.user,
+        title: 'Cilantro Chutney',
+        servings: 4,
+        dietaryTags: const <String>[],
+        role: RecipeRole.sabziDal,
+        inRotation: true,
+        isFavorite: false,
+        ingredients: const <RecipeIngredient>[
+          RecipeIngredient(id: 'ing-1', name: 'Fresh Cilantro', isStaple: false),
+        ],
+        steps: const <String>[],
+        createdAt: DateTime.utc(2026, 9, 1),
+        updatedAt: DateTime.utc(2026, 9, 1),
+      );
+
+      final FakeRecipeRepository recipeRepository = FakeRecipeRepository(
+        result: <Recipe>[recipeWithCilantro],
+        detailResult: recipeWithCilantro,
+      );
+      final FakeMenuRepository menuRepository = FakeMenuRepository(
+        fetchResult: Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: currentWeekStartDate(),
+          items: const <MenuItem>[],
+        ),
+        addResult: testMenuItem,
+      );
+      await _pump(
+        tester,
+        recipeRepository: recipeRepository,
+        menuRepository: menuRepository,
+        household: householdWithSkip,
+      );
+      await tester.pumpAndSettle();
+
+      // The recipe still appears in the list — never hidden.
+      expect(find.text('Cilantro Chutney'), findsOneWidget);
+
+      await tester.tap(find.text('Cilantro Chutney'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(IngredientWarningDialog), findsOneWidget);
+      expect(find.textContaining('cilantro'), findsWidgets);
+
+      await tester.tap(find.byKey(IngredientWarningDialog.proceedButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(menuRepository.addCalls, hasLength(1));
+      expect(menuRepository.addCalls.single.$2.recipeId, 'recipe-1');
+    });
+
+    testWidgets('a combined allergen and skip-ingredient match shows both warnings at once', (
+      WidgetTester tester,
+    ) async {
+      final Household householdWithBoth = Household(
+        id: 'household-1',
+        name: testMenuHousehold.name,
+        inviteCode: testMenuHousehold.inviteCode,
+        primaryUserId: testMenuHousehold.primaryUserId,
+        subscriptionStatus: testMenuHousehold.subscriptionStatus,
+        settings: HouseholdSettings(
+          householdId: 'household-1',
+          mealsEnabled: testMenuHousehold.settings.mealsEnabled,
+          mealStructureJson: testMenuHousehold.settings.mealStructureJson,
+          cuisineTier1: testMenuHousehold.settings.cuisineTier1,
+          cuisineTier2WeightsJson: testMenuHousehold.settings.cuisineTier2WeightsJson,
+          dietaryTags: testMenuHousehold.settings.dietaryTags,
+          allergens: const <String>['peanut'],
+          skipIngredients: const <String>['cilantro'],
+        ),
+        members: testMenuHousehold.members,
+      );
+
+      final Recipe recipeWithBoth = Recipe(
+        id: 'recipe-1',
+        householdId: 'household-1',
+        sourceType: RecipeSource.user,
+        title: 'Peanut Cilantro Sabzi',
+        servings: 4,
+        dietaryTags: const <String>[],
+        role: RecipeRole.sabziDal,
+        inRotation: true,
+        isFavorite: false,
+        ingredients: const <RecipeIngredient>[
+          RecipeIngredient(id: 'ing-1', name: 'Crushed Peanuts', isStaple: false),
+          RecipeIngredient(id: 'ing-2', name: 'Fresh Cilantro', isStaple: false),
+        ],
+        steps: const <String>[],
+        createdAt: DateTime.utc(2026, 9, 1),
+        updatedAt: DateTime.utc(2026, 9, 1),
+      );
+
+      final FakeRecipeRepository recipeRepository = FakeRecipeRepository(
+        result: <Recipe>[recipeWithBoth],
+        detailResult: recipeWithBoth,
+      );
+      final FakeMenuRepository menuRepository = FakeMenuRepository(
+        fetchResult: Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: currentWeekStartDate(),
+          items: const <MenuItem>[],
+        ),
+        addResult: testMenuItem,
+      );
+      await _pump(
+        tester,
+        recipeRepository: recipeRepository,
+        menuRepository: menuRepository,
+        household: householdWithBoth,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Peanut Cilantro Sabzi'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(IngredientWarningDialog), findsOneWidget);
+      expect(find.textContaining('peanut'), findsWidgets);
+      expect(find.textContaining('cilantro'), findsWidgets);
+
+      await tester.tap(find.byKey(IngredientWarningDialog.proceedButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(menuRepository.addCalls, hasLength(1));
+      expect(menuRepository.addCalls.single.$2.recipeId, 'recipe-1');
     });
   });
 }
