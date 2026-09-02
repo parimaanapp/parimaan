@@ -42,13 +42,19 @@ export interface ApiStackProps extends cdk.StackProps {
   /** Shared security group for VPC-attached Lambdas reaching Aurora, from DataStack. */
   readonly lambdaSecurityGroup: ISecurityGroup;
   /**
-   * DynamoDB cache/rate-limit table from DataStack. Only the two
-   * rate-limited mutations use it (per-caller daily counters — see
+   * DynamoDB cache/rate-limit table from DataStack. Four rate-limited
+   * mutations use it (per-caller daily counters — see
    * `api/src/rateLimit/dailyActionLimiter.ts`): `joinHousehold`, guarding
-   * the invite code's ~887M-code keyspace against a scripted guesser, and
+   * the invite code's ~887M-code keyspace against a scripted guesser;
    * `rotateInviteCode`, whose abuse shape is a member denying every
-   * co-member access. Granted to those two Lambdas specifically (via
-   * `needsCacheTable` below), never to the other resolvers.
+   * co-member access; and the two non-VPC AI/import resolvers,
+   * `parseFreeformRecipe` (`'freeformParse'`) and `importRecipeFromUrl`
+   * (`'urlImport'`), both added in W7. Granted to exactly those four
+   * Lambdas (via `needsCacheTable` on `DbResolverEntry` below and its
+   * identical counterpart on `NonVpcResolverEntry`), never to the other
+   * resolvers. Re-confirmed complete as of the W8 S11 phase-boundary
+   * security sweep (E2E_MVP_PLAN.md §14.5.9) — this comment had drifted
+   * stale (still said "the two") since the non-VPC pair was added.
    */
   readonly cacheTable: Table;
 }

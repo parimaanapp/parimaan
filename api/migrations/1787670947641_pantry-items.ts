@@ -38,14 +38,20 @@ const createPantryItemsTable = (pgm: MigrationBuilder): void => {
 };
 
 const enableRls = (pgm: MigrationBuilder): void => {
-  // SYSTEM_DESIGN.md §7.1's example policy is `USING (...)` only, which in
-  // Postgres governs SELECT/UPDATE/DELETE row *visibility* but does nothing
-  // for INSERT — that's `WITH CHECK`'s job, and a policy without it lets a
-  // non-member insert rows into someone else's household undetected
-  // (E2E_MVP_PLAN.md §11.2.2; `household_settings`'s policy has the same
-  // gap, untested, tracked as separate backlog rather than fixed here).
-  // Both clauses are identical membership subqueries, made explicit on both
-  // sides rather than relying on `USING` to double as the INSERT check.
+  // SYSTEM_DESIGN.md §7.1's example policy is `USING (...)` only. `USING`
+  // governs SELECT/UPDATE/DELETE row *visibility*; `WITH CHECK` governs
+  // INSERT (and re-checks UPDATE's new row). For a `FOR ALL` policy that
+  // omits `WITH CHECK` explicitly, Postgres implicitly reuses `USING` as
+  // the check — confirmed empirically in W8 S11's phase-boundary sweep
+  // (E2E_MVP_PLAN.md §14.5) against `household_settings`'s identically-
+  // shaped policy, which was long tracked here as an untested INSERT gap
+  // and turned out not to be one. Both clauses are made explicit on both
+  // sides anyway, for the same reason S11 then added an explicit
+  // `WITH CHECK` to `household_settings` too
+  // (`1788000000000_household-settings-with-check.ts`): the implicit reuse
+  // stops applying the moment a policy is ever split into separate
+  // per-command policies, and an explicit clause here means that future
+  // change can't silently reopen a real gap.
   //
   // `FORCE ROW LEVEL SECURITY` (not just `ENABLE`) so the policy still
   // applies even if this table's owner role is ever used to connect —
