@@ -1,0 +1,13 @@
+#import "./menu_fields.graphql"
+
+# `Query.menu` — a household's menu for one calendar week, or `null` if none
+# has been created yet (never an implicit create — see the SDL's own doc).
+#
+# Any member may read. A non-member and a nonexistent `householdId` deny
+# identically, so this is never an existence oracle (same convention as
+# `Query.household`).
+query Menu($householdId: ID!, $weekStartDate: AWSDateTime!) {
+  menu(householdId: $householdId, weekStartDate: $weekStartDate) {
+    ...MenuFields
+  }
+}

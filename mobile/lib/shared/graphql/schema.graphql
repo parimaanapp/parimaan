@@ -113,6 +113,17 @@ type Query {
   mutation, and no client ever reads it back.
   """
   notificationPreferences(householdId: ID!): NotificationPreferences!
+
+  """
+  Returns `householdId`'s menu for the week starting `weekStartDate`, or
+  `null` if no menu has been created for that week yet — never an
+  implicit `createMenu` (W9 S2, E2E_MVP_PLAN.md §15.3). Also the read path
+  for "today's agenda" (§15.2.5): there is no separate server endpoint for
+  it — a client fetches the current week's menu through this same field
+  and filters `items` by `dayOfWeek` itself. Requires the caller to
+  already be a member of `householdId`.
+  """
+  menu(householdId: ID!, weekStartDate: AWSDateTime!): Menu
 }
 
 type Mutation {
@@ -325,6 +336,36 @@ type Mutation {
   no way to patch another member's preferences through this mutation.
   """
   updateNotificationPreferences(householdId: ID!, input: NotificationPreferencesPatchInput!): NotificationPreferences!
+
+  """
+  Creates `householdId`'s menu for the week starting `weekStartDate`, or
+  returns the existing one if that week already has a menu (W9 S2,
+  E2E_MVP_PLAN.md §15.3) — idempotent, never a second row and never a
+  `ConflictError` for a repeat call. Requires the caller to already be a
+  member of `householdId`.
+  """
+  createMenu(householdId: ID!, weekStartDate: AWSDateTime!): Menu!
+
+  """
+  Places a recipe into one `(dayOfWeek, mealSlot, slotRole)` slot on
+  `menuId`'s menu (W9 S3, E2E_MVP_PLAN.md §15.3). Requires the caller to be
+  a member of the menu's household. Rejected server-side (never just a
+  client-side check) when: `mealSlot` isn't in the household's
+  `mealsEnabled`; the slot is already at its configured cap (1 for
+  `breakfast`/`snacks`, `mealStructure[mealSlot][slotRole]` for
+  `lunch`/`dinner`); or `recipeId` doesn't belong to this same household.
+  """
+  addMenuItem(menuId: ID!, input: MenuItemInput!): MenuItem!
+
+  """
+  Removes one `MenuItem` by id, freeing its slot (W9 S3, E2E_MVP_PLAN.md
+  §15.3). Idempotent: a nonexistent or already-removed `id` returns `false`,
+  never an error — matching `leaveHousehold`'s precedent, not
+  `deletePantryItem`'s. Requires the caller to be a member of the item's
+  menu's household; a real `id` belonging to another household is denied
+  identically to a nonexistent one (both return `false`).
+  """
+  removeMenuItem(id: ID!): Boolean!
 }
 
 type Subscription {
@@ -639,6 +680,52 @@ type RecipeIngredient {
   category: String
   notes: String
   isStaple: Boolean!
+}
+
+"""
+One household's meal plan for a single calendar week (W9, E2E_MVP_PLAN.md
+§15). `weekStartDate` is `AWSDateTime!` on the wire but stored as a plain
+`DATE` server-side — a week boundary is a calendar date, not a
+timezone-attached instant (§15.2.4); the time-of-day component is always
+midnight UTC and carries no meaning.
+"""
+type Menu {
+  id: ID!
+  householdId: ID!
+  weekStartDate: AWSDateTime!
+  items: [MenuItem!]!
+}
+
+"""
+One recipe placed into one slot of a `Menu`. `slotRole` is captured at
+placement time and does NOT track the recipe's own `role` if that's
+changed later via `updateRecipe` — a menu is a snapshot of what was
+planned, not a live view (§15.5.2).
+"""
+type MenuItem {
+  id: ID!
+  menuId: ID!
+  recipe: Recipe!
+  dayOfWeek: Int!
+  mealSlot: MealType!
+  slotRole: RecipeRole!
+  servingsOverride: Int
+  madeAt: AWSDateTime
+}
+
+"""
+Input for `Mutation.addMenuItem` (W9 S3, E2E_MVP_PLAN.md §15.3) — every
+field except `servingsOverride` mirrors `MenuItem`'s own shape (minus `id`/
+`menuId`, which the mutation's own arguments/return value supply). There is
+no update/patch mutation for a placed item — changing one is remove-then-add
+(PRD §6's locked "+ add" pattern over drag-and-drop).
+"""
+input MenuItemInput {
+  recipeId: ID!
+  dayOfWeek: Int!
+  mealSlot: MealType!
+  slotRole: RecipeRole!
+  servingsOverride: Int
 }
 
 """

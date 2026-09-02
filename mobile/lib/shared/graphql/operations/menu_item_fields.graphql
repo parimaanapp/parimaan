@@ -1,0 +1,18 @@
+#import "./menu_recipe_fields.graphql"
+
+# The one canonical `MenuItem` selection set — shared by `Menu.items` (via
+# `menu_fields.graphql`) and `Mutation.addMenuItem`'s own return value, same
+# "one fragment, one generated interface, one mapper" reasoning as
+# `HouseholdFields` (`household_fields.graphql`'s own doc).
+fragment MenuItemFields on MenuItem {
+  id
+  menuId
+  dayOfWeek
+  mealSlot
+  slotRole
+  servingsOverride
+  madeAt
+  recipe {
+    ...MenuRecipeFields
+  }
+}

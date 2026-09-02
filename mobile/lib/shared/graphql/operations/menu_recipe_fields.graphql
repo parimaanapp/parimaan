@@ -1,0 +1,31 @@
+# The `Recipe` selection embedded in a `MenuItem` — deliberately the same
+# list-shape field set `recipes.graphql`'s `Query.recipes` selects (no
+# `ingredients`), not the Detail-scale `RecipeDetailFields` fragment: a
+# Weekly plan card shows a recipe summary, not its full ingredient list, and
+# `MenuItem.recipe`'s own SD doc never implies otherwise.
+#
+# Not the SAME fragment as a future `RecipeFields` would be — this one is
+# scoped to what `MenuItem.recipe` needs, kept separate from
+# `recipes.graphql`'s inline field list until there are enough call sites to
+# justify consolidating them (`HouseholdFields`' own precedent: a shared
+# fragment paid for itself at four call sites, not two).
+fragment MenuRecipeFields on Recipe {
+  id
+  householdId
+  sourceType
+  sourceUrl
+  title
+  description
+  servings
+  prepMin
+  cookMin
+  cuisineTier1
+  cuisineTier2
+  dietaryTags
+  role
+  inRotation
+  isFavorite
+  steps
+  createdAt
+  updatedAt
+}
