@@ -25,7 +25,7 @@ import '../features/household/presentation/settings/settings_hub_screen.dart';
 import '../features/household/presentation/settings/settings_placeholder_screen.dart';
 import '../features/household/state/me_households_controller.dart';
 import '../features/household/state/pending_join_code_controller.dart';
-import '../features/menu/presentation/recipe_picker_stub_screen.dart';
+import '../features/menu/presentation/recipe_picker_screen.dart';
 import '../features/menu/presentation/today_screen.dart';
 import '../features/menu/presentation/weekly_plan_screen.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
@@ -35,6 +35,7 @@ import '../features/pantry/presentation/manual_add_screen.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
 import '../features/recipes/domain/ai_recipe_draft.dart';
 import '../features/recipes/domain/recipe.dart';
+import '../features/recipes/domain/recipe_role.dart';
 import '../features/recipes/presentation/ai_failure_screen.dart';
 import '../features/recipes/presentation/freeform_input_screen.dart';
 import '../features/recipes/presentation/recipe_detail_screen.dart';
@@ -191,12 +192,18 @@ abstract final class AppRoutes {
 
   static const String weeklyPlan = '/home/plan';
 
-  /// Where tapping an empty slot on [weeklyPlan] lands today — the honest
-  /// "coming soon" stand-in for W10's real recipe picker
-  /// (`RecipePickerStubScreen`). A real `GoRoute`, not an imperative
-  /// `Navigator.push`, matching how every other screen in this app —
-  /// including `weeklyPlan` itself — navigates.
-  static const String recipePickerStub = '/home/menu/weekly-plan/pick-recipe';
+  /// Where tapping an empty slot on [weeklyPlan] lands (W10 S5,
+  /// E2E_MVP_PLAN.md §16.3 — replaces W9's `RecipePickerStubScreen`). A real
+  /// `GoRoute`, not an imperative `Navigator.push`, matching how every other
+  /// screen in this app — including [weeklyPlan] itself — navigates. The
+  /// tapped slot's own `(dayOfWeek, mealSlot, slotRole)` travels as `extra`
+  /// ([RecipePickerExtra]) — same "no sensible URL encoding, no deep-link
+  /// need" reasoning as [recipeEdit]'s already-loaded `Recipe`. No `menuId`:
+  /// the picker resolves the CURRENT week's menu itself via
+  /// `CurrentMenuController`, the same client-side "today" computation
+  /// [weeklyPlan] itself uses, rather than threading an id across the route
+  /// boundary for no benefit.
+  static const String recipePicker = '/home/menu/weekly-plan/pick-recipe';
 
   static const String _pantryAddChooseMethodPattern = '/home/pantry/add';
   static String pantryAddChooseMethod(String householdId) =>
@@ -286,6 +293,16 @@ abstract final class AppRoutes {
   static String recipeAiFailure(String householdId) =>
       '$_recipeAiFailurePattern?householdId=$householdId';
 }
+
+/// `extra` payload for [AppRoutes.recipePicker] — see that route's own doc.
+/// `mealSlot` is the raw `MealType` wire value, matching `MenuItem.mealSlot`/
+/// `NewMenuItem.mealSlot`'s own choice not to use the typed, encode-only
+/// `MealType` enum here.
+typedef RecipePickerExtra = ({
+  int dayOfWeek,
+  String mealSlot,
+  RecipeRole slotRole,
+});
 
 /// `extra` payload for [AppRoutes.recipeDraftReview] — see that route's own
 /// doc.
@@ -536,9 +553,9 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         ],
       ),
       GoRoute(
-        path: AppRoutes.recipePickerStub,
+        path: AppRoutes.recipePicker,
         builder: (BuildContext context, GoRouterState state) =>
-            RecipePickerStubScreen(onBack: () => context.pop()),
+            RecipePickerScreen(extra: state.extra! as RecipePickerExtra),
       ),
       GoRoute(
         path: AppRoutes._pantryAddChooseMethodPattern,

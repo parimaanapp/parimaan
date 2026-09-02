@@ -227,7 +227,14 @@ class _DaySection extends StatelessWidget {
                   slot: slots[i],
                   dayOfWeek: dayOfWeek,
                   slotIndex: indexWithinTriple[i],
-                  onTap: () => context.push(AppRoutes.recipePickerStub),
+                  onTap: () => context.push(
+                    AppRoutes.recipePicker,
+                    extra: (
+                      dayOfWeek: dayOfWeek,
+                      mealSlot: slots[i].mealType.wireValue,
+                      slotRole: slots[i].slotRole,
+                    ),
+                  ),
                 ),
               ),
             ),
