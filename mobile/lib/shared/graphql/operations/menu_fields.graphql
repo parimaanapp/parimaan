@@ -1,0 +1,13 @@
+#import "./menu_item_fields.graphql"
+
+# The one canonical `Menu` selection set, shared by `Query.menu` and
+# `Mutation.createMenu` — both return `Menu`/`Menu!` with the identical
+# shape, same "one fragment, one mapper" reasoning as `HouseholdFields`.
+fragment MenuFields on Menu {
+  id
+  householdId
+  weekStartDate
+  items {
+    ...MenuItemFields
+  }
+}

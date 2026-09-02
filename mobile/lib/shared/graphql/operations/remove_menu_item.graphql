@@ -1,0 +1,6 @@
+# `Mutation.removeMenuItem` — idempotent: a nonexistent or already-removed
+# `id` returns `false`, never an error (E2E_MVP_PLAN.md §15.3 S3, matching
+# `leaveHousehold`'s precedent, not `deletePantryItem`'s).
+mutation RemoveMenuItem($id: ID!) {
+  removeMenuItem(id: $id)
+}

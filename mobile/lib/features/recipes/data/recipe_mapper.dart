@@ -24,7 +24,7 @@ import '../domain/recipe_source_attribution.dart';
 Recipe recipeFromGraphQL(GRecipesData_recipes data) => Recipe(
   id: data.id,
   householdId: data.householdId,
-  sourceType: _recipeSourceFromGraphQL(data.sourceType),
+  sourceType: recipeSourceFromGraphQL(data.sourceType),
   sourceUrl: data.sourceUrl,
   title: data.title,
   description: data.description,
@@ -58,7 +58,7 @@ Recipe recipeFromGraphQL(GRecipesData_recipes data) => Recipe(
 Recipe recipeDetailFromGraphQL(GRecipeDetailFields data) => Recipe(
   id: data.id,
   householdId: data.householdId,
-  sourceType: _recipeSourceFromGraphQL(data.sourceType),
+  sourceType: recipeSourceFromGraphQL(data.sourceType),
   sourceUrl: data.sourceUrl,
   title: data.title,
   description: data.description,
@@ -109,8 +109,12 @@ RecipeRole recipeRoleFromGraphQL(GRecipeRole role) => switch (role) {
   _ => RecipeRole.unknown,
 };
 
-/// See [recipeRoleFromGraphQL].
-RecipeSource _recipeSourceFromGraphQL(GRecipeSource source) => switch (source) {
+/// Public (not `_`-prefixed) for reuse by future recipe operations that
+/// share this same schema-level enum — same reuse rationale as
+/// [recipeRoleFromGraphQL]. Its first reuse is `features/menu/data/menu_mapper.dart`
+/// (W9 S4), for `MenuItem.recipe.sourceType`'s identical `GRecipeSource`
+/// wire type.
+RecipeSource recipeSourceFromGraphQL(GRecipeSource source) => switch (source) {
   GRecipeSource.user => RecipeSource.user,
   GRecipeSource.url => RecipeSource.url,
   GRecipeSource.curated => RecipeSource.curated,
@@ -137,7 +141,7 @@ GRecipeRole recipeRoleToGraphQL(RecipeRole role) => switch (role) {
   ),
 };
 
-/// The write direction of [_recipeSourceFromGraphQL], for
+/// The write direction of [recipeSourceFromGraphQL], for
 /// `Mutation.createRecipe`'s optional `source` argument (W7 S10 — the only
 /// caller that ever constructs a [RecipeSourceAttribution] client-side).
 /// `unknown` has no wire value, same guard as [recipeRoleToGraphQL]; `user`/
@@ -187,42 +191,42 @@ GRecipeInput recipeDraftToGraphQL(RecipeDraft draft) => GRecipeInput(
 /// reaches the builder call at all (the field stays unset, i.e. absent on
 /// the wire, exactly like every other unset field in this input), and a
 /// non-null (possibly empty) list is always sent whole.
-GRecipePatchInput recipePatchToGraphQL(RecipePatch patch) => GRecipePatchInput(
-  (GRecipePatchInputBuilder b) {
-    b
-      ..title = patch.title
-      ..description = patch.description
-      ..servings = patch.servings
-      ..prepMin = patch.prepMin
-      ..cookMin = patch.cookMin
-      ..cuisineTier1 = _cuisineTier1ToGraphQL(patch.cuisineTier1)
-      ..cuisineTier2 = patch.cuisineTier2
-      ..dietaryTags = _dietaryTagsToGraphQL(patch.dietaryTags)
-      ..role = patch.role == null ? null : recipeRoleToGraphQL(patch.role!)
-      ..inRotation = patch.inRotation;
-    final List<RecipeIngredientDraft>? ingredients = patch.ingredients;
-    if (ingredients != null) {
-      b.ingredients = ListBuilder<GRecipeIngredientInput>(
-        ingredients.map(_recipeIngredientDraftToGraphQL),
-      );
-    }
-    final List<String>? steps = patch.steps;
-    if (steps != null) {
-      b.steps = ListBuilder<String>(steps);
-    }
-  },
-);
+GRecipePatchInput recipePatchToGraphQL(RecipePatch patch) =>
+    GRecipePatchInput((GRecipePatchInputBuilder b) {
+      b
+        ..title = patch.title
+        ..description = patch.description
+        ..servings = patch.servings
+        ..prepMin = patch.prepMin
+        ..cookMin = patch.cookMin
+        ..cuisineTier1 = _cuisineTier1ToGraphQL(patch.cuisineTier1)
+        ..cuisineTier2 = patch.cuisineTier2
+        ..dietaryTags = _dietaryTagsToGraphQL(patch.dietaryTags)
+        ..role = patch.role == null ? null : recipeRoleToGraphQL(patch.role!)
+        ..inRotation = patch.inRotation;
+      final List<RecipeIngredientDraft>? ingredients = patch.ingredients;
+      if (ingredients != null) {
+        b.ingredients = ListBuilder<GRecipeIngredientInput>(
+          ingredients.map(_recipeIngredientDraftToGraphQL),
+        );
+      }
+      final List<String>? steps = patch.steps;
+      if (steps != null) {
+        b.steps = ListBuilder<String>(steps);
+      }
+    });
 
-GRecipeIngredientInput _recipeIngredientDraftToGraphQL(RecipeIngredientDraft draft) =>
-    GRecipeIngredientInput(
-      (GRecipeIngredientInputBuilder b) => b
-        ..name = draft.name
-        ..quantity = draft.quantity
-        ..unit = draft.unit
-        ..category = draft.category
-        ..notes = draft.notes
-        ..isStaple = draft.isStaple,
-    );
+GRecipeIngredientInput _recipeIngredientDraftToGraphQL(
+  RecipeIngredientDraft draft,
+) => GRecipeIngredientInput(
+  (GRecipeIngredientInputBuilder b) => b
+    ..name = draft.name
+    ..quantity = draft.quantity
+    ..unit = draft.unit
+    ..category = draft.category
+    ..notes = draft.notes
+    ..isStaple = draft.isStaple,
+);
 
 /// The raw wire-value string [Recipe.cuisineTier1] is kept as, converted
 /// back to the generated enum `GCuisineTier1.valueOf` expects — the write
@@ -237,5 +241,5 @@ GCuisineTier1? _cuisineTier1ToGraphQL(String? value) =>
 /// generated input builders' own list-field setters expect.
 ListBuilder<GDietaryTag>? _dietaryTagsToGraphQL(List<String>? values) =>
     values == null
-        ? null
-        : ListBuilder<GDietaryTag>(values.map(GDietaryTag.valueOf));
+    ? null
+    : ListBuilder<GDietaryTag>(values.map(GDietaryTag.valueOf));

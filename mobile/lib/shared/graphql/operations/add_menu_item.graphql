@@ -1,0 +1,13 @@
+#import "./menu_item_fields.graphql"
+
+# `Mutation.addMenuItem` — places a recipe into one `(dayOfWeek, mealSlot,
+# slotRole)` slot. Rejected server-side (never just a client-side check)
+# when the meal isn't enabled for the household, the slot is already at its
+# configured cap, or `recipeId` doesn't belong to this same household
+# (E2E_MVP_PLAN.md §15.3 S3) — each surfaces as a distinct typed `AppError`
+# the caller can render.
+mutation AddMenuItem($menuId: ID!, $input: MenuItemInput!) {
+  addMenuItem(menuId: $menuId, input: $input) {
+    ...MenuItemFields
+  }
+}

@@ -1,0 +1,10 @@
+#import "./menu_fields.graphql"
+
+# `Mutation.createMenu` — idempotent: a repeat call for a week that already
+# has a menu returns that SAME menu, never a second row and never a
+# `ConflictError` (E2E_MVP_PLAN.md §15.3 S2).
+mutation CreateMenu($householdId: ID!, $weekStartDate: AWSDateTime!) {
+  createMenu(householdId: $householdId, weekStartDate: $weekStartDate) {
+    ...MenuFields
+  }
+}
