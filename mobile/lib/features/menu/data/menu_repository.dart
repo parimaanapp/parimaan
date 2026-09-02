@@ -2,10 +2,9 @@ import 'package:built_collection/built_collection.dart';
 import 'package:ferry/ferry.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/errors/app_error.dart';
 import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
 import '../../../shared/graphql/client.dart';
-import '../../../shared/graphql/graphql_error_mapper.dart';
+import '../../../shared/graphql/ferry_execute.dart';
 import '../../../shared/graphql/operations/__generated__/add_menu_item.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/add_menu_item.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/add_menu_item.var.gql.dart';
@@ -106,9 +105,10 @@ abstract interface class MenuRepository {
 }
 
 /// Ferry-backed [MenuRepository].
-class FerryMenuRepository implements MenuRepository {
+class FerryMenuRepository with FerryExecuteMixin implements MenuRepository {
   const FerryMenuRepository({required this.client});
 
+  @override
   final Client client;
 
   @override
@@ -121,7 +121,7 @@ class FerryMenuRepository implements MenuRepository {
         ..fetchPolicy = FetchPolicy.NoCache,
     );
 
-    final GMenuData data = await _execute(request);
+    final GMenuData data = await execute(request);
     final GMenuData_menu? menu = data.menu;
     return menu == null ? null : menuFromGraphQL(menu);
   }
@@ -135,7 +135,7 @@ class FerryMenuRepository implements MenuRepository {
           ..weekStartDate = weekStartDate),
     );
 
-    final GCreateMenuData data = await _execute(request);
+    final GCreateMenuData data = await execute(request);
     return menuFromGraphQL(data.createMenu);
   }
 
@@ -148,7 +148,7 @@ class FerryMenuRepository implements MenuRepository {
           ..input = menuItemInputToGraphQL(draft).toBuilder()),
     );
 
-    final GAddMenuItemData data = await _execute(request);
+    final GAddMenuItemData data = await execute(request);
     return menuItemFromGraphQL(data.addMenuItem);
   }
 
@@ -159,7 +159,7 @@ class FerryMenuRepository implements MenuRepository {
           b..vars = (GRemoveMenuItemVarsBuilder()..id = id),
     );
 
-    final GRemoveMenuItemData data = await _execute(request);
+    final GRemoveMenuItemData data = await execute(request);
     return data.removeMenuItem;
   }
 
@@ -171,7 +171,7 @@ class FerryMenuRepository implements MenuRepository {
         ..fetchPolicy = FetchPolicy.NoCache,
     );
 
-    final GAutoFillPreviewData data = await _execute(request);
+    final GAutoFillPreviewData data = await execute(request);
     return AutoFillPreviewResult(
       items: data.autoFillPreview.items
           .map(proposedMenuItemFromGraphQL)
@@ -199,7 +199,7 @@ class FerryMenuRepository implements MenuRepository {
           )),
     );
 
-    final GAutoFillWeekData data = await _execute(request);
+    final GAutoFillWeekData data = await execute(request);
     return AutoFillResult(
       menu: menuFromGraphQL(data.autoFillWeek.menu),
       filledCount: data.autoFillWeek.filledCount,
@@ -209,35 +209,6 @@ class FerryMenuRepository implements MenuRepository {
     );
   }
 
-  /// See `HouseholdRepository`'s identical `_execute` for the full
-  /// rationale — duplicated here rather than shared, matching every other
-  /// Ferry-backed repository in this codebase today.
-  Future<TData> _execute<TData, TVars>(
-    OperationRequest<TData, TVars> request,
-  ) async {
-    OperationResponse<TData, TVars>? settled;
-    await for (final OperationResponse<TData, TVars> response in client.request(
-      request,
-    )) {
-      if (response.data != null || response.hasErrors) {
-        settled = response;
-        break;
-      }
-    }
-
-    if (settled == null) {
-      throw const InternalError(genericErrorMessage);
-    }
-
-    final TData? data = settled.data;
-    if (settled.hasErrors || data == null) {
-      throw mapOperationFailure(
-        graphqlErrors: settled.graphqlErrors,
-        linkException: settled.linkException,
-      );
-    }
-    return data;
-  }
 }
 
 /// Injection point for [MenuRepository] — same default-to-real-Ferry-impl
