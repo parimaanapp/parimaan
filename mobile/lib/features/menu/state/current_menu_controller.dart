@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/menu_repository.dart';
+import '../domain/current_week.dart';
 import '../domain/menu.dart';
 
 /// The compound key [CurrentMenuController] is keyed on — a household id
@@ -31,14 +32,8 @@ typedef MenuKey = ({String householdId, DateTime weekStartDate});
 
 /// The only sanctioned way to build a [MenuKey] — normalizes [weekStartDate]
 /// to UTC midnight first. See [MenuKey]'s own doc for why this matters.
-MenuKey menuKeyFor(String householdId, DateTime weekStartDate) => (
-  householdId: householdId,
-  weekStartDate: DateTime.utc(
-    weekStartDate.year,
-    weekStartDate.month,
-    weekStartDate.day,
-  ),
-);
+MenuKey menuKeyFor(String householdId, DateTime weekStartDate) =>
+    (householdId: householdId, weekStartDate: utcMidnight(weekStartDate));
 
 /// `true` iff [weekStartDate] is exactly what [menuKeyFor] would have
 /// produced — UTC, midnight, no sub-day component.

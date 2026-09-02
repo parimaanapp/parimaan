@@ -23,6 +23,14 @@ class HomeScreen extends ConsumerWidget {
 
   static const Key settingsButtonKey = Key('home-settings');
 
+  /// The one exception to this file's own "nothing extends without
+  /// checking" rule (W9 S5): the Weekly plan screen needs SOME reachable
+  /// entry point today, and S6's own doc explicitly defers the real
+  /// Home-tab/tab-bar IA decision rather than locking it here — this button
+  /// is the same kind of interim affordance [settingsButtonKey] already is,
+  /// not a preemption of that later call.
+  static const Key weeklyPlanButtonKey = Key('home-weekly-plan');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final Household? household = ref.watch(activeHouseholdProvider);
@@ -45,6 +53,13 @@ class HomeScreen extends ConsumerWidget {
                     variant: PButtonVariant.secondary,
                     onPressed: () =>
                         context.go(AppRoutes.settingsHub(household.id)),
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  PButton(
+                    key: weeklyPlanButtonKey,
+                    label: 'Weekly plan',
+                    variant: PButtonVariant.primary,
+                    onPressed: () => context.push(AppRoutes.weeklyPlan),
                   ),
                 ],
               ],
