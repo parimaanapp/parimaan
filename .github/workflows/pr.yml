@@ -84,7 +84,7 @@ jobs:
       - name: Unit tests (infra, retried on the known vitest-worker IPC-heartbeat flake)
         run: |
           set -o pipefail
-          max_attempts=3
+          max_attempts=6
           attempt=1
           while true; do
             if pnpm --filter infra test 2>&1 | tee /tmp/infra-test-output.log; then
