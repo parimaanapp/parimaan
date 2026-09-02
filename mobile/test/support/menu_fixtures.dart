@@ -1,7 +1,43 @@
+import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/menu/domain/menu.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/features/recipes/domain/recipe_source.dart';
+
+/// A [Household] whose `mealStructureJson` is a REAL, complete document
+/// (matching the server's own `DEFAULT_MEAL_STRUCTURE`) — unlike
+/// `household_fixtures.dart`'s own `testHousehold`, whose
+/// `'{"breakfast":{"items":2}}'` is a setup-wizard-oriented fixture with no
+/// `lunch`/`dinner` keys at all. `plannedSlotsForDay` now fails CLOSED
+/// (zero slots) on a missing entry, mirroring the server's own
+/// `getMealSlotCap` (`domain/meal_slot_plan.dart`'s own doc) — this fixture
+/// exists so menu-feature tests exercise the real, well-formed-document
+/// path rather than that fail-closed one by accident.
+final Household testMenuHousehold = Household(
+  id: 'household-1',
+  name: 'Kulkarni Kitchen',
+  inviteCode: 'ABC123',
+  primaryUserId: 'user-1',
+  subscriptionStatus: SubscriptionStatus.free,
+  settings: const HouseholdSettings(
+    householdId: 'household-1',
+    mealsEnabled: <String>['breakfast', 'lunch', 'dinner'],
+    mealStructureJson: '{"lunch":{"carb":1,"sabzi_dal":2,"accompaniment":1},"dinner":{"carb":1,"sabzi_dal":2,"accompaniment":1}}',
+    cuisineTier1: <String>['north_indian'],
+    cuisineTier2WeightsJson: '{}',
+    dietaryTags: <String>['veg'],
+    allergens: <String>[],
+    skipIngredients: <String>[],
+  ),
+  members: <HouseholdMembership>[
+    HouseholdMembership(
+      id: 'membership-1',
+      role: HouseholdRole.primary,
+      joinedAt: DateTime.utc(2026, 8, 20),
+      user: const HouseholdMember(id: 'user-1', email: 'asha@example.com'),
+    ),
+  ],
+);
 
 /// A domain [Recipe], for tests that need one without a wire round trip.
 final Recipe testMenuRecipe = Recipe(
