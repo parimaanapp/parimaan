@@ -503,6 +503,17 @@ type Menu {
   items: [MenuItem!]!
 }
 
+# Referenced by addMenuItem above but never defined in this doc's original
+# draft — completed here alongside the W9 S3 implementation, not a new
+# decision (every field already implied by MenuItem's own shape).
+input MenuItemInput {
+  recipeId: ID!
+  dayOfWeek: Int!
+  mealSlot: MealType!
+  slotRole: RecipeRole!
+  servingsOverride: Int
+}
+
 type MenuItem {
   id: ID!
   menuId: ID!

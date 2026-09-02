@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { householdIdSchema } from './householdId.js';
+import { normalizeThenEnum } from './recipeShared.js';
+import { RECIPE_ROLE_VALUES } from '../domain/recipeRoles.js';
 
 /**
  * `Menu.weekStartDate`'s locked SDL type is `AWSDateTime!` even though
@@ -55,3 +57,45 @@ export const menuArgsSchema = z.object({
 });
 
 export type MenuArgs = z.infer<typeof menuArgsSchema>;
+
+// Mirrors `shared/schema.graphql`'s `MealType` enum exactly (breakfast,
+// lunch, snacks, dinner) — see `validation/updateHouseholdSettings.ts`'s own
+// identical `MEAL_TYPES` constant; not shared from a common module today
+// since neither file has a natural home for one yet, same duplication this
+// codebase already accepted there.
+const MEAL_TYPE_VALUES = ['breakfast', 'lunch', 'snacks', 'dinner'] as const;
+
+const mealTypeSchema = normalizeThenEnum(MEAL_TYPE_VALUES);
+const recipeRoleSchema = normalizeThenEnum(RECIPE_ROLE_VALUES);
+
+const menuIdSchema = z.string().uuid('menuId must be a valid UUID');
+const recipeIdSchema = z.string().uuid('recipeId must be a valid UUID');
+
+/**
+ * `dayOfWeek` mirrors `menu_items.day_of_week`'s own `CHECK (day_of_week
+ * BETWEEN 0 AND 6)` — validated here too so an out-of-range value surfaces
+ * as a typed `ValidationError` before it ever reaches that constraint as a
+ * raw `pg` `23514` error.
+ */
+export const menuItemInputSchema = z.object({
+  recipeId: recipeIdSchema,
+  dayOfWeek: z.number().int().min(0, 'dayOfWeek must be between 0 and 6').max(6, 'dayOfWeek must be between 0 and 6'),
+  mealSlot: mealTypeSchema,
+  slotRole: recipeRoleSchema,
+  servingsOverride: z.number().int().positive('servingsOverride must be a positive integer').nullish(),
+});
+
+export type MenuItemInput = z.infer<typeof menuItemInputSchema>;
+
+export const addMenuItemArgsSchema = z.object({
+  menuId: menuIdSchema,
+  input: menuItemInputSchema,
+});
+
+export type AddMenuItemArgs = z.infer<typeof addMenuItemArgsSchema>;
+
+export const removeMenuItemArgsSchema = z.object({
+  id: z.string().uuid('id must be a valid UUID'),
+});
+
+export type RemoveMenuItemArgs = z.infer<typeof removeMenuItemArgsSchema>;
