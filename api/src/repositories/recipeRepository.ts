@@ -78,14 +78,22 @@ export interface FindRecipesFilter {
   role?: string;
   /** Exact match against `is_favorite`. Absent = no filter. */
   isFavorite?: boolean;
+  /** Exact match against `in_rotation`. Absent = no filter. W10 §16.2.5. */
+  inRotation?: boolean;
 }
 
 /**
- * `ORDER BY is_favorite DESC, LOWER(title)` — PRD §7.1: "favorites and
- * rotation surfaced first" (E2E_MVP_PLAN.md §12.2.7). Deliberately never
- * selects/joins `recipe_ingredients` here — `Recipe.ingredients` is a
- * separate field resolver (`recipeIngredients.ts`) precisely so a query
- * that doesn't select it never pays for the join (§12.2.7/D5).
+ * `ORDER BY is_favorite DESC, in_rotation DESC, LOWER(title)` — PRD §7.1:
+ * "favorites and rotation surfaced first" (E2E_MVP_PLAN.md §12.2.7). The
+ * `in_rotation` ordering key was added in W10 (§16.2.5) — this query
+ * existed since W6 with only the favorite half of that sentence actually
+ * implemented; this closes the gap rather than leaving it as a stale
+ * doc/code mismatch. This is a visible behavior change to the existing
+ * (W6) Library screen's own ordering, not just the new W10 picker's.
+ * Deliberately never selects/joins `recipe_ingredients` here —
+ * `Recipe.ingredients` is a separate field resolver (`recipeIngredients.ts`)
+ * precisely so a query that doesn't select it never pays for the join
+ * (§12.2.7/D5).
  */
 export const findRecipes = async (
   client: PoolClient,
@@ -97,8 +105,9 @@ export const findRecipes = async (
      WHERE household_id = $1
        AND ($2::text IS NULL OR role = $2)
        AND ($3::boolean IS NULL OR is_favorite = $3)
-     ORDER BY is_favorite DESC, LOWER(title)`,
-    [householdId, filter.role ?? null, filter.isFavorite ?? null],
+       AND ($4::boolean IS NULL OR in_rotation = $4)
+     ORDER BY is_favorite DESC, in_rotation DESC, LOWER(title)`,
+    [householdId, filter.role ?? null, filter.isFavorite ?? null, filter.inRotation ?? null],
   );
   return result.rows.map(mapRecipeRow);
 };

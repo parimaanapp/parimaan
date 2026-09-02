@@ -56,18 +56,22 @@ type Query {
   pantry(householdId: ID!, search: String, category: String): [PantryItem!]!
 
   """
-  Returns a household's recipes, optionally filtered by `role` and/or
-  `isFavorite`. Requires the caller to already be a member of `householdId`
-  — a non-member or a nonexistent `householdId` both deny identically,
-  matching `Query.pantry`/`Query.household`. Ordered favorite-first, then
-  by title (PRD §7.1: "favorites and rotation surfaced first"). Unlike
-  `PantryItem`'s free-text `unit`/`category`, `role`/`cuisineTier1`/
+  Returns a household's recipes, optionally filtered by `role`,
+  `isFavorite`, and/or `inRotation` (the last added W10, §16.2.5 — lets
+  the recipe picker offer a "rotation only" view without over-fetching
+  and filtering client-side). Requires the caller to already be a member
+  of `householdId` — a non-member or a nonexistent `householdId` both
+  deny identically, matching `Query.pantry`/`Query.household`. Ordered
+  favorite-first, then rotation-first, then by title (PRD §7.1:
+  "favorites and rotation surfaced first" — both halves of that sentence
+  are implemented as of W10; only the favorite half was until then).
+  Unlike `PantryItem`'s free-text `unit`/`category`, `role`/`cuisineTier1`/
   `dietaryTags` are closed enums — an unrecognised value is rejected at
   write time and never persisted (E2E_MVP_PLAN.md §12.2.6). This query
   deliberately does not hydrate `Recipe.ingredients` inline — see that
   field's own doc.
   """
-  recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean): [Recipe!]!
+  recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean, inRotation: Boolean): [Recipe!]!
 
   """
   Returns a single recipe by `id` — added in W6 S7 so the Detail screen can

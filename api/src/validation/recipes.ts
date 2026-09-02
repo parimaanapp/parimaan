@@ -44,6 +44,8 @@ export const recipesArgsSchema = z.object({
   householdId: householdIdSchema,
   role: recipeRoleSchema.nullish(),
   isFavorite: z.boolean().nullish(),
+  /** W10 §16.2.5 — lets the recipe picker offer a "rotation only" view without over-fetching and filtering client-side. */
+  inRotation: z.boolean().nullish(),
 });
 
 export type RecipesArgs = z.infer<typeof recipesArgsSchema>;

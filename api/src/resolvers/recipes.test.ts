@@ -18,8 +18,9 @@ const buildEvent = (
   role: unknown,
   isFavorite: unknown,
   cognitoSub: string | null,
-): AppSyncResolverEvent<{ householdId: unknown; role: unknown; isFavorite: unknown }> => ({
-  arguments: { householdId, role, isFavorite },
+  inRotation: unknown = undefined,
+): AppSyncResolverEvent<{ householdId: unknown; role: unknown; isFavorite: unknown; inRotation: unknown }> => ({
+  arguments: { householdId, role, isFavorite, inRotation },
   identity:
     cognitoSub === null
       ? null
@@ -35,6 +36,7 @@ const buildEvent = (
           householdId: unknown;
           role: unknown;
           isFavorite: unknown;
+          inRotation: unknown;
         }>['identity']),
   source: null,
   request: { headers: {}, domainName: null },
@@ -99,7 +101,7 @@ describe('recipes resolver (Query.recipes)', () => {
   const insertRecipe = async (
     householdId: string,
     createdBy: string,
-    overrides: { title?: string; role?: string } = {},
+    overrides: { title?: string; role?: string; inRotation?: boolean } = {},
   ): Promise<void> => {
     // RLS-protected — must go through `withUserTransaction` so
     // `parimaan.user_id` is set for the INSERT's `WITH CHECK` to evaluate
@@ -112,8 +114,8 @@ describe('recipes resolver (Query.recipes)', () => {
       createdBy,
       (client) =>
         client.query(
-          `INSERT INTO recipes (household_id, source_type, title, role, created_by) VALUES ($1, 'user', $2, $3, $4)`,
-          [householdId, overrides.title ?? 'Rajma', overrides.role ?? 'sabzi_dal', createdBy],
+          `INSERT INTO recipes (household_id, source_type, title, role, in_rotation, created_by) VALUES ($1, 'user', $2, $3, $4, $5)`,
+          [householdId, overrides.title ?? 'Rajma', overrides.role ?? 'sabzi_dal', overrides.inRotation ?? true, createdBy],
         ),
       pool,
     );
@@ -217,14 +219,28 @@ describe('recipes resolver (Query.recipes)', () => {
 
   // Regression: the exact W5 §11.5.5 bug shape, exercised end-to-end
   // through the resolver, not just the schema in isolation.
-  it('treats an explicit null role/isFavorite the same as an absent one — not a ValidationError', async () => {
+  it('treats an explicit null role/isFavorite/inRotation the same as an absent one — not a ValidationError', async () => {
     const owner = await createUser('sub-owner-null-filter');
     const householdId = await createHouseholdWithMember(owner, 'NUL234');
     await insertRecipe(householdId, owner.id);
 
     const handler = createRecipesHandler({ getPool: async () => pool });
-    const result = await handler(buildEvent(householdId, null, null, 'sub-owner-null-filter'));
+    const result = await handler(buildEvent(householdId, null, null, 'sub-owner-null-filter', null));
 
     expect(result).toHaveLength(1);
+  });
+
+  it('applies the inRotation filter — W10 §16.2.5, the picker\'s "rotation only" affordance', async () => {
+    const owner = await createUser('sub-owner-rotation-filter');
+    const householdId = await createHouseholdWithMember(owner, 'ROT234');
+    await insertRecipe(householdId, owner.id, { title: 'In Rotation', inRotation: true });
+    await insertRecipe(householdId, owner.id, { title: 'Not In Rotation', inRotation: false });
+
+    const handler = createRecipesHandler({ getPool: async () => pool });
+    const result = await handler(
+      buildEvent(householdId, undefined, undefined, 'sub-owner-rotation-filter', true),
+    );
+
+    expect(result.map((r) => r.title)).toEqual(['In Rotation']);
   });
 });
