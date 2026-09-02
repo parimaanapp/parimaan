@@ -10,13 +10,16 @@ import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/menu/domain/current_week.dart';
 import 'package:mobile/features/menu/domain/menu.dart';
 import 'package:mobile/features/menu/presentation/meal_slot_card.dart';
-import 'package:mobile/features/menu/presentation/recipe_picker_stub_screen.dart';
+import 'package:mobile/features/menu/presentation/recipe_picker_screen.dart';
 import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
+import 'package:mobile/features/recipes/data/recipe_repository.dart';
+import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../../../support/fake_household_repository.dart';
 import '../../../support/fake_menu_repository.dart';
+import '../../../support/fake_recipe_repository.dart';
 import '../../../support/menu_fixtures.dart';
 
 // `testMenuHousehold`'s own `settings.mealsEnabled` is `[breakfast, lunch,
@@ -31,6 +34,7 @@ Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required FakeMenuRepository menuRepository,
   Household? household,
+  FakeRecipeRepository? recipeRepository,
 }) async {
   final Household resolvedHousehold = household ?? testMenuHousehold;
   final ProviderContainer container = ProviderContainer(
@@ -42,6 +46,9 @@ Future<ProviderContainer> _pump(
         ),
       ),
       menuRepositoryProvider.overrideWithValue(menuRepository),
+      recipeRepositoryProvider.overrideWithValue(
+        recipeRepository ?? FakeRecipeRepository(result: const <Recipe>[]),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -51,8 +58,8 @@ Future<ProviderContainer> _pump(
   await container.read(meHouseholdsControllerProvider.future);
 
   // A real (minimal) `GoRouter`, not a bare `MaterialApp(home:)` — the
-  // screen navigates to `AppRoutes.recipePickerStub` via `context.push`
-  // (W9 S5's own fix for the Navigator/go_router inconsistency this test
+  // screen navigates to `AppRoutes.recipePicker` via `context.push` (W9
+  // S5's own fix for the Navigator/go_router inconsistency this test
   // exists to guard against), which throws without a real router ancestor.
   // Only the two routes this test actually exercises, not the full app
   // router — `household_route_harness.dart`'s own auth/deep-link machinery
@@ -67,9 +74,9 @@ Future<ProviderContainer> _pump(
             const WeeklyPlanScreen(),
       ),
       GoRoute(
-        path: AppRoutes.recipePickerStub,
+        path: AppRoutes.recipePicker,
         builder: (BuildContext context, GoRouterState state) =>
-            RecipePickerStubScreen(onBack: () => context.pop()),
+            RecipePickerScreen(extra: state.extra as RecipePickerExtra),
       ),
     ],
   );
@@ -181,10 +188,17 @@ void main() {
           find.descendant(of: filledCard, matching: find.byIcon(Icons.add)),
           findsNothing,
         );
+
+        // A filled slot has no view/replace/remove destination yet — it
+        // must NOT route into the "add" picker the way an empty slot does
+        // (no double-add into an already-filled slot).
+        await tester.tap(filledCard);
+        await tester.pumpAndSettle();
+        expect(find.byType(RecipePickerScreen), findsNothing);
       },
     );
 
-    testWidgets('tapping an empty slot navigates to the recipe picker stub', (
+    testWidgets('tapping an empty slot navigates to the recipe picker, carrying that slot\'s own coordinates', (
       WidgetTester tester,
     ) async {
       final FakeMenuRepository repository = FakeMenuRepository(
@@ -196,7 +210,15 @@ void main() {
       await tester.tap(find.byType(MealSlotCard).first);
       await tester.pumpAndSettle();
 
-      expect(find.byType(RecipePickerStubScreen), findsOneWidget);
+      expect(find.byType(RecipePickerScreen), findsOneWidget);
+      // Monday's first slot in plannedSlotsForDay's own emission order is
+      // breakfast (MealType.values' own order) — the transposition class
+      // §15.6 exists to catch, asserted directly rather than assumed.
+      final RecipePickerScreen picker = tester.widget(
+        find.byType(RecipePickerScreen),
+      );
+      expect(picker.extra.dayOfWeek, 0);
+      expect(picker.extra.mealSlot, 'breakfast');
     });
   });
 }

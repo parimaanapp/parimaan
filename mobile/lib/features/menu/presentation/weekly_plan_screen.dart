@@ -227,7 +227,24 @@ class _DaySection extends StatelessWidget {
                   slot: slots[i],
                   dayOfWeek: dayOfWeek,
                   slotIndex: indexWithinTriple[i],
-                  onTap: () => context.push(AppRoutes.recipePickerStub),
+                  // A filled slot has no view/replace/remove destination
+                  // yet (meal_slot_card.dart's own doc) — routing it to
+                  // the SAME picker as an empty slot would silently let a
+                  // second recipe be added to an already-filled slot
+                  // (W10 S5's own review pass caught this). `null` here
+                  // renders that card non-interactive until a later slice
+                  // gives it a real destination, rather than a misleading
+                  // one now.
+                  onTap: slots[i].isFilled
+                      ? null
+                      : () => context.push(
+                          AppRoutes.recipePicker,
+                          extra: (
+                            dayOfWeek: dayOfWeek,
+                            mealSlot: slots[i].mealType.wireValue,
+                            slotRole: slots[i].slotRole,
+                          ),
+                        ),
                 ),
               ),
             ),

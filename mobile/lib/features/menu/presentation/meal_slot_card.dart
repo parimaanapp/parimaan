@@ -42,13 +42,18 @@ class MealSlotCard extends StatelessWidget {
   /// already globally unique.
   final int slotIndex;
 
-  /// Fires on ANY tap — filled or empty. A filled slot's own tap target is
-  /// exactly the same size and shape as an empty one's (see this file's own
-  /// class doc: there is no remove affordance here yet), so today it always
-  /// means "go look at what's in/could go in this slot," differentiated by
-  /// [onTap]'s own caller-supplied destination logic, not by two separate
-  /// callbacks here.
-  final VoidCallback onTap;
+  /// The caller's own tap destination — `null` renders a non-interactive
+  /// card (`PCard`'s own established null-means-inert contract, matching
+  /// `RecipeCard.onTap`'s identical shape). W10 S5's own review pass
+  /// flagged an EARLIER version of this doc that unconditionally routed
+  /// every tap (filled or empty) to the recipe picker as a real gap once
+  /// that picker became a real "add" flow rather than a stub — a filled
+  /// slot has no remove/replace affordance to route to yet, so
+  /// `WeeklyPlanScreen`'s own caller now passes `null` for a filled slot
+  /// rather than reusing the empty-slot destination. Revisit once a
+  /// view/replace/remove destination exists for a filled slot (this
+  /// file's own class doc already named that "a later slice").
+  final VoidCallback? onTap;
 
   static Key filledKey(String menuItemId) =>
       Key('meal-slot-filled-$menuItemId');
