@@ -160,6 +160,17 @@ const createMigrationRunnerBundlingOptions = (migrationsSourceDir: string): Bund
   return {
     format: OutputFormat.ESM,
     externalModules: ['node-pg-migrate'],
+    // CDK's own bundling-progress logging (silenced by `infra/vitest.config.ts`'s
+    // `silent: 'passed-only'`) is separate from esbuild's own CLI output
+    // ("Bundling asset...", the "Done in Xms" build summary) — the latter
+    // writes directly to stdout/stderr and bypasses that silencing entirely.
+    // On a synth-heavy CI run (every ApiStack test bundles ~16 Lambdas) that
+    // volume is a documented aggravating factor in the CI-only
+    // "[vitest-worker]: Timeout calling 'onTaskUpdate'" flake
+    // (`infra/vitest.config.ts`'s own comment) — this trims it at the
+    // source, for every `NodejsFunction` in this stack, not just as a test
+    // workaround: quieter `cdk deploy` output is a genuine side benefit.
+    esbuildArgs: { '--log-level': 'error' },
     banner: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
     commandHooks: {
       beforeBundling: (): string[] => [],
