@@ -533,6 +533,216 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::IAM::Role",
     },
+    "ApiAutoFillPreviewDataSource731DD815": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "AutoFillPreviewFnA8B5DFE2",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "AutoFillPreviewDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiAutoFillPreviewDataSourceServiceRole7952E8D8",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiAutoFillPreviewDataSourceServiceRole7952E8D8": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiAutoFillPreviewDataSourceServiceRoleDefaultPolicyB0801BB0": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "AutoFillPreviewFnA8B5DFE2",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "AutoFillPreviewFnA8B5DFE2",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiAutoFillPreviewDataSourceServiceRoleDefaultPolicyB0801BB0",
+        "Roles": [
+          {
+            "Ref": "ApiAutoFillPreviewDataSourceServiceRole7952E8D8",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiAutoFillPreviewResolverBA644B29": {
+      "DependsOn": [
+        "ApiAutoFillPreviewDataSource731DD815",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "AutoFillPreviewDataSource",
+        "FieldName": "autoFillPreview",
+        "Kind": "UNIT",
+        "TypeName": "Query",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiAutoFillWeekDataSource223A00EB": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "AutoFillWeekFnD404071D",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "AutoFillWeekDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiAutoFillWeekDataSourceServiceRole6EFD91E2",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiAutoFillWeekDataSourceServiceRole6EFD91E2": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiAutoFillWeekDataSourceServiceRoleDefaultPolicyFF39CFC5": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "AutoFillWeekFnD404071D",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "AutoFillWeekFnD404071D",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiAutoFillWeekDataSourceServiceRoleDefaultPolicyFF39CFC5",
+        "Roles": [
+          {
+            "Ref": "ApiAutoFillWeekDataSourceServiceRole6EFD91E2",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiAutoFillWeekResolver3EAF2305": {
+      "DependsOn": [
+        "ApiAutoFillWeekDataSource223A00EB",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "AutoFillWeekDataSource",
+        "FieldName": "autoFillWeek",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiBulkAddPantryItemsDataSourceB0AA8C60": {
       "Properties": {
         "ApiId": {
@@ -3432,6 +3642,23 @@ type Query {
   already be a member of \`householdId\`.
   """
   menu(householdId: ID!, weekStartDate: AWSDateTime!): Menu
+
+  """
+  Proposes recipes for every currently-empty slot on \`menuId\`'s menu
+  (recency avoidance + cuisine bias, W10 §16.2.8) WITHOUT writing anything
+  — a pure read, a deliberate deviation from SD §6.1's original single-
+  mutation \`autoFillWeek(menuId, overwrite): Menu!\` (§16.2.1, D3). Safe to
+  call repeatedly for a free "regenerate": each call is an independently-
+  random proposal (D11), never the same twice. The client accepts the
+  proposal verbatim, or edits it, then calls \`Mutation.autoFillWeek\` with
+  the resulting item list to actually commit. \`filledCount\`/\`unfilledSlots\`
+  distinguish a full proposal from a partial one (D5) — a household with
+  too few in-rotation recipes for some role gets a partial, honest
+  proposal, never an error (D6). Requires the caller to already be a
+  member of the menu's household, denied identically to a nonexistent
+  \`menuId\` (no existence oracle, matching \`addMenuItem\`'s own pattern).
+  """
+  autoFillPreview(menuId: ID!): AutoFillPreviewResult!
 }
 
 type Mutation {
@@ -3674,6 +3901,23 @@ type Mutation {
   identically to a nonexistent one (both return \`false\`).
   """
   removeMenuItem(id: ID!): Boolean!
+
+  """
+  Commits \`items\` (typically an accepted or edited \`Query.autoFillPreview\`
+  proposal) to \`menuId\`'s menu — the write half of W10's dry-run design
+  (§16.2.1, D3). \`overwrite: true\` deletes every existing item WITHOUT
+  \`madeAt\` set first (manual or auto-filled alike, D4) — an item the
+  household already cooked (\`madeAt\` set) is NEVER deleted regardless of
+  \`overwrite\`. Each submitted item is re-validated against LIVE state
+  (household ownership, \`mealsEnabled\`, in-rotation, cap) rather than
+  trusted from the proposal — one that no longer fits is silently skipped,
+  not an error (best-effort partial commit, D6); the response's own
+  \`filledCount\`/\`unfilledSlots\` report exactly what happened, which can
+  legitimately differ from what the preview promised. Requires the caller
+  to already be a member of the menu's household, denied identically to a
+  nonexistent \`menuId\`.
+  """
+  autoFillWeek(menuId: ID!, overwrite: Boolean!, items: [MenuItemInput!]!): AutoFillResult!
 }
 
 type Subscription {
@@ -4034,6 +4278,48 @@ input MenuItemInput {
   mealSlot: MealType!
   slotRole: RecipeRole!
   servingsOverride: Int
+}
+
+"""
+One slot \`autoFillPreview\`/\`autoFillWeek\` could not fill (W10 §16.2.3,
+D5) — either the household has no in-rotation recipes for \`slotRole\` at
+all, or (only reachable via \`autoFillWeek\`'s own live re-validation) the
+slot stopped being available between when a proposal was generated and
+when it was committed. Never distinguishes the two reasons at the type
+level — see each resolver's own doc for what's actually knowable at that
+point.
+"""
+type UnfilledSlot {
+  dayOfWeek: Int!
+  mealSlot: MealType!
+  slotRole: RecipeRole!
+}
+
+"""
+One recipe \`autoFillPreview\` proposes for one empty slot — NOT YET
+WRITTEN to \`menu_items\` (§16.2.1's dry-run design). \`recipeId\`/
+\`dayOfWeek\`/\`mealSlot\`/\`slotRole\` are exactly \`MenuItemInput\`'s own
+shape, so a client can echo a (possibly user-edited) subset straight back
+as \`Mutation.autoFillWeek\`'s \`items\` argument to commit it.
+"""
+type ProposedMenuItem {
+  recipeId: ID!
+  recipe: Recipe!
+  dayOfWeek: Int!
+  mealSlot: MealType!
+  slotRole: RecipeRole!
+}
+
+type AutoFillPreviewResult {
+  items: [ProposedMenuItem!]!
+  filledCount: Int!
+  unfilledSlots: [UnfilledSlot!]!
+}
+
+type AutoFillResult {
+  menu: Menu!
+  filledCount: Int!
+  unfilledSlots: [UnfilledSlot!]!
 }
 
 """
@@ -4774,6 +5060,274 @@ input RecipePatchInput {
         "TypeName": "User",
       },
       "Type": "AWS::AppSync::Resolver",
+    },
+    "AutoFillPreviewFnA8B5DFE2": {
+      "DependsOn": [
+        "AutoFillPreviewFnServiceRoleDefaultPolicy7AC082A4",
+        "AutoFillPreviewFnServiceRole9D4E442F",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "AutoFillPreviewFnServiceRole9D4E442F",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "AutoFillPreviewFnServiceRole9D4E442F": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "AutoFillPreviewFnServiceRoleDefaultPolicy7AC082A4": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AutoFillPreviewFnServiceRoleDefaultPolicy7AC082A4",
+        "Roles": [
+          {
+            "Ref": "AutoFillPreviewFnServiceRole9D4E442F",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "AutoFillWeekFnD404071D": {
+      "DependsOn": [
+        "AutoFillWeekFnServiceRoleDefaultPolicy62D2D855",
+        "AutoFillWeekFnServiceRoleF339A5EA",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "AutoFillWeekFnServiceRoleF339A5EA",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "AutoFillWeekFnServiceRoleDefaultPolicy62D2D855": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AutoFillWeekFnServiceRoleDefaultPolicy62D2D855",
+        "Roles": [
+          {
+            "Ref": "AutoFillWeekFnServiceRoleF339A5EA",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "AutoFillWeekFnServiceRoleF339A5EA": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
     },
     "BulkAddPantryItemsFnD6A2EF57": {
       "DependsOn": [

@@ -11,6 +11,19 @@ export const isMealSlotEnabled = (mealsEnabled: readonly string[], mealSlot: str
   mealsEnabled.includes(mealSlot);
 
 /**
+ * The cap-counting key for one `(mealSlot, slotRole)` pair — `null` for a
+ * single-item slot (breakfast/snacks' flat cap-of-1 regardless of role, so
+ * ANY existing item in that slot counts, not just a matching role),
+ * `slotRole` itself otherwise. `addMenuItem.ts` and `autoFillWeek.ts` both
+ * call this (not their own independent copies) so the two paths can never
+ * silently disagree on what "the same slot" means — a THIRD independent
+ * re-derivation of this rule is exactly the drift class W10 §16.5.1 warns
+ * about for `getMealSlotCap`/`SINGLE_ITEM_MEAL_SLOTS` itself.
+ */
+export const slotCountKeyRole = (mealSlot: string, slotRole: string): string | null =>
+  SINGLE_ITEM_MEAL_SLOTS.includes(mealSlot) ? null : slotRole;
+
+/**
  * The max number of `menu_items` `addMenuItem` should allow for one
  * `(dayOfWeek, mealSlot, slotRole)` triple, read from the household's own
  * `mealStructure`. Defensive against a malformed/missing entry (this is

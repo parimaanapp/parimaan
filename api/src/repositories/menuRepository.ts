@@ -84,6 +84,22 @@ export const findMenuById = async (client: PoolClient, id: string): Promise<Menu
 };
 
 /**
+ * Serializes concurrent writers against a whole menu — `autoFillWeek`'s
+ * commit takes this once for its entire batch write rather than one
+ * `lockMenuSlot` per slot (up to ~28 in one transaction would be both slow
+ * and a deadlock-ordering hazard against a concurrent `addMenuItem`). For
+ * the two lock namespaces to actually serialize against each other (not
+ * just against themselves), `addMenuItem` acquires this SAME menu-scoped
+ * lock first, then its own per-slot `lockMenuSlot` — consistent ordering
+ * across both code paths (W10 §16.2.6). Same `hashtextextended` collapse
+ * as `lockMenuSlot`; a hash collision only ever makes the lock overly
+ * conservative, never under-locks.
+ */
+export const lockMenu = async (client: PoolClient, menuId: string): Promise<void> => {
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`menu:${menuId}`]);
+};
+
+/**
  * Serializes concurrent `addMenuItem` calls for the same slot within this
  * transaction — a transaction-scoped advisory lock (auto-released at
  * COMMIT/ROLLBACK, `pg_advisory_xact_lock`, never needs an explicit unlock)
@@ -288,4 +304,121 @@ export const findMenuItems = async (client: PoolClient, menuId: string): Promise
       },
     ];
   });
+};
+
+export interface RotationCandidateRow {
+  id: string;
+  role: string;
+  cuisineTier1: string | null;
+  cuisineTier2: string | null;
+}
+
+/**
+ * `autoFillWeek`/`autoFillPreview`'s candidate pool — in-rotation recipes
+ * for `householdId`, hard-excluding any recipe with a skip-listed
+ * ingredient (W10 §16.2.4 D7: the picker only ever MARKS a skip-listed
+ * recipe, but the automated auto-fill path hard-filters it out, since
+ * there's no human in the loop to see a warning). `ILIKE ANY` against an
+ * empty `skipIngredients` array matches nothing, so `NOT EXISTS` is always
+ * true and no recipe is excluded when the household has no skip list
+ * configured — the common case. Uses `idx_recipes_role (household_id,
+ * role) WHERE in_rotation = TRUE` (`1787808112003_recipes.ts`) — closes
+ * §12.2.14's "deliberately unused until W10" note.
+ */
+/**
+ * Escapes `\`, `%`, and `_` (Postgres's default `LIKE`/`ILIKE` escape
+ * character and its two wildcards) before a household-supplied
+ * skip-ingredient term is wrapped in `%...%` — without this, a term
+ * containing one of those characters would be interpreted as a wildcard
+ * pattern rather than matched literally (e.g. a skip term of `_` would
+ * match any single-character ingredient name). Not a security concern
+ * (this can only ever over/under-match within the querying household's own
+ * data, never reach another household's — `database-reviewer`'s own
+ * finding), but a correctness one worth closing since it's a one-line fix.
+ */
+const escapeLikePattern = (value: string): string => value.replace(/[\\%_]/g, (char) => `\\${char}`);
+
+export const findInRotationRecipesForAutoFill = async (
+  client: PoolClient,
+  householdId: string,
+  skipIngredients: readonly string[],
+): Promise<RotationCandidateRow[]> => {
+  const result = await client.query<{
+    id: string;
+    role: string;
+    cuisine_tier1: string | null;
+    cuisine_tier2: string | null;
+  }>(
+    `SELECT r.id, r.role, r.cuisine_tier1, r.cuisine_tier2
+     FROM recipes r
+     WHERE r.household_id = $1
+       AND r.in_rotation = TRUE
+       AND NOT EXISTS (
+         SELECT 1 FROM recipe_ingredients ri
+         WHERE ri.recipe_id = r.id AND ri.name ILIKE ANY($2::text[])
+       )`,
+    [householdId, skipIngredients.map((ingredient) => `%${escapeLikePattern(ingredient)}%`)],
+  );
+  return result.rows.map((row) => ({
+    id: row.id,
+    role: row.role,
+    cuisineTier1: row.cuisine_tier1,
+    cuisineTier2: row.cuisine_tier2,
+  }));
+};
+
+export interface RecentRecipeUsage {
+  recipeId: string;
+  /**
+   * Fewest whole weeks since this recipe was last planned before
+   * `targetWeekStartDate`, via integer-divided calendar-day difference —
+   * `>= 1` for every household whose own menu weeks are spaced in exact
+   * 7-day multiples (true today: every menu is created via `createMenu`
+   * from a client-computed, always-Monday `weekStartDate`), but that
+   * spacing is an assumption this function trusts, not one enforced by any
+   * DB constraint or `weekStartDateSchema` check. If it's ever violated, a
+   * non-week-aligned gap floor-divides to `0`, which `scoreCandidate`
+   * simply treats as no penalty — a graceful degradation, not a crash, but
+   * worth knowing this is an assumption, not a guarantee.
+   */
+  weeksAgo: number;
+}
+
+/**
+ * How recently each candidate was last planned, for `scoreCandidate`'s
+ * recency-avoidance term (W10 §16.2.8 D1) — every `menus`/`menu_items` row
+ * for `householdId` in the `windowWeeks` weeks strictly BEFORE
+ * `targetWeekStartDate` (the current week's own items are never "recent
+ * usage of itself"), collapsed to the single most-recent `weeksAgo` per
+ * recipe via `MIN`. Postgres `date - date` yields an integer day count
+ * directly; `/7` integer-divides to whole weeks.
+ */
+export const findRecentRecipeUsage = async (
+  client: PoolClient,
+  householdId: string,
+  targetWeekStartDate: string,
+  windowWeeks: number,
+): Promise<RecentRecipeUsage[]> => {
+  const result = await client.query<{ recipe_id: string; weeks_ago: number }>(
+    `SELECT mi.recipe_id, MIN(($3::date - m.week_start_date) / 7)::int AS weeks_ago
+     FROM menu_items mi
+     JOIN menus m ON m.id = mi.menu_id
+     WHERE m.household_id = $1
+       AND m.week_start_date < $3::date
+       AND m.week_start_date >= ($3::date - ($2::int * 7))
+     GROUP BY mi.recipe_id`,
+    [householdId, windowWeeks, targetWeekStartDate],
+  );
+  return result.rows.map((row) => ({ recipeId: row.recipe_id, weeksAgo: row.weeks_ago }));
+};
+
+/**
+ * `overwrite: true`'s delete predicate (W10 §16.2.7 D4) — every item
+ * WITHOUT `made_at` set, manual or auto-filled alike, per the founder's own
+ * answer to D4 ("replaces everything unmade"). A row with `made_at IS NOT
+ * NULL` is a meal the household already cooked and is always preserved,
+ * regardless of D4 — that half is uncontested (§16.2.7).
+ */
+export const deleteUnmadeMenuItems = async (client: PoolClient, menuId: string): Promise<void> => {
+  await client.query(`DELETE FROM menu_items WHERE menu_id = $1 AND made_at IS NULL`, [menuId]);
 };

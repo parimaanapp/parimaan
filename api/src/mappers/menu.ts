@@ -46,3 +46,31 @@ export const toGraphQLMenu = (row: MenuRow, items: readonly MenuItemRow[]): Grap
   weekStartDate: `${row.weekStartDate}T00:00:00.000Z`,
   items: items.map(toGraphQLMenuItem),
 });
+
+/** W10 (§16.2.1, D3/D5) — the auto-fill dry-run/commit pair's shared shapes. */
+export interface GraphQLUnfilledSlot {
+  dayOfWeek: number;
+  mealSlot: string;
+  slotRole: string;
+}
+
+/** One proposal `Query.autoFillPreview` makes for one empty slot — NOT yet written to `menu_items`. */
+export interface GraphQLProposedMenuItem {
+  recipeId: string;
+  recipe: GraphQLRecipe;
+  dayOfWeek: number;
+  mealSlot: string;
+  slotRole: string;
+}
+
+export interface GraphQLAutoFillPreviewResult {
+  items: readonly GraphQLProposedMenuItem[];
+  filledCount: number;
+  unfilledSlots: readonly GraphQLUnfilledSlot[];
+}
+
+export interface GraphQLAutoFillResult {
+  menu: GraphQLMenu;
+  filledCount: number;
+  unfilledSlots: readonly GraphQLUnfilledSlot[];
+}

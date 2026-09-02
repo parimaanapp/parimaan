@@ -257,3 +257,46 @@ const weightedPick = (pool: readonly WeightedCandidate[], rng: Rng): WeightedCan
   // after the loop; the last candidate is the correct pick in that case.
   return pool[pool.length - 1]!;
 };
+
+/**
+ * `slots` minus `picks`, as `EmptySlot`s — W10 S2's own `AutoFillResult`/
+ * `AutoFillPreviewResult.unfilledSlots` (§16.2.3, D5). `pickForSlots`
+ * produces at most one pick per input slot and never more picks than
+ * slots for a given `(dayOfWeek, mealSlot, slotRole)` key, so tallying by
+ * key (not by object identity — several slots can share an identical key,
+ * e.g. two `sabzi_dal` lunch slots on the same day) and subtracting is
+ * exact: the remaining count per key is exactly how many of that key's
+ * slots went unfilled, regardless of iteration order.
+ */
+export const computeUnfilledSlots = (
+  slots: readonly EmptySlot[],
+  picks: readonly ProposedPick[],
+): EmptySlot[] => {
+  const remainingByKey = new Map<string, { count: number; sample: EmptySlot }>();
+
+  for (const slot of slots) {
+    const key = `${slot.dayOfWeek}:${slot.mealSlot}:${slot.slotRole}`;
+    const existing = remainingByKey.get(key);
+    if (existing === undefined) {
+      remainingByKey.set(key, { count: 1, sample: slot });
+    } else {
+      existing.count += 1;
+    }
+  }
+
+  for (const pick of picks) {
+    const key = `${pick.dayOfWeek}:${pick.mealSlot}:${pick.slotRole}`;
+    const entry = remainingByKey.get(key);
+    if (entry !== undefined) {
+      entry.count -= 1;
+    }
+  }
+
+  const unfilled: EmptySlot[] = [];
+  for (const { count, sample } of remainingByKey.values()) {
+    for (let i = 0; i < count; i += 1) {
+      unfilled.push(sample);
+    }
+  }
+  return unfilled;
+};

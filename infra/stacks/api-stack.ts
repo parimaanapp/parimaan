@@ -272,6 +272,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'removeMenuItem',
   },
+  {
+    id: 'AutoFillPreview',
+    entryFile: 'autoFillPreview.ts',
+    typeName: 'Query',
+    fieldName: 'autoFillPreview',
+  },
+  {
+    id: 'AutoFillWeek',
+    entryFile: 'autoFillWeek.ts',
+    typeName: 'Mutation',
+    fieldName: 'autoFillWeek',
+  },
 ];
 
 /**
