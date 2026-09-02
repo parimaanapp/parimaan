@@ -12,7 +12,15 @@ import { TtlCache } from '../cache/ttlCache.js';
  * could enumerate arbitrary UUIDs and learn which ones are real households
  * purely from the error text, without ever needing a valid invite code.
  */
-const DENIAL_MESSAGE = 'You are not a member of this household.';
+/**
+ * Exported so a resolver that must resolve `householdId` from some other
+ * id first (e.g. `addMenuItem`/`removeMenuItem` from a `menuId`/menu-item
+ * `id`, which have no `householdId` argument of their own) can throw the
+ * byte-identical denial when that lookup itself comes back empty — keeping
+ * "doesn't exist" and "not a member" indistinguishable even one hop away
+ * from this function's own direct callers.
+ */
+export const DENIAL_MESSAGE = 'You are not a member of this household.';
 
 const MEMBERSHIP_CACHE_TTL_MS = 30_000;
 

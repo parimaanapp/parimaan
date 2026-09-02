@@ -68,6 +68,158 @@ export const findMenuByWeek = async (
   return row === undefined ? null : mapMenuRow(row);
 };
 
+/**
+ * Looks up a menu by id with no `householdId` to check against — `addMenuItem`
+ * only takes `menuId` (SD §6.1's locked signature), so this is `addMenuItem`/
+ * `removeMenuItem`'s way of resolving *which* household to run
+ * `requireHouseholdMember` against. RLS is the actual authorization here: a
+ * caller who isn't a member of this menu's household gets `null`, identical
+ * to a genuinely nonexistent id — see `resolvers/addMenuItem.ts`'s own
+ * comment for how that collapses into one denial.
+ */
+export const findMenuById = async (client: PoolClient, id: string): Promise<MenuRow | null> => {
+  const result = await client.query<RawMenuRow>(`SELECT * FROM menus WHERE id = $1`, [id]);
+  const row = result.rows[0];
+  return row === undefined ? null : mapMenuRow(row);
+};
+
+/**
+ * Serializes concurrent `addMenuItem` calls for the same slot within this
+ * transaction — a transaction-scoped advisory lock (auto-released at
+ * COMMIT/ROLLBACK, `pg_advisory_xact_lock`, never needs an explicit unlock)
+ * keyed on the exact `(menuId, dayOfWeek, mealSlot, slotRole)` grouping
+ * `countMenuItemsInSlot` counts against. Without this, two concurrent
+ * `addMenuItem` calls for a slot sitting at `cap - 1` could both read the
+ * same pre-insert count, both pass the cap check, and both commit —
+ * overshooting the configured cap with no DB constraint to catch it
+ * (`menu_items` only has per-column `CHECK`s, no count-bounding constraint).
+ * Call this BEFORE `countMenuItemsInSlot`, with the identical `slotRole`
+ * value (including `null` for the single-item breakfast/snacks case) so the
+ * lock and the count agree on what "the same slot" means.
+ * `hashtextextended` collapses the composite key to the `bigint`
+ * `pg_advisory_xact_lock` takes; a hash collision would only ever make the
+ * lock overly conservative (two different slots briefly serializing against
+ * each other), never under-lock, so it's safe even though it's not
+ * collision-proof.
+ */
+export const lockMenuSlot = async (
+  client: PoolClient,
+  menuId: string,
+  dayOfWeek: number,
+  mealSlot: string,
+  slotRole: string | null,
+): Promise<void> => {
+  const key = `${menuId}:${dayOfWeek}:${mealSlot}:${slotRole ?? ''}`;
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [key]);
+};
+
+/**
+ * The number of `menu_items` already occupying `(menuId, dayOfWeek,
+ * mealSlot)` — `slotRole: null` counts every item in that slot regardless of
+ * role (breakfast/snacks' flat single-item cap, `domain/mealStructure.ts`),
+ * a non-null `slotRole` counts only that role (lunch/dinner's per-role cap).
+ */
+export const countMenuItemsInSlot = async (
+  client: PoolClient,
+  menuId: string,
+  dayOfWeek: number,
+  mealSlot: string,
+  slotRole: string | null,
+): Promise<number> => {
+  const result = await client.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count
+     FROM menu_items
+     WHERE menu_id = $1 AND day_of_week = $2 AND meal_slot = $3
+       AND ($4::text IS NULL OR slot_role = $4)`,
+    [menuId, dayOfWeek, mealSlot, slotRole],
+  );
+  return Number(result.rows[0]?.count ?? 0);
+};
+
+export interface NewMenuItemInput {
+  menuId: string;
+  recipeId: string;
+  dayOfWeek: number;
+  mealSlot: string;
+  slotRole: string;
+  servingsOverride: number | null;
+}
+
+export interface NewMenuItemRow {
+  id: string;
+  menuId: string;
+  dayOfWeek: number;
+  mealSlot: string;
+  slotRole: string;
+  servingsOverride: number | null;
+  madeAt: Date | null;
+}
+
+/**
+ * Returns the bare inserted row, without a hydrated `recipe` — unlike
+ * `findMenuItems`, `addMenuItem`'s own resolver already has the full
+ * `RecipeRow` in hand (it fetched it to run the cross-household ownership
+ * check before calling this), so re-fetching it here would be a wasted
+ * round trip.
+ */
+export const insertMenuItem = async (
+  client: PoolClient,
+  input: NewMenuItemInput,
+): Promise<NewMenuItemRow> => {
+  const result = await client.query<RawMenuItemRow>(
+    `INSERT INTO menu_items (menu_id, recipe_id, day_of_week, meal_slot, slot_role, servings_override)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [input.menuId, input.recipeId, input.dayOfWeek, input.mealSlot, input.slotRole, input.servingsOverride],
+  );
+  const row = result.rows[0];
+  if (row === undefined) {
+    throw new Error('insertMenuItem: expected a returned row.');
+  }
+  return {
+    id: row.id,
+    menuId: row.menu_id,
+    dayOfWeek: row.day_of_week,
+    mealSlot: row.meal_slot,
+    slotRole: row.slot_role,
+    servingsOverride: row.servings_override,
+    madeAt: row.made_at,
+  };
+};
+
+/**
+ * Joins through to `menus` to resolve the household a `menu_items` row
+ * belongs to, for `removeMenuItem`'s explicit `requireHouseholdMember`
+ * check — both tables' own RLS policies apply to this query, so a
+ * non-member gets `null` for a real id in another household, identical to a
+ * genuinely nonexistent one.
+ */
+export const findMenuItemHousehold = async (
+  client: PoolClient,
+  id: string,
+): Promise<{ id: string; householdId: string } | null> => {
+  const result = await client.query<{ id: string; household_id: string }>(
+    `SELECT mi.id, m.household_id
+     FROM menu_items mi
+     JOIN menus m ON m.id = mi.menu_id
+     WHERE mi.id = $1`,
+    [id],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : { id: row.id, householdId: row.household_id };
+};
+
+/**
+ * Idempotent by return value, not by query shape: a `DELETE` for an
+ * already-removed (or never-existed) id simply matches zero rows, which
+ * this reports as `false` rather than throwing — matching `removeMenuItem`'s
+ * locked `Boolean!` semantics (E2E_MVP_PLAN.md §15.3 S3).
+ */
+export const deleteMenuItemById = async (client: PoolClient, id: string): Promise<boolean> => {
+  const result = await client.query(`DELETE FROM menu_items WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
+};
+
 export interface MenuItemRow {
   id: string;
   menuId: string;

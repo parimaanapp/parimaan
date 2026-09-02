@@ -325,6 +325,27 @@ type Mutation {
   member of `householdId`.
   """
   createMenu(householdId: ID!, weekStartDate: AWSDateTime!): Menu!
+
+  """
+  Places a recipe into one `(dayOfWeek, mealSlot, slotRole)` slot on
+  `menuId`'s menu (W9 S3, E2E_MVP_PLAN.md §15.3). Requires the caller to be
+  a member of the menu's household. Rejected server-side (never just a
+  client-side check) when: `mealSlot` isn't in the household's
+  `mealsEnabled`; the slot is already at its configured cap (1 for
+  `breakfast`/`snacks`, `mealStructure[mealSlot][slotRole]` for
+  `lunch`/`dinner`); or `recipeId` doesn't belong to this same household.
+  """
+  addMenuItem(menuId: ID!, input: MenuItemInput!): MenuItem!
+
+  """
+  Removes one `MenuItem` by id, freeing its slot (W9 S3, E2E_MVP_PLAN.md
+  §15.3). Idempotent: a nonexistent or already-removed `id` returns `false`,
+  never an error — matching `leaveHousehold`'s precedent, not
+  `deletePantryItem`'s. Requires the caller to be a member of the item's
+  menu's household; a real `id` belonging to another household is denied
+  identically to a nonexistent one (both return `false`).
+  """
+  removeMenuItem(id: ID!): Boolean!
 }
 
 type Subscription {
@@ -670,6 +691,21 @@ type MenuItem {
   slotRole: RecipeRole!
   servingsOverride: Int
   madeAt: AWSDateTime
+}
+
+"""
+Input for `Mutation.addMenuItem` (W9 S3, E2E_MVP_PLAN.md §15.3) — every
+field except `servingsOverride` mirrors `MenuItem`'s own shape (minus `id`/
+`menuId`, which the mutation's own arguments/return value supply). There is
+no update/patch mutation for a placed item — changing one is remove-then-add
+(PRD §6's locked "+ add" pattern over drag-and-drop).
+"""
+input MenuItemInput {
+  recipeId: ID!
+  dayOfWeek: Int!
+  mealSlot: MealType!
+  slotRole: RecipeRole!
+  servingsOverride: Int
 }
 
 """

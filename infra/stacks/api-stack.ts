@@ -260,6 +260,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'createMenu',
   },
+  {
+    id: 'AddMenuItem',
+    entryFile: 'addMenuItem.ts',
+    typeName: 'Mutation',
+    fieldName: 'addMenuItem',
+  },
+  {
+    id: 'RemoveMenuItem',
+    entryFile: 'removeMenuItem.ts',
+    typeName: 'Mutation',
+    fieldName: 'removeMenuItem',
+  },
 ];
 
 /**

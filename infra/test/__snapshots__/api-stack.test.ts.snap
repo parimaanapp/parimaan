@@ -24,6 +24,140 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
     },
   },
   "Resources": {
+    "AddMenuItemFn12028497": {
+      "DependsOn": [
+        "AddMenuItemFnServiceRoleDefaultPolicy61A2B695",
+        "AddMenuItemFnServiceRole6F0A3157",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "AddMenuItemFnServiceRole6F0A3157",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "AddMenuItemFnServiceRole6F0A3157": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "AddMenuItemFnServiceRoleDefaultPolicy61A2B695": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AddMenuItemFnServiceRoleDefaultPolicy61A2B695",
+        "Roles": [
+          {
+            "Ref": "AddMenuItemFnServiceRole6F0A3157",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "AddPantryItemFn04F1570E": {
       "DependsOn": [
         "AddPantryItemFnServiceRoleDefaultPolicyEE373102",
@@ -157,6 +291,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
         ],
       },
       "Type": "AWS::IAM::Policy",
+    },
+    "ApiAddMenuItemDataSourceEA4ED7FD": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "AddMenuItemFn12028497",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "AddMenuItemDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiAddMenuItemDataSourceServiceRole00BE854E",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiAddMenuItemDataSourceServiceRole00BE854E": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiAddMenuItemDataSourceServiceRoleDefaultPolicy84CB2600": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "AddMenuItemFn12028497",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "AddMenuItemFn12028497",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiAddMenuItemDataSourceServiceRoleDefaultPolicy84CB2600",
+        "Roles": [
+          {
+            "Ref": "ApiAddMenuItemDataSourceServiceRole00BE854E",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiAddMenuItemResolverD1DF658D": {
+      "DependsOn": [
+        "ApiAddMenuItemDataSourceEA4ED7FD",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "AddMenuItemDataSource",
+        "FieldName": "addMenuItem",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
     },
     "ApiAddPantryItemDataSourceBC398971": {
       "Properties": {
@@ -2865,6 +3104,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiRemoveMenuItemDataSource1395F16C": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "RemoveMenuItemFn1F01492B",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "RemoveMenuItemDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiRemoveMenuItemDataSourceServiceRole513FECFF",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiRemoveMenuItemDataSourceServiceRole513FECFF": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiRemoveMenuItemDataSourceServiceRoleDefaultPolicy1AD7449E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "RemoveMenuItemFn1F01492B",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "RemoveMenuItemFn1F01492B",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiRemoveMenuItemDataSourceServiceRoleDefaultPolicy1AD7449E",
+        "Roles": [
+          {
+            "Ref": "ApiRemoveMenuItemDataSourceServiceRole513FECFF",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiRemoveMenuItemResolver2308CC55": {
+      "DependsOn": [
+        "ApiRemoveMenuItemDataSource1395F16C",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "RemoveMenuItemDataSource",
+        "FieldName": "removeMenuItem",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiRotateInviteCodeDataSource0D53A52D": {
       "Properties": {
         "ApiId": {
@@ -3305,6 +3649,27 @@ type Mutation {
   member of \`householdId\`.
   """
   createMenu(householdId: ID!, weekStartDate: AWSDateTime!): Menu!
+
+  """
+  Places a recipe into one \`(dayOfWeek, mealSlot, slotRole)\` slot on
+  \`menuId\`'s menu (W9 S3, E2E_MVP_PLAN.md §15.3). Requires the caller to be
+  a member of the menu's household. Rejected server-side (never just a
+  client-side check) when: \`mealSlot\` isn't in the household's
+  \`mealsEnabled\`; the slot is already at its configured cap (1 for
+  \`breakfast\`/\`snacks\`, \`mealStructure[mealSlot][slotRole]\` for
+  \`lunch\`/\`dinner\`); or \`recipeId\` doesn't belong to this same household.
+  """
+  addMenuItem(menuId: ID!, input: MenuItemInput!): MenuItem!
+
+  """
+  Removes one \`MenuItem\` by id, freeing its slot (W9 S3, E2E_MVP_PLAN.md
+  §15.3). Idempotent: a nonexistent or already-removed \`id\` returns \`false\`,
+  never an error — matching \`leaveHousehold\`'s precedent, not
+  \`deletePantryItem\`'s. Requires the caller to be a member of the item's
+  menu's household; a real \`id\` belonging to another household is denied
+  identically to a nonexistent one (both return \`false\`).
+  """
+  removeMenuItem(id: ID!): Boolean!
 }
 
 type Subscription {
@@ -3650,6 +4015,21 @@ type MenuItem {
   slotRole: RecipeRole!
   servingsOverride: Int
   madeAt: AWSDateTime
+}
+
+"""
+Input for \`Mutation.addMenuItem\` (W9 S3, E2E_MVP_PLAN.md §15.3) — every
+field except \`servingsOverride\` mirrors \`MenuItem\`'s own shape (minus \`id\`/
+\`menuId\`, which the mutation's own arguments/return value supply). There is
+no update/patch mutation for a placed item — changing one is remove-then-add
+(PRD §6's locked "+ add" pattern over drag-and-drop).
+"""
+input MenuItemInput {
+  recipeId: ID!
+  dayOfWeek: Int!
+  mealSlot: MealType!
+  slotRole: RecipeRole!
+  servingsOverride: Int
 }
 
 """
@@ -7593,6 +7973,140 @@ input RecipePatchInput {
         ],
       },
       "Type": "AWS::IAM::Policy",
+    },
+    "RemoveMenuItemFn1F01492B": {
+      "DependsOn": [
+        "RemoveMenuItemFnServiceRoleDefaultPolicy12EF3ED1",
+        "RemoveMenuItemFnServiceRoleFD70D61C",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "RemoveMenuItemFnServiceRoleFD70D61C",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "RemoveMenuItemFnServiceRoleDefaultPolicy12EF3ED1": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "RemoveMenuItemFnServiceRoleDefaultPolicy12EF3ED1",
+        "Roles": [
+          {
+            "Ref": "RemoveMenuItemFnServiceRoleFD70D61C",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "RemoveMenuItemFnServiceRoleFD70D61C": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
     },
     "RotateInviteCodeFnA5539B43": {
       "DependsOn": [
