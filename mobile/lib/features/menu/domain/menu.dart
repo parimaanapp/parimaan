@@ -4,6 +4,8 @@
 /// `../data/menu_mapper.dart`.
 library;
 
+import 'package:collection/collection.dart';
+
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/domain/recipe_role.dart';
 
@@ -136,6 +138,20 @@ class UnfilledSlot {
   @override
   String toString() =>
       'UnfilledSlot(dayOfWeek: $dayOfWeek, mealSlot: $mealSlot, slotRole: ${slotRole.name})';
+
+  /// Field-based equality, matching this codebase's own convention for
+  /// server-response ("read") types with no id of their own to key on
+  /// (`Recipe`'s own precedent) — [UnfilledSlot] never has an id.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UnfilledSlot &&
+          other.dayOfWeek == dayOfWeek &&
+          other.mealSlot == mealSlot &&
+          other.slotRole == slotRole;
+
+  @override
+  int get hashCode => Object.hash(dayOfWeek, mealSlot, slotRole);
 }
 
 /// One recipe `autoFillPreview` proposes for one empty slot — NOT YET
@@ -175,6 +191,24 @@ class ProposedMenuItem {
   @override
   String toString() =>
       'ProposedMenuItem(recipeId: $recipeId, dayOfWeek: $dayOfWeek, mealSlot: $mealSlot, slotRole: ${slotRole.name})';
+
+  /// Field-based equality — a proposal has no id of its own (it isn't
+  /// written to `menu_items` until committed), so identity comparison
+  /// would never match two structurally-identical proposals. Same
+  /// `Recipe`-precedent reasoning as [UnfilledSlot.==].
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProposedMenuItem &&
+          other.recipeId == recipeId &&
+          other.recipe == recipe &&
+          other.dayOfWeek == dayOfWeek &&
+          other.mealSlot == mealSlot &&
+          other.slotRole == slotRole;
+
+  @override
+  int get hashCode =>
+      Object.hash(recipeId, recipe, dayOfWeek, mealSlot, slotRole);
 }
 
 /// `Query.autoFillPreview`'s result — a proposal, not yet written. See
@@ -189,6 +223,32 @@ class AutoFillPreviewResult {
   final List<ProposedMenuItem> items;
   final int filledCount;
   final List<UnfilledSlot> unfilledSlots;
+
+  @override
+  String toString() =>
+      'AutoFillPreviewResult(filledCount: $filledCount, unfilledSlots: ${unfilledSlots.length})';
+
+  /// Field-based equality — no id of its own, same [UnfilledSlot.==]
+  /// reasoning. Order-sensitive list comparison (`ListEquality`, matching
+  /// `Household.==`'s own sibling helper's documented reasoning): these
+  /// lists round-trip a server-determined order that is itself meaningful.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AutoFillPreviewResult &&
+          const ListEquality<ProposedMenuItem>().equals(other.items, items) &&
+          other.filledCount == filledCount &&
+          const ListEquality<UnfilledSlot>().equals(
+            other.unfilledSlots,
+            unfilledSlots,
+          );
+
+  @override
+  int get hashCode => Object.hash(
+    const ListEquality<ProposedMenuItem>().hash(items),
+    filledCount,
+    const ListEquality<UnfilledSlot>().hash(unfilledSlots),
+  );
 }
 
 /// `Mutation.autoFillWeek`'s result — the committed [menu], plus how many
@@ -207,4 +267,29 @@ class AutoFillResult {
   final Menu menu;
   final int filledCount;
   final List<UnfilledSlot> unfilledSlots;
+
+  @override
+  String toString() =>
+      'AutoFillResult(menu: $menu, filledCount: $filledCount, unfilledSlots: ${unfilledSlots.length})';
+
+  /// Field-based equality — no id of its own; delegates to [Menu.==]
+  /// (id-based) for [menu] itself, same [AutoFillPreviewResult.==]
+  /// reasoning for the rest.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AutoFillResult &&
+          other.menu == menu &&
+          other.filledCount == filledCount &&
+          const ListEquality<UnfilledSlot>().equals(
+            other.unfilledSlots,
+            unfilledSlots,
+          );
+
+  @override
+  int get hashCode => Object.hash(
+    menu,
+    filledCount,
+    const ListEquality<UnfilledSlot>().hash(unfilledSlots),
+  );
 }

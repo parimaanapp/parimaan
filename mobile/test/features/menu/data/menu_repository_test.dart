@@ -361,6 +361,7 @@ void main() {
 
       final Request sent = subject.link.requests.single;
       expect(sent.variables['items'], isEmpty);
+      expect(sent.variables['overwrite'], isFalse);
     });
 
     test('filledCount lower than the submitted item count (a live re-validation skip) surfaces via unfilledSlots, not an error', () async {
