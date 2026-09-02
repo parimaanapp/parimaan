@@ -2158,3 +2158,159 @@ Run against the explicit six-part surface list (§14.3 S11), covering everything
 | D11 | §14.2.3 / S3 — backoff parameters: is the ladder unbounded-with-a-60s-ceiling while foregrounded, stopped while backgrounded, and **terminal** on an authentication failure? | **Yes to all three.** The auth-failure terminal case is the important one: a ladder looping against a credential that can never succeed is a battery drain and a credential-probing pattern, not a retry. |
 
 ---
+
+## 15. W9 detailed plan — 7-day calendar UI
+
+**Status:** drafted autonomously (no live founder walkthrough — every other week's plan in this document was locked with the founder in a real back-and-forth; this one was not, since none was available in this session). Structured the same way as §11–§14 and held to the same bar, but every decision below that isn't already fixed by §3/§7's original scope is a judgment call, not a negotiated one, and is flagged as such rather than presented as settled. Locked-with-the-founder should re-read §15.7 specifically before implementation starts, if a re-read is possible before this plan is acted on further.
+
+### 15.1 What W9 is locked to deliver
+
+Per §4's row and §3's Phase 3 entry: `createMenu`, `addMenuItem`, `removeMenuItem` resolvers; the `menus`/`menu_items` schema (SD §7.1, lines 894–905, already locked, unmigrated); a `MealSlot` domain widget; a today's-agenda read path; and three wireframe screens — **Weekly plan**, **Today morning**, **Today empty** (Flow 5 + Flow 6's first screen) — landing 31/49. Gate: "Week-view honors meal structure config" (§4's own words) — not just renders a grid, but respects `household_settings.mealsEnabled`/`mealStructure`'s per-slot caps (PRD §7.1: "the configured number is the MAX per meal instance, not a required fill").
+
+**Explicitly out of scope for W9** (owned by later weeks per §3/§4, not an oversight): the recipe picker sheet and `autoFillWeek` (W10); shopping-list generation, `haveIt`, `markMade` (W11/W12); `onMenuChanged` real-time sync (§3 lists it under the whole of Phase 3, not pinned to W9 specifically — deferred here, see §15.7 D1); pagination/scroll performance for the week grid (no volume concern yet — a week is at most ~4 meal slots × 7 days × a handful of items each, nothing like the 300-recipe library).
+
+### 15.2 Conflicts and gaps found in the locked docs
+
+#### 15.2.1 `menu_items.slot_role` is untyped TEXT with no CHECK constraint, unlike every sibling enum column
+
+SD §7.1's DDL (line 906) declares `slot_role TEXT NOT NULL` with no `CHECK`, while `recipes.role` (the value this column is meant to hold — a picked recipe's role at the moment it's placed in a slot) **does** have one (`1787808112003_recipes.ts`). An unconstrained `slot_role` can drift from `RecipeRole`'s seven closed values with nothing at the DB layer to catch it, and — per this week's own established pattern (`1787811731724_fix-recipes-cuisine-tier1-check.ts`, W6's own fix for exactly this class of gap) — an unrecognised value here would break `Query.menu`'s entire response the same way an unrecognised `cuisine_tier1` did there (AppSync fails to serialize a non-nullable enum field for the *whole* list, not just the one bad row). **Call:** S1's migration adds the same `CHECK (slot_role IN (...))` `recipes.role` already has, matching values exactly (a `RecipeRole` enum, not a fresh one) — a locked deviation from SD §7.1's literal DDL text, doc-updater trigger, same shape as W6's `cuisine_tier1` fix.
+
+#### 15.2.2 `menu_items` has no `household_id` of its own — the third instance of the child-table-RLS gap class, though the `ENABLE` lines themselves are already present
+
+**Correction from this section's first draft:** SD §7.1's `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` block *does* already list `menus`/`menu_items` (both lines present since the original schema draft) — the actual gap is narrower than "missing from the list entirely." `menus` has its own `household_id`, so it takes the ordinary membership-subquery shape (`recipes`' own pattern) and needs no special call-out. `menu_items` — like `recipe_ingredients` before it — has **no `household_id` of its own**; it is reached only via `menu_id`, and unlike `recipe_ingredients`/`notification_preferences` (both of which got an explanatory policy-shape comment the moment their own week migrated them), `menus`/`menu_items`' `ENABLE` lines have sat with no accompanying policy comment since they were first drafted, because nothing had migrated them yet. Same parent-join policy shape as `recipe_ingredients_via_recipe`, same reasoning: `Query.menu`'s `MenuItem.recipe` field resolver has no `householdId` to gate on, so RLS via the `menus` parent join is the only authorization for `menu_items`, not defense-in-depth. **Call:** S1 adds both policies explicitly; the `doc-updater` trigger for SD §7.1 is narrower than first thought — add the policy-shape comments the two existing `ENABLE` lines never got, not new `ALTER TABLE` statements. Third instance of this gap-class overall (`recipe_ingredients` at W6, `notification_preferences` at W8, `menu_items` now) — still worth the standing note that every future child table without its own `household_id` needs this by default, not by rediscovery.
+
+#### 15.2.3 `menu_items.recipe_id` cascades on recipe deletion — deleting a recipe silently blanks a planned week
+
+`ON DELETE CASCADE` (SD §7.1, line 904) means deleting a recipe that's currently placed in this week's menu removes that slot's `menu_item` row entirely — the day just goes back to empty, with nothing surfaced to the household that a planned meal vanished. This is a real, if narrow, product gap (recipe deletion existed since W6; menus didn't exist to be affected by it until now), but re-litigating recipe deletion's own cascade behavior is out of this slice's scope — `deleteRecipe` is W6-shipped, reviewed, and merged, and changing its cascade shape now is a schema decision bigger than "add a table." **Call:** ship the CASCADE as SD specifies (it is the locked DDL, not a W9 invention), record the gap here rather than silently accepting it, and leave "should recipe deletion warn if it's in the current week's menu" as a backlog item for whichever week next touches `deleteRecipe` — same treatment §11.2.2 gave the `household_settings` `WITH CHECK` gap: named, not fixed on the spot, not forgotten either (and unlike that one, this backlog item was correctly triaged as low-severity rather than mischaracterized as high — see §14.5.9's own lesson about verifying a risk empirically before writing it down as CRITICAL).
+
+#### 15.2.4 "Today" needs a timezone answer this repo has never had to give before
+
+Every date this codebase has stored so far (`pantry_items.expiry_date`, `menus.week_start_date`) is a plain `DATE` — no timezone attached, by design, since a pantry expiry or a week boundary is a calendar date, not an instant. "Today's agenda" is the first feature where *which* calendar date counts as "today" actually matters to correctness: a household member opening the app at 11:45pm and one opening it at 12:15am five minutes later must not see two different agendas from the same physical moment if they're in the same timezone, and — more subtly — the app currently has no household-level timezone setting at all (SD §7.1's `household_settings` has no `timezone` column). **Call (locked for W9, revisit if the founder disagrees):** "today" is computed **client-side**, from the device's own local calendar date, not server-computed and not stored — the server has no timezone concept to get right or wrong, and a client already knows its own local date without asking. This matches `week_start_date`'s own plain-`DATE` shape (no timezone baked into storage) and defers the real fix (a household-level timezone, for the case of members physically in different timezones — out of scope for MVP's India-only assumption per PRD §3) to whenever that assumption is revisited. `Query.menu`'s existing `weekStartDate: AWSDateTime!` argument already takes a full date the client computes; today's-agenda reuses that same query, not a new server endpoint (§15.2.5).
+
+#### 15.2.5 No dedicated "today's agenda" GraphQL field exists in the locked SDL, and adding one is a heavier decision than it looks
+
+SD §6.1's `Query` type has `menu(householdId: ID!, weekStartDate: AWSDateTime!): Menu` and nothing else menu-related. §4's row names "today's-agenda query" as a W9 technical deliverable, which reads as implying a new field, but the *locked* Menu/MenuItem shape (§15.1) already carries everything a Today screen needs: `MenuItem.dayOfWeek` (0–6) is exactly the filter a client applies to an already-fetched `Menu.items` list to get "today's agenda." A second resolver returning the same underlying rows, filtered server-side instead of client-side, would be a second code path to keep in sync with the first for no correctness gain — the whole week's `Menu` is already a small, bounded payload (at most ~4 slots × 7 days), nothing like `Query.recipes`' unbounded-library shape that would justify a narrower query. **Call:** "today's-agenda query" is `Query.menu`, reused — the Today screens filter client-side on `dayOfWeek == today's day-of-week`, computed per §15.2.4. No new SDL field, no `doc-updater` trigger for this specific item (nothing in the locked schema changes). If this reading is wrong and the founder actually wanted a distinct server endpoint (e.g., because a future week wants push-notification content computed from "today" server-side, which *would* need a server-side date), that is a scoped addition for whichever week needs it, not a blocker here.
+
+### 15.3 Slice breakdown
+
+#### S1 — `menus` + `menu_items` migration, RLS, grants
+
+- **Delivers:** SD §7.1's DDL (lines 894–906) migrated, plus the two corrections locked above: a `slot_role` `CHECK` matching `RecipeRole`'s seven values (§15.2.1), and RLS on both tables — `menus` membership-scoped (the `recipes` shape), `menu_items` parent-joined through `menus` (the `recipe_ingredients` shape) — with explicit `parimaan_app` grants in this new migration.
+- **Files:** `api/migrations/<ts>_menus.ts` (new) — `1787808112003_recipes.ts` is the closest pattern (a parent table + a child table with no `household_id` of its own).
+- **Depends on:** nothing.
+- **Size/Risk:** ~1.5 hrs / **Medium** — third instance of the child-table-RLS gap class (§15.2.2), well-precedented; the `slot_role` CHECK is new but mechanically identical to `1787811731724_fix-recipes-cuisine-tier1-check.ts`.
+- **Agents:** `tdd-guide` → `database-reviewer` (mandatory on every migration) → `security-reviewer` (fires — new RLS shape, even though precedented) → `code-reviewer` → `doc-updater` (SD §7.1's RLS list, third time).
+- **RED tests:** table shape (columns/types) for both tables; `day_of_week` CHECK (0–6, reject 7/-1); `meal_slot` CHECK (the four `MealType` values); the new `slot_role` CHECK (reject an unrecognised value, accept all seven `RecipeRole` values); `UNIQUE(household_id, week_start_date)` on `menus` (reject a duplicate week); cascade — deleting a household removes its menus/menu_items, deleting a menu removes its items, deleting a recipe removes menu_items referencing it (§15.2.3, asserted so a future change to that cascade is deliberate, not silent); a household member reads/writes their own household's menu via RLS; a non-member is denied read/insert/update on both tables, **including via the `menu_items` parent-join path specifically** (the `recipe_ingredients` regression class — a direct query against `menu_items` by a non-member must be denied even without touching `menus` first); `parimaan_app` full CRUD; `up`→`down`→`up` clean.
+
+#### S2 — SDL + `Mutation.createMenu` + `Query.menu`
+
+- **Delivers:** `Menu`/`MenuItem` types exactly as locked (§6.1, lines 499–514, unchanged from SD), `Mutation.createMenu(householdId, weekStartDate): Menu!`, `Query.menu(householdId, weekStartDate): Menu` (nullable — no menu created for that week yet is a real, common state, not an error). `createMenu` is idempotent-by-construction via the `UNIQUE(household_id, week_start_date)` constraint from S1: a second `createMenu` call for a week that already has one returns the existing menu rather than a `ConflictError` — matching `joinHousehold`'s own idempotent-re-join precedent rather than `createHousehold`'s create-only one, since "open the Weekly plan screen for a week with no menu yet" is the expected first-visit path, not an edge case to reject.
+- **Files:** `shared/schema.graphql`; `api/src/repositories/menuRepository.ts`; `api/src/mappers/menu.ts`; `api/src/validation/menu.ts`; `api/src/resolvers/{createMenu,menu}.ts`; `infra/stacks/api-stack.ts` (`DB_RESOLVERS`).
+- **Depends on:** S1.
+- **Size/Risk:** ~1.5 hrs / **Low-Medium** — well-worn `createHousehold`/`household` resolver shape.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (fires — new Lambda resolvers, new membership-gated surface) → `code-reviewer` → `doc-updater` (SD §6.1 — already correct, confirm no drift).
+- **RED tests:** `createMenu` for a fresh week creates and returns an empty-items `Menu`; a second `createMenu` for the same week returns the SAME menu (idempotent, not a second row — assert via id equality and a DB row count of 1); `createMenu`/`Query.menu` both gated by `requireHouseholdMember`, identical-denial-message non-existence-oracle property; `Query.menu` for a week with no menu returns `null`, not an error and not an implicitly-created row (the S8-precedent "decide and assert, don't leave it emergent" question, decided here as a pure read); `Query.menu` hydrates `MenuItem.recipe` correctly for a menu with items (seeded directly via the repository in the RED suite, since `addMenuItem` doesn't exist until S3).
+
+#### S3 — `Mutation.addMenuItem` + `Mutation.removeMenuItem`
+
+- **Delivers:** `addMenuItem(menuId, input: MenuItemInput!): MenuItem!`, `removeMenuItem(id): Boolean!`, exactly as locked (§6.1). `MenuItemInput` carries `recipeId`, `dayOfWeek`, `mealSlot`, `slotRole`, optional `servingsOverride` — no patch/update mutation this slice (SD's own schema has none; changing a placed item is remove-then-add, matching the wireframe's "+ add" pattern PRD §6 explicitly locks in over drag-and-drop). **Meal-structure cap enforcement lives here**, not client-side-only: `addMenuItem` reads the household's `mealStructure`/`mealsEnabled` config and rejects an insert that would exceed the configured max for that `(dayOfWeek, mealSlot, slotRole)` triple — a client-side-only cap is trivially bypassable by any direct API caller, and this is exactly the kind of business rule this codebase's own convention (server as source of truth, client validation is presentation-only — `household_name.dart`'s own doc, restated every week since) says must be enforced server-side.
+- **Files:** `api/src/repositories/menuRepository.ts` (extended); `api/src/validation/menu.ts` (extended); `api/src/resolvers/{addMenuItem,removeMenuItem}.ts`; `infra/stacks/api-stack.ts`.
+- **Depends on:** S2.
+- **Size/Risk:** ~2.0 hrs / **Medium** — the cap-enforcement logic is genuinely new (nothing in this codebase has read `household_settings` to gate a *different* table's insert before), and it's the one place a wrong read of `mealStructure`'s JSON shape silently under- or over-enforces.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `security-reviewer` (fires — new mutations touching cross-table household-scoped state) → `code-reviewer`.
+- **RED tests:** `addMenuItem` succeeds within the configured cap; a slot at its cap rejects the next add with a clear error (not a generic 500); `mealsEnabled` excluding a meal type rejects any add to that slot entirely (e.g. household hasn't enabled Snacks); breakfast/snacks (1-recipe meals, no per-role cap structure) accept exactly one item and reject a second; `removeMenuItem` frees the slot (a subsequent add at the same triple succeeds); `removeMenuItem` for a nonexistent/already-removed id returns `false`, not an error (idempotent, matching `leaveHousehold`'s own precedent); both mutations gated by `requireHouseholdMember` via the menu's household, non-member denied identically; `addMenuItem` with a `recipeId` from a *different* household is rejected (a cross-household recipe placed into this household's menu would be a real data-integrity hole, and RLS alone on `recipes` doesn't stop the FK insert — needs an explicit ownership check, the one place this slice's own RLS isn't sufficient by itself, same reasoning `createRecipe`'s `source` attribution check needed to be explicit rather than relying on RLS).
+
+#### S4 — Mobile: Menu domain, repository, `CurrentMenuController`
+
+- **Delivers:** the mobile-side plumbing mirroring `HouseholdRepository`'s established shape: `Menu`/`MenuItem` domain types (GraphQL-free), a `MenuRepository` (Ferry-backed + fake), a `CurrentMenuController` keyed on `(householdId, weekStartDate)` — a compound key, unlike every existing single-id-keyed controller in this codebase, since a user can view multiple weeks (today's Weekly plan screen defaults to the current week, but nothing here should assume there is only ever one).
+- **Files:** `mobile/lib/features/menu/domain/menu.dart` (new feature directory); `mobile/lib/features/menu/data/{menu_repository,menu_mapper}.dart`; `mobile/lib/features/menu/state/current_menu_controller.dart`; `mobile/lib/shared/graphql/operations/{menu,menu_fields,create_menu,add_menu_item,remove_menu_item}.graphql` + regenerated codegen; `mobile/lib/shared/graphql/schema.graphql` (re-synced copy, per the established drift-caveat procedure).
+- **Depends on:** S3.
+- **Size/Risk:** ~1.5 hrs / **Low** — a straight structural mirror of `HouseholdRepository`/`CurrentHouseholdController`, no new patterns.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips (no new server surface, pure client plumbing over S2/S3's already-reviewed resolvers).
+- **RED tests:** `fetchMenu` for a week with no menu returns `null` (not throws); `createMenuIfAbsent`-style convenience (or a plain `createMenu` call — decide during implementation whether the repository hides the idempotent-create-or-fetch behind one method or exposes both S2 operations separately; either is fine, pick the one with fewer call-site branches) returns the same menu on a repeat call; `addMenuItem`/`removeMenuItem` round-trip correctly; a server-side cap-rejection (S3) surfaces as a typed `AppError` the controller can render, not a swallowed failure.
+
+#### S5 — `MealSlot` widget + Weekly plan screen
+
+- **Delivers:** wireframe screen "Weekly plan" — a 7-day grid, each day showing its configured meal slots (per `household_settings.mealsEnabled`/`mealStructure`, §15.1's own gate: "honors meal structure config" is measured here), each slot rendered via the new `MealSlot` widget — filled (shows the recipe's title/role) or empty (a tappable "+", per PRD §6's no-drag-and-drop "+ add" pattern). Tapping an empty slot navigates to a **stub** destination for now (the real recipe picker is W10, per §15.1's explicit out-of-scope list) — same `SettingsPlaceholderScreen`-precedent honesty posture every prior placeholder in this codebase has used, not a dead tap and not a fabricated picker.
+- **Files:** `mobile/lib/shared/ui/components/p_meal_slot.dart` (new — a tenth-plus design-system component, or a feature-local widget if it doesn't earn shared-component status; decide during implementation against the existing ten's own bar) or `mobile/lib/features/menu/presentation/meal_slot.dart`; `mobile/lib/features/menu/presentation/weekly_plan_screen.dart` (new); `mobile/lib/app/router.dart` (new route).
+- **Depends on:** S4.
+- **Size/Risk:** ~2.5 hrs / **Medium** — the meal-structure-honoring grid logic (computing which slots exist for a given day from config, independent of whether they're filled) is the genuinely new piece; everything else is established screen-composition pattern.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips (presentation over already-reviewed resolvers, same as S9's own precedent this week is modeled on).
+- **RED tests:** a household with `mealsEnabled: [lunch, dinner]` and default `mealStructure` renders exactly 4 slots for lunch (1 carb + 2 sabzi_dal + 1 accompaniment) and 4 for dinner, 0 for breakfast/snacks, across all 7 days — table-driven, not one slot type sampled and assumed representative (the exact "four toggles, no transposition" rigor S9's own RED list applied to notification preferences, applied here to meal-slot generation); a filled slot renders the recipe's title and does NOT show the "+" affordance; an empty slot shows "+" and navigates to the stub on tap; a slot beyond the configured cap for that `(day, mealSlot, slotRole)` is never rendered as addable (the UI-side mirror of S3's server-side cap — both must agree, and a test asserting only one side would miss the other drifting out of sync); loading/error states match `SettingsHubScreen`'s own established shape (a value wins over a spinner if one exists, `valueOrNull` not `value`).
+
+#### S6 — Today morning / Today empty screens
+
+- **Delivers:** wireframe screens "Today morning" (today has ≥1 planned item — shows today's agenda, filtered from the current week's `Menu` per §15.2.4/§15.2.5's locked client-side-"today" decision) and "Today empty" (today has zero planned items — a real `PEmptyState` pointing at the Weekly plan screen, not a dead end, the same honesty posture as every prior empty state in this codebase). Likely the new Home-tab landing content, or a new tab — decide against the current `app_shell.dart` tab structure during implementation; this plan does not lock which, since that's a navigation-IA call the founder would normally make directly and shouldn't be guessed into a "locked" decision here.
+- **Files:** `mobile/lib/features/menu/presentation/{today_screen,today_empty_state}.dart` (or folded into one file with an internal branch — decide against this codebase's own file-size convention, ~200–400 lines typical); `mobile/lib/app/router.dart`; possibly `mobile/lib/app/app_shell.dart` if a new tab is the right call.
+- **Depends on:** S4 (reuses `CurrentMenuController` — the "today" filter is a pure function over the same `Menu` the Weekly screen already fetches, per §15.2.5, not a second fetch).
+- **Size/Risk:** ~1.5 hrs / **Low-Medium**.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** today's day-of-week correctly selects only that day's items from a full week's `Menu` (a table-driven test across all 7 possible "today" values, not one hardcoded day — the same transposition-class bug S9's own RED list exists to catch, here applied to a day-index calculation instead of a field mapping); an empty result renders `Today empty`'s `PEmptyState` with a real link to Weekly plan, not a blank screen; a non-empty result renders every item for today, correctly grouped by meal slot in a sensible order (breakfast → lunch → snacks → dinner, not insertion order); a load failure is distinguished from a genuinely-empty day (an error state must never look identical to "nothing planned today" — the same load-vs-empty distinction `SettingsHubScreen`/`NotificationPreferencesScreen` both already draw).
+
+#### S7 — Real-AWS verification + weekly doc pass
+
+- **Delivers:** `RUNBOOK.md` §2's non-negotiable real-dev-stack exercise of every W9 backend slice (the established S7/S8/S12-precedent method — direct Lambda invoke, synthetic Cognito identity, against real dev Aurora/AppSync, throwaway households deleted afterward) — including the cap-enforcement rule (S3) actually rejecting an over-cap add live, and the `slot_role`/`meal_slot` CHECK constraints actually rejecting a bad value live, not just in the Testcontainers suite. Plus §4.2's mandatory weekly pass: actual-vs-planned hours (merge-timestamp proxy, the established method) into §4's W9 row.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 W9 actuals, a W9-result subsection here in §15); `docs/RUNBOOK.md` (anything the real deploy surfaces).
+- **Depends on:** all slices.
+- **Size/Risk:** ~1.0 hr / **Low**, non-optional (§6d's own standing rule, restated every week).
+- **Agents:** `doc-updater`.
+
+### 15.4 Sequencing
+
+```
+S1 (menus/menu_items migration, RLS)
+  │
+  ▼
+S2 (SDL + createMenu + Query.menu)
+  │
+  ▼
+S3 (addMenuItem + removeMenuItem, cap enforcement)
+  │
+  ▼
+S4 (mobile: domain/repository/controller)
+  │
+  ├──────────────┐
+  ▼              ▼
+S5 (Weekly plan) S6 (Today morning/empty)
+  │              │
+  └──────┬───────┘
+         ▼
+        S7 (real-AWS verification + doc pass)
+```
+
+Mostly linear, unlike W8's parallel day-1 opening — this week's slices genuinely build on each other (schema → resolvers → mobile plumbing → screens) rather than opening several independent fronts at once. S5/S6 are the one real parallelization opportunity, both depending only on S4.
+
+### 15.5 Risks
+
+#### 15.5.1 The meal-structure-cap enforcement is the week's one genuinely novel piece, and it exists in two places that must agree
+
+S3 enforces it server-side (the source of truth); S5 mirrors it client-side (so the UI never even offers an over-cap "+"). Two independent implementations of the same rule is exactly the shape that drifts silently — a future change to `mealStructure`'s JSON shape (unlikely this week, but this table's config has already grown once, W4→W8) that updates one side and not the other would produce a UI that offers an add the server then rejects, or worse, a UI that hides a slot the server would have allowed. No shared-code mitigation is proposed here (the two sides are genuinely different languages, Dart and TypeScript, with no code-sharing mechanism in this monorepo) — the mitigation is disciplined: any future change to the cap rule's shape must update both S3's and S5's own tests in the same PR, and this risk note exists so that requirement isn't silently forgotten the way `household_settings`'s `WITH CHECK` note almost was.
+
+#### 15.5.2 `slotRole` on a `MenuItem` can drift from the recipe's own `role` after the item is placed
+
+`addMenuItem`'s `MenuItemInput.slotRole` is captured at placement time, independently of `recipes.role` — if a recipe's `role` is later changed via `updateRecipe` (W6, already shipped), an existing `menu_item` referencing it keeps its original `slotRole`, now potentially mismatched with the recipe's current role. This is very likely the *intended* behavior (a menu is a snapshot of what was planned, not a live view that should reshuffle if a recipe's categorization changes later — changing a recipe's role mid-week probably shouldn't retroactively move it to a different day's slot count), but it is a real behavior worth stating plainly rather than leaving implicit, since "why does this recipe show up under Sabzi/Dal on the calendar when I just changed it to Snack" is exactly the kind of support question a silent design choice generates. No slice changes because of this — S3's RED suite should include one test asserting this is the actual (intended) behavior, so a future change to it is deliberate.
+
+### 15.6 W9 exit criteria
+
+- [ ] `menus`/`menu_items` migrated with RLS enabled and forced on both, `menu_items`' parent-join policy denies a non-member via the direct-query path specifically, not just through `menus` (S1)
+- [ ] `slot_role`'s CHECK constraint matches `RecipeRole`'s seven values exactly, confirmed against the real deployed schema, not just the migration source (S1, S7)
+- [ ] `createMenu` is idempotent — a second call for the same week never creates a second row (S2)
+- [ ] `Query.menu` for a week with no menu returns `null`, never an implicit row (S2)
+- [ ] `addMenuItem`'s cap enforcement rejects an over-cap add server-side, verified against real dev AWS, not just Testcontainers (S3, S7)
+- [ ] `addMenuItem` rejects a `recipeId` from a different household (S3)
+- [ ] Weekly plan screen's slot grid honors `mealsEnabled`/`mealStructure` exactly, table-driven test across all four meal types (S5)
+- [ ] Today morning/Today empty correctly select "today" across all 7 possible day-of-week values, not one hardcoded day (S6)
+- [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression class, restated every week since W5 — `MenuItemInput.servingsOverride` is this week's exposure)
+- [ ] §4's W9 row has actual hours (merge-timestamp proxy) and this plan's own §15.7 decisions reviewed against what actually shipped, same closing-audit shape §14.5.10 gave W8 (S7)
+
+### 15.7 W9 planning decisions (drafted autonomously — flagged, not locked, pending a founder read)
+
+| # | Question | **Decision taken (unilateral — see status note, §15)** |
+|---|---|---|
+| D1 | Does `onMenuChanged` real-time sync ship this week? | **No.** §3's Phase 3 exit criteria lists it once for the whole four-week phase, not pinned to W9; W5/W6/W8 each shipped their own subscription in the same week that introduced the underlying mutations, but W9's own §4 one-liner (`createMenu`/`addMenuItem`/`removeMenuItem` resolvers; MealSlot widget; today's-agenda query) does not mention it, unlike those weeks' own rows. Deferred to whichever week the founder locks it to — flagged here explicitly so an unchecked `onMenuChanged` box next week is read as "not yet scheduled," not "missed." |
+| D2 | Is "today" computed client-side (device local date) or server-side? | **Client-side** (§15.2.4). The server has no household-timezone concept to get right, `week_start_date` is already a plain untimezoned `DATE`, and a client already knows its own local date. Revisit only if/when a household-level timezone setting is added for a reason unrelated to this feature. |
+| D3 | Does "today's-agenda query" mean a new SDL field, or reusing `Query.menu`? | **Reusing `Query.menu`, filtered client-side on `dayOfWeek`** (§15.2.5). The whole week's payload is small and bounded; a second resolver returning a subset of the same rows is duplicate surface for no correctness gain at this data volume. |
+| D4 | Does `menu_items.slot_role` get the `CHECK` constraint SD §7.1's literal DDL text omits? | **Yes** (§15.2.1) — the same class of gap W6's `1787811731724_fix-recipes-cuisine-tier1-check.ts` already fixed once for `recipes.cuisine_tier1`, now caught before shipping rather than after. |
+| D5 | Does the recipe-deletion cascade into `menu_items` (§15.2.3) get changed or warned-about this week? | **No — shipped as SD specifies, gap recorded, not fixed.** Re-scoping `deleteRecipe`'s own cascade behavior is bigger than this slice; flagged as backlog for whichever week next touches recipe deletion. |
+
+---
