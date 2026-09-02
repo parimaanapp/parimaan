@@ -502,6 +502,8 @@ export class ApiStack extends cdk.Stack {
       // one Lambda exists, per AWS's own suggested target in that warning.
       runtime: Runtime.NODEJS_24_X,
       handler: 'handler',
+      // See `createDbResolverFunction`'s identical `esbuildArgs` comment.
+      bundling: { esbuildArgs: { '--log-level': 'error' } },
     });
 
     const healthDataSource = this.api.addLambdaDataSource('HealthDataSource', healthFn);
@@ -645,6 +647,12 @@ export class ApiStack extends cdk.Stack {
         DB_PORT: dbCluster.clusterEndpoint.port.toString(),
         DB_NAME: 'parimaan',
       },
+      // See `data-stack.ts`'s identical `esbuildArgs` comment — trims
+      // esbuild's own CLI logging, a documented aggravating factor in a
+      // CI-only Vitest worker-IPC-heartbeat flake. This is the largest
+      // single contributor: every `DB_RESOLVERS` entry is built through
+      // this one factory.
+      bundling: { esbuildArgs: { '--log-level': 'error' } },
     });
 
     appRoleSecret.grantRead(fn);

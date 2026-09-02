@@ -2340,3 +2340,217 @@ S3 enforces it server-side (the source of truth); S5 mirrors it client-side (so 
 - `removeMenuItem` returned `true` and the subsequent `Query.menu` item count dropped from 2 to 1.
 
 **No CRITICAL, HIGH, or MEDIUM findings.** Both exit-criteria lines §15.6 left open are closed above. This closes W9 end to end — all 7 slices (S1–S7) merged into `main`, and the real-AWS pass this section records is the deploy the founder explicitly asked to hold until the end of the week rather than run mid-week.
+
+---
+
+## 16. W10 detailed plan — Recipe picker + rotation
+
+**Status:** locked. The four real product decisions this week's scope raised (§16.7) were put to the founder directly and answered — unlike W9, this plan is not a set of autonomous judgment calls flagged for later review. Structured the same way as §11–§15.
+
+### 16.1 What W10 is locked to deliver
+
+Per §4's W10 row and §3's Phase 3 exit criteria: `autoFillWeek` "with recency avoidance + cuisine bias"; **consumption** of `in_rotation` (the `setInRotation` mutation itself shipped W6 S5, §12.2.16 — W10 does not create it); and three wireframe screens — **Picker sheet**, **Auto-fill preview**, **Regenerate confirm** (Flow 6), landing **34/49**. Gate, in §4's own words: "Auto-fill respects MAX caps; regenerate requires confirm."
+
+Two items deferred *into* W10 by earlier weeks, and therefore in scope now, not optional:
+
+- **The recipe picker filtered by slot role** (§12.1's out-of-scope list; §15.1 restates it). W9 S5 shipped a deliberate stand-in — `mobile/lib/features/menu/presentation/recipe_picker_stub_screen.dart`, routed at `AppRoutes.recipePickerStub`, reached from `weekly_plan_screen.dart`'s `_DaySection` `onTap`. W10 replaces it; the stub file and its route constant are deleted, not left orphaned.
+- **Allergen / skip-ingredient warnings at pick time** (§12.1: "(W9/W10)"; W9 shipped none). PRD §7.1 locks allergens as a *warning*; PRD §7.3 locks the skip-ingredients list as a hard filter in automated picks, per D7 below.
+
+**Explicitly out of scope for W10** (owned by later weeks, not oversights): shopping-list generation (W11); `markMade` / pantry deduction (W12 — `menu_items.made_at` already exists from W9's migration, which matters to D4); `onMenuChanged` — still not assigned a week (D9, flagged forward again, not resolved this week); copy day / copy week / clear day / clear week (PRD §6 lists them; §4 never schedules them — flagged, not absorbed); pagination for `Query.recipes` (§16.5.3, D12); the W6 R7 physical-device spike, still carried open at Phase 2 level.
+
+### 16.2 Conflicts and gaps found in the locked docs, and the four decisions that resolve them
+
+#### 16.2.1 `autoFillWeek` exists in SD §6.1 but not in the shipped SDL, and the founder's answer to D3 means it becomes **two** operations, not one
+
+SD §6.1 locks `autoFillWeek(menuId: ID!, overwrite: Boolean!): Menu!` — a single mutation that reads, picks, and writes in one call (SD §5's sequence diagram has no dry-run step). The founder chose **true dry run** for the "Auto-fill preview" screen (D3): nothing is written until the user explicitly accepts a proposal, and re-rolling is free. That is a deliberate, documented deviation from SD's locked single-mutation shape — the same class of deviation W7 S3 made for `parseFreeformRecipe`/`importRecipeFromUrl` (§13.2.1/§13.2.3) — and it splits the feature into:
+
+- **`Query.autoFillPreview(menuId: ID!): AutoFillPreviewResult!`** — a pure read. Runs S1's picking algorithm against the current live state (existing items, rotation, settings) with a fresh unseeded random draw, and returns the *proposed* items **without writing anything**. Safe to call any number of times ("regenerate" on the preview screen, before commit, is just calling this again — free, no confirmation needed, since nothing has been written yet).
+- **`Mutation.autoFillWeek(menuId: ID!, overwrite: Boolean!, items: [MenuItemInput!]!): AutoFillResult!`** — the commit. Takes the exact proposed item list the client is accepting (verbatim from the last preview, or edited via per-slot swaps against the picker), and writes it transactionally. Because time passes between preview and commit (another device could act in between), the commit **re-validates every item against live caps/rotation under the menu-scoped advisory lock (§16.2.7) and silently skips any item that no longer fits** rather than failing the whole commit — consistent with D6's best-effort-partial philosophy, and it means the response's own `filledCount`/`unfilledSlots` (D5) can legitimately differ from what the preview promised, which the UI must be able to show honestly (§16.3 S6).
+
+`AutoFillPreviewResult`/`AutoFillResult` share the shape settled by D5 below. SD §6.1 is updated with this split, documented inline, when S2 lands (doc-updater trigger).
+
+#### 16.2.2 `idx_recipes_role` is real, correct, and covers exactly half of what auto-fill queries
+
+Confirmed present: `api/migrations/1787808112003_recipes.ts` — `CREATE INDEX idx_recipes_role ON recipes(household_id, role) WHERE in_rotation = TRUE`, already commented as built for W10. It matches the candidate query exactly (`household_id = $1 AND role = $2 AND in_rotation = TRUE`). The *recency* half (`menu_items` → `menus` filtered by `week_start_date`) needs no new index at MVP volume (≤52 menus/year, ≤~28 items each) — call: add none, and re-check only if curated seeding (W13/W14) changes the volume picture.
+
+#### 16.2.3 The locked `Menu!` return could not express "I could not fill 4 of your 28 slots" — resolved by D5
+
+The founder chose **explicit reporting** (D5): both `Query.autoFillPreview` and `Mutation.autoFillWeek` return `filledCount: Int!` and `unfilledSlots: [UnfilledSlot!]!` (`UnfilledSlot { dayOfWeek: Int!, mealSlot: MealType!, slotRole: RecipeRole! }`) alongside the proposed/committed items, rather than requiring the client to diff before/after state to infer what didn't fill and why. This is what lets the Auto-fill preview screen say "Filled 24 of 28 — no carb recipes in rotation for these 4 slots" instead of a generic "not everything filled."
+
+#### 16.2.4 The picker needs ingredients to warn about allergens; the skip-ingredients list is a marker, not a hard filter, in the picker (D7)
+
+W6 D5 (§12.2.7) locked `Recipe.ingredients` as a separate field resolver precisely so list-shaped queries never pay for the join. The founder's answer to D7 keeps the picker's list query exactly as cheap as W6 built it:
+
+- **Allergen warning** (PRD §7.1, warn-only everywhere): fires at the moment of *selection*, on the single tapped recipe, via the already-shipped `Query.recipe(id)` (which does hydrate ingredients) — one extra round trip on a deliberate user action, not N per sheet open.
+- **Skip-ingredients list**: the founder chose **shown with a warning marker, never hidden, in the picker** — a recipe containing a skip-listed ingredient still appears, flagged, and remains tappable (same warn-not-block spirit as allergens, preserving a deliberate one-off override). This needs the same per-recipe ingredient check as the allergen warning and can share its implementation — both are selection-time checks on one recipe, not list-time filters. **Auto-fill itself (no human watching) still hard-filters skip-listed recipes out of its own automatic candidate set** — D7 only relaxes the *picker's* behavior, not `autoFillWeek`'s.
+- **Household `dietaryTags`** (D8, not a blocker, low-cost default): hard-filter for auto-fill candidates (cheap — `recipes.dietary_tags` needs no join), marker-not-hidden in the picker, same split as D7 for consistency.
+
+#### 16.2.5 `Query.recipes` surfaces favorites first but not rotation, and has no `inRotation` filter
+
+PRD §6/§7.1 and §3's Phase 3 DoD all say the picker surfaces "favorites and rotation first." `recipeRepository.findRecipes` currently orders `is_favorite DESC, LOWER(title)` with no `in_rotation` awareness and no `inRotation` filter argument. **Call:** S3 adds an optional `inRotation: Boolean` filter (mechanically identical to the existing `isFavorite` argument, including §11.5.5's explicit-`null` handling) and extends ordering to `is_favorite DESC, in_rotation DESC, LOWER(title)`. This is a visible behavior change to the existing W6 Library screen too (its tests are updated in the same PR, called out explicitly, not slipped in).
+
+#### 16.2.6 Auto-fill's batch write has the same TOCTOU exposure `addMenuItem` already fixed, at 28× the surface
+
+`menu_items` has no DB constraint bounding rows per slot — W9 S3 closed that with a per-slot `pg_advisory_xact_lock`. Taking 28 per-slot locks in one commit transaction is slow and a deadlock-ordering hazard against a concurrent `addMenuItem`. **Call:** `Mutation.autoFillWeek`'s commit takes a **single menu-scoped advisory lock** (`hashtextextended('menu:' || menuId)`) for its whole transaction, and `addMenuItem` is modified to acquire the **same menu-scoped lock first**, then its existing per-slot lock — consistent ordering across both code paths, so they serialize against each other rather than deadlocking. This is a modification to already-merged, already-reviewed W9 code (§16.5.2) — W9's own `addMenuItem` concurrency test must pass unchanged after the change, not be adapted to it.
+
+#### 16.2.7 `overwrite: true` versus `made_at` — regenerate can delete evidence a meal was cooked; the founder's answer to D4 settles the rest
+
+`menu_items.made_at` already exists (W9's migration; W12's `markMade` will set it). **Call, uncontested:** `overwrite: true` never deletes a row with `made_at IS NOT NULL` — those slots are treated as occupied and skipped, regardless of the rest of D4's answer. The founder's answer to D4 — **replaces everything unmade, manually-placed items included** — means the delete predicate is exactly `WHERE menu_id = $1 AND made_at IS NULL`, with no origin/source column needed on `menu_items` (none is added this week). The confirm dialog (S6) must say plainly that manual picks are replaced too, not just auto-fill's own.
+
+#### 16.2.8 "Recency avoidance" and "cuisine bias" have no algorithmic definition anywhere in the locked docs (D1, D2 — tunable constants, not blockers)
+
+PRD §16 open question #3 leans "simple in MVP" without specifying a window or weights. **D1 (recency):** a soft, tiered penalty over the previous **3** menus (`RECENCY_WINDOW_WEEKS = 3`) — heaviest penalty for last week, less for two weeks ago, least for three, none older — never a hard exclusion, plus one hard rule unrelated to weeks: the same recipe is never placed twice within a single meal instance. **D2 (cuisine bias):** weighted random sampling — base weight 1.0, ×2 if `cuisine_tier1` matches the household's array, then × a tier-2 multiplier from `cuisine_tier2_weights` (`more`=2.0, `normal`=1.0, `less`=0.4, missing/`NULL` cuisine = base weight, never 0), multiplied by D1's recency factor. No weight is ever zero, which is how "biases, does NOT hard-filter" (PRD §7.3) is honored mechanically. Both are named module-level constants in `api/src/domain/rotationSelection.ts`, re-tunable after real use without touching structure.
+
+#### 16.2.9 `onMenuChanged` is listed in SD §6.1 as firing on `autoFillWeek`, and still does not exist (D9 — not resolved, flagged forward again)
+
+Auto-fill is the strongest case yet for it (one commit can rewrite up to ~28 rows at once). Not assigned to W10 (already the widest UI week of the phase) — this is the second week in a row (after §15.7 D1) this has been deferred without a week assigned, and only W11/W12 remain in Phase 3 before §3's DoD requires it. Recorded here again rather than silently dropped; needs a real answer no later than W11's own planning.
+
+#### 16.2.10 The client-side slot model already silently drops over-cap items, which interacts with auto-fill
+
+`plannedSlotsForDay` renders exactly `mealStructure[meal][role]` slots per day and does not render items in excess of that count. Auto-fill makes the inverse case newly reachable: if the server's cap logic and the client's slot enumeration ever disagree, auto-fill could insert rows that never appear on the grid, invisibly. **Mitigation (§16.5.1):** S1's `enumerateEmptySlots` must consume `domain/mealStructure.ts`'s existing `getMealSlotCap`/`SINGLE_ITEM_MEAL_SLOTS` rather than re-deriving caps, and S6's tests assert a full auto-fill fills exactly `plannedSlotsForDay`'s own slot count.
+
+### 16.3 Slice breakdown
+
+#### S1 — Rotation-selection domain module (pure, deterministic, no DB)
+
+- **Delivers:** `api/src/domain/rotationSelection.ts` — `enumerateEmptySlots(settings, existingItems)` (cap-aware, `mealsEnabled`-aware, reuses `getMealSlotCap`/`SINGLE_ITEM_MEAL_SLOTS`); `scoreCandidate(recipe, cuisineTier1, tier2Weights, recencyUsage)` (D1+D2's combined weight); `pickForSlots(slots, candidatesByRole, rng)` with an **injected RNG** so every test is deterministic while production stays genuinely random. `RECENCY_WINDOW_WEEKS`, the tier-2 multipliers, and the tier-1 bonus are named constants, not magic numbers.
+- **Files:** `api/src/domain/rotationSelection.ts` (+ test). No resolver, no SQL, nothing deployed.
+- **Depends on:** nothing. Starts immediately.
+- **Size/Risk:** ~1.5 hrs / Low-Medium.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `code-reviewer`. `security-reviewer` skips (no I/O).
+- **RED tests:** a default-settings household with no items yields the correct total empty-slot count (table-driven across all four meal types, derived from `DEFAULT_MEAL_STRUCTURE`, not one sampled number); partially-filled slots reduce the enumeration correctly; a disabled meal type contributes zero; malformed `mealStructure` contributes zero (fail-closed, mirroring `getMealSlotCap`); no recipe is picked for a role it doesn't have; the same recipe is never placed twice in one meal; a `'less'`-weighted cuisine is still picked when it's the only candidate (bias, never a hard filter); a skip-listed-ingredient recipe (once S2 wires the filter in) never appears in candidates passed to this module at all — this module trusts its candidate list is pre-filtered, it does not re-check skip-ingredients itself; an empty candidate list for a role yields unfilled slots, not an exception; same seed → same week twice; different seeds → different weeks.
+
+#### S2 — `Query.autoFillPreview` + `Mutation.autoFillWeek(menuId, overwrite, items)` — the dry-run/commit pair
+
+- **Delivers:** SDL for both operations plus `AutoFillPreviewResult`/`AutoFillResult`/`UnfilledSlot` (§16.2.1, §16.2.3); `menuRepository` extensions — `findInRotationRecipesByRole` (skip-ingredient-filtered per D7's auto-fill-hard-filter half), `findRecentRecipeUsage` (D1's recency join), `deleteUnmadeMenuItems` (`WHERE made_at IS NULL`, §16.2.7), batch `insertMenuItems`; `autoFillPreview.ts` (pure read resolver: `requireHouseholdMember` → read state → S1's picker → return, no transaction needed since nothing is written); `autoFillWeek.ts` (the commit: `requireHouseholdMember` → menu-scoped advisory lock → re-validate each submitted item against **live** caps/rotation, skip any that no longer fit → batch insert the rest → return `AutoFillResult`); the `addMenuItem.ts` lock-ordering change (§16.2.6).
+- **Files:** `shared/schema.graphql`; `api/src/repositories/menuRepository.ts`; `api/src/validation/menu.ts`; `api/src/resolvers/autoFillPreview.ts`; `api/src/resolvers/autoFillWeek.ts`; `api/src/resolvers/addMenuItem.ts`; `api/src/mappers/menu.ts`; `infra/stacks/api-stack.ts`.
+- **Depends on:** S1.
+- **Size/Risk:** ~3.0 hrs / High — the week's riskiest slice: two new resolvers, a re-validation-at-commit path, and a concurrency-control change to already-merged W9 code.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `database-reviewer` → `security-reviewer` → `code-reviewer` → `doc-updater` (SD §6.1's split, §12.2.14's "now used" note).
+- **RED tests:** `autoFillPreview` writes nothing to `menu_items` under any circumstance (asserted directly, not inferred) and can be called repeatedly with different results each time; `autoFillPreview` on a default-settings household with sufficient rotation proposes a full week never exceeding any cap; `autoFillWeek`'s commit writes exactly the submitted items when nothing has changed since preview; a manual `addMenuItem` between preview and commit causes the now-conflicting proposed item to be silently skipped at commit, reflected honestly in the returned `filledCount`/`unfilledSlots`, not an error; `overwrite: false` leaves existing items untouched, filling only empties; `overwrite: true` replaces every unmade item (manual or auto-filled) and preserves every `made_at IS NOT NULL` item; `in_rotation = false` recipes are never proposed or committed; a disabled meal type gets no items; zero in-rotation recipes for a role yields a partial result with that role's slots in `unfilledSlots`, not an error; skip-listed-ingredient recipes never appear in `autoFillWeek`'s or `autoFillPreview`'s own candidate set; non-member denied with the byte-identical `requireHouseholdMember` message on both operations, for both another household's real menu and a nonexistent one; a recipe from another household is never proposable (household_id-scoped and RLS-scoped, both asserted); concurrency — two simultaneous `autoFillWeek` commits, and one commit racing one `addMenuItem`, never overshoot a cap-1 slot (Testcontainers here, live in S7); W9's own `addMenuItem` concurrency test passes unchanged; explicit `null` rejected for every non-nullable argument, accepted-as-absent for every nullable one D5 introduces.
+
+#### S3 — `Query.recipes` picker support: `inRotation` filter + rotation-first ordering
+
+- **Delivers:** §16.2.5's gap — optional `inRotation: Boolean` argument (SDL, `validation/recipes.ts`, `FindRecipesFilter`, `findRecipes`), `in_rotation DESC` added to `ORDER BY` between favorite and title.
+- **Files:** `shared/schema.graphql`; `api/src/validation/recipes.ts`; `api/src/repositories/recipeRepository.ts`.
+- **Depends on:** nothing — parallelizable with S1/S2.
+- **Size/Risk:** ~1.0 hr / Low.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** `inRotation: true`/`false` filter correctly; explicit `null` behaves identically to absent (§11.5.5); ordering is favorite-then-rotation-then-title with a fixture that fails if any two keys transpose; existing W6 Library-screen ordering tests updated in the same PR, called out in the PR description as a visible behavior change.
+
+#### S4 — Mobile: `autoFillPreview`/`autoFillWeek` plumbing + picker query wiring
+
+- **Delivers:** `MenuRepository.autoFillPreview(menuId)` and `MenuRepository.autoFillWeek(menuId, {overwrite, items})` (interface, Ferry impl, fake); `CurrentMenuController` gains preview/commit methods, both **throwing** a typed `AppError` on failure rather than swallowing into state (matching `addMenuItem`'s existing documented contract); `RecipeRepository.fetchRecipes` gains the `inRotation` parameter; new `.graphql` operations + regenerated codegen; the mobile `schema.graphql` copy re-synced per the established drift procedure.
+- **Files:** `mobile/lib/features/menu/data/menu_repository.dart`, `menu_mapper.dart`; `mobile/lib/features/menu/state/current_menu_controller.dart`; `mobile/lib/features/recipes/data/recipe_repository.dart`; new `.graphql` operation files + codegen.
+- **Depends on:** S2, S3.
+- **Size/Risk:** ~1.5 hrs / Low — structural mirror of W9 S4.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** preview returns a proposal without mutating any local/remote state; commit refreshes the menu and controller state on success; a rejection at either step surfaces as a typed `AppError`; `fetchRecipes(inRotation: ...)` round-trips all three states.
+
+#### S5 — Picker sheet (wireframe 6.2) — replaces the W9 stub
+
+- **Delivers:** the real picker, opened from an empty slot, pre-filtered to that slot's `slotRole`, favorites-then-rotation-first ordering (S3), a skip-ingredient warning marker (shown, not hidden — D7) alongside the existing-pattern search/filter chips, an allergen warning at selection time via `Query.recipe(id)`, a real `PEmptyState` pointing at recipe creation when the household has no recipes of that role, and on confirm a `CurrentMenuController.addMenuItem` call carrying the exact `(dayOfWeek, mealSlot, slotRole)` the tapped slot came from. **Deletes** `recipe_picker_stub_screen.dart`, `AppRoutes.recipePickerStub`, its route, and its test.
+- **Files:** `mobile/lib/features/menu/presentation/recipe_picker_screen.dart` (new); `mobile/lib/app/router.dart`; `weekly_plan_screen.dart`; deletion of the stub + test.
+- **Depends on:** S4.
+- **Size/Risk:** ~2.5 hrs / Medium.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** role-filtered fetch, no other role's recipes appear; ordering matches S3; picking calls `addMenuItem` with the exact originating slot coordinates, table-driven across meal types and days; a skip-listed-ingredient recipe still appears, flagged, and remains tappable; an allergen match warns and still allows proceeding; a server cap rejection renders inline, never a silent no-op or a raw exception string; an empty role-filtered library renders `PEmptyState` with a working route to recipe creation; load failure is visibly distinct from genuinely-empty.
+
+#### S6 — Auto-fill preview + Regenerate confirm (wireframes 6.3, 6.7)
+
+- **Delivers:** an "Auto-fill week" affordance on the Weekly plan screen calling `autoFillPreview`; the **Auto-fill preview** screen showing the *unsaved* proposal with per-slot swap (re-runs `autoFillPreview` for just that slot, or lets the user pick manually via S5) and a free "Regenerate" (calls `autoFillPreview` again — no confirmation needed, nothing has been written); an explicit **Accept** action that is the only path calling `Mutation.autoFillWeek`'s commit; and the **Regenerate confirm** dialog specifically for the case where the menu already has unmade items and accepting would replace them — naming the item count and stating plainly that manually-placed items are replaced too (§16.2.7), and that already-made meals are always kept. Honest partial-fill messaging using `filledCount`/`unfilledSlots` (D5) at both the preview and the post-commit stage, since a commit can under-deliver relative to its own preview (§16.3 S2's re-validation-skip case).
+- **Files:** `mobile/lib/features/menu/presentation/auto_fill_preview_screen.dart`, `regenerate_confirm_dialog.dart`; `weekly_plan_screen.dart`; `mobile/lib/app/router.dart`.
+- **Depends on:** S4 (and S5 for the per-slot manual-swap affordance).
+- **Size/Risk:** ~2.0 hrs / Medium.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** opening the preview never writes anything (asserted against the fake repository directly); regenerating the preview is available with no confirmation and calls preview again, not commit; the confirm dialog appears **only** when committing would replace an existing unmade item, and is skipped when the menu was empty; **no path calls the commit operation without either (a) the menu having no existing unmade items, or (b) an affirmatively-dismissed confirmation** — asserted as its own direct test, including that Cancel calls nothing; the confirm dialog's copy states manually-placed items are included in what gets replaced; a full preview renders exactly `plannedSlotsForDay`'s own slot count (§16.2.10); a partial preview/commit renders honest, specific copy from `unfilledSlots`; a commit that filled fewer items than its own preview promised (the re-validation-skip case) is shown accurately, not silently mismatched; a failed commit leaves the previously-visible week state intact, never blanked.
+
+#### S7 — Real-AWS verification + weekly doc pass
+
+- **Delivers:** direct-Lambda-invoke verification (synthetic Cognito identity, real dev Aurora/AppSync, throwaway households deleted afterward) of: `autoFillPreview` writing nothing (assert via a follow-up `Query.menu` showing no change); a full commit on a seeded-rotation household respecting every cap live; `overwrite: true` preserving a `made_at`-set row (set directly via SQL, since `markMade` is W12); an out-of-rotation recipe never picked; a skip-listed recipe never auto-filled but still visible via the picker's own query; **two genuinely concurrent** `autoFillWeek` commits, and a commit racing an `addMenuItem`, neither overshooting a cap (the W9 S7 method); explicit `null` on every nullable new argument; `cdk diff` reviewed before deploy. Plus §4.2's mandatory weekly pass — actual-vs-planned hours into §4's W10 row, a decisions-versus-shipped audit of §16.7 D1–D12, and closing §12.2.14's "`idx_recipes_role` deliberately unused" note (`EXPLAIN` against real dev Aurora).
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 row, a W10-result subsection), `docs/SYSTEM_DESIGN.md` (§6.1's split, per §16.2.1), `docs/RUNBOOK.md`.
+- **Depends on:** all slices.
+- **Size/Risk:** ~1.0 hr / Low, non-optional.
+- **Agents:** `doc-updater`.
+
+**Planned total: ~12.5 hrs** against §4's nominal ~10 — the dry-run split (D3) adds real surface over the single-mutation shape the original estimate assumed, consistent with the pattern every week since W5 has shown. If a lever is needed, S3 is the only defensible one (approximate rotation-first ordering client-side for one week); S6's confirm gate is the DoD itself and S7 is exempt.
+
+### 16.4 Sequencing
+
+```
+S1 (rotation-selection domain, pure)      S3 (Query.recipes inRotation + ordering)
+  │                                          │
+  ▼                                          │
+S2 (autoFillPreview + autoFillWeek commit    │
+    + addMenuItem lock-ordering change)      │
+  │                                          │
+  └──────────────┬───────────────────────────┘
+                 ▼
+        S4 (mobile plumbing)
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+   S5 (Picker sheet)  S6 (Auto-fill preview + Regenerate confirm)
+        └────────┬────────┘
+                 ▼
+        S7 (real-AWS verification + doc pass)
+```
+
+S1 and S3 are independent day-1 fronts. S6 depends on S5 only for its per-slot manual-swap affordance — if that proves fiddly to land together, S6 can ship with "regenerate the whole preview" as its only edit path and per-slot swap-from-preview added once S5 exists, without blocking the rest of the sequence.
+
+### 16.5 Risks
+
+#### 16.5.1 The cap rule now lives in three places, and the third one (auto-fill) is the one that writes many rows at once
+
+§15.5.1 already flagged server-`addMenuItem`-vs-client-`plannedSlotsForDay` drift. S1's `enumerateEmptySlots` is a third implementation, in the same language as the first — avoidable drift if it consumes `getMealSlotCap` rather than re-deriving. Mitigation: that consumption is mandatory (§16.2.10), and S6's full-fill test is the cross-language canary.
+
+#### 16.5.2 The lock-ordering change touches merged, reviewed W9 code
+
+§16.2.6's fix modifies `addMenuItem`, already shipped and verified live under genuine concurrency in §15.9. Mitigation: W9's existing concurrency test for `addMenuItem` must be re-run unchanged as part of S2's green bar, and S7's live pass re-runs W9's own two-concurrent-`addMenuItem` scenario alongside the new auto-fill races. A deadlock between the two lock namespaces is the specific failure to test for.
+
+#### 16.5.3 The picker is `Query.recipes`' second consumer, and the R7 spike is still open
+
+§12.2.14 warned pagination is cheap now, expensive from W10 on. Measured worst case (§12.5.5): 283KB/~0.68s warm for 300 recipes. The picker is always role-filtered, cutting the realistic worst case well below the Library screen's already-tested 300-item case. **D12: no pagination in W10**; W13/W14's curated seed is the last cheap moment to revisit.
+
+#### 16.5.4 A "random-ish" feature is hard to tell apart from a broken one
+
+Mitigation is S1's injected-RNG seam: every property that should hold deterministically (never over cap, never out of rotation, never a wrong role, never twice in one meal, bias never becoming a hard filter) is asserted as an invariant over many seeded runs. S7's live pass runs preview three times on the same household and records the three proposals, so "it varies" is observed, not assumed.
+
+#### 16.5.5 The commit's re-validation-and-skip behavior is new, untested-by-precedent logic
+
+Nothing else in this codebase silently drops part of a request rather than failing it outright or succeeding in full. Mitigation: S2's own dedicated test (a manual `addMenuItem` landing between preview and commit) and S6's matching UI test (the commit under-delivering relative to its own preview) are both named explicitly above, not left implicit in a general "concurrency" test.
+
+### 16.6 W10 exit criteria
+
+- [ ] `Query.autoFillPreview` never writes to `menu_items` under any circumstance, verified directly (S2, S7)
+- [ ] `Mutation.autoFillWeek`'s commit never exceeds any configured cap, asserted per-slot and verified live against real dev AWS, not only Testcontainers (S2, S7) — §4's own gate
+- [ ] No code path calls the commit with `overwrite: true` replacing existing items without an affirmatively-dismissed confirmation (S6) — §4's second gate, its own direct test
+- [ ] `overwrite: true` preserves `made_at IS NOT NULL` items and replaces every other unmade item, manual or auto-filled, verified live (S2, S7)
+- [ ] A recipe with `in_rotation = false` is never proposed or committed (S2)
+- [ ] A skip-listed-ingredient recipe is never auto-filled, but still appears (flagged) in the picker (S2, S5)
+- [ ] Commit is concurrency-safe against a simultaneous second commit *and* a simultaneous `addMenuItem`, verified with genuinely parallel invokes against real dev Aurora (S2, S7)
+- [ ] W9's existing `addMenuItem` concurrency test still passes unchanged after the lock-ordering change (S2)
+- [ ] The picker is filtered to the tapped slot's role, and surfaces favorites then rotation first (S3, S5)
+- [ ] `recipe_picker_stub_screen.dart`, `AppRoutes.recipePickerStub` and its route are deleted, not orphaned (S5)
+- [ ] An allergen match warns at pick time and still allows the user to proceed (S5)
+- [ ] A partial fill (preview and commit) is reported honestly, distinguishable from a full fill and from a failure, including the case where a commit under-delivers relative to its own preview (S2/S6, per D5)
+- [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5) — this week's exposure is `Query.recipes.inRotation` and the new `AutoFillPreviewResult`/`AutoFillResult` fields
+- [ ] `idx_recipes_role` confirmed actually used by auto-fill's candidate query (`EXPLAIN` against real dev Aurora), closing §12.2.14's "deliberately unused until W10" note (S7)
+- [ ] §4's W10 row has actual hours and §16.7's decisions are audited against what shipped (S7)
+
+### 16.7 W10 planning decisions
+
+| # | Question | Decision |
+|---|---|---|
+| **D1** | What exactly is "recency avoidance" — window and strength? | Soft, tiered penalty over the previous **3** menus (`RECENCY_WINDOW_WEEKS = 3`), never a hard exclusion, plus a hard within-meal no-repeat rule. Named constants in `rotationSelection.ts`, re-tunable later. |
+| **D2** | What exactly is "cuisine bias"? | Weighted random sampling: base 1.0, ×2 for a `cuisine_tier1` match, × tier-2 multiplier (`more`=2.0/`normal`=1.0/`less`=0.4, `NULL`=base), × D1's recency factor. No weight is ever 0. |
+| **D3** | Does "Auto-fill preview" mean a dry run, or a post-write review screen? | **True dry run.** `Query.autoFillPreview` proposes without writing; `Mutation.autoFillWeek(menuId, overwrite, items)` commits an explicitly-accepted proposal, re-validating live at commit time. Deliberate, documented deviation from SD §6.1's single-mutation shape. |
+| **D4** | Does `overwrite: true` replace only auto-fill's own picks, or everything unmade? | **Everything unmade**, manual picks included. `made_at IS NOT NULL` items are always preserved regardless. No `menu_items` origin column added. |
+| **D5** | Does `autoFillWeek`/`autoFillPreview` keep SD's locked `Menu!` return, or report partial fills explicitly? | **Explicit.** Both operations return `filledCount`/`unfilledSlots` alongside the menu/proposed items — a documented deviation from SD §6.1, same pattern as W7 S3. |
+| **D6** | Is auto-fill all-or-nothing, or best-effort partial? | **Best-effort partial**, always — a young household will rarely have enough in-rotation recipes to fill every slot. The commit transaction itself is still atomic (accepted items commit together or none do); "partial" refers to which slots got filled, not to write durability. |
+| **D7** | Skip-listed ingredients: hard filter in the picker, or a marker? | **Marker, not hidden, in the picker** — flagged, still tappable, same warn-not-block spirit as allergens. **Hard filter inside `autoFillWeek`/`autoFillPreview`'s own candidate set** — the automated path still never chooses one. |
+| **D8** | Do household `dietaryTags` hard-filter auto-fill and/or the picker? | Hard filter for auto-fill candidates; marker-not-hidden in the picker — same split as D7. |
+| **D9** | Does `onMenuChanged` ship this week, or get assigned a week now? | **Not resolved.** Still not assigned a week — the second deferral in a row (after §15.7 D1). Only W11/W12 remain before §3's Phase 3 DoD requires it; needs a real answer at W11's own planning, not carried a third time. |
+| **D10** | Does auto-fill fill days already past in the current week? | **Yes, all 7 days** — the server has no timezone concept and deliberately never computes "today" (§15.2.4). Past days with existing items are protected by D4's `made_at` rule and by `overwrite: false` being the default. |
+| **D11** | Repeated auto-fill preview: same proposal twice? | **No** — unseeded in production (seeded only in tests via S1's injected-RNG seam), so regenerating on the preview screen produces a genuinely different proposal each time, which is what makes the dry-run "keep re-rolling" loop (D3) meaningful. |
+| **D12** | Does W10 add `Query.recipes` pagination? | **No** (§16.5.3) — the picker's role filter keeps its realistic worst case well below the Library screen's already-tested 300-item case. W13/W14's curated seed is the last cheap moment to revisit. |

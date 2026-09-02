@@ -46,4 +46,9 @@ export const createNonVpcResolverFunction = (scope: Construct, id: string, props
     memorySize: 512,
     tracing: Tracing.ACTIVE,
     environment: props.environment ?? {},
+    // See `data-stack.ts`'s identical `esbuildArgs` comment — trims
+    // esbuild's own CLI logging, a documented aggravating factor in a
+    // CI-only Vitest worker-IPC-heartbeat flake, for every Lambda built
+    // through this factory.
+    bundling: { esbuildArgs: { '--log-level': 'error' } },
   });
