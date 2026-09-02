@@ -99,3 +99,40 @@ export const removeMenuItemArgsSchema = z.object({
 });
 
 export type RemoveMenuItemArgs = z.infer<typeof removeMenuItemArgsSchema>;
+
+/** `Query.autoFillPreview`'s only argument — a pure read, proposes without writing (W10 §16.2.1, D3). */
+export const autoFillPreviewArgsSchema = z.object({
+  menuId: menuIdSchema,
+});
+
+export type AutoFillPreviewArgs = z.infer<typeof autoFillPreviewArgsSchema>;
+
+/**
+ * The largest `items` array `autoFillWeek` will accept in one call.
+ * `updateHouseholdSettings.ts`'s own `mealStructureEntrySchema` caps each of
+ * `carb`/`sabzi_dal`/`accompaniment` at 10 per meal — the theoretical
+ * maximum a household could ever configure is 62/day (2 x 3 roles x 10, plus
+ * 1 breakfast + 1 snack) x 7 days = 434. 500 is a round, generously-above
+ * bound on top of that real ceiling, not an arbitrary guess — closes a
+ * defense-in-depth gap security-reviewer flagged: without it, `commitAllItems`
+ * would process an unbounded array sequentially, one DB round trip per item,
+ * all held under `lockMenu` for the whole call.
+ */
+const MAX_AUTOFILL_ITEMS = 500;
+
+/**
+ * `Mutation.autoFillWeek`'s commit (W10 §16.2.1, D3) — `items` is exactly
+ * `MenuItemInput[]`, the same shape a `Query.autoFillPreview` response's
+ * `ProposedMenuItem`s echo back, possibly edited by the user via manual
+ * swaps before accepting. `overwrite` is required, not nullable — unlike
+ * every patch-style optional field elsewhere in this schema, this is a
+ * genuine two-valued instruction with no "leave unchanged" reading, so
+ * `.nullish()`'s absent-means-unchanged convention does not apply here.
+ */
+export const autoFillWeekArgsSchema = z.object({
+  menuId: menuIdSchema,
+  overwrite: z.boolean(),
+  items: z.array(menuItemInputSchema).max(MAX_AUTOFILL_ITEMS, `items must contain at most ${MAX_AUTOFILL_ITEMS} entries`),
+});
+
+export type AutoFillWeekArgs = z.infer<typeof autoFillWeekArgsSchema>;

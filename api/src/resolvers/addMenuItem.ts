@@ -9,12 +9,13 @@ import {
   countMenuItemsInSlot,
   findMenuById,
   insertMenuItem as insertMenuItemRepo,
+  lockMenu,
   lockMenuSlot,
 } from '../repositories/menuRepository.js';
 import { findRecipeById } from '../repositories/recipeRepository.js';
 import type { RecipeRow } from '../repositories/recipeRepository.js';
 import { findSettingsForHousehold } from '../repositories/householdRepository.js';
-import { SINGLE_ITEM_MEAL_SLOTS, getMealSlotCap, isMealSlotEnabled } from '../domain/mealStructure.js';
+import { getMealSlotCap, isMealSlotEnabled, slotCountKeyRole } from '../domain/mealStructure.js';
 import type { GraphQLMenuItem } from '../mappers/menu.js';
 import { toGraphQLMenuItem } from '../mappers/menu.js';
 import { addMenuItemArgsSchema } from '../validation/menu.js';
@@ -29,16 +30,21 @@ import { withErrorHandling } from './withErrorHandling.js';
  * Returns the already-fetched `RecipeRow` so the caller doesn't re-fetch it
  * to build the response.
  *
- * `lockMenuSlot` runs BEFORE `countMenuItemsInSlot`, not after: without it,
- * two concurrent `addMenuItem` calls for a slot sitting at `cap - 1` could
- * both read the same pre-insert count, both pass the check below, and both
- * commit — overshooting the cap, since `menu_items` has no DB constraint
- * bounding the count per slot (`migrations/1788100000000_menus.ts` only
- * `CHECK`s individual column values). The advisory lock serializes any
- * second concurrent caller for the identical slot until this transaction
- * commits or rolls back, closing that window — see `lockMenuSlot`'s own
- * comment for why an advisory lock rather than `SELECT ... FOR UPDATE`
- * (there may be zero existing rows to lock yet).
+ * `lockMenu` runs first, then `lockMenuSlot`, both BEFORE
+ * `countMenuItemsInSlot` — without them, two concurrent `addMenuItem`
+ * calls for a slot sitting at `cap - 1` could both read the same pre-insert
+ * count, both pass the check below, and both commit — overshooting the
+ * cap, since `menu_items` has no DB constraint bounding the count per slot
+ * (`migrations/1788100000000_menus.ts` only `CHECK`s individual column
+ * values). The advisory locks serialize any second concurrent caller for
+ * the identical slot until this transaction commits or rolls back, closing
+ * that window — see `lockMenuSlot`'s own comment for why an advisory lock
+ * rather than `SELECT ... FOR UPDATE` (there may be zero existing rows to
+ * lock yet). The menu-scoped `lockMenu` (added W10, §16.2.6) is acquired
+ * FIRST, in the identical order `autoFillWeek`'s own commit acquires it —
+ * without matching lock ORDER across both code paths, a concurrent
+ * `addMenuItem` and `autoFillWeek` commit could each hold one lock the
+ * other wants and deadlock, rather than one simply waiting for the other.
  */
 const validateAddMenuItem = async (
   client: PoolClient,
@@ -46,6 +52,8 @@ const validateAddMenuItem = async (
   menuId: string,
   input: MenuItemInput,
 ): Promise<RecipeRow> => {
+  await lockMenu(client, menuId);
+
   const [settings, recipe] = await Promise.all([
     findSettingsForHousehold(client, householdId),
     findRecipeById(client, input.recipeId),
@@ -63,7 +71,7 @@ const validateAddMenuItem = async (
   // Single-item slots (breakfast/snacks) cap the WHOLE slot at 1, regardless
   // of role — locked/counted with slotRole:null so any existing item in
   // that slot counts, not just one matching this role.
-  const countBySlotRole = SINGLE_ITEM_MEAL_SLOTS.includes(input.mealSlot) ? null : input.slotRole;
+  const countBySlotRole = slotCountKeyRole(input.mealSlot, input.slotRole);
   await lockMenuSlot(client, menuId, input.dayOfWeek, input.mealSlot, countBySlotRole);
 
   const cap = getMealSlotCap(settings.mealStructure, input.mealSlot, input.slotRole);

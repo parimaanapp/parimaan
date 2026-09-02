@@ -8,6 +8,7 @@ import type {
 } from './rotationSelection.js';
 import {
   RECENCY_WINDOW_WEEKS,
+  computeUnfilledSlots,
   enumerateEmptySlots,
   pickForSlots,
   scoreCandidate,
@@ -249,5 +250,38 @@ describe('pickForSlots', () => {
     }
     // 9:1 weighting should land well north of a 50/50 split across 200 trials.
     expect(heavyCount).toBeGreaterThan(trials * 0.7);
+  });
+});
+
+describe('computeUnfilledSlots', () => {
+  const slot = (dayOfWeek: number, mealSlot: string, slotRole: string): EmptySlot => ({ dayOfWeek, mealSlot, slotRole });
+
+  it('returns [] when every slot got a pick', () => {
+    const slots = [slot(0, 'lunch', 'carb')];
+    const picks = [{ ...slot(0, 'lunch', 'carb'), recipeId: 'r1' }];
+    expect(computeUnfilledSlots(slots, picks)).toEqual([]);
+  });
+
+  it('returns every slot with no matching pick', () => {
+    const slots = [slot(0, 'lunch', 'carb'), slot(0, 'lunch', 'sabzi_dal')];
+    const picks = [{ ...slot(0, 'lunch', 'carb'), recipeId: 'r1' }];
+    expect(computeUnfilledSlots(slots, picks)).toEqual([slot(0, 'lunch', 'sabzi_dal')]);
+  });
+
+  it('when multiple slots share an identical key, tallies by count not by object identity — 3 slots, 1 pick leaves exactly 2 unfilled', () => {
+    const slots = [
+      slot(0, 'lunch', 'sabzi_dal'),
+      slot(0, 'lunch', 'sabzi_dal'),
+      slot(0, 'lunch', 'sabzi_dal'),
+    ];
+    const picks = [{ ...slot(0, 'lunch', 'sabzi_dal'), recipeId: 'r1' }];
+    const unfilled = computeUnfilledSlots(slots, picks);
+    expect(unfilled).toHaveLength(2);
+    expect(unfilled.every((s) => s.mealSlot === 'lunch' && s.slotRole === 'sabzi_dal')).toBe(true);
+  });
+
+  it('an empty slots list with picks (should not happen, but must not throw or go negative) yields []', () => {
+    const picks = [{ ...slot(0, 'lunch', 'carb'), recipeId: 'r1' }];
+    expect(computeUnfilledSlots([], picks)).toEqual([]);
   });
 });
