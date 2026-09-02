@@ -958,7 +958,19 @@ CREATE TABLE notification_preferences (
 -- Row-level security (enable per table)
 ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pantry_items ENABLE ROW LEVEL SECURITY;
+-- Migrated W9 S1 (E2E_MVP_PLAN.md §15.3). Membership-subquery policy, the
+-- `recipes` shape: both USING and WITH CHECK explicit, FORCE not just
+-- ENABLE.
 ALTER TABLE menus ENABLE ROW LEVEL SECURITY;
+-- Migrated W9 S1. `menu_items` has no household_id of its own — the third
+-- table in this schema without one, after `recipe_ingredients` (W6) and
+-- `notification_preferences` (W8's per-user variant). Its policy is a
+-- parent-join, not a membership subquery, same shape as
+-- `recipe_ingredients_via_recipe`:
+--   CREATE POLICY menu_items_via_menu ON menu_items
+--     FOR ALL
+--     USING (menu_id IN (SELECT id FROM menus))
+--     WITH CHECK (menu_id IN (SELECT id FROM menus));
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shopping_lists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shopping_list_items ENABLE ROW LEVEL SECURITY;
