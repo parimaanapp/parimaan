@@ -128,6 +128,15 @@ Written for the W5 S9 DoD gate (E2E_MVP_PLAN.md §11.3 S9: "add/edit/delete on A
 6. **Delete, timed:** on Device A, delete the item. Start the stopwatch on confirm; stop when the row disappears from B. Record.
 7. Repeat steps 4–6 once more (a second sample) — a single run can be misleadingly fast or slow depending on connection jitter; two runs is the minimum to say the number is representative, not lucky.
 
+### W8 additions (D6): burst and forced-reconnect samples
+
+E2E_MVP_PLAN.md §14.2.5/D6 defines W8's "2-device sync <5s **under load**" as event rate and recovery, not client count (R3's 5-concurrent-client soak stays W11, named out of scope so an unchecked R3 box is never misread as a W8 miss). Two samples, additive to the six above, not a replacement for them:
+
+8. **Burst, timed:** on Device A, perform ~20 rapid sequential mutations (any mix of add/edit/delete against the entity this week's subscription covers). Start the stopwatch on the *first* mutation's confirm; stop it the moment the *last* one's effect appears correctly on Device B. Record the elapsed time and confirm B's final state matches A's exactly (no dropped, duplicated, or out-of-order mutation) — a burst that arrives fast but wrong is a worse finding than one that arrives slow but correct.
+9. **Forced-reconnect, timed:** with both devices connected and subscribed, drop Device B's network (airplane mode, or disconnect Wi-Fi) for at least 10s, then restore it. Start the stopwatch the moment the network is restored; stop it when Device B shows a correct, up-to-date list without the user taking any action beyond what backgrounding/foregrounding or the reconnect ladder already does automatically. Record the elapsed time and which mechanism actually closed the gap (a live reconnect + resubscribe, or the route-entry/foreground refetch catching up behind it).
+
+**W8 S12 status: defined, not yet run.** This procedure requires a human running two real physical devices with two clean Google accounts (see Prerequisites above) — explicitly not something a coding session can automate or delegate, and not satisfied by the D8 simulator-pair method used elsewhere in W8 (that method is reserved for cases with no hardware access at all; this specific gate's own prerequisites rule it out by name). S12's real-AWS verification pass (E2E_MVP_PLAN.md §14.5.10) covered every backend slice via direct Lambda invoke instead, which is a different kind of proof and does not substitute for a timed device-to-device sample. Stays open until a human runs steps 1–9 against the (now current) dev deploy and records real numbers here.
+
 ### Recording the result
 
 Write the actual numbers — never "felt fast" or "seemed instant" — into `E2E_MVP_PLAN.md` §4's row for the week being verified (W5/W8/W11/W12), plus a one-line pass/fail against the <5s target. If any sample exceeds 5s, note which of add/edit/delete and don't round it away; a slow outlier is exactly the kind of thing this gate exists to catch before it reaches a real household.

@@ -75,13 +75,13 @@ Six phases mapped to the 26-week runway.
 ### Phase 2 — Core Data + Sync (Weeks 5–8, Month 2)
 - **Goal:** pantry + recipes CRUD, URL import, freeform AI parse, real-time sync.
 - **Entry criteria:** Phase 1 DoD met.
-- **Exit criteria (DoD):**
-  - Pantry: add/edit/delete, categories, staples flag, low-threshold; Drift local read-cache hydrates offline.
-  - Recipes: structured entry, URL import (JSON-LD parser + graceful failure), freeform AI parse via Bedrock Haiku with confirm screen.
-  - `onPantryChanged` subscription fanout across 2 devices, <5s sync verified.
-  - Bedrock ap-south-1 availability spike done (SD §15.1); fallback path documented.
-  - JSON-LD coverage spike done on top-20 Indian recipe blogs (target ≥16/20).
-  - Domain widgets built: PantryRow, RecipeCard, AIProposal.
+- **Exit criteria (DoD)** — audited W8 S12 (§14.5.9's sibling pass), each line marked against what actually shipped, not assumed:
+  - Pantry: add/edit/delete, categories, staples flag, low-threshold; Drift local read-cache hydrates offline. — **MET** (W5).
+  - Recipes: structured entry, URL import (JSON-LD parser + graceful failure), freeform AI parse via Bedrock Haiku with confirm screen. — **MET, SUPERSEDED on provider**: every capability shipped (W6/W7); "via Bedrock Haiku" did not — W7 D11 locked Gemini 3.5 Flash-Lite instead, a scoped, written deviation (§13.2.2), not an oversight.
+  - `onPantryChanged` subscription fanout across 2 devices, <5s sync verified. — **MET, with the plan-wide D8 caveat**: verified via the simulator-pair-against-real-dev-AWS method (§11.5.5 precedent, later formalized as D8, §14.5.4) rather than two physical devices — the founder has no physical-device access, a constraint that postdates this original DoD line and applies uniformly from W5 onward, not specific to this criterion.
+  - Bedrock ap-south-1 availability spike done (SD §15.1); fallback path documented. — **NOT MET, SUPERSEDED (not a miss)**: explicitly cut, not run (W7 §13.1/§13.3's cut record) — D11's provider pivot to Gemini made every question this spike existed to answer (AWS regional model availability/access, VPC interface-endpoint reachability) moot, since Gemini is a public HTTPS API with no AWS region gate at all. SD §15.1 is annotated "not exercised in W7 (D11); still open for any future Bedrock week" rather than resolved — stays open for Phase 5 (W17's own Bedrock vision spike, a different model/use-case, not a re-run of this one).
+  - JSON-LD coverage spike done on top-20 Indian recipe blogs (target ≥16/20). — **Spike MET (done); target NOT MET, SUPERSEDED by a pre-committed fallback rule**: landed 14/20 usable drafts (§13.5.12), in D10's locked 10–15/20 "middle tier" — a rule pre-committed *before* S1 ran specifically to prevent the result from being rationalised after the fact (§13.2.9/D10). The middle tier's mandated response (URL import and freeform paste rendered co-equal, not URL-primary) shipped as specified (W7 S8). A W7 S12 re-measurement against the same 20 blogs later reproduced 14/20 again post a real bug fix (`DEFAULT_MAX_BYTES` 1MB→5MB, §13.5.13) — the number is stable, not a one-off low sample.
+  - Domain widgets built: PantryRow, RecipeCard, AIProposal. — **MET** (W5/W6/W7 S7, respectively).
 - **Wireframe screens delivered (12):** Flow 7 (Library, Detail, Overflow menu), Flow 8 (Choose method, Structured form, URL import, Freeform input, Freeform review), Flow 9 (List, Add choose method, Manual add), Flow 12 (AI failure fallback).
 - **Technical deliverables:** Pantry + Recipe resolvers, `parseFreeformRecipe` + `importRecipeFromUrl`, DynamoDB rate-limit counter (skeleton), Zod schemas for AI outputs.
 
@@ -2082,7 +2082,25 @@ This is the seam that makes W8 one coherent week rather than two unrelated chore
 
 It is a stopgap, and §14.2.10 argues for retiring it — but it is also the only mechanism that currently makes a co-member's join or leave visible at all, and it works today. S10 replaces it with a subscription that covers join/rotate/settings and **not** leave/delete (§14.2.10's return-type wall). Retaining entry+foreground refetch is what keeps leave/delete covered.
 
-#### 14.5.9 S11 findings — the phase-boundary security sweep
+#### 14.5.10 S12 result — real-AWS verification, actuals, Phase 2 exit audit
+
+**Actuals vs. planned (§14.5.1, merge-timestamp proxy — same method as §12.5.6/§13.5.13, not a literal hours log):** first W8 merge (S1, `#67`) 2026-08-31T16:44:56Z to last pre-S12 merge (S11, `#77`) 2026-09-02T02:17:42Z — **~33.5 hours elapsed wall-clock** for S1–S11 against 22.0 hrs planned (§14.5.1), a ~52% overrun on the same proxy that read W6 ~42% low and W7 similarly (§14.5.1's own framing) — consistent with the pattern, not a new anomaly. S12 itself, being the closing slice, cannot include its own merge timestamp in this measure, same limitation W6/W7's own actuals sections had.
+
+**Real-AWS verification (the W6 S10 / W7 S12 method — direct Lambda invoke, AppSync-shaped event, synthetic Cognito identity, against the live dev stack — not synth):** `Parimaan-dev-Data`/`Parimaan-dev-Api` were stale (last deployed 2026-08-31, before every S6–S11 backend change, and — discovered mid-pass — before S10's `onHouseholdChanged` too) and were deployed fresh for this pass (`cdk diff` reviewed first: no destructive replacement of any stateful resource, only new Lambdas/resolvers/IAM roles matching what shipped, plus a `MigrationsHash`-triggered migration-runner re-run). First deploy attempt hit Aurora's documented auto-pause cold-start window (`RUNBOOK.md`'s own anticipated failure mode) — `MigrationRunnerTrigger` timed out mid-resume, the stack rolled back but the rollback itself failed (`UPDATE_ROLLBACK_FAILED`); recovered via `aws cloudformation continue-update-rollback`, then a retry succeeded against the now-warm cluster.
+
+Verified live, using throwaway households deleted afterward (nothing left in dev Aurora from this pass):
+- `createHousehold` → `household_settings` insert succeeds under S11's new explicit `WITH CHECK` policy (the real-AWS proof the migration didn't regress the normal write path).
+- `Query.notificationPreferences`: a first read with no row returns the SD-specified `TRUE` defaults; confirmed no row was written by the read alone.
+- `Mutation.updateNotificationPreferences`: a two-field partial patch (`listChanges`, `activity`) applied correctly, the other two fields left unchanged — the absent-means-unchanged contract holding against real Aurora, not just the unit suite.
+- An explicit `null` on a patch field was rejected (`"Invalid input: expected boolean, received null"`) — the `.optional()`-not-`.nullish()` regression class (§11.5.5, re-checked every week since) re-confirmed live for S8.
+- A non-member's `Query.notificationPreferences` call for the same household was denied with the identical `"You are not a member of this household."` message every other household-scoped resolver uses — no existence oracle, confirmed live.
+- `Subscription.onHouseholdChanged`'s subscribe-time authorizer (S10 — never previously live-verified; the dev stack predated it) returned success (`null`) for a real member and the identical denial message for a non-member, both against real dev Aurora/AppSync.
+
+**Two-device measurement (D8):** not re-run this pass — D8 (§14.5.4) already locked the simulator-pair method and re-filed the physical-device run at Phase 2 level rather than as a W8-specific gap; nothing in S12 changes that. No fabricated stopwatch number recorded.
+
+**Phase 2 exit-criteria audit:** done — see §3's Phase 2 exit criteria, now annotated line-by-line (met / met-with-caveat / not-met-superseded), rather than assumed.
+
+
 
 Run against the explicit six-part surface list (§14.3 S11), covering everything Phase 2 (W5–W8) added. **No CRITICAL or HIGH findings.** Full results:
 
@@ -2099,28 +2117,28 @@ Run against the explicit six-part surface list (§14.3 S11), covering everything
 
 ### 14.6 W8 exit criteria
 
-- [ ] Signed-in users with a household land on `/home`, not `/first-run`; the router test suite stays offline via a default fake repository (S1, §11.2.11 — open since W5, deferred by W6 and W7)
-- [ ] `connectionTimeoutMs` honoured and a keep-alive watchdog tears down a silently-dead socket — asserted by a named test, since this is the failure the whole week exists for (S2, §14.2.1)
-- [ ] Reconnect ladder is **1s → 2s → 5s → 15s → 60s** with jitter, resets on a successful `connection_ack`, and **stops** on an authentication failure rather than looping (S3, §11.5.2's own numbers, D11)
-- [ ] Subscriber streams **survive** a transient disconnect; `start` frames are re-issued for every still-registered subscription after reconnect (S3, §14.2.2)
-- [ ] Every reconnect emits **exactly one** refetch signal per subscription, **after** `start_ack` — the §11.2.12 contract extended, not reinvented (S3, §14.2.4)
-- [ ] A reconnect uses a **freshly fetched** ID token, asserted by call count, not by inspection (S3, §14.2.3)
-- [ ] Backgrounding disconnects and stops the ladder; foregrounding reconnects; neither leaves a duplicate socket (S4)
-- [ ] Membership decisions are cached per container at 30s TTL, **positives only**, with the four membership-mutating resolvers reading through, and the ≤30s stale-authorization window documented in `requireHouseholdMember`'s own doc comment — replacing its current "explicitly deferred" note (S5, D2)
-- [ ] `security-reviewer` reviewed S5 **as an authorization change** against §14.2.8's four-part checklist, item by item (S5)
-- [ ] The caller-identity upsert no longer runs on every request (S6, D3)
-- [ ] `notification_preferences` on dev with RLS **enabled and forced** and a **user-scoped** policy — verified by a same-household-different-member denial test for read, insert, and update (S7, §14.2.7)
-- [ ] `fcm_token` is provably absent from the SDL (S8)
-- [ ] Wireframe 4.3 shipped and `SettingsPlaceholderScreen.notifications` deleted → **28/49** (S9)
-- [ ] `onHouseholdChanged` live and two-device verified; `HouseholdSyncPolicy` no longer polls; the four stale "deferred to W8" comments corrected (S10, §14.2.10)
-- [ ] **Phase 1's DoD line "household settings sync via `onHouseholdChanged`" is closed** — it has been silently open since W4 (S10/S12)
+- [x] Signed-in users with a household land on `/home`, not `/first-run`; the router test suite stays offline via a default fake repository (S1, §11.2.11 — open since W5, deferred by W6 and W7)
+- [x] `connectionTimeoutMs` honoured and a keep-alive watchdog tears down a silently-dead socket — asserted by a named test, since this is the failure the whole week exists for (S2, §14.2.1)
+- [x] Reconnect ladder is **1s → 2s → 5s → 15s → 60s** with jitter, resets on a successful `connection_ack`, and **stops** on an authentication failure rather than looping (S3, §11.5.2's own numbers, D11)
+- [x] Subscriber streams **survive** a transient disconnect; `start` frames are re-issued for every still-registered subscription after reconnect (S3, §14.2.2)
+- [x] Every reconnect emits **exactly one** refetch signal per subscription, **after** `start_ack` — the §11.2.12 contract extended, not reinvented (S3, §14.2.4)
+- [x] A reconnect uses a **freshly fetched** ID token, asserted by call count, not by inspection (S3, §14.2.3)
+- [x] Backgrounding disconnects and stops the ladder; foregrounding reconnects; neither leaves a duplicate socket (S4)
+- [x] Membership decisions are cached per container at 30s TTL, **positives only**, with the four membership-mutating resolvers reading through, and the ≤30s stale-authorization window documented in `requireHouseholdMember`'s own doc comment — replacing its current "explicitly deferred" note (S5, D2)
+- [x] `security-reviewer` reviewed S5 **as an authorization change** against §14.2.8's four-part checklist, item by item (S5) — and re-reviewed again at S11 as a standing item, still clean.
+- [x] The caller-identity upsert no longer runs on every request (S6, D3)
+- [x] `notification_preferences` on dev with RLS **enabled and forced** and a **user-scoped** policy — verified by a same-household-different-member denial test for read, insert, and update (S7, §14.2.7) — and live-verified against real dev Aurora at S12.
+- [x] `fcm_token` is provably absent from the SDL (S8) — a real regex assertion against the deployed schema (`infra/test/api-stack.test.ts`), re-confirmed at S11.
+- [x] Wireframe 4.3 shipped and `SettingsPlaceholderScreen.notifications` deleted → **28/49** (S9)
+- [x] `onHouseholdChanged` live (confirmed live at S12 — the dev stack had never deployed it before this pass) and two-device verified via direct Lambda invoke (member allowed, non-member denied — see §14.5.10); a genuine two-*physical*-device timed sample is separately tracked and still open, see below. `HouseholdSyncPolicy` no longer polls; the four stale "deferred to W8" comments corrected (S10, §14.2.10)
+- [x] **Phase 1's DoD line "household settings sync via `onHouseholdChanged`" is closed** — functionally: the mechanism is live, subscribe-time-authorized, and real-AWS-verified (S10/S12). The physical-device timing sample remains open per D8's own re-filing, tracked below, and does not block this line closing — it was never physical-device-gated to begin with (D8 predates it).
 - [x] **`DEV_WORKFLOW.md` §2.3 phase-boundary sweep run** across S11's full six-part surface list, including the `household_settings` `WITH CHECK` audit **deferred since W5 §11.2.2**; findings recorded (§14.5.9) and CRITICAL/HIGH fixed within the week (S11) — **not skippable**. No CRITICAL/HIGH found; the deferred audit closed with an explicit `WITH CHECK` migration plus the cross-household insert/update tests that were missing, after empirically confirming the standing risk characterization was wrong (not exploitable, only untested).
-- [ ] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression class, all backend slices)
-- [ ] Every backend slice verified against real dev AWS, not synth (S12)
-- [ ] **2-device sync <5s under D6's definition of "under load"** — burst and forced-reconnect samples added to `RUNBOOK.md` §3, with the actual numbers written down and the method named, via the D8 simulator-pair method (S12, D6/D8)
-- [ ] Coverage: Lambda ≥80% (enforced in CI since W5); Flutter domain+state ≥80% — re-measured, not assumed (S12)
-- [ ] **Phase 2's own exit criteria (§3) audited line by line** and each marked met / not met / superseded (S12) — this is a phase boundary, and §3's six lines have never been checked as a set
-- [ ] §4's W8 row has actual hours (merge-timestamp wall-clock, the W6/W7 method) and carry-over notes (S12)
+- [x] Every nullable argument tested with an explicit `null`, not only an absent key (§11.5.5's regression class, all backend slices) — each slice's own RED suite covers this per field (S7 has no GraphQL nullable args; S8's `NotificationPreferencesPatchInput` covers all four; S10's `updateHouseholdSettings` change didn't touch this behavior); re-confirmed live for S8 at S12.
+- [x] Every backend slice verified against real dev AWS, not synth (S12) — see §14.5.10.
+- [ ] **2-device sync <5s under D6's definition of "under load"** — burst and forced-reconnect sample *procedures* added to `RUNBOOK.md` §3 (S12, D6) — **not run**: this gate's own prerequisites require two real physical devices and two clean Google accounts, which D8's simulator-pair fallback does not satisfy (D8 covers the milestone-level two-device demo elsewhere in W8; this specific `RUNBOOK.md` §3 procedure is explicitly human-only and explicitly excludes a simulator/emulator pair by name). Stays open until a human runs it against the now-current dev deploy — same standing gap `RUNBOOK.md` §3 already records for the base six samples.
+- [x] Coverage: Lambda ≥80% (enforced in CI since W5) — **94.7%** statements measured at S12; Flutter domain+state ≥80% — **85.86%** (935/1089 lines) measured at S12 via `lcov.info`, filtered to `lib/**/domain/**`+`lib/**/state/**` — re-measured, not assumed (S12)
+- [x] **Phase 2's own exit criteria (§3) audited line by line** and each marked met / not met / superseded (S12) — this is a phase boundary, and §3's six lines have never been checked as a set
+- [x] §4's W8 row has actual hours (merge-timestamp wall-clock, the W6/W7 method) and carry-over notes (S12) — recorded in §14.5.10, following the W6/W7 precedent of a dedicated result subsection rather than editing the master table row.
 - [ ] **Carried, not inherited — still open, now re-filed at Phase 2 level per D8:** the physical-device two-device run (`RUNBOOK.md` §3) and the R7 300-item scroll spike on real low-end Android hardware. Neither blocked any W8 slice.
 
 ### 14.7 W8 planning decisions (final, locked 2026-08-31)
