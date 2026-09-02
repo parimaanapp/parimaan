@@ -316,6 +316,15 @@ describe('ApiStack', () => {
     );
   });
 
+  it('the real schema file declares the W9 S2 menu query (nullable) and createMenu mutation (non-null)', () => {
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /menu\(householdId:\s*ID!,\s*weekStartDate:\s*AWSDateTime!\)\s*:\s*Menu\s/,
+    );
+    expect(REAL_SCHEMA_CONTENTS).toMatch(
+      /createMenu\(householdId:\s*ID!,\s*weekStartDate:\s*AWSDateTime!\)\s*:\s*Menu!/,
+    );
+  });
+
   it('the real schema file never declares an fcmToken field — it is a device push credential, W20 registers it, no client reads it back (W8 §14.2.6)', () => {
     // A field-declaration pattern specifically (`fcmToken:`), not a bare
     // string search — the schema's own doc comments legitimately reference
@@ -329,9 +338,9 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 30 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences)', () => {
+  it('declares exactly 32 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(30);
+    expect(ourFunctions(template)).toHaveLength(32);
   });
 
   it('declares the health, parseFreeformRecipe, and importRecipeFromUrl Lambdas outside the VPC, on the Node.js 24 runtime', () => {
@@ -351,10 +360,10 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares 27 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 29 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences, menu, createMenu), on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(27);
+    expect(vpcFunctions).toHaveLength(29);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -372,7 +381,7 @@ describe('ApiStack', () => {
   it('gives every VPC-attached resolver Lambda enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(27);
+    expect(vpcFunctions).toHaveLength(29);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
@@ -382,7 +391,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(27);
+    expect(vpcFunctions).toHaveLength(29);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -568,9 +577,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 30 AppSync Lambda data sources', () => {
+  it('declares exactly 32 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 30);
+    template.resourceCountIs('AWS::AppSync::DataSource', 32);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -825,6 +834,24 @@ describe('ApiStack', () => {
     });
   });
 
+  it('declares a resolver for Query.menu', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Query',
+      FieldName: 'menu',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
+  it('declares a resolver for Mutation.createMenu', () => {
+    const template = synth('dev');
+    template.hasResourceProperties('AWS::AppSync::Resolver', {
+      TypeName: 'Mutation',
+      FieldName: 'createMenu',
+      DataSourceName: Match.anyValue(),
+    });
+  });
+
   it('declares a resolver for Mutation.parseFreeformRecipe', () => {
     const template = synth('dev');
     template.hasResourceProperties('AWS::AppSync::Resolver', {
@@ -843,9 +870,9 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 30 resolvers total', () => {
+  it('declares exactly 32 resolvers total', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 30);
+    template.resourceCountIs('AWS::AppSync::Resolver', 32);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

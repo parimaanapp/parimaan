@@ -248,6 +248,18 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'updateNotificationPreferences',
   },
+  {
+    id: 'Menu',
+    entryFile: 'menu.ts',
+    typeName: 'Query',
+    fieldName: 'menu',
+  },
+  {
+    id: 'CreateMenu',
+    entryFile: 'createMenu.ts',
+    typeName: 'Mutation',
+    fieldName: 'createMenu',
+  },
 ];
 
 /**

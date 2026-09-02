@@ -13,6 +13,7 @@ import {
   findRecipeById,
   findRecipeIngredientsByRecipeId,
   findRecipes,
+  findRecipesByIds,
   insertRecipe as insertRecipeRow,
   insertRecipeIngredient as insertRecipeIngredientRow,
   setRecipeFavorite,
@@ -591,6 +592,52 @@ describe('recipeRepository', () => {
       await createHouseholdWithMember(owner);
       const row = await asUser(owner.id, (client) => setRecipeInRotation(client, randomUUID(), false));
       expect(row).toBeNull();
+    });
+  });
+
+  describe('findRecipesByIds', () => {
+    it('returns [] for an empty ids array', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+      const rows = await asUser(owner.id, (client) => findRecipesByIds(client, []));
+      expect(rows).toEqual([]);
+    });
+
+    it('returns every matching recipe for a batch of ids, order not asserted', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const [rajma, poha] = await asUser(owner.id, async (client) => [
+        await insertRecipe(client, householdId, owner.id, { title: 'Rajma' }),
+        await insertRecipe(client, householdId, owner.id, { title: 'Poha', role: 'breakfast' }),
+      ]);
+
+      const rows = await asUser(owner.id, (client) =>
+        findRecipesByIds(client, [rajma.id, poha.id]),
+      );
+      expect(rows.map((r) => r.title).sort()).toEqual(['Poha', 'Rajma']);
+    });
+
+    it('silently omits an id belonging to another household (RLS), rather than throwing', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+
+      const otherOwner = await createUser();
+      await createHouseholdWithMember(otherOwner);
+
+      const rows = await asUser(otherOwner.id, (client) => findRecipesByIds(client, [recipe.id]));
+      expect(rows).toEqual([]);
+    });
+
+    it('omits an id that does not exist at all, alongside ids that do', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+
+      const rows = await asUser(owner.id, (client) =>
+        findRecipesByIds(client, [recipe.id, randomUUID()]),
+      );
+      expect(rows.map((r) => r.id)).toEqual([recipe.id]);
     });
   });
 });

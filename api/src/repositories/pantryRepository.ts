@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { toAwsDateString } from '../domain/pgDate.js';
 
 export interface PantryItemRow {
   id: string;
@@ -34,26 +35,6 @@ interface RawPantryItemRow {
   updated_at: Date;
 }
 
-/**
- * `YYYY-MM-DD` from a `pg`-parsed `DATE` column's `Date` object.
- *
- * Deliberately reads LOCAL components (`getFullYear`/`getMonth`/`getDate`),
- * not `toISOString()`'s UTC ones — `pg`'s underlying `postgres-date` parser
- * constructs this `Date` at *local* midnight of the SQL date, not UTC
- * midnight (verified empirically: on a UTC+5:30 machine, a `DATE` of
- * `2027-03-01` round-tripped through `toISOString().slice(0, 10)` came back
- * as `2027-02-28` — the exact off-by-one-day bug this comment exists to
- * prevent regressing to). Using local getters here reads back the same
- * calendar date the parser was constructed from, regardless of the
- * process's timezone.
- */
-const toAwsDate = (value: Date): string => {
-  const year = value.getFullYear().toString().padStart(4, '0');
-  const month = (value.getMonth() + 1).toString().padStart(2, '0');
-  const day = value.getDate().toString().padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 const mapPantryItemRow = (row: RawPantryItemRow): PantryItemRow => ({
   id: row.id,
   householdId: row.household_id,
@@ -62,7 +43,7 @@ const mapPantryItemRow = (row: RawPantryItemRow): PantryItemRow => ({
   unit: row.unit,
   category: row.category,
   isStaple: row.is_staple,
-  expiryDate: row.expiry_date === null ? null : toAwsDate(row.expiry_date),
+  expiryDate: row.expiry_date === null ? null : toAwsDateString(row.expiry_date),
   lowThreshold: row.low_threshold === null ? null : Number(row.low_threshold),
   addedBy: row.added_by,
   addedAt: row.added_at,
