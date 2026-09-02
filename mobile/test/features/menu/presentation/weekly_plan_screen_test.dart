@@ -9,9 +9,11 @@ import 'package:mobile/features/household/state/me_households_controller.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/menu/domain/current_week.dart';
 import 'package:mobile/features/menu/domain/menu.dart';
+import 'package:mobile/features/menu/presentation/auto_fill_preview_screen.dart';
 import 'package:mobile/features/menu/presentation/meal_slot_card.dart';
 import 'package:mobile/features/menu/presentation/recipe_picker_screen.dart';
 import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
+import 'package:mobile/features/menu/state/current_menu_controller.dart';
 import 'package:mobile/features/recipes/data/recipe_repository.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/shared/errors/app_error.dart';
@@ -77,6 +79,11 @@ Future<ProviderContainer> _pump(
         path: AppRoutes.recipePicker,
         builder: (BuildContext context, GoRouterState state) =>
             RecipePickerScreen(extra: state.extra as RecipePickerExtra),
+      ),
+      GoRoute(
+        path: AppRoutes.autoFillPreview,
+        builder: (BuildContext context, GoRouterState state) =>
+            AutoFillPreviewScreen(menuKey: state.extra as MenuKey),
       ),
     ],
   );
@@ -219,6 +226,31 @@ void main() {
       );
       expect(picker.extra.dayOfWeek, 0);
       expect(picker.extra.mealSlot, 'breakfast');
+    });
+
+    testWidgets('tapping the Auto-fill week action navigates to the auto-fill preview screen', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+        previewResult: const AutoFillPreviewResult(
+          items: <ProposedMenuItem>[],
+          filledCount: 0,
+          unfilledSlots: <UnfilledSlot>[],
+        ),
+      );
+      await _pump(tester, menuRepository: repository);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(WeeklyPlanScreen.autoFillButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AutoFillPreviewScreen), findsOneWidget);
+      // The screen this pushed to is keyed by the CURRENT week — the very
+      // first thing it does is call `previewAutoFill()` against the SAME
+      // `CurrentMenuController` family member this screen reads, not a
+      // freshly re-resolved one.
+      expect(repository.previewCalls, hasLength(1));
     });
   });
 }

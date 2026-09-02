@@ -19,7 +19,11 @@ import 'meal_slot_card.dart';
 /// The seven weekday names for `Menu.dayOfWeek: 0..6` — `0` is Monday, per
 /// this codebase's own migration/test precedent (`Menu.itemsForDay`'s own
 /// doc, `domain/current_week.dart`'s `currentWeekStartDate`).
-const List<String> _weekdayNames = <String>[
+///
+/// Public (not `weekly_plan_screen.dart`-private) so `auto_fill_preview_screen.dart`'s
+/// own day-by-day listing renders the same seven names rather than keeping a
+/// second copy that could drift out of sync.
+const List<String> weekdayNames = <String>[
   'Monday',
   'Tuesday',
   'Wednesday',
@@ -51,6 +55,12 @@ class WeeklyPlanScreen extends ConsumerWidget {
   static const Key loadingKey = Key('weekly-plan-loading');
   static const Key errorKey = Key('weekly-plan-error');
 
+  /// The "Auto-fill week" trailing action (W10 S6) — pushes
+  /// `AppRoutes.autoFillPreview`, keyed by the CURRENT week's [MenuKey] so
+  /// that screen reads/writes the exact same `CurrentMenuController` family
+  /// member this one does.
+  static const Key autoFillButtonKey = Key('weekly-plan-auto-fill');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final Household? household = ref.watch(activeHouseholdProvider);
@@ -77,9 +87,14 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final DateTime weekStartDate = currentWeekStartDate();
-    final MenuKey key = menuKeyFor(householdId, weekStartDate);
+    // `menuKey`, not `key` — a bare `key` reads as Flutter's own `Key`
+    // (this file also defines `WeeklyPlanScreen.autoFillButtonKey`), and
+    // this is a `MenuKey` record, not a widget key.
+    final MenuKey menuKey = menuKeyFor(householdId, weekStartDate);
 
-    final AsyncValue<Menu> menu = ref.watch(currentMenuControllerProvider(key));
+    final AsyncValue<Menu> menu = ref.watch(
+      currentMenuControllerProvider(menuKey),
+    );
     // `HouseholdSettings` is already a field on `Household` — no separate
     // settings-read controller needed; `CurrentHouseholdController` is the
     // one source for it, same as `SettingsHubScreen`'s own read.
@@ -90,7 +105,17 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const PTopBar(title: 'Weekly plan'),
+        PTopBar(
+          title: 'Weekly plan',
+          trailing: PButton.icon(
+            key: WeeklyPlanScreen.autoFillButtonKey,
+            icon: Icons.auto_awesome,
+            semanticLabel: 'Auto-fill week',
+            variant: PButtonVariant.ghost,
+            onPressed: () =>
+                context.push(AppRoutes.autoFillPreview, extra: menuKey),
+          ),
+        ),
         Expanded(
           // A value wins over a spinner if one exists — `valueOrNull`, not
           // `value` (SettingsHubScreen's own established shape) — both
@@ -106,7 +131,7 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
               child: _LoadFailed(
                 error: menu.error ?? household.error,
                 onRetry: () {
-                  ref.invalidate(currentMenuControllerProvider(key));
+                  ref.invalidate(currentMenuControllerProvider(menuKey));
                   ref.invalidate(
                     currentHouseholdControllerProvider(householdId),
                   );
@@ -164,10 +189,10 @@ class _WeekBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView.builder(
     padding: const EdgeInsets.all(AppSpacing.s3),
-    itemCount: _weekdayNames.length,
+    itemCount: weekdayNames.length,
     itemBuilder: (BuildContext context, int dayOfWeek) => _DaySection(
       dayOfWeek: dayOfWeek,
-      dayName: _weekdayNames[dayOfWeek],
+      dayName: weekdayNames[dayOfWeek],
       slots: plannedSlotsForDay(settings, menu.itemsForDay(dayOfWeek)),
       householdId: householdId,
     ),
