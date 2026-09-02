@@ -1,0 +1,20 @@
+#import "./proposed_menu_item_fields.graphql"
+#import "./unfilled_slot_fields.graphql"
+
+# `Query.autoFillPreview` — proposes recipes for every currently-empty slot
+# on `menuId`'s menu WITHOUT writing anything (a pure read, W10 §16.2.1
+# D3). Safe to call repeatedly for a free "regenerate": each call is an
+# independently-random proposal, never the same twice (D11). The client
+# accepts the proposal verbatim, or edits it, then calls `AutoFillWeek`
+# with the resulting item list to actually commit.
+query AutoFillPreview($menuId: ID!) {
+  autoFillPreview(menuId: $menuId) {
+    items {
+      ...ProposedMenuItemFields
+    }
+    filledCount
+    unfilledSlots {
+      ...UnfilledSlotFields
+    }
+  }
+}

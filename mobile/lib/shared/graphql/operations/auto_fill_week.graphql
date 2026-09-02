@@ -1,0 +1,22 @@
+#import "./menu_fields.graphql"
+#import "./unfilled_slot_fields.graphql"
+
+# `Mutation.autoFillWeek` — commits `items` (typically an accepted or edited
+# `AutoFillPreview` proposal) to `menuId`'s menu (W10 §16.2.1 D3).
+# `overwrite: true` deletes every existing item without `madeAt` set first
+# (manual or auto-filled alike, D4) — an item the household already cooked
+# is never deleted regardless of `overwrite`. Each submitted item is
+# re-validated against LIVE state rather than trusted from the proposal —
+# one that no longer fits is silently skipped, not an error (D6);
+# `filledCount`/`unfilledSlots` report exactly what happened.
+mutation AutoFillWeek($menuId: ID!, $overwrite: Boolean!, $items: [MenuItemInput!]!) {
+  autoFillWeek(menuId: $menuId, overwrite: $overwrite, items: $items) {
+    menu {
+      ...MenuFields
+    }
+    filledCount
+    unfilledSlots {
+      ...UnfilledSlotFields
+    }
+  }
+}

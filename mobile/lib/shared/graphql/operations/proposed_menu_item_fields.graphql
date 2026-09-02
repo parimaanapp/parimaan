@@ -1,0 +1,16 @@
+#import "./menu_recipe_fields.graphql"
+
+# The one canonical `ProposedMenuItem` selection set —
+# `AutoFillPreviewResult.items`' own shape (W10 §16.2.1). Reuses
+# `MenuRecipeFields`, the same list-scale `Recipe` selection `MenuItemFields`
+# embeds — a proposal needs the same summary detail a placed item does, not
+# the Detail-scale fragment.
+fragment ProposedMenuItemFields on ProposedMenuItem {
+  recipeId
+  dayOfWeek
+  mealSlot
+  slotRole
+  recipe {
+    ...MenuRecipeFields
+  }
+}
