@@ -74,7 +74,9 @@ jobs:
       # ("[vitest-worker]: Timeout calling 'onTaskUpdate'") — not a real
       # test failure; every actual assertion still passes (confirmed
       # repeatedly, including 175/175 across 7 consecutive CI runs on the
-      # PR that added this retry). Three prior code-level mitigations
+      # PR that added this retry, and again locally 3/3 on PR #80, which
+      # nonetheless burned all 6 attempts twice in a row on a noisy shared
+      # runner — bumped 6 -> 10 in response). Three prior code-level mitigations
       # already live in vitest.config.ts (testTimeout, isolate:false,
       # silent:'passed-only', template memoization in api-stack.test.ts);
       # this is the next layer, not a replacement for those. Retries ONLY
@@ -84,7 +86,7 @@ jobs:
       - name: Unit tests (infra, retried on the known vitest-worker IPC-heartbeat flake)
         run: |
           set -o pipefail
-          max_attempts=6
+          max_attempts=10
           attempt=1
           while true; do
             if pnpm --filter infra test 2>&1 | tee /tmp/infra-test-output.log; then
