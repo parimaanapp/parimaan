@@ -324,6 +324,23 @@ export interface RotationCandidateRow {
  * configured — the common case. Uses `idx_recipes_role (household_id,
  * role) WHERE in_rotation = TRUE` (`1787808112003_recipes.ts`) — closes
  * §12.2.14's "deliberately unused until W10" note.
+ *
+ * Same hard-filter treatment for `dietaryTags` (W10 S7 real-AWS
+ * verification finding: this candidate query previously never consulted
+ * `household_settings.dietary_tags` at all, so a vegetarian-only household
+ * could get a non-vegetarian recipe auto-filled). A candidate satisfies the
+ * household's requirement when its OWN `dietary_tags` is a superset of the
+ * household's required set — jsonb `@>` containment, which is vacuously
+ * true against an empty `dietaryTags` requirement (`x @> '[]'` is always
+ * true), so a household with no dietary requirement configured excludes
+ * nothing on this basis, matching the skip-ingredients "empty list filters
+ * nothing" precedent above. No index on `recipes.dietary_tags` yet —
+ * deliberately deferred, not an oversight: this predicate only ever runs
+ * against a single household's already `household_id`-scoped, `in_rotation`
+ * rows (≤ ~300 at the documented per-household recipe scale), where a
+ * sequential jsonb containment check is sub-millisecond and a GIN index
+ * would only add write overhead. Revisit if per-household recipe counts
+ * grow well past that.
  */
 /**
  * Escapes `\`, `%`, and `_` (Postgres's default `LIKE`/`ILIKE` escape
@@ -342,6 +359,7 @@ export const findInRotationRecipesForAutoFill = async (
   client: PoolClient,
   householdId: string,
   skipIngredients: readonly string[],
+  dietaryTags: readonly string[],
 ): Promise<RotationCandidateRow[]> => {
   const result = await client.query<{
     id: string;
@@ -356,8 +374,14 @@ export const findInRotationRecipesForAutoFill = async (
        AND NOT EXISTS (
          SELECT 1 FROM recipe_ingredients ri
          WHERE ri.recipe_id = r.id AND ri.name ILIKE ANY($2::text[])
-       )`,
-    [householdId, skipIngredients.map((ingredient) => `%${escapeLikePattern(ingredient)}%`)],
+       )
+       AND r.dietary_tags @> $3::jsonb
+     `,
+    [
+      householdId,
+      skipIngredients.map((ingredient) => `%${escapeLikePattern(ingredient)}%`),
+      JSON.stringify(dietaryTags),
+    ],
   );
   return result.rows.map((row) => ({
     id: row.id,

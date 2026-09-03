@@ -346,6 +346,81 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
     expect(result.items).toHaveLength(0);
   });
 
+  it('never proposes a recipe missing a required dietary tag, even when it is otherwise the best-scoring candidate (hard filter, W10 S7 finding)', async () => {
+    const owner = await createUser('sub-afp-dietary');
+    const householdId = await createHouseholdWithOwner(owner, 'AFD234');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(
+      owner.id,
+      async (client) => {
+        await client.query(
+          `UPDATE household_settings SET dietary_tags = '["veg"]'::jsonb, cuisine_tier1 = '["north_indian"]'::jsonb WHERE household_id = $1`,
+          [householdId],
+        );
+        // In-rotation, cuisine-matching, no recency penalty — the best
+        // possible score — but not vegetarian, so it must never be
+        // proposed regardless of how favorably it would otherwise score.
+        await client.query(
+          `INSERT INTO recipes (household_id, source_type, title, role, in_rotation, cuisine_tier1, dietary_tags, created_by)
+           VALUES ($1, 'user', 'Chicken Curry', 'carb', true, 'north_indian', '[]'::jsonb, $2)`,
+          [householdId, owner.id],
+        );
+      },
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-dietary'));
+
+    expect(result.items).toHaveLength(0);
+  });
+
+  it('a recipe satisfying multiple required dietary tags simultaneously remains eligible', async () => {
+    const owner = await createUser('sub-afp-dietary-multi');
+    const householdId = await createHouseholdWithOwner(owner, 'AFDM23');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(
+      owner.id,
+      async (client) => {
+        await client.query(
+          `UPDATE household_settings SET dietary_tags = '["veg", "gluten_free"]'::jsonb WHERE household_id = $1`,
+          [householdId],
+        );
+        await client.query(
+          `INSERT INTO recipes (household_id, source_type, title, role, in_rotation, dietary_tags, created_by)
+           VALUES ($1, 'user', 'Veg GF Khichdi', 'carb', true, '["veg", "gluten_free", "dairy_free"]'::jsonb, $2)`,
+          [householdId, owner.id],
+        );
+      },
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-dietary-multi'));
+
+    expect(result.items.some((item) => item.recipe.title === 'Veg GF Khichdi')).toBe(true);
+  });
+
+  it('a household with no dietaryTags requirement is unaffected — every recipe remains eligible regardless of its own tags', async () => {
+    const owner = await createUser('sub-afp-dietary-none');
+    const householdId = await createHouseholdWithOwner(owner, 'AFDN23');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(
+      owner.id,
+      async (client) => {
+        // Default settings' dietaryTags is [] — no UPDATE needed. A recipe
+        // with no dietary tags of its own must still be proposed.
+        await addRecipe(client, householdId, owner.id, { title: 'Untagged Recipe', role: 'carb' });
+      },
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-dietary-none'));
+
+    expect(result.items.some((item) => item.recipe.title === 'Untagged Recipe')).toBe(true);
+  });
+
   it('an existing item reduces the proposal for its own slot — filled slots are never re-proposed', async () => {
     const owner = await createUser('sub-afp-existing');
     const householdId = await createHouseholdWithOwner(owner, 'AFX234');
