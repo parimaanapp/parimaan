@@ -47,6 +47,10 @@ import '../features/recipes/presentation/recipe_method_screen.dart';
 import '../features/recipes/presentation/recipes_library_screen.dart';
 import '../features/recipes/presentation/url_import_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
+import '../features/shopping_list/presentation/list_generated_prompt_screen.dart';
+import '../features/shopping_list/presentation/list_preview_screen.dart';
+import '../features/shopping_list/presentation/notification_permission_prompt_screen.dart';
+import '../features/shopping_list/presentation/shopping_list_screen.dart';
 import '../shared/errors/app_error.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
@@ -217,6 +221,47 @@ abstract final class AppRoutes {
   /// reasoning as every other `extra`-carried payload in this file.
   static const String autoFillPreview = '/home/menu/weekly-plan/auto-fill';
 
+  // ── Shopping list (W11 S6, E2E_MVP_PLAN.md §17.3 S6, wireframes 35-38/49) ──
+  //
+  // Four flat, pushed routes outside the shell — the same "own full-screen
+  // chrome, no bottom tab bar" reasoning `autoFillPreview`/`recipePicker`
+  // above already give. Every one of them carries its payload as `extra`
+  // (a [ShoppingListFlowExtra] record, or a bare `menuId` for
+  // [shoppingList]) rather than a URL fragment — same "no sensible URL
+  // encoding, no deep-link need" reasoning as every other `extra`-carried
+  // payload in this file, since none of `menuId`/`householdId` need to
+  // survive a deep link this week.
+  //
+  // Sequencing (linear, one screen leads to exactly the next): `weeklyPlan`'s
+  // "Generate shopping list" affordance pushes [shoppingListGeneratedPrompt]
+  // -> its own CTA pushes [shoppingListPreview] (this is where
+  // `CurrentShoppingListController`'s `build()` actually calls
+  // `generateShoppingList`, the first time a widget watches that family
+  // member for this `menuId`) -> its own "Done" CTA pushes
+  // [shoppingListNotificationPrompt] — the Q14-mandated prompt, placed at
+  // the END of this flow, never during onboarding (§17.1 row 5; the
+  // original W10-era Q14 decision this carries forward) -> either choice
+  // there lands on the persistent [shoppingList] view via `context.go`
+  // (replacing history, since this is meant to be the durable "come back
+  // here" screen, not one more entry on a back-stack of one-shot prompts).
+
+  /// Wireframe "Week confirmed -> list prompt" (35/49).
+  static const String shoppingListGeneratedPrompt =
+      '/home/menu/weekly-plan/shopping-list';
+
+  /// Wireframe "List preview" (36/49) — where `generateShoppingList` is
+  /// actually called, via `CurrentShoppingListController.build()`.
+  static const String shoppingListPreview =
+      '/home/menu/weekly-plan/shopping-list/preview';
+
+  /// The Q14-mandated notification-permission prompt (§17.1 row 5) —
+  /// reached ONLY from the end of this flow, never from onboarding.
+  static const String shoppingListNotificationPrompt =
+      '/home/menu/weekly-plan/shopping-list/notifications';
+
+  /// Wireframe "Shopping List" (37-38/49) — the persistent, live view.
+  static const String shoppingList = '/home/shopping-list';
+
   static const String _pantryAddChooseMethodPattern = '/home/pantry/add';
   static String pantryAddChooseMethod(String householdId) =>
       '$_pantryAddChooseMethodPattern?householdId=$householdId';
@@ -315,6 +360,16 @@ typedef RecipePickerExtra = ({
   String mealSlot,
   RecipeRole slotRole,
 });
+
+/// `extra` payload for [AppRoutes.shoppingListGeneratedPrompt],
+/// [AppRoutes.shoppingListPreview], and [AppRoutes.shoppingListNotificationPrompt]
+/// — see those routes' own doc on the shopping-list flow's sequencing.
+/// `menuId` is [CurrentShoppingListController]'s own family key (a bare
+/// `String`, unlike [MenuKey]'s compound record — that controller's own doc
+/// explains why one axis is enough here); `householdId` is carried alongside
+/// it because [ShoppingListScreen] and the notification-preferences route
+/// both need it and neither can derive it from a `menuId` alone.
+typedef ShoppingListFlowExtra = ({String menuId, String householdId});
 
 /// `extra` payload for [AppRoutes.recipeDraftReview] — see that route's own
 /// doc.
@@ -578,6 +633,30 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         // malformed deep link" reasoning as `_recipeEditPattern`'s own cast.
         builder: (BuildContext context, GoRouterState state) =>
             AutoFillPreviewScreen(menuKey: state.extra as MenuKey),
+      ),
+      GoRoute(
+        path: AppRoutes.shoppingListGeneratedPrompt,
+        builder: (BuildContext context, GoRouterState state) =>
+            ListGeneratedPromptScreen(
+              extra: state.extra as ShoppingListFlowExtra,
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.shoppingListPreview,
+        builder: (BuildContext context, GoRouterState state) =>
+            ListPreviewScreen(extra: state.extra as ShoppingListFlowExtra),
+      ),
+      GoRoute(
+        path: AppRoutes.shoppingListNotificationPrompt,
+        builder: (BuildContext context, GoRouterState state) =>
+            NotificationPermissionPromptScreen(
+              extra: state.extra as ShoppingListFlowExtra,
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.shoppingList,
+        builder: (BuildContext context, GoRouterState state) =>
+            ShoppingListScreen(menuId: state.extra as String),
       ),
       GoRoute(
         path: AppRoutes._pantryAddChooseMethodPattern,
