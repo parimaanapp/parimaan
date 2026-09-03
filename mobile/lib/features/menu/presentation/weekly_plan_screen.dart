@@ -61,6 +61,15 @@ class WeeklyPlanScreen extends ConsumerWidget {
   /// member this one does.
   static const Key autoFillButtonKey = Key('weekly-plan-auto-fill');
 
+  /// The "Generate shopping list" trailing action (W11 S6,
+  /// E2E_MVP_PLAN.md §17.3 S6) — pushes `AppRoutes.shoppingListGeneratedPrompt`
+  /// with the CURRENT week's `menuId` (this screen's own [MenuKey]'s
+  /// `householdId`/[Menu.id], never a stale one held over from a previous
+  /// week) so the flow generates a list for the exact menu on screen.
+  static const Key generateShoppingListButtonKey = Key(
+    'weekly-plan-generate-shopping-list',
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final Household? household = ref.watch(activeHouseholdProvider);
@@ -107,13 +116,38 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
       children: <Widget>[
         PTopBar(
           title: 'Weekly plan',
-          trailing: PButton.icon(
-            key: WeeklyPlanScreen.autoFillButtonKey,
-            icon: Icons.auto_awesome,
-            semanticLabel: 'Auto-fill week',
-            variant: PButtonVariant.ghost,
-            onPressed: () =>
-                context.push(AppRoutes.autoFillPreview, extra: menuKey),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              PButton.icon(
+                key: WeeklyPlanScreen.generateShoppingListButtonKey,
+                icon: Icons.checklist,
+                semanticLabel: 'Generate shopping list',
+                variant: PButtonVariant.ghost,
+                // Disabled until the menu (get-or-created by
+                // `CurrentMenuController.build`) has actually resolved — its
+                // own `id` is what `menuId` below carries, and this affordance
+                // must never fire against a stale or missing one (S6's own
+                // RED-test list: "never a stale one").
+                onPressed: menu.valueOrNull == null
+                    ? null
+                    : () => context.push(
+                        AppRoutes.shoppingListGeneratedPrompt,
+                        extra: (
+                          menuId: menu.valueOrNull!.id,
+                          householdId: householdId,
+                        ),
+                      ),
+              ),
+              PButton.icon(
+                key: WeeklyPlanScreen.autoFillButtonKey,
+                icon: Icons.auto_awesome,
+                semanticLabel: 'Auto-fill week',
+                variant: PButtonVariant.ghost,
+                onPressed: () =>
+                    context.push(AppRoutes.autoFillPreview, extra: menuKey),
+              ),
+            ],
           ),
         ),
         Expanded(
