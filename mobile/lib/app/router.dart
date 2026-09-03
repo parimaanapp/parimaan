@@ -25,9 +25,11 @@ import '../features/household/presentation/settings/settings_hub_screen.dart';
 import '../features/household/presentation/settings/settings_placeholder_screen.dart';
 import '../features/household/state/me_households_controller.dart';
 import '../features/household/state/pending_join_code_controller.dart';
+import '../features/menu/presentation/auto_fill_preview_screen.dart';
 import '../features/menu/presentation/recipe_picker_screen.dart';
 import '../features/menu/presentation/today_screen.dart';
 import '../features/menu/presentation/weekly_plan_screen.dart';
+import '../features/menu/state/current_menu_controller.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
 import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
@@ -204,6 +206,16 @@ abstract final class AppRoutes {
   /// [weeklyPlan] itself uses, rather than threading an id across the route
   /// boundary for no benefit.
   static const String recipePicker = '/home/menu/weekly-plan/pick-recipe';
+
+  /// The Auto-fill preview screen (W10 S6, wireframes 6.3/6.7) — a dry-run
+  /// `autoFillPreview` proposal the user can regenerate freely and either
+  /// accept (commits via `autoFillWeek`) or back away from. Reached with
+  /// `extra: MenuKey` — the exact same family key [weeklyPlan]'s own
+  /// `CurrentMenuController` read uses, so this screen shares that cached
+  /// menu rather than re-resolving `(householdId, weekStartDate)` from a URL
+  /// fragment of its own. Same "no sensible URL encoding, no deep-link need"
+  /// reasoning as every other `extra`-carried payload in this file.
+  static const String autoFillPreview = '/home/menu/weekly-plan/auto-fill';
 
   static const String _pantryAddChooseMethodPattern = '/home/pantry/add';
   static String pantryAddChooseMethod(String householdId) =>
@@ -556,6 +568,16 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.recipePicker,
         builder: (BuildContext context, GoRouterState state) =>
             RecipePickerScreen(extra: state.extra as RecipePickerExtra),
+      ),
+      GoRoute(
+        path: AppRoutes.autoFillPreview,
+        // `extra` is never optional here — this route only exists to preview
+        // an already-resolved menu's own `CurrentMenuController`, and is only
+        // ever reached in-app from `WeeklyPlanScreen`'s own auto-fill action,
+        // which always supplies one. Same "genuine caller bug, not a
+        // malformed deep link" reasoning as `_recipeEditPattern`'s own cast.
+        builder: (BuildContext context, GoRouterState state) =>
+            AutoFillPreviewScreen(menuKey: state.extra as MenuKey),
       ),
       GoRoute(
         path: AppRoutes._pantryAddChooseMethodPattern,
