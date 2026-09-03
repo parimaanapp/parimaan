@@ -2789,6 +2789,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiOnMembershipRevokedDataSourceF133D4F1": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "OnMembershipRevokedFn42B2692E",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "OnMembershipRevokedDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiOnMembershipRevokedDataSourceServiceRoleE281DE11",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiOnMembershipRevokedDataSourceServiceRoleDefaultPolicyF938778A": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OnMembershipRevokedFn42B2692E",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OnMembershipRevokedFn42B2692E",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiOnMembershipRevokedDataSourceServiceRoleDefaultPolicyF938778A",
+        "Roles": [
+          {
+            "Ref": "ApiOnMembershipRevokedDataSourceServiceRoleE281DE11",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiOnMembershipRevokedDataSourceServiceRoleE281DE11": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiOnMembershipRevokedResolver63B164F2": {
+      "DependsOn": [
+        "ApiOnMembershipRevokedDataSourceF133D4F1",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "OnMembershipRevokedDataSource",
+        "FieldName": "onMembershipRevoked",
+        "Kind": "UNIT",
+        "TypeName": "Subscription",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiOnMenuChangedDataSourceE5FFBCBD": {
       "Properties": {
         "ApiId": {
@@ -4467,6 +4572,38 @@ type Subscription {
   """
   onMenuChanged(householdId: ID!): Menu
     @aws_subscribe(mutations: ["createMenu"])
+
+  """
+  Pushes \`true\` to every other connected device in \`householdId\` the
+  moment \`deleteHousehold\` removes it (D7, E2E_MVP_PLAN.md §17.2.7) —
+  fixes the subscribe-time-only re-authorization gap (§14, row 14 of
+  §17.1's forward-reference table): a member whose access is revoked
+  mid-session otherwise keeps their already-open \`onPantryChanged\`/
+  \`onRecipeChanged\`/\`onHouseholdChanged\`/\`onMenuChanged\` sockets live
+  until they background/foreground or their connection drops for an
+  unrelated reason. AppSync provides no server-side API to force-close a
+  specific established connection (confirmed while designing this slice —
+  unlike API Gateway WebSocket's \`@connections\` endpoint), so this is a
+  reactive signal, not a server-side eviction: on receipt, the client is
+  expected to immediately unsubscribe every live subscription scoped to
+  \`householdId\` and route away, rather than wait for its own next
+  reconnect/foreground cycle to re-run subscribe-time authorization.
+
+  Zero return-type widening — \`deleteHousehold\` already returns
+  \`Boolean!\`, matching this field's \`Boolean\` exactly, the same
+  literal-type-match constraint D1/D9-carryover both work within. Same
+  subscribe-time Lambda-resolver authorization pattern as every other
+  subscription in this schema (SD §10.4 deviation, §11.2.9), reusing
+  \`requireHouseholdMember\` unchanged: a non-member or nonexistent
+  \`householdId\` is denied identically. \`deleteHousehold\` is the only
+  mutation in this codebase today that instantly removes *other*
+  members' access mid-session (\`leaveHousehold\` is self-service — the
+  leaver's own socket is not a security concern); a future "remove one
+  member" mutation must extend this field's \`@aws_subscribe\` list when it
+  ships (§17.5.4).
+  """
+  onMembershipRevoked(householdId: ID!): Boolean
+    @aws_subscribe(mutations: ["deleteHousehold"])
 }
 
 type User {
@@ -8402,6 +8539,140 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "OnHouseholdChangedFnServiceRole1F9AC1CB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "OnMembershipRevokedFn42B2692E": {
+      "DependsOn": [
+        "OnMembershipRevokedFnServiceRoleDefaultPolicy7BC60FF9",
+        "OnMembershipRevokedFnServiceRoleA5D85060",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "OnMembershipRevokedFnServiceRoleA5D85060",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "OnMembershipRevokedFnServiceRoleA5D85060": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "OnMembershipRevokedFnServiceRoleDefaultPolicy7BC60FF9": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "OnMembershipRevokedFnServiceRoleDefaultPolicy7BC60FF9",
+        "Roles": [
+          {
+            "Ref": "OnMembershipRevokedFnServiceRoleA5D85060",
           },
         ],
       },

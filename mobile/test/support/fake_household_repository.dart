@@ -159,6 +159,19 @@ class FakeHouseholdRepository implements HouseholdRepository {
   /// asserts a controller's `build()` actually subscribed.
   final List<String> watchCalls = <String>[];
 
+  // ── watchMembershipRevoked ─────────────────────────────────────────────────
+
+  /// One controller per `householdId` a test has called
+  /// [watchMembershipRevoked] for, so a test can `.add(null)` to simulate a
+  /// live `onMembershipRevoked` push (D7) without any real subscription
+  /// transport — same shape as [watchControllers] above. Never emits on its
+  /// own — a test opts in explicitly.
+  final Map<String, StreamController<void>> revokedControllers =
+      <String, StreamController<void>>{};
+
+  /// Every `householdId` [watchMembershipRevoked] was called with, in order.
+  final List<String> revokedWatchCalls = <String>[];
+
   // ── Implementation ─────────────────────────────────────────────────────────
 
   Future<void> _wait() async {
@@ -254,6 +267,14 @@ class FakeHouseholdRepository implements HouseholdRepository {
   Stream<void> watchHouseholdChanges(String householdId) {
     watchCalls.add(householdId);
     return watchControllers
+        .putIfAbsent(householdId, () => StreamController<void>.broadcast())
+        .stream;
+  }
+
+  @override
+  Stream<void> watchMembershipRevoked(String householdId) {
+    revokedWatchCalls.add(householdId);
+    return revokedControllers
         .putIfAbsent(householdId, () => StreamController<void>.broadcast())
         .stream;
   }

@@ -24,6 +24,9 @@ import '../../../shared/graphql/operations/__generated__/me.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/on_household_changed.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/on_household_changed.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/on_household_changed.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_membership_revoked.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_membership_revoked.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_membership_revoked.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/rotate_invite_code.var.gql.dart';
@@ -153,6 +156,23 @@ abstract interface class HouseholdRepository {
   /// hub does not offer the affordance to a primary at all rather than
   /// offering an action guaranteed to fail.
   Future<bool> leaveHousehold(String householdId);
+
+  /// Emits once every time `deleteHousehold` removes [householdId]
+  /// (`Subscription.onMembershipRevoked`, D7, E2E_MVP_PLAN.md §17.2.7) — the
+  /// subscribe-time-only re-authorization gap fix: a member whose access is
+  /// revoked mid-session otherwise keeps their already-open sockets live
+  /// until they background/foreground or their connection drops for an
+  /// unrelated reason. Same "every push means refetch, no payload to read"
+  /// shape as [watchHouseholdChanges], except here a push means "leave," not
+  /// "reload" — the caller is expected to tear down every other live
+  /// subscription scoped to [householdId] and route away, not re-fetch it
+  /// (there is nothing left to fetch: the household is gone).
+  ///
+  /// Only `deleteHousehold` is wired to this subscription — `leaveHousehold`
+  /// is self-service and never triggers it, for the identical reason it is
+  /// never attached to `onHouseholdChanged` either (the leaver's own socket
+  /// is not a security concern, since they triggered it themselves).
+  Stream<void> watchMembershipRevoked(String householdId);
 
   /// Permanently deletes [householdId]. Primary-only, irreversible.
   ///
@@ -313,6 +333,27 @@ class FerryHouseholdRepository implements HouseholdRepository {
 
     final GDeleteHouseholdData data = await _execute(request);
     return data.deleteHousehold;
+  }
+
+  @override
+  Stream<void> watchMembershipRevoked(String householdId) async* {
+    final GOnMembershipRevokedReq request = GOnMembershipRevokedReq(
+      (GOnMembershipRevokedReqBuilder b) => b
+        ..vars = (GOnMembershipRevokedVarsBuilder()..householdId = householdId),
+    );
+
+    await for (final OperationResponse<GOnMembershipRevokedData, GOnMembershipRevokedVars> response
+        in client.request(request)) {
+      if (response.hasErrors) {
+        throw mapOperationFailure(
+          graphqlErrors: response.graphqlErrors,
+          linkException: response.linkException,
+        );
+      }
+      if (response.data != null) {
+        yield null;
+      }
+    }
   }
 
   /// Runs one operation and reduces ferry's stream-of-responses to a single

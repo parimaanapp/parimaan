@@ -308,6 +308,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Subscription',
     fieldName: 'onMenuChanged',
   },
+  {
+    id: 'OnMembershipRevoked',
+    entryFile: 'onMembershipRevoked.ts',
+    typeName: 'Subscription',
+    fieldName: 'onMembershipRevoked',
+  },
 ];
 
 /**
