@@ -1,0 +1,12 @@
+#import "./shopping_list_fields.graphql"
+
+# `Mutation.generateShoppingList` — aggregates every non-staple ingredient
+# across `menuId`'s menu, subtracts current pantry stock, and writes the
+# result as a fresh `ShoppingList` (W11 S2, E2E_MVP_PLAN.md §17.3). Refuses a
+# second call while an OPEN list already exists for this `menuId`
+# (`CONFLICT`) — surfaces as a typed `AppError` the caller can render.
+mutation GenerateShoppingList($menuId: ID!) {
+  generateShoppingList(menuId: $menuId) {
+    ...ShoppingListFields
+  }
+}

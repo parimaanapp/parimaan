@@ -1,0 +1,12 @@
+#import "./shopping_list_fields.graphql"
+
+# `Mutation.haveIt` — marks `itemId` as bought and moves it into the
+# household's pantry in one transaction (SD §5.7, W11 S3,
+# E2E_MVP_PLAN.md §17.3). Returns the item's full parent `ShoppingList!`
+# (D1's widened return type, §17.2.1), not just the one item. A second call
+# on an already-`purchased` item is rejected with `CONFLICT`.
+mutation HaveIt($itemId: ID!, $quantity: Float!) {
+  haveIt(itemId: $itemId, quantity: $quantity) {
+    ...ShoppingListFields
+  }
+}
