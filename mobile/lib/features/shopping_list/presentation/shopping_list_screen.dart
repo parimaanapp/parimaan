@@ -249,7 +249,10 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             ),
             Expanded(
               child: switch ((loaded, list.hasError)) {
-                (final ShoppingList value, _) => _Loaded(list: value),
+                (final ShoppingList value, _) => _Loaded(
+                  list: value,
+                  menuId: widget.menuId,
+                ),
                 (null, true) when list.error is ConflictError => Center(
                   key: ShoppingListScreen.errorKey,
                   child: PEmptyState(
@@ -297,9 +300,10 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
 }
 
 class _Loaded extends StatelessWidget {
-  const _Loaded({required this.list});
+  const _Loaded({required this.list, required this.menuId});
 
   final ShoppingList list;
+  final String menuId;
 
   @override
   Widget build(BuildContext context) {
@@ -324,6 +328,6 @@ class _Loaded extends StatelessWidget {
         ),
       );
     }
-    return CategorizedChecklist(items: toBuy);
+    return CategorizedChecklist(items: toBuy, menuId: menuId);
   }
 }
