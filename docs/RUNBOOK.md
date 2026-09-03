@@ -105,6 +105,45 @@ Anticipated from `SYSTEM_DESIGN.md` §14 failure modes:
 - **`fetchPage.ts`'s `DEFAULT_MAX_BYTES` cap (1MB) silently excluded one of S1's own originally-validated-usable sites once that site's real page grew past it.** S1's JSON-LD coverage spike (§13.5.12) measured `indianhealthyrecipes.com` as one of 14/20 usable-draft sites on 2026-08-28. S12's re-measurement through the actually-deployed `importRecipeFromUrl` mutation (not the spike script) found it now failing with the generic `UrlUnreadableError` — traced via a direct `fetchPage`/`validateSafeUrl` call against the real page to a `"Response exceeded the size cap."` abort, not an SSRF-gate rejection or a parse failure: the live page is ~1.13MB, up from whatever it was at S1's original capture date. **Resolved**: raised `DEFAULT_MAX_BYTES` to 5MB (`api/src/net/fetchPage.ts`) — the cap's actual job (bounding a malicious server streaming unbounded data into this Lambda's 512MB memory budget) is already mostly done by the existing 8s total-timeout, and AWS doesn't bill inbound transfer, so neither the security nor the cost rationale the original 1MB was tuned against moves meaningfully at 5MB. Re-verified live post-deploy: 14/20 (70%), matching S1's original number exactly, with `indianhealthyrecipes.com` recovered. Lesson: a defensive byte/size cap tuned against a real page's size at spike time is not a one-time decision — real third-party pages grow, and a cap with no periodic re-check silently converts "page too big right now" into "site permanently broken" with no signal anywhere that it happened, since both look identical (`UrlUnreadableError`) to the caller by design (§13.2.10's "never distinguishes why" contract).
 - **New operational surface: the Gemini API key lives in Secrets Manager (`parimaan/gemini-api-key`, a `{"apiKey": "..."}` JSON secret, referenced by `GEMINI_API_KEY_SECRET_ARN`) and is fetched once per Lambda execution environment, not once per invocation.** `api/src/ai/geminiClient.ts`'s `apiKeyPromise` is a module-scope memoized value — mirrors `db/pool.ts`'s connection-pool memoization pattern exactly — so a warm `ParseFreeformRecipeFn` container keeps using whatever key it fetched at its own cold start until that container is naturally recycled by AWS, which can be minutes to hours later. **Rotation procedure**: (1) generate a new key in Google AI Studio; (2) update the `parimaan/gemini-api-key` secret's `apiKey` value via `aws secretsmanager put-secret-value` (or the console) — this alone does **not** immediately affect already-warm containers; (3) if the old key must stop working immediately (compromise, not routine rotation), force every warm container to cycle by publishing a new Lambda version / updating the function's own configuration (e.g. `aws lambda update-function-configuration` with a no-op env var touch) rather than waiting for natural recycling; (4) confirm via one real `parseFreeformRecipe` invoke (same direct-Lambda-invoke method as S12's own verification pass) that a fresh call succeeds against the rotated key. For routine (non-compromise) rotation, waiting out natural container recycling is fine and simpler — this distinction (routine vs. compromise) is the one thing worth deciding explicitly before rotating, not during.
 
+### W10 — live concurrency verification against real dev Aurora (repeatable procedure)
+
+Recorded because this is now the second week running (W9 S7, W10 S7) that a cap-enforcement or lock-ordering change has needed exactly this proof and it was re-derived from scratch both times. It is the live counterpart to the Testcontainers concurrency tests, not a replacement for them: Testcontainers proves the SQL is right, this proves the *deployed* Lambdas, the *deployed* Aurora, and real network latency between them agree with it.
+
+**Why direct Lambda invoke and not psql.** Aurora sits in an isolated VPC subnet with no route from a developer machine, and the RDS Data API is **disabled** on the cluster (`aws rds describe-db-clusters --query "DBClusters[].HttpEndpointEnabled"` → `false`; there is no `enableDataApi` in `infra/stacks/data-stack.ts`). Direct Lambda invoke against the deployed resolvers is therefore the only path in, not merely the convenient one. Do **not** enable the Data API or add an admin/arbitrary-SQL resolver just to run a verification query — that is a real security-surface change and belongs in a reviewed PR of its own, not inside a verification pass.
+
+**Prerequisites**
+
+- `AWS_PROFILE=parimaan-dev`, region `ap-south-1`. Confirm with `aws sts get-caller-identity` before anything else.
+- Physical Lambda names from `aws lambda list-functions --query "Functions[].FunctionName"` — they carry CloudFormation hashes (`Parimaan-dev-Api-<Resolver>Fn<hash>-<suffix>`) and **change on stack replacement**, so look them up fresh each pass rather than reusing a previous week's list.
+- Founder authorization for the pass. This writes to the real dev database.
+
+**Event shape.** Every resolver Lambda expects an AppSync-direct-resolver-shaped event with a synthetic Cognito identity — a fresh UUID per throwaway user, so the pass can never collide with or read a real one:
+
+```json
+{
+  "arguments": { "...": "the operation's own GraphQL arguments" },
+  "identity": {
+    "sub": "<uuid>",
+    "username": "<uuid>",
+    "claims": { "email": "<uuid>@example.test" }
+  }
+}
+```
+
+Invoke with `aws lambda invoke --function-name <name> --payload fileb://<payload>.json <out>.json`. Prefer `fileb://` over an inline `--payload` string: it avoids shell quoting entirely and makes the payload reviewable after the fact. A thrown resolver error surfaces as `FunctionError` in the invoke result with the client-safe `{errorType, errorMessage}` in the output file — that is the same message a real GraphQL client would see, so it is a legitimate assertion target.
+
+**Procedure**
+
+1. **Create throwaway state through the real resolvers only** — `createHousehold` → `updateHouseholdSettings` → `createRecipe` (×N) → `createMenu`. Never touch a pre-existing household, user, recipe, or menu; a fresh synthetic `sub` guarantees membership in nothing else.
+2. **Configure the narrowest cap that still exercises the rule.** For a cap race, one meal enabled with one role at cap 1 (`mealsEnabled: ["lunch"]`, `mealStructure: {"lunch": {"carb": 1}}`) makes the assertion a single integer and removes every confounder.
+3. **Fire the racing invokes genuinely in parallel**, not sequentially — two independent processes, e.g. `Promise.all` over two `aws lambda invoke` child processes in a throwaway Node script, or two backgrounded shell invokes. Sequential calls prove nothing about locking. Keep the script in a scratch directory; spike tooling is not committed.
+4. **Assert on final state, not on the responses alone.** Read the result back with `Query.menu` and count rows per `(dayOfWeek, mealSlot, slotRole)`. The count is the real assertion; the responses only tell you *how* the loser lost.
+5. **Distinguish the three possible losses explicitly**, because they are not equivalent: a rejection carrying the domain message (`"This meal slot is full."` — `addMenuItem`'s contract), a silent skip reported honestly as a lower `filledCount` (`autoFillWeek`'s best-effort-partial contract), and a **deadlock** (never acceptable — it means the two lock namespaces are being acquired in inconsistent order). Grep both responses for a deadlock error specifically; do not infer its absence from a passing row count.
+6. **Run the cross-path race too, not just the same-path one.** Two `autoFillWeek` commits exercise one lock ordering; `autoFillWeek` racing `addMenuItem` exercises the interaction between two different code paths, which is where the W10 §16.2.6 lock-ordering change actually created risk.
+7. **Delete everything, then prove it.** `deleteHousehold(householdId, confirmationName)` with the exact household name, then a follow-up `Query.household` on the id. Expect the no-existence-oracle denial (`"You are not a member of this household."`) rather than a not-found — that message is the same whether the household was deleted or never existed, by design, so treat it as the expected result and not as an error in the cleanup.
+
+**Recording the result.** Write the actual counts and the actual response messages into that week's own result subsection in `E2E_MVP_PLAN.md` (§15.9, §16.9) — never "no deadlock observed" without the row counts and the two responses that back it.
+
 ---
 
 ## 3. Two-Device Verification Procedure
