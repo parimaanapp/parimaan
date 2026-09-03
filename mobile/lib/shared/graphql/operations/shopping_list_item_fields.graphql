@@ -1,0 +1,15 @@
+# The one canonical `ShoppingListItem` selection set, shared by every
+# operation that returns a `ShoppingList` — same "one fragment, one mapper"
+# reasoning as `MenuItemFields`.
+fragment ShoppingListItemFields on ShoppingListItem {
+  id
+  name
+  quantity
+  unit
+  category
+  sourceRecipeId
+  purchased
+  purchasedBy
+  purchasedAt
+  movedToPantry
+}

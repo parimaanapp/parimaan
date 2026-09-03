@@ -1,0 +1,18 @@
+#import "./shopping_list_item_fields.graphql"
+
+# The one canonical `ShoppingList` selection set, shared by
+# `generateShoppingList`, `regenerateShoppingList` and `haveIt` — all three
+# return `ShoppingList!` (D1's widened `haveIt` return type,
+# E2E_MVP_PLAN.md §17.2.1) — same "one fragment, one mapper" reasoning as
+# `MenuFields`.
+fragment ShoppingListFields on ShoppingList {
+  id
+  householdId
+  generatedFromMenuId
+  createdAt
+  closedAt
+  aiStaplesNote
+  items {
+    ...ShoppingListItemFields
+  }
+}

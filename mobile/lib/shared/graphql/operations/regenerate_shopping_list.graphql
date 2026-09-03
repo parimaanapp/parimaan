@@ -1,0 +1,12 @@
+#import "./shopping_list_fields.graphql"
+
+# `Mutation.regenerateShoppingList` — D8's merge-regenerate design
+# (E2E_MVP_PLAN.md §17.2.8). `confirmed: false` previews exactly what WOULD
+# change (an unpersisted `ShoppingList`, real "N kept, M recomputed"
+# confirm-dialog copy) without writing anything; `confirmed: true` commits
+# the merge. Server-enforced, never a client-only confirm dialog.
+mutation RegenerateShoppingList($menuId: ID!, $confirmed: Boolean!) {
+  regenerateShoppingList(menuId: $menuId, confirmed: $confirmed) {
+    ...ShoppingListFields
+  }
+}

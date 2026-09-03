@@ -17,7 +17,6 @@
 # check like the one `pr.yml` already runs for the TS clients) is deliberately
 # out of scope here and is the right fix before the next schema-consuming
 # slice.
-
 # Parimaan GraphQL schema — SINGLE SOURCE OF TRUTH.
 #
 # This file feeds four consumers:
@@ -404,6 +403,64 @@ type Mutation {
   nonexistent `menuId`.
   """
   autoFillWeek(menuId: ID!, overwrite: Boolean!, items: [MenuItemInput!]!): AutoFillResult!
+
+  """
+  Generates `menuId`'s shopping list — aggregates every non-staple
+  ingredient across the menu's `menu_items` (D2's fuzzy/similarity
+  matching, cross-recipe), subtracts current pantry stock (D3's unit-
+  conversion-aware reduction), and writes the result as a fresh
+  `ShoppingList` (W11 S2, E2E_MVP_PLAN.md §17.3). An empty menu, or one
+  whose every ingredient is staple-excluded, produces a list with zero
+  items — never an error. Requires the caller to already be a member of
+  the menu's household, denied identically to a nonexistent `menuId`
+  (matching `addMenuItem`/`autoFillWeek`'s own pattern). Refuses a second
+  call while an OPEN list already exists for this `menuId` (`CONFLICT`) —
+  `regenerateShoppingList` is the only mutation that may write to an
+  existing list.
+  """
+  generateShoppingList(menuId: ID!): ShoppingList!
+
+  """
+  Regenerates `menuId`'s shopping list via D8's merge-regenerate design
+  (E2E_MVP_PLAN.md §17.2.8): every already-had (`purchased`/`movedToPantry`)
+  or manually-added (`sourceRecipeId: null`, reserved for a future
+  `addShoppingListItem`) item is preserved untouched; only the remaining
+  auto-generated, not-yet-had portion is recomputed against CURRENT menu/
+  pantry state. `confirmed: false` (or when no open list exists yet, in
+  which case this behaves identically to a first `generateShoppingList`
+  call) previews exactly what WOULD change — an unpersisted `ShoppingList`
+  a client can render real "N kept, M recomputed" confirm-dialog copy from
+  — without writing anything; `confirmed: true` commits the merge. Server-
+  enforced, never a client-only confirm dialog. Requires the caller to
+  already be a member of the menu's household, denied identically to a
+  nonexistent `menuId`.
+  """
+  regenerateShoppingList(menuId: ID!, confirmed: Boolean!): ShoppingList!
+
+  """
+  Marks `itemId` as bought and moves it into the household's pantry in one
+  transaction (SD §5.7, W11 S3, E2E_MVP_PLAN.md §17.3). The confirmed
+  `quantity` (D5: defaults to the shopping-list quantity client-side,
+  editable) is upserted into `pantry_items` — matched against an existing
+  row by D2's fuzzy name match AND D3's unit-conversion-aware
+  compatibility (a same-family cross-unit pair converts and increments;
+  a cross-family or unrecognised-unit match creates a fresh row instead of
+  incorrectly summing) — and `itemId` is flipped
+  `purchased`/`movedToPantry` (with `purchasedBy`/`purchasedAt` stamped)
+  atomically with that pantry write: a failure on either half rolls back
+  both. Returns the item's full parent `ShoppingList!` (D1's widened
+  return type, §17.2.1), not just the one item, so this mutation can
+  attach to a future `onShoppingListChanged` subscription without a
+  second return-type change. Takes no `householdId`: the item's household
+  is looked up via its parent list, the same `id`-only, RLS-scoped
+  membership resolution `updatePantryItem` uses — a non-member is denied
+  identically to a nonexistent `itemId`. A second call on an
+  already-`purchased` item is rejected with `CONFLICT` rather than
+  silently double-counting the pantry increment. `quantity` must be
+  strictly positive — zero, negative, or absent/`null` is rejected at
+  validation, before any write.
+  """
+  haveIt(itemId: ID!, quantity: Float!): ShoppingList!
 }
 
 type Subscription {
@@ -455,6 +512,26 @@ type Subscription {
   """
   onHouseholdChanged(householdId: ID!): Household
     @aws_subscribe(mutations: ["joinHousehold", "rotateInviteCode", "updateHouseholdSettings"])
+
+  """
+  Pushes the `Menu` to every other connected device in `householdId` when
+  a new one is created (D9-carryover, E2E_MVP_PLAN.md §17.2.9). Attached to
+  `createMenu` ONLY — deliberately NOT `addMenuItem`/`removeMenuItem`/
+  `autoFillWeek`, all three of which return actively-consumed non-`Menu`
+  shapes (`MenuItem!`/`Boolean!`/`AutoFillResult!`) that a D1-style
+  widening to `Menu!` would break at real cost to their existing callers,
+  out of this week's budget — the same "structural mismatch is a real
+  reason to leave a mutation off the list" precedent `onHouseholdChanged`
+  already sets for `leaveHousehold`/`deleteHousehold` above. Same
+  subscribe-time Lambda-resolver authorization pattern as every other
+  subscription in this schema (SD §10.4 deviation, §11.2.9): a non-member
+  or nonexistent `householdId` is denied identically. A household member
+  adding/auto-filling items on one device produces no push to a second
+  device this week — an accepted staleness gap, covered by refetch-on-
+  route-entry/foreground like every other unattached mutation (§17.5.5).
+  """
+  onMenuChanged(householdId: ID!): Menu
+    @aws_subscribe(mutations: ["createMenu"])
 }
 
 type User {
@@ -764,6 +841,65 @@ input MenuItemInput {
   mealSlot: MealType!
   slotRole: RecipeRole!
   servingsOverride: Int
+}
+
+"""
+A household's generated shopping list for one week's `Menu` (W11 S1/S2,
+E2E_MVP_PLAN.md §17). `generatedFromMenuId` is nullable purely to match the
+underlying `shopping_lists.generated_from_menu_id` column's own nullable
+FK — every list `generateShoppingList`/`regenerateShoppingList` produces
+this week always has one, since neither mutation exists without a
+`menuId`. `closedAt`/`aiStaplesNote` are populated by future weeks (list
+closure, the W15 AI staples note) — always `null` for everything W11
+writes.
+"""
+type ShoppingList {
+  id: ID!
+  householdId: ID!
+  generatedFromMenuId: ID
+  createdAt: AWSDateTime!
+  closedAt: AWSDateTime
+  aiStaplesNote: String
+  items: [ShoppingListItem!]!
+}
+
+"""
+One line on a `ShoppingList` — either auto-generated from a recipe's
+ingredients (`sourceRecipeId` non-null, every item S2's
+`generateShoppingList`/`regenerateShoppingList` produce) or manually added
+(`sourceRecipeId: null`, reserved for a future `addShoppingListItem` — not
+built this week). D8's origin marker (§17.2.8) doubles as this field: no
+separate boolean. `purchased`/`purchasedBy`/`purchasedAt`/`movedToPantry`
+are all set together, atomically, by `haveIt` (W11 S3) — always
+`false`/`null` for everything S2 writes, and never `false` again once
+`haveIt` has marked an item (see `Mutation.haveIt`'s own `CONFLICT` doc).
+"""
+type ShoppingListItem {
+  id: ID!
+  name: String!
+  quantity: Float
+  unit: String
+  category: String
+  sourceRecipeId: ID
+  purchased: Boolean!
+  purchasedBy: ID
+  purchasedAt: AWSDateTime
+  movedToPantry: Boolean!
+}
+
+"""
+Input shape for the not-yet-built `addShoppingListItem` (W12+, not called
+by any resolver this week) — defined now, alongside `ShoppingList`/
+`ShoppingListItem`, so the full shopping-list SDL package lands together
+(same "define the input type ahead of its mutation" precedent
+`RecipeInput` set in W6, E2E_MVP_PLAN.md §12.7 D3) and D8's schema design
+needs zero rework once it ships.
+"""
+input ShoppingListItemInput {
+  name: String!
+  quantity: Float
+  unit: String
+  category: String
 }
 
 """
