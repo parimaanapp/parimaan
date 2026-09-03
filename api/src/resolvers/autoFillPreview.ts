@@ -103,11 +103,12 @@ const loadScoredCandidatesByRole = async (
   householdId: string,
   targetWeekStartDate: string,
   skipIngredients: readonly string[],
+  dietaryTags: readonly string[],
   cuisineTier1: readonly string[],
   cuisineTier2Weights: Record<string, unknown>,
 ): Promise<Map<string, WeightedCandidate[]>> => {
   const [candidateRows, recentUsage] = await Promise.all([
-    findInRotationRecipesForAutoFill(client, householdId, skipIngredients),
+    findInRotationRecipesForAutoFill(client, householdId, skipIngredients, dietaryTags),
     findRecentRecipeUsage(client, householdId, targetWeekStartDate, RECENCY_WINDOW_WEEKS),
   ]);
   const recentUsageByRecipeId = new Map(recentUsage.map((usage) => [usage.recipeId, usage.weeksAgo]));
@@ -168,6 +169,7 @@ export const createAutoFillPreviewHandler =
           menu.householdId,
           menu.weekStartDate,
           settings.skipIngredients,
+          settings.dietaryTags,
           settings.cuisineTier1,
           settings.cuisineTier2Weights,
         );

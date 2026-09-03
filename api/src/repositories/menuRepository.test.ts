@@ -74,11 +74,12 @@ describe('menuRepository', () => {
       inRotation?: boolean;
       cuisineTier1?: string;
       cuisineTier2?: string;
+      dietaryTags?: string[];
     } = {},
   ): Promise<{ id: string }> => {
     const result = await client.query<{ id: string }>(
-      `INSERT INTO recipes (household_id, source_type, title, role, is_favorite, in_rotation, cuisine_tier1, cuisine_tier2, created_by)
-       VALUES ($1, 'user', $2, $3, false, $4, $5, $6, $7) RETURNING id`,
+      `INSERT INTO recipes (household_id, source_type, title, role, is_favorite, in_rotation, cuisine_tier1, cuisine_tier2, dietary_tags, created_by)
+       VALUES ($1, 'user', $2, $3, false, $4, $5, $6, $7::jsonb, $8) RETURNING id`,
       [
         householdId,
         overrides.title ?? 'Rajma',
@@ -86,6 +87,7 @@ describe('menuRepository', () => {
         overrides.inRotation ?? true,
         overrides.cuisineTier1 ?? null,
         overrides.cuisineTier2 ?? null,
+        JSON.stringify(overrides.dietaryTags ?? []),
         createdBy,
       ],
     );
@@ -271,7 +273,9 @@ describe('menuRepository', () => {
       );
       await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id, { title: 'Out', inRotation: false }));
 
-      const candidates = await asUser(owner.id, (client) => findInRotationRecipesForAutoFill(client, householdId, []));
+      const candidates = await asUser(owner.id, (client) =>
+        findInRotationRecipesForAutoFill(client, householdId, [], []),
+      );
       expect(candidates).toEqual([
         { id: inRotation.id, role: 'carb', cuisineTier1: 'north_indian', cuisineTier2: 'punjabi' },
       ]);
@@ -288,7 +292,7 @@ describe('menuRepository', () => {
       });
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, ['peanut']),
+        findInRotationRecipesForAutoFill(client, householdId, ['peanut'], []),
       );
       expect(candidates.map((c) => c.id)).toEqual([safe.id]);
     });
@@ -311,7 +315,7 @@ describe('menuRepository', () => {
       });
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, ['sun_dried']),
+        findInRotationRecipesForAutoFill(client, householdId, ['sun_dried'], []),
       );
 
       // Correct (escaped) behavior: only the recipe with a LITERAL
@@ -330,8 +334,89 @@ describe('menuRepository', () => {
         await insertRecipeIngredient(client, recipe.id, 'Peanuts');
       });
 
-      const candidates = await asUser(owner.id, (client) => findInRotationRecipesForAutoFill(client, householdId, []));
+      const candidates = await asUser(owner.id, (client) =>
+        findInRotationRecipesForAutoFill(client, householdId, [], []),
+      );
       expect(candidates).toHaveLength(1);
+    });
+
+    it('excludes a recipe that is missing a required dietary tag', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const veg = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Veg Rajma', dietaryTags: ['veg'] }),
+      );
+      await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Chicken Curry', dietaryTags: [] }),
+      );
+
+      const candidates = await asUser(owner.id, (client) =>
+        findInRotationRecipesForAutoFill(client, householdId, [], ['veg']),
+      );
+      expect(candidates.map((c) => c.id)).toEqual([veg.id]);
+    });
+
+    it('includes a recipe that satisfies multiple required dietary tags simultaneously', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const vegGlutenFree = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, {
+          title: 'Veg Gluten-Free Khichdi',
+          dietaryTags: ['veg', 'gluten_free', 'dairy_free'],
+        }),
+      );
+      await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Veg Only', dietaryTags: ['veg'] }),
+      );
+
+      const candidates = await asUser(owner.id, (client) =>
+        findInRotationRecipesForAutoFill(client, householdId, [], ['veg', 'gluten_free']),
+      );
+      expect(candidates.map((c) => c.id)).toEqual([vegGlutenFree.id]);
+    });
+
+    it('an empty household dietaryTags requirement excludes nothing on that basis', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'No tags at all', dietaryTags: [] }),
+      );
+      await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Some tags', dietaryTags: ['vegan'] }),
+      );
+
+      const candidates = await asUser(owner.id, (client) =>
+        findInRotationRecipesForAutoFill(client, householdId, [], []),
+      );
+      expect(candidates).toHaveLength(2);
+    });
+
+    it('the skip-ingredient filter and the dietaryTags filter coexist independently', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const passesBoth = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Passes both', dietaryTags: ['veg'] }),
+      );
+      // Fails only the dietary-tag filter.
+      await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Not veg', dietaryTags: [] }),
+      );
+      // Fails only the skip-ingredient filter.
+      await asUser(owner.id, async (client) => {
+        const recipe = await insertRecipe(client, householdId, owner.id, {
+          title: 'Veg but has peanuts',
+          dietaryTags: ['veg'],
+        });
+        await insertRecipeIngredient(client, recipe.id, 'Crushed peanuts');
+      });
+
+      const candidates = await asUser(owner.id, (client) =>
+        findInRotationRecipesForAutoFill(client, householdId, ['peanut'], ['veg']),
+      );
+      expect(candidates.map((c) => c.id)).toEqual([passesBoth.id]);
     });
   });
 
