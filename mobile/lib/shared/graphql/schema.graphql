@@ -532,6 +532,38 @@ type Subscription {
   """
   onMenuChanged(householdId: ID!): Menu
     @aws_subscribe(mutations: ["createMenu"])
+
+  """
+  Pushes `true` to every other connected device in `householdId` the
+  moment `deleteHousehold` removes it (D7, E2E_MVP_PLAN.md §17.2.7) —
+  fixes the subscribe-time-only re-authorization gap (§14, row 14 of
+  §17.1's forward-reference table): a member whose access is revoked
+  mid-session otherwise keeps their already-open `onPantryChanged`/
+  `onRecipeChanged`/`onHouseholdChanged`/`onMenuChanged` sockets live
+  until they background/foreground or their connection drops for an
+  unrelated reason. AppSync provides no server-side API to force-close a
+  specific established connection (confirmed while designing this slice —
+  unlike API Gateway WebSocket's `@connections` endpoint), so this is a
+  reactive signal, not a server-side eviction: on receipt, the client is
+  expected to immediately unsubscribe every live subscription scoped to
+  `householdId` and route away, rather than wait for its own next
+  reconnect/foreground cycle to re-run subscribe-time authorization.
+
+  Zero return-type widening — `deleteHousehold` already returns
+  `Boolean!`, matching this field's `Boolean` exactly, the same
+  literal-type-match constraint D1/D9-carryover both work within. Same
+  subscribe-time Lambda-resolver authorization pattern as every other
+  subscription in this schema (SD §10.4 deviation, §11.2.9), reusing
+  `requireHouseholdMember` unchanged: a non-member or nonexistent
+  `householdId` is denied identically. `deleteHousehold` is the only
+  mutation in this codebase today that instantly removes *other*
+  members' access mid-session (`leaveHousehold` is self-service — the
+  leaver's own socket is not a security concern); a future "remove one
+  member" mutation must extend this field's `@aws_subscribe` list when it
+  ships (§17.5.4).
+  """
+  onMembershipRevoked(householdId: ID!): Boolean
+    @aws_subscribe(mutations: ["deleteHousehold"])
 }
 
 type User {

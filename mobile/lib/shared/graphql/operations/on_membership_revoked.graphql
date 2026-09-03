@@ -1,0 +1,14 @@
+# `Subscription.onMembershipRevoked` — pushed `true` to every other
+# connected device in `householdId` the moment `deleteHousehold` removes it
+# (D7, E2E_MVP_PLAN.md §17.2.7). Fixes the subscribe-time-only
+# re-authorization gap: a member whose access is revoked mid-session
+# otherwise keeps their already-open sockets live until they background/
+# foreground or their connection drops for an unrelated reason.
+#
+# No fields to select — the field itself is `Boolean`, not an object type,
+# and `HouseholdRepository.watchMembershipRevoked` never reads the pushed
+# value either way (a `deleteHousehold` push is always `true` by
+# construction; the only thing that matters is that a push arrived at all).
+subscription OnMembershipRevoked($householdId: ID!) {
+  onMembershipRevoked(householdId: $householdId)
+}

@@ -52,6 +52,7 @@ import '../features/shopping_list/presentation/list_preview_screen.dart';
 import '../features/shopping_list/presentation/notification_permission_prompt_screen.dart';
 import '../features/shopping_list/presentation/shopping_list_screen.dart';
 import '../shared/errors/app_error.dart';
+import 'membership_revocation_guard.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
 abstract final class AppRoutes {
@@ -579,7 +580,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
           BuildContext context,
           GoRouterState state,
           StatefulNavigationShell navigationShell,
-        ) => AppShell(navigationShell: navigationShell),
+        ) => MembershipRevocationGuard(
+          onRevoked: (BuildContext guardContext) =>
+              guardContext.go(AppRoutes.firstRun),
+          child: AppShell(navigationShell: navigationShell),
+        ),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             routes: <RouteBase>[
