@@ -139,9 +139,19 @@ const diceCoefficient = (a: string, b: string): number => {
   return (2 * intersection) / (totalA + totalB);
 };
 
-/** Two already-normalized names are the same ingredient if byte-identical or at/above `INGREDIENT_SIMILARITY_THRESHOLD`. */
-const namesMatch = (normalizedA: string, normalizedB: string): boolean =>
+/**
+ * Two already-normalized names are the same ingredient if byte-identical
+ * or at/above `INGREDIENT_SIMILARITY_THRESHOLD`. Exported (alongside
+ * `normalizeIngredientName`) so `haveIt`'s pantry upsert-match (W11 S3,
+ * E2E_MVP_PLAN.md §17.3) can reuse D2's own fuzzy matcher rather than a
+ * second, drift-prone reimplementation — the same "reuse, don't
+ * reimplement" instruction the plan gives that slice.
+ */
+export const namesMatch = (normalizedA: string, normalizedB: string): boolean =>
   normalizedA === normalizedB || diceCoefficient(normalizedA, normalizedB) >= INGREDIENT_SIMILARITY_THRESHOLD;
+
+/** `normalize`'s exported name — see `namesMatch`'s own doc for why this is exported: `haveIt`'s pantry-upsert match (W11 S3) normalizes both sides before calling `namesMatch`, the exact same way this module's own clustering/subtraction do. */
+export const normalizeIngredientName = normalize;
 
 /**
  * D2's unit gate (§17.2.2 point 3): fuzzy name-matching never crosses a
@@ -150,9 +160,11 @@ const namesMatch = (normalizedA: string, normalizedB: string): boolean =>
  * convertible under D3's `convertQuantity` table. Reused by
  * `aggregateIngredients`' clustering and `subtractPantry`'s pantry match,
  * keeping D2 and D3 composable rather than two independently-reasoned
- * rules (§17.2.2 point 3's own stated intent).
+ * rules (§17.2.2 point 3's own stated intent). Exported for the identical
+ * reason `namesMatch` is: `haveIt`'s pantry upsert-match (W11 S3) reuses
+ * this same unit-compatibility rule rather than reimplementing it.
  */
-const unitsCompatible = (canonicalA: string | null, canonicalB: string | null): boolean => {
+export const unitsCompatible = (canonicalA: string | null, canonicalB: string | null): boolean => {
   if (canonicalA === canonicalB) {
     return true;
   }

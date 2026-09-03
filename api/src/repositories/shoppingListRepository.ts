@@ -222,6 +222,95 @@ export const findShoppingListItems = async (
 };
 
 /**
+ * The `shopping_lists` parent row by its own `id` — `haveIt`'s (W11 S3)
+ * final "fetch the full list back to return" step, once
+ * {@link markItemHaveIt} has resolved which list the just-marked item
+ * belongs to. RLS-scoped like every other lookup in this file; a caller
+ * only ever reaches this with an id already proven reachable earlier in
+ * the same transaction (`findShoppingListItemForHaveIt`), so a `null`
+ * result here is unreachable in practice, not a real caller-facing case.
+ */
+export const findShoppingListById = async (
+  client: PoolClient,
+  id: string,
+): Promise<ShoppingListRow | null> => {
+  const result = await client.query<RawShoppingListRow>(`SELECT * FROM shopping_lists WHERE id = $1`, [id]);
+  const row = result.rows[0];
+  return row === undefined ? null : mapShoppingListRow(row);
+};
+
+interface RawShoppingListItemWithHouseholdRow extends RawShoppingListItemRow {
+  household_id: string;
+}
+
+export interface ShoppingListItemWithHousehold {
+  item: ShoppingListItemRow;
+  householdId: string;
+}
+
+/**
+ * `haveIt`'s (W11 S3, E2E_MVP_PLAN.md §17.3) id-only-then-RLS-scoped lookup
+ * — same shape as `pantryRepository.ts`'s `findPantryItemById` /
+ * `resolvers/updatePantryItem.ts`'s own doc on that convention:
+ * `shopping_list_items` has no `household_id` of its own (§17's own DDL
+ * note), so the household is discovered by joining out to its parent
+ * `shopping_lists` row, which IS what `shopping_lists_household_member`'s
+ * RLS policy is keyed on. A `null` result here is deliberately ambiguous
+ * (nonexistent `itemId`, or a real one in another household) — the
+ * resolver treats both identically, the same existence-oracle avoidance
+ * every other household-scoped resolver in this codebase already commits
+ * to.
+ */
+export const findShoppingListItemForHaveIt = async (
+  client: PoolClient,
+  itemId: string,
+): Promise<ShoppingListItemWithHousehold | null> => {
+  const result = await client.query<RawShoppingListItemWithHouseholdRow>(
+    `SELECT sli.*, sl.household_id
+     FROM shopping_list_items sli
+     JOIN shopping_lists sl ON sl.id = sli.shopping_list_id
+     WHERE sli.id = $1`,
+    [itemId],
+  );
+  const row = result.rows[0];
+  if (row === undefined) {
+    return null;
+  }
+  return { item: mapShoppingListItemRow(row), householdId: row.household_id };
+};
+
+/**
+ * SD §5.7's `haveIt` write (W11 S3, E2E_MVP_PLAN.md §17.3): flips
+ * `purchased`/`movedToPantry` true and stamps `purchasedBy`/`purchasedAt`,
+ * in the SAME statement as the guard that makes double-calling `haveIt` on
+ * the same item a clean, atomic `CONFLICT` rather than a silent double
+ * pantry-increment — `WHERE id = $1 AND purchased = FALSE` returns zero
+ * rows (mapped to `null` here) if the item was already marked, whether by
+ * an earlier call in this same request or a concurrent one from another
+ * device; the resolver throws `ConflictError` on `null`, which rolls back
+ * this transaction's pantry write too (`withUserTransaction`), so neither
+ * side of a rejected double-call is ever left half-applied. Callers run
+ * the pantry upsert-or-increment FIRST in the same transaction, then this
+ * — if this returns `null` the pantry write still rolls back, keeping the
+ * two halves atomic regardless of call order.
+ */
+export const markItemHaveIt = async (
+  client: PoolClient,
+  itemId: string,
+  purchasedBy: string,
+): Promise<ShoppingListItemRow | null> => {
+  const result = await client.query<RawShoppingListItemRow>(
+    `UPDATE shopping_list_items
+     SET moved_to_pantry = TRUE, purchased = TRUE, purchased_by = $2, purchased_at = NOW()
+     WHERE id = $1 AND purchased = FALSE
+     RETURNING *`,
+    [itemId, purchasedBy],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapShoppingListItemRow(row);
+};
+
+/**
  * D8's own preserve/replace predicate (§17.2.8), as a pure function so the
  * resolver's `confirmed: false` preview path (which never runs the DELETE
  * below) and this repository's actual DELETE predicate can never drift

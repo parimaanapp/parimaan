@@ -1714,6 +1714,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiHaveItDataSourceCE536544": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "HaveItFn3290D72A",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "HaveItDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiHaveItDataSourceServiceRoleC3449BF8",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiHaveItDataSourceServiceRoleC3449BF8": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiHaveItDataSourceServiceRoleDefaultPolicy6AE304A0": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "HaveItFn3290D72A",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "HaveItFn3290D72A",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiHaveItDataSourceServiceRoleDefaultPolicy6AE304A0",
+        "Roles": [
+          {
+            "Ref": "ApiHaveItDataSourceServiceRoleC3449BF8",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiHaveItResolverED41CFC7": {
+      "DependsOn": [
+        "ApiHaveItDataSourceCE536544",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "HaveItDataSource",
+        "FieldName": "haveIt",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiHealthDataSourceCE41636B": {
       "Properties": {
         "ApiId": {
@@ -4266,6 +4371,31 @@ type Mutation {
   nonexistent \`menuId\`.
   """
   regenerateShoppingList(menuId: ID!, confirmed: Boolean!): ShoppingList!
+
+  """
+  Marks \`itemId\` as bought and moves it into the household's pantry in one
+  transaction (SD §5.7, W11 S3, E2E_MVP_PLAN.md §17.3). The confirmed
+  \`quantity\` (D5: defaults to the shopping-list quantity client-side,
+  editable) is upserted into \`pantry_items\` — matched against an existing
+  row by D2's fuzzy name match AND D3's unit-conversion-aware
+  compatibility (a same-family cross-unit pair converts and increments;
+  a cross-family or unrecognised-unit match creates a fresh row instead of
+  incorrectly summing) — and \`itemId\` is flipped
+  \`purchased\`/\`movedToPantry\` (with \`purchasedBy\`/\`purchasedAt\` stamped)
+  atomically with that pantry write: a failure on either half rolls back
+  both. Returns the item's full parent \`ShoppingList!\` (D1's widened
+  return type, §17.2.1), not just the one item, so this mutation can
+  attach to a future \`onShoppingListChanged\` subscription without a
+  second return-type change. Takes no \`householdId\`: the item's household
+  is looked up via its parent list, the same \`id\`-only, RLS-scoped
+  membership resolution \`updatePantryItem\` uses — a non-member is denied
+  identically to a nonexistent \`itemId\`. A second call on an
+  already-\`purchased\` item is rejected with \`CONFLICT\` rather than
+  silently double-counting the pantry increment. \`quantity\` must be
+  strictly positive — zero, negative, or absent/\`null\` is rejected at
+  validation, before any write.
+  """
+  haveIt(itemId: ID!, quantity: Float!): ShoppingList!
 }
 
 type Subscription {
@@ -4675,8 +4805,9 @@ ingredients (\`sourceRecipeId\` non-null, every item S2's
 (\`sourceRecipeId: null\`, reserved for a future \`addShoppingListItem\` — not
 built this week). D8's origin marker (§17.2.8) doubles as this field: no
 separate boolean. \`purchased\`/\`purchasedBy\`/\`purchasedAt\`/\`movedToPantry\`
-are all set together, atomically, by the not-yet-built \`haveIt\` (S3) —
-always \`false\`/\`null\` for everything S2 writes.
+are all set together, atomically, by \`haveIt\` (W11 S3) — always
+\`false\`/\`null\` for everything S2 writes, and never \`false\` again once
+\`haveIt\` has marked an item (see \`Mutation.haveIt\`'s own \`CONFLICT\` doc).
 """
 type ShoppingListItem {
   id: ID!
@@ -6956,6 +7087,140 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "GenerateShoppingListFnServiceRole3AF28480",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "HaveItFn3290D72A": {
+      "DependsOn": [
+        "HaveItFnServiceRoleDefaultPolicy5499E02E",
+        "HaveItFnServiceRole0A692B2A",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "HaveItFnServiceRole0A692B2A",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "HaveItFnServiceRole0A692B2A": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "HaveItFnServiceRoleDefaultPolicy5499E02E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "HaveItFnServiceRoleDefaultPolicy5499E02E",
+        "Roles": [
+          {
+            "Ref": "HaveItFnServiceRole0A692B2A",
           },
         ],
       },

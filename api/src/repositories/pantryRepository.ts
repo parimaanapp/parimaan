@@ -1,5 +1,8 @@
 import type { PoolClient } from 'pg';
 import { toAwsDateString } from '../domain/pgDate.js';
+import { canonicalizePantryUnit } from '../domain/pantryUnits.js';
+import { convertQuantity } from '../domain/unitConversion.js';
+import { namesMatch, normalizeIngredientName, unitsCompatible } from '../domain/shoppingListGeneration.js';
 
 export interface PantryItemRow {
   id: string;
@@ -147,6 +150,156 @@ export const findPantryItemById = async (
   ]);
   const row = result.rows[0];
   return row === undefined ? null : mapPantryItemRow(row);
+};
+
+export interface HaveItPantryUpsertInput {
+  householdId: string;
+  /**
+   * The shopping-list item's own name — matched fuzzily (D2) against this
+   * household's existing pantry rows. No length bound is enforced here:
+   * every CURRENT writer of `shopping_list_items.name` (`generateShoppingList`
+   * / `regenerateShoppingList`, sourced from `recipe_ingredients.name`) is
+   * already bounded to `MAX_INGREDIENT_NAME_LENGTH` at the point of original
+   * insertion (`validation/recipeShared.ts`), so this is safe today. A
+   * future `addShoppingListItem` (not built this week) that lets a client
+   * write `shopping_list_items.name`/`unit` directly should apply the same
+   * bound at ITS OWN validation boundary — this function trusts its input
+   * the same way `insertPantryItem` already does, it does not re-validate.
+   */
+  name: string;
+  /** The caller-confirmed quantity (`haveIt`'s `quantity` argument, already validated strictly positive). */
+  quantity: number;
+  /** The shopping-list item's own unit — `null` (an unparsed/free-text quantity) never matches an existing row's non-null unit, matching D3's own "either side null and they differ" fallback in `shoppingListGeneration.ts`'s `unitsCompatible`. */
+  unit: string | null;
+  addedBy: string;
+}
+
+/**
+ * The "no match" (or defensively, "matched but somehow unconvertible")
+ * branch of {@link upsertOrIncrementPantryItemForHaveIt} — extracted so
+ * that function stays under this repo's `max-lines-per-function` ceiling
+ * without duplicating the same `insertPantryItem` call inline twice.
+ */
+const insertFreshPantryItemForHaveIt = (
+  client: PoolClient,
+  input: HaveItPantryUpsertInput,
+): Promise<PantryItemRow> =>
+  insertPantryItem(client, {
+    householdId: input.householdId,
+    name: input.name,
+    quantity: input.quantity,
+    // `pantry_items.unit` is `NOT NULL` — a shopping-list item with no
+    // parsed unit (free-text quantity, e.g. "to taste") falls back to an
+    // empty string rather than failing the whole have-it write; this
+    // mirrors the "unrecognised unit stays exact-match-only" fallback D3
+    // already accepts, just at the empty-string edge of it.
+    unit: input.unit ?? '',
+    category: null,
+    isStaple: false,
+    expiryDate: null,
+    lowThreshold: null,
+    addedBy: input.addedBy,
+  });
+
+/**
+ * Serializes concurrent `haveIt` calls for the same household around
+ * {@link upsertOrIncrementPantryItemForHaveIt}'s own read-then-decide-write
+ * sequence — a transaction-scoped advisory lock (auto-released at
+ * COMMIT/ROLLBACK, `pg_advisory_xact_lock`, never needs an explicit unlock),
+ * same shape and reasoning as `menuRepository.ts`'s `lockMenu`: a plain
+ * `SELECT ... FOR UPDATE` can't be used here because there may be ZERO
+ * existing rows to lock yet (the "no match, insert a fresh row" branch).
+ * Without this, two concurrent `haveIt` calls for the same household could
+ * both read `findPantryItems` before either commits and either (a) both
+ * see "no match" and both insert a separate row for the same ingredient, or
+ * (b) both see the same existing row's quantity and both `UPDATE` with a
+ * value computed from that same stale read — whichever commits second
+ * silently overwrites, rather than adds to, the first's increment. Call
+ * this BEFORE `findPantryItems` in {@link upsertOrIncrementPantryItemForHaveIt},
+ * never after.
+ */
+export const lockPantryForHousehold = async (client: PoolClient, householdId: string): Promise<void> => {
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`pantry:${householdId}`]);
+};
+
+/**
+ * `haveIt`'s (W11 S3, E2E_MVP_PLAN.md §17.3, SD §5.7) upsert-or-increment
+ * into `pantry_items` — D2's fuzzy name match (`namesMatch`,
+ * `INGREDIENT_SIMILARITY_THRESHOLD`) combined with D3's unit-conversion-
+ * aware compatibility (`unitsCompatible`/`convertQuantity`), REUSING
+ * `domain/shoppingListGeneration.ts`'s own matcher rather than a second,
+ * drift-prone reimplementation of the same rule `subtractPantry` already
+ * applies on the read side. A match increments that row's `quantity` —
+ * the confirmed amount converted into the EXISTING row's own unit, so an
+ * existing row's unit is never silently rewritten by a same-family cross-
+ * unit have-it. No match (genuinely different ingredient, or a cross-
+ * family/unrecognised-unit pair) inserts a brand-new row at the confirmed
+ * quantity/unit instead of incorrectly summing into an unrelated one
+ * (§17.5.3's own accepted, narrower correctness cost).
+ *
+ * Reads the WHOLE household pantry (`findPantryItems`, unfiltered) rather
+ * than a targeted query — same "dozens of items per household, not
+ * thousands" trade-off `findPantryItems`'s own doc already accepts for its
+ * `LIKE` substring search, and the only way to run D2's fuzzy match at all
+ * (it can't be pushed into a `WHERE` clause).
+ */
+export const upsertOrIncrementPantryItemForHaveIt = async (
+  client: PoolClient,
+  input: HaveItPantryUpsertInput,
+): Promise<PantryItemRow> => {
+  // MUST precede `findPantryItems` below — see `lockPantryForHousehold`'s
+  // own doc for the exact race this closes.
+  await lockPantryForHousehold(client, input.householdId);
+  const existingItems = await findPantryItems(client, input.householdId);
+  const normalizedIncomingName = normalizeIngredientName(input.name);
+  const canonicalIncomingUnit = input.unit === null ? null : canonicalizePantryUnit(input.unit);
+
+  const match = existingItems.find((item) => {
+    const canonicalExistingUnit = canonicalizePantryUnit(item.unit);
+    return (
+      namesMatch(normalizeIngredientName(item.name), normalizedIncomingName) &&
+      unitsCompatible(canonicalExistingUnit, canonicalIncomingUnit)
+    );
+  });
+
+  if (match === undefined) {
+    return insertFreshPantryItemForHaveIt(client, input);
+  }
+
+  const canonicalExistingUnit = canonicalizePantryUnit(match.unit);
+  // The `?? ''` fallback below is unreachable in practice: `unitsCompatible`
+  // (the gate `match` was found through) only ever returns `true` for a
+  // `null` `canonicalIncomingUnit` when `canonicalExistingUnit` is ALSO
+  // `null` — but that case is caught by the `canonicalExistingUnit ===
+  // canonicalIncomingUnit` branch just above, never reaching this call.
+  // Kept only so `convertQuantity`'s `string` parameter type is satisfied
+  // without an unsafe cast.
+  const convertedIncoming =
+    canonicalExistingUnit === canonicalIncomingUnit
+      ? input.quantity
+      : convertQuantity(input.quantity, canonicalIncomingUnit ?? '', canonicalExistingUnit);
+
+  // Defensive only — `unitsCompatible` already guaranteed convertibility
+  // to reach this branch, so `convertedIncoming` should never be `null`
+  // here; if some future edit to either function ever makes that not
+  // hold, fail safe by creating a fresh row rather than writing a `NaN`
+  // quantity into an existing one.
+  if (convertedIncoming === null) {
+    return insertFreshPantryItemForHaveIt(client, input);
+  }
+
+  const updated = await updatePantryItemPartial(client, match.id, {
+    quantity: match.quantity + convertedIncoming,
+  });
+  if (updated === null) {
+    // Unreachable against real data under `withUserTransaction`'s single
+    // connection (nothing else can delete `match` between the read above
+    // and this write within the same transaction) — a defensive throw
+    // rather than a silent `undefined`, matching this file's other
+    // `expected a returned row` guards.
+    throw new Error('upsertOrIncrementPantryItemForHaveIt: matched row vanished mid-transaction.');
+  }
+  return updated;
 };
 
 export interface PantryItemPatch {

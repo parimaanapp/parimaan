@@ -297,6 +297,12 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     fieldName: 'regenerateShoppingList',
   },
   {
+    id: 'HaveIt',
+    entryFile: 'haveIt.ts',
+    typeName: 'Mutation',
+    fieldName: 'haveIt',
+  },
+  {
     id: 'OnMenuChanged',
     entryFile: 'onMenuChanged.ts',
     typeName: 'Subscription',
