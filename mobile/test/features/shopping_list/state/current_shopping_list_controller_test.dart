@@ -172,6 +172,100 @@ void main() {
     });
   });
 
+  group('CurrentShoppingListController.recoverFromConflict', () {
+    test('confirmed: false previews without mutating state, even while build() is stuck on ConflictError', () async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateError: const ConflictError(
+          'An open shopping list already exists.',
+        ),
+        regenerateResult: testShoppingList,
+      );
+      final ProviderContainer container = _container(repository);
+      // `build()` fails — never awaited to success. A caller reaching
+      // `regenerateShoppingList` here would re-throw this same
+      // `ConflictError` (that method's own `await future` guard); this is
+      // exactly the trap `recoverFromConflict` exists to route around.
+      await expectLater(
+        container.read(currentShoppingListControllerProvider('menu-1').future),
+        throwsA(isA<ConflictError>()),
+      );
+
+      final ShoppingList preview = await container
+          .read(currentShoppingListControllerProvider('menu-1').notifier)
+          .recoverFromConflict(confirmed: false);
+
+      expect(preview, testShoppingList);
+      expect(repository.regenerateCalls, <(String, bool)>[('menu-1', false)]);
+      // NOT committed: state is still the original ConflictError.
+      expect(
+        container
+            .read(currentShoppingListControllerProvider('menu-1'))
+            .hasError,
+        isTrue,
+      );
+    });
+
+    test('confirmed: true commits and sets state from the response, recovering the controller', () async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateError: const ConflictError(
+          'An open shopping list already exists.',
+        ),
+        regenerateResult: testShoppingList,
+      );
+      final ProviderContainer container = _container(repository);
+      await expectLater(
+        container.read(currentShoppingListControllerProvider('menu-1').future),
+        throwsA(isA<ConflictError>()),
+      );
+
+      final ShoppingList result = await container
+          .read(currentShoppingListControllerProvider('menu-1').notifier)
+          .recoverFromConflict(confirmed: true);
+
+      expect(result, testShoppingList);
+      expect(repository.regenerateCalls, <(String, bool)>[('menu-1', true)]);
+      expect(
+        container
+            .read(currentShoppingListControllerProvider('menu-1'))
+            .requireValue,
+        testShoppingList,
+      );
+    });
+
+    test(
+      'a rejection throws — the caller must see it, state is left unchanged',
+      () async {
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(
+              generateError: const ConflictError(
+                'An open shopping list already exists.',
+              ),
+              regenerateError: const ForbiddenError('Not a member.'),
+            );
+        final ProviderContainer container = _container(repository);
+        await expectLater(
+          container.read(
+            currentShoppingListControllerProvider('menu-1').future,
+          ),
+          throwsA(isA<ConflictError>()),
+        );
+
+        await expectLater(
+          container
+              .read(currentShoppingListControllerProvider('menu-1').notifier)
+              .recoverFromConflict(confirmed: true),
+          throwsA(isA<ForbiddenError>()),
+        );
+        expect(
+          container
+              .read(currentShoppingListControllerProvider('menu-1'))
+              .hasError,
+          isTrue,
+        );
+      },
+    );
+  });
+
   group('CurrentShoppingListController.haveIt', () {
     test('refreshes controller state from the response — the item drops out of toBuy once movedToPantry', () async {
       final ShoppingList afterHaveIt = ShoppingList(

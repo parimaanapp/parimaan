@@ -20,8 +20,10 @@ import '../domain/shopping_list_item.dart';
 /// same `menuId` (this controller rebuilt, e.g. after a hot restart) is
 /// refused server-side with a `ConflictError` — same as a direct repeat call
 /// to `generateShoppingList` — since [regenerateShoppingList] is the only
-/// method allowed to write to an existing list; a future screen that needs
-/// to re-enter an already-generated list without re-calling `generate`
+/// method allowed to write to an existing list. [recoverFromConflict] below
+/// is this week's stopgap for that exact case (W11 S6b) — it reaches
+/// `regenerateShoppingList` without depending on this stuck `build()`'s own
+/// `future` — but it is still a stopgap: a real, first-class re-entry still
 /// belongs to a later slice, once a real `Query.shoppingList` exists.
 class CurrentShoppingListController
     extends FamilyAsyncNotifier<ShoppingList, String> {
@@ -58,6 +60,37 @@ class CurrentShoppingListController
     // initial `generateShoppingList` call) has settled before this method
     // touches `state`, the same guard `haveIt` takes below.
     await future;
+    final ShoppingList result = await _repository.regenerateShoppingList(
+      arg,
+      confirmed: confirmed,
+    );
+    if (confirmed) {
+      state = AsyncData<ShoppingList>(result);
+    }
+    return result;
+  }
+
+  /// Recovers this controller from the `ConflictError` `build()` throws when
+  /// an open list already exists for [arg] (this controller's own class
+  /// doc) — the ONE caller allowed to reach [ShoppingListRepository.
+  /// regenerateShoppingList] WITHOUT first awaiting a successfully-resolved
+  /// `future`. [regenerateShoppingList] above starts with `await future` on
+  /// purpose (its own doc: a completion guard against racing an in-flight
+  /// `build()`), but here `future` IS the already-failed `build()` this
+  /// method exists to route around — awaiting it would just re-throw the
+  /// identical `ConflictError` (`ShoppingListScreen`'s own doc names this
+  /// exact trap). Deliberately a SEPARATE method rather than a parameter on
+  /// [regenerateShoppingList]: every other, non-conflict caller legitimately
+  /// wants that guard, and skipping it unconditionally would let a call
+  /// race an in-flight FIRST-time `build()` and clobber `state` once that
+  /// build later resolves — the same hazard [haveIt]'s own doc names for
+  /// itself.
+  ///
+  /// Same [confirmed] contract as [regenerateShoppingList]: `false` returns
+  /// an unpersisted preview without touching `state`; `true` commits and
+  /// sets `state` from the response. Throws on failure, `state` left
+  /// unchanged — same contract as every other mutating method here.
+  Future<ShoppingList> recoverFromConflict({required bool confirmed}) async {
     final ShoppingList result = await _repository.regenerateShoppingList(
       arg,
       confirmed: confirmed,
