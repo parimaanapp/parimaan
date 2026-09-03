@@ -661,9 +661,21 @@ type Mutation {
 
   # Shopping list
   generateShoppingList(menuId: ID!): ShoppingList!
+  # Merge-regenerate (W11, E2E_MVP_PLAN.md §17.2.8 D8): preserves every
+  # already-`purchased`/`movedToPantry` item and every manually-added item
+  # (identified by `sourceRecipeId == null` — `addShoppingListItem` isn't
+  # built until later, but the origin marker exists from day one so no
+  # schema rework is needed when it ships) untouched, recomputing only the
+  # not-yet-had auto-generated portion. `confirmed: false` previews
+  # replace-counts without writing; `confirmed: true` commits.
+  regenerateShoppingList(menuId: ID!, confirmed: Boolean!): ShoppingList!
   addShoppingListItem(listId: ID!, input: ShoppingListItemInput!): ShoppingListItem!
   markPurchased(itemId: ID!): ShoppingListItem!
-  haveIt(itemId: ID!, quantity: Float!): ShoppingListItem!
+  # Returns ShoppingList!, not ShoppingListItem! (W11, E2E_MVP_PLAN.md
+  # §17.2.1 D1 — same precedent as W8 D4's `updateHouseholdSettings`
+  # widening: widened so it can attach to Subscription.onShoppingListChanged
+  # below; the affected item remains reachable via ShoppingList.items).
+  haveIt(itemId: ID!, quantity: Float!): ShoppingList!
   exportShoppingListImage(listId: ID!): String!    # returns presigned URL
 
   # Upload URL
@@ -691,17 +703,23 @@ type Subscription {
   # AppSync subscription: a subscribed mutation's return type must be a
   # supertype of the subscription payload, and `bulkAddPantryItems` returns
   # `[PantryItem!]!` (a list can't fan out to one `PantryItem`), while
-  # `haveIt`/`markPurchased` return `ShoppingListItem!` (wrong type, and
-  # don't exist yet — W11/W12). Corrected per E2E_MVP_PLAN.md §11.2.1;
-  # `bulkAddPantryItems`' own subscription coverage (`onPantryBulkChanged`
-  # or a refetch) is an open W18 item, not solved here.
+  # `haveIt`/`markPurchased` originally returned `ShoppingListItem!` (wrong
+  # type). Corrected per E2E_MVP_PLAN.md §11.2.1; `bulkAddPantryItems`' own
+  # subscription coverage (`onPantryBulkChanged` or a refetch) is an open
+  # W18 item, not solved here. `haveIt` itself was widened to `ShoppingList!`
+  # in W11 (§17.2.1 D1) specifically to close its own mismatch;
+  # `markPurchased` is W12 and still carries the mismatch until whichever
+  # week ships it repeats D1's widening.
   #
   # `onPantryChanged` **is implemented** (W5 S8) — the first field in this
   # type to go live, authorized by a per-field Lambda resolver rather than
   # this section's stated connect-time authorizer (§10.4 deviation,
-  # E2E_MVP_PLAN.md §11.2.9). `onMenuChanged`/`onShoppingListChanged` below
-  # remain aspirational (W11/W12, alongside the mutations they subscribe
-  # to). The pushed payload carries no event-type discriminator —
+  # E2E_MVP_PLAN.md §11.2.9). `onMenuChanged`/`onShoppingListChanged`/
+  # `onMembershipRevoked` below **are also implemented** (W11,
+  # E2E_MVP_PLAN.md §17 — see each field's own doc for its exact mutation
+  # coverage, which is narrower than this section's original sketch in
+  # `onMenuChanged`'s case). The pushed payload carries no event-type
+  # discriminator —
   # see E2E_MVP_PLAN.md §11.2.12 for why the mobile client treats every push
   # as "refetch", not a local add/update/delete patch — the same constraint
   # applies to every subscription field in this type, not just this one.
@@ -715,17 +733,52 @@ type Subscription {
   onRecipeChanged(householdId: ID!): Recipe
     @aws_subscribe(mutations: ["createRecipe", "updateRecipe", "deleteRecipe", "favoriteRecipe", "setInRotation"])
 
+  # SHIPPED W11 (E2E_MVP_PLAN.md §17.2.9, D9-carryover), attached to
+  # `createMenu` ONLY — `addMenuItem`/`removeMenuItem`/`autoFillWeek` return
+  # `MenuItem!`/`Boolean!`/`AutoFillResult!` respectively, none a `Menu!`,
+  # and each of those direct return values is actively consumed by its own
+  # caller today (the just-placed `MenuItem`, `removeMenuItem`'s
+  # idempotency boolean, `autoFillWeek`'s `filledCount`/`unfilledSlots`) —
+  # widening any of them the way D1 widened `haveIt` would silently drop
+  # information those callers already depend on, a materially more
+  # expensive deviation than D1's and out of W11's budget. Broadening
+  # coverage past `createMenu` is a real, separate future slice. Until
+  # then, the other three mutations are covered by the same
+  # refetch-on-route-entry/refetch-on-foreground gap already accepted for
+  # `onHouseholdChanged`'s exclusion of `leaveHousehold`/`deleteHousehold`
+  # below.
   onMenuChanged(householdId: ID!): Menu
-    @aws_subscribe(mutations: [
-      "createMenu", "addMenuItem", "removeMenuItem",
-      "autoFillWeek", "markMade"
-    ])
+    @aws_subscribe(mutations: ["createMenu"])
 
+  # SHIPPED W11 (E2E_MVP_PLAN.md §17.2.1, D1). `haveIt`'s return type was
+  # widened from `ShoppingListItem!` to `ShoppingList!` specifically so it
+  # can attach here — same precedent as W8 D4's `updateHouseholdSettings`
+  # widening. `addShoppingListItem`/`markPurchased` remain unattached this
+  # week: both are out of W11's own resolver scope (`addShoppingListItem`
+  # was never scheduled; `markPurchased` is W12) and still return
+  # `ShoppingListItem!`, the same structural mismatch D1 fixed for `haveIt`
+  # alone — whichever week ships either resolver must repeat D1's widening
+  # if it wants this subscription's coverage, not assume it inherits it.
   onShoppingListChanged(householdId: ID!): ShoppingList
-    @aws_subscribe(mutations: [
-      "generateShoppingList", "addShoppingListItem",
-      "markPurchased", "haveIt"
-    ])
+    @aws_subscribe(mutations: ["generateShoppingList", "regenerateShoppingList", "haveIt"])
+
+  # SHIPPED W11 (E2E_MVP_PLAN.md §17.2.7, D7) — closes the standing
+  # "subscribe-time-only re-authorization" gap (§14, flagged W11/W20) for
+  # the one member-removal event this codebase currently has:
+  # `deleteHousehold`. AppSync's real-time API has no public
+  # connection-eviction API (confirmed while designing this slice, unlike
+  # API Gateway WebSocket's `@connections/{connectionId}` endpoint), so
+  # this is a reactive push, not a server-side force-close: every OTHER
+  # currently-subscribed device for `householdId` receives `true` and tears
+  # down its own subscriptions and leaves, at normal push latency instead
+  # of waiting for its socket to drop for an unrelated reason. Zero
+  # return-type widening — `deleteHousehold` already returns `Boolean!`.
+  # `leaveHousehold` is deliberately NOT attached: it is self-service, so
+  # the leaver's own socket is not a security concern. A future
+  # "remove one member" mutation (none exists yet) must be added to this
+  # list when it ships.
+  onMembershipRevoked(householdId: ID!): Boolean
+    @aws_subscribe(mutations: ["deleteHousehold"])
 
   # `onHouseholdChanged` **is implemented** (W8 S10, E2E_MVP_PLAN.md
   # §14.2.10 D4/D5 — closes Phase 1's DoD line, previously shipped only as
