@@ -2554,3 +2554,294 @@ Nothing else in this codebase silently drops part of a request rather than faili
 | **D10** | Does auto-fill fill days already past in the current week? | **Yes, all 7 days** — the server has no timezone concept and deliberately never computes "today" (§15.2.4). Past days with existing items are protected by D4's `made_at` rule and by `overwrite: false` being the default. |
 | **D11** | Repeated auto-fill preview: same proposal twice? | **No** — unseeded in production (seeded only in tests via S1's injected-RNG seam), so regenerating on the preview screen produces a genuinely different proposal each time, which is what makes the dry-run "keep re-rolling" loop (D3) meaningful. |
 | **D12** | Does W10 add `Query.recipes` pagination? | **No** (§16.5.3) — the picker's role filter keeps its realistic worst case well below the Library screen's already-tested 300-item case. W13/W14's curated seed is the last cheap moment to revisit. |
+
+## 17. W11 detailed plan — Shopping list + Have-it
+
+**Status:** locked. The nine real product/architecture decisions this week's scope raised (§17.7) were put to the founder directly and answered — structured the same way as §11–§16.
+
+### 17.1 What W11 is locked to deliver
+
+Per §4's W11 row: `generateShoppingList`; staples-exclusion logic; the `haveIt` transaction; a `ChecklistItem` widget; the **RDS Proxy load spike** (R6, §6); the **AppSync 5-client subscription spike** (R3, §6); five wireframe screens — **Week confirmed→list prompt**, **List preview**, **Shopping List**, **Swipe · Have it**, **Have-it quantity** (Flow 6, screens landing at **39/49**). Gate, in §4's own words: "List generated correctly; Have-it moves to pantry."
+
+**Forward-references this plan accounts for** (via `grep -n "W11" docs/E2E_MVP_PLAN.md` against the pre-W11 doc — 15 hits, every one addressed below, none silently dropped):
+
+| # | Source | What it commits W11 to |
+|---|---|---|
+| 1 | §4 W11 row | `generateShoppingList`, staples exclusion, `haveIt`, `ChecklistItem` widget, RDS Proxy spike, 5-client subscription spike, screens 35–39/49 |
+| 2 | §6 R3 | "AppSync subscription with 5 concurrent clients drops events" — mitigation "reduce to per-entity subscriptions; add refetch-on-reconnect" — assigned to **W11 (30-min soak, 5 clients)** |
+| 3 | §6 R6 | "RDS Proxy connection exhaustion under Lambda concurrency" — mitigation "Data API fallback; batch resolvers" — assigned to **W11 (20 concurrent Lambdas)** |
+| 4 | §8 Q1 | Locked answer: direct connections first, no RDS Proxy upfront; W3 and W11 spikes test 20–30 concurrent Lambda invocations against real Aurora `max_connections`; add RDS Proxy only if the W11 spike shows failures |
+| 5 | §8 Q14 | Notification-permission prompt is contextual, inserted into Flow 6 at the "Generate list · preview" screen (end of W11) |
+| 6 | §11 | "List (W11)" is the still-missing third nav tab |
+| 7 | §11 | `haveIt`/`markPurchased` explicitly listed as W11/W12 mutations that don't exist yet |
+| 8 | §11.2.7-ish type-mismatch table | `haveIt`/`markPurchased` return `ShoppingListItem!` — flagged as a future subscription type mismatch |
+| 9 | §11.2.7-ish | "W11/W12 will hit the same type mismatch" — flagged forward |
+| 10 | §11.2.4-ish, pantry `lowThreshold` | Running-low predicate lives client-side; "duplicated server-side only when W11 needs it" — **closed by D4 below: not needed** |
+| 11 | §11 REFACTOR row | "W8/W11/W12 add three more [subscription] topics" |
+| 12 | §14.1 out-of-scope | R3's soak and R6's spike are W11, not W8 |
+| 13 | §14.2.5 GAP + D6 | W8's "under load" gate is not R3's client-count soak — that stays W11's job |
+| 14 | §14 | The subscribe-time-only authorization window on `onPantryChanged`/`onRecipeChanged` was flagged for W11/W20 — **closed by D7 below: fixed in W11** |
+| 15 | §14 REFACTOR row | "W11/W12 add `onMenuChanged`/`onShoppingListChanged`" and must add zero reconnect code |
+| 16 | §15.1/§16.1 | shopping-list generation, `haveIt`, `markMade` deferred to W11/W12 |
+| 17 | §16.2.9/D9 | `onMenuChanged` had no assigned week — **closed by D9-carryover below: ships in W11** |
+
+**Explicitly out of scope for W11** (owned by later weeks per §4, not oversights): `markMade` / pantry deduction on cooking a recipe (W12); `markPurchased` — the "check off as bought during the week, any household member, item enters pantry with default expiry" flow (§6 core loop, PRD §7.1) — **W12**, per §4's own W11/W12 split; the offline banner (wireframe 12.2, W12); share-as-image / `exportShoppingListImage` (W15); the AI-generated staples check note via Bedrock/Haiku (W15, per §4's row and PRD §7.1's "AI feature 4"); `addShoppingListItem` (manual add — not built this week; D8's design accounts for it existing later without rework, §17.2.8).
+
+### 17.2 Design
+
+#### 17.2.1 D1 — `haveIt`'s return type is widened to `ShoppingList!` so it can attach to `onShoppingListChanged`
+
+SD §6.1 (pre-W11) locked:
+
+```graphql
+type ShoppingList { id, householdId, generatedFromMenuId, createdAt, closedAt, aiStaplesNote, items: [ShoppingListItem!]! }
+type ShoppingListItem { id, name, quantity, unit, category, sourceRecipeId, purchased, purchasedBy, purchasedAt, movedToPantry }
+
+generateShoppingList(menuId: ID!): ShoppingList!
+addShoppingListItem(listId: ID!, input: ShoppingListItemInput!): ShoppingListItem!
+markPurchased(itemId: ID!): ShoppingListItem!
+haveIt(itemId: ID!, quantity: Float!): ShoppingListItem!
+
+onShoppingListChanged(householdId: ID!): ShoppingList
+  @aws_subscribe(mutations: ["generateShoppingList", "addShoppingListItem", "markPurchased", "haveIt"])
+```
+
+`addShoppingListItem`, `markPurchased`, and `haveIt` all returned `ShoppingListItem!`, which cannot satisfy `@aws_subscribe` against a field typed `ShoppingList` — the same defect class W8 S10 already hit and fixed once (§14.2.10 D4: `updateHouseholdSettings` widened `HouseholdSettings!` → `Household!` for the identical reason). **Locked: `haveIt`'s return type widens from `ShoppingListItem!` to `ShoppingList!`** (the only one of the three mutations actually in W11's scope — `markPurchased`/`addShoppingListItem` are W12/not-this-week). Given §11.2.12's already-locked "every push means refetch, no event-type discriminator" contract, the payload shape genuinely does not matter to any consumer — exactly the reasoning W8 D4 used. `generateShoppingList` already returns `ShoppingList!` and needs no change.
+
+#### 17.2.2 D2 — cross-recipe ingredient aggregation uses full fuzzy/similarity matching, with a named, tunable threshold
+
+PRD §9's data model is explicit that ingredients are **free text** (`recipe_ingredients.name` is a string, no canonical `ingredients` table with aliases — PRD line 412: normalization is v1.1). Two recipes calling for "onion" and "1 onion, chopped" are the same ingredient to a human and different strings to a `GROUP BY name`. The founder chose the most engineering-heavy of the three options on the table — full fuzzy/similarity matching — after being told explicitly that it costs the most engineering time and that there is no meaningful performance/cost difference between the options at MVP data volumes; the choice was pure risk tolerance in favor of a shorter, better-merged list over `parseIngredientString`'s existing "never guess past what's confidently parseable" caution.
+
+**Locked design, concrete and boundable:**
+
+1. **Normalization pass** (unchanged from the original draft, retained as the mandatory first step): lowercase + trim every ingredient name before any comparison.
+2. **Similarity pass**: two normalized names are candidates to merge if they are byte-identical, **or** their **Sørensen–Dice coefficient over character bigrams** is at or above a named constant, `INGREDIENT_SIMILARITY_THRESHOLD = 0.75`, exported from `api/src/domain/shoppingListGeneration.ts` so it is re-tunable later without touching call sites (same "named module-level constant, not a magic number" convention `rotationSelection.ts` established in W10 §16.2.8). Dice coefficient is chosen over Jaro-Winkler/Levenshtein-ratio because it naturally penalizes length mismatch between short tokens (`Dice = 2·|bigrams(A)∩bigrams(B)| / (|bigrams(A)|+|bigrams(B)|)`), which is exactly the property that keeps "onion" and "onion powder" apart without a hand-tuned length guard: "onion" (4 bigrams) vs "onion powder" (~11 bigrams) shares all 4 of "onion"'s bigrams, giving Dice ≈ 8/15 ≈ 0.53 — below threshold, correctly not merged — while "onion" vs "onions" (a pluralization difference) shares all 4 bigrams against 5, giving Dice ≈ 8/9 ≈ 0.89 — above threshold, correctly merged. No new runtime dependency is required — bigram Dice is ~15 lines of pure string code, kept in `shoppingListGeneration.ts` itself rather than pulled in as an npm package, since the entire function is a single well-understood formula with no edge-case-laden tokenization to get wrong.
+3. **Unit gate**: fuzzy merging never crosses a unit boundary on its own — two similarly-named ingredients merge only if their units are identical, or convertible under D3's conversion table (§17.2.3) into the same unit. This keeps D2 and D3 composable rather than two independently-reasoned merge rules.
+4. **Clustering**: `aggregateIngredients` walks ingredient occurrences in a stable, deterministic order (menu day → meal → recipe → ingredient index) and greedily assigns each occurrence to the first existing group whose representative name matches under the rule above, else starts a new group — a documented, bounded simplification (not full pairwise clustering), consistent with keeping this a testable pure function rather than growing into an NLP-adjacent scope.
+
+**S1's RED test list changes accordingly:** the pre-decision draft's "differently-spelled names do NOT merge" test is **removed** — the opposite is now the locked, intended behavior up to the threshold. **Added:**
+- two clearly-different ingredients that are superficially similar in text never falsely merge (`"onion"` vs `"onion powder"`, asserted directly against the Dice-under-threshold case above).
+- a same-ingredient pair with a small spelling/pluralization difference **does** merge (`"onion"` vs `"onions"`, the Dice-over-threshold case above).
+- `INGREDIENT_SIMILARITY_THRESHOLD` is exported as a named constant, and a pair constructed just above/just below it is asserted to flip the merge outcome (proves the threshold is load-bearing, not a decorative constant).
+
+#### 17.2.3 D3 — pantry subtraction and `haveIt`'s upsert-match use a small hardcoded conversion table, sourced from `api/src/domain/pantryUnits.ts`'s real enum
+
+`api/src/domain/pantryUnits.ts` is the actual source of truth for units in this codebase — its `KNOWN_PANTRY_UNITS` are `g, kg, ml, l, piece, packet, bunch, tsp, tbsp, cup` (not the `katori`/`vati`/`to_taste` set the pre-decision draft guessed at from the PRD; those are not real values anywhere in the codebase and the locked table does not invent them). Of these ten, seven are physically inter-convertible in two families:
+
+- **Mass family** (base unit `g`): `g = 1`, `kg = 1000`.
+- **Volume family** (base unit `ml`): `ml = 1`, `l = 1000`, `tsp ≈ 4.9289`, `tbsp ≈ 14.7868` (= 3 tsp), `cup ≈ 236.588` (= 48 tsp = 16 tbsp) — standard US customary approximations, rounded to 4 significant figures, named constants in `api/src/domain/unitConversion.ts`.
+- **Count-only, no conversion partners**: `piece`, `packet`, `bunch` — these stay exact-unit-match-only, same as an unrecognized/free-text unit.
+
+**Locked function:** `convertQuantity(quantity, fromUnit, toUnit): number | null` in `api/src/domain/unitConversion.ts` — returns the converted quantity when `fromUnit`/`toUnit` canonicalize (via `canonicalizePantryUnit`) into the same family, `null` otherwise. `subtractPantry` and `haveIt`'s pantry upsert-match both call this: a same-family, different-unit pair now subtracts/matches correctly (e.g. a recipe calling for `2 cups` against a pantry row holding `500 g` still falls back — different families — but `2 cups` against a pantry row holding `600 ml` now converts and subtracts); D3's original "list at full quantity / create a new pantry row" fallback applies **only** when `convertQuantity` returns `null` — i.e., genuinely outside the table (cross-family, or an unrecognized unit on either side), not for every non-identical unit as the pre-decision draft's exact-match-only design would have done.
+
+**S1/S3 RED test list changes accordingly:** subtraction/matching tests now include a same-family cross-unit case that correctly reduces (`tbsp` pantry stock subtracting a `tsp`-denominated recipe requirement, and a `kg` pantry row subtracting a `g`-denominated one), alongside the retained cross-family case (e.g. `cup` vs `g`) that still falls back to full-quantity/new-row exactly as before.
+
+#### 17.2.4 D4 — the server-side running-low predicate is confirmed not needed, closed without building it
+
+Re-reading the forward-reference (§17.1 row 10): it says "duplicated server-side only when W11 needs it." Neither S1's aggregation/subtraction pipeline nor S3's `haveIt` transaction, as designed above, need "is this pantry item running low" — they need "does a matching pantry item exist and how much," a different predicate entirely. **Locked: not built.** The forward-reference closes as checked-not-needed, not silently dropped and not built speculatively.
+
+#### 17.2.5 D5 — Have-it quantity defaults to the shopping-list quantity, with an optional edit
+
+Matches the PRD's own stated lean (PRD line 560: "default + optional edit"). The dedicated **Have-it quantity** wireframe screen shows the shopping-list item's quantity pre-filled, editable inline, with a single confirm action; cancelling commits nothing.
+
+#### 17.2.6 D6 — the R3 5-client subscription soak runs early, against the three already-shipped topics, as soon as S3 (`haveIt`) lands
+
+R3's mitigation text ("reduce to per-entity subscriptions; add refetch-on-reconnect") is already done — per-entity subscriptions have been the architecture since SD §5.5, and refetch-on-reconnect shipped in W8. What R3 still needs is the soak test itself: 5 concurrent WebSocket clients subscribed to the same household's `onPantryChanged`/`onRecipeChanged`/`onHouseholdChanged` for a sustained 30 minutes, counting dropped events against a known mutation rate. **Locked: the soak runs as soon as S3 lands**, against those three already-shipped topics — it does not wait for `onShoppingListChanged` (D1) or `onMenuChanged` (D9-carryover) to exist, since R3 is a platform/connection-scaling question, not a feature-specific one. Once `onShoppingListChanged` and `onMenuChanged` exist later in the week, the soak's mutation mix can optionally include them, but the soak's own timing does not depend on it.
+
+#### 17.2.7 D7 — the subscribe-time-only re-authorization gap is fixed in W11, via a reactive revocation push on `deleteHousehold`
+
+§11.2.9 established the per-field subscription authorizer pattern: a Lambda resolver on each `Subscription` field, invoked **once**, at subscribe time, never again for the life of the WebSocket connection. §14's finding (row 14, §17.1) is that a member whose access is revoked mid-session keeps their already-open subscription live until their socket drops for an unrelated reason (backgrounding, a reconnect, or the connection's own max lifetime).
+
+**Real platform constraint found while designing this slice, not assumed:** AWS AppSync's GraphQL real-time API — unlike API Gateway WebSocket APIs, which expose a `@connections/{connectionId}` management endpoint — provides **no public API to force-close a specific established subscription connection**, and no way to enumerate live connections by user. Option (a) from the two sketched in planning (a periodic re-authorization sweep) and the literal reading of option (b) (a mechanism that force-closes a specific member's socket from the server) are therefore both unbuildable against AppSync's actual surface, not merely more or less convenient than each other.
+
+**Locked, tractable design — reactive client-side disconnect, triggered exactly at the moment of removal:** this codebase's only mutation today that instantly removes *other* members' access mid-session is `deleteHousehold` (`leaveHousehold` is self-service — the leaver's own socket is not a security concern, since they triggered it themselves). W11 adds:
+
+- **`Subscription.onMembershipRevoked(householdId: ID!): Boolean`**, `@aws_subscribe(mutations: ["deleteHousehold"])` — legal with **zero return-type widening**, since `deleteHousehold` already returns `Boolean!` and the new subscription field is typed `Boolean` to match exactly, the same literal-type-match constraint D1/D9 both work within.
+- A subscribe-time Lambda-resolver authorizer on this field, identical in shape to `onPantryChanged`/`onRecipeChanged`/`onHouseholdChanged`'s existing ones (`requireHouseholdMember`, reused unchanged).
+- **Mobile wiring**: the generic WebSocket link (already subscription-agnostic per the codebase's own established pattern, §11 REFACTOR row) registers `onMembershipRevoked` for the current household exactly like every other topic. On receipt of a `true` push, the client immediately unsubscribes every live subscription scoped to that `householdId`, closes them client-side without waiting for backoff/foreground, and routes away from any screen showing that household's data — the same "every push means refetch" trigger this system already uses everywhere else, applied to "refetch" meaning "leave," not "reload."
+
+This collapses the exposure window for the one reachable removal event in this codebase from "until the socket drops for an unrelated reason" (potentially hours) down to normal push latency (sub-second, the same latency every other subscription in this system already delivers at) for every *other* currently-connected member. It does not defend against a hostile, modified client that simply ignores the push — but no query that client subsequently issues can return data beyond what `requireHouseholdMember`'s ≤30s-cache-backed re-check already gates (§14.2.8), so the residual exposure is exactly the already-accepted "pushed payloads reveal data before the next query re-authorizes" gap, now narrowed to a single, understood, sub-second-latency trigger instead of an unbounded one. This is a genuinely new slice (S8 below), not folded into an existing one — it touches `deleteHousehold`'s resolver, a new subscribe-time authorizer, SDL, and mobile subscription-teardown wiring, none of which share files with the shopping-list slices.
+
+#### 17.2.8 D8 — regenerating a shopping list is merge-regenerate, behind a confirm dialog
+
+Regenerating a shopping list for a menu that already has one **preserves, untouched**: every item already marked "had" (moved to pantry via `haveIt`), and every manually-added item (not buildable via the API this week — `addShoppingListItem` is out of scope — but the schema/repository design must not need rework when it ships). Only the **not-yet-had, auto-generated** portion of the list is recomputed from current menu state. This happens behind a confirm dialog before being applied, the same accidental-data-loss guard W10's regenerate-confirm dialog (§16.2.7) exists for.
+
+**Concrete shape:** `shopping_list_items` gains a simple origin marker — **`source_recipe_id IS NOT NULL`** is reused as the origin signal rather than adding a redundant boolean column (a manually-added item, whenever `addShoppingListItem` ships, will have `source_recipe_id = NULL`; every item this week's `generateShoppingList` produces has a non-null `source_recipe_id` by construction, since S1's aggregation always originates from a recipe's ingredients). This is a zero-migration-cost decision available today because the column already needs to exist for `ShoppingListItem.sourceRecipeId` in the locked SDL — no new column, no future schema rework when manual-add ships.
+
+**API shape:** a single mutation, `regenerateShoppingList(menuId: ID!, confirmed: Boolean!): ShoppingList!` (not a separate two-step API) — `confirmed: false` (or omitted, if a default-`false` argument reads cleaner in the schema module) short-circuits with a typed response describing what *would* change (counts of items to be replaced) without writing anything, mirroring `autoFillWeek`'s own re-validate-and-report shape rather than requiring a second round-trip query to compute the same preview; `confirmed: true` performs the merge-regenerate write. This keeps the confirm gate server-enforced (never trust a client-only dialog) while still letting the mobile UI show real numbers in its confirm copy from the same call it will use to commit.
+
+**S2's RED tests changes accordingly**, replacing the pre-decision draft's vague "D8's re-generation behavior" placeholder with concrete cases: regenerating with `confirmed: false` writes nothing and reports accurate counts of what would be replaced; regenerating with `confirmed: true` preserves every already-`purchased`/`movedToPantry` item unchanged (byte-identical row, asserted directly); regenerating preserves a manually-added item unchanged — seeded directly via the repository/SQL layer, bypassing the not-yet-built `addShoppingListItem` resolver, since D8 explicitly requires this to be correct from day one even though nothing in this week's own API surface can create such a row; regenerating recomputes only the remaining auto-generated (`source_recipe_id IS NOT NULL`, not yet `movedToPantry`) portion against current menu state; calling with `confirmed: true` when no prior list exists behaves identically to a first `generateShoppingList` call (no special-cased empty-state bug).
+
+#### 17.2.9 D9-carryover — `onMenuChanged` ships in W11, attached only to `createMenu`
+
+§16.2.9/D9 left `onMenuChanged` genuinely unassigned twice in a row. **Locked: it ships in W11.** SD's pre-W11 sketch listed it attached to `createMenu, addMenuItem, removeMenuItem, autoFillWeek, markMade` — but checking what those mutations actually return today in `shared/schema.graphql` (not the SD sketch, which predates W9/W10's real shapes): `createMenu` returns `Menu!` (a native fit, zero cost); `addMenuItem` returns `MenuItem!`; `removeMenuItem` returns `Boolean!`; `autoFillWeek` returns `AutoFillResult!` (the `{ menu, filledCount, unfilledSlots }` wrapper W10 D5 introduced). None of the latter three can attach to a field typed `Menu` without a D1-style return-type widening of their own — and unlike `haveIt` (whose only consumer is a refetch-triggering subscription payload the client never inspects, per §11.2.12), all three of these mutations' **direct** return values are actively consumed today: `addMenuItem`'s `MenuItem!` return is used for the single just-placed item, `removeMenuItem`'s `Boolean!` is its idempotency signal, and `autoFillWeek`'s `AutoFillResult!` carries the `filledCount`/`unfilledSlots` W10 S6's UI directly renders. Widening any of them to `Menu!` would silently drop information their own callers already depend on — a materially different, more expensive deviation than D1's, and out of this week's budget.
+
+**Locked scope:** `onMenuChanged(householdId: ID!): Menu` attaches via `@aws_subscribe(mutations: ["createMenu"])` only — zero widening, zero mobile-side rework beyond registering the new topic. This mirrors the exact precedent already in this doc for `onHouseholdChanged` deliberately excluding `leaveHousehold`/`deleteHousehold` for the identical reason (§14.2.10's own note, restated in SD §6.1's Subscription block): a structural return-type mismatch is a real reason to leave a mutation off a subscription's list, not an oversight to silently paper over. `addMenuItem`/`removeMenuItem`/`autoFillWeek` remain covered the way every other unattached mutation is today — refetch-on-route-entry and refetch-on-foreground (the same accepted staleness gap `onHouseholdChanged`'s own doc block already names for `leaveHousehold`/`deleteHousehold`). Broadening `onMenuChanged`'s coverage past `createMenu` is a real, separate future slice (a candidate for whichever week next revisits menu mutations' return shapes), not resolved here.
+
+### 17.3 Slice breakdown
+
+#### S1 — Shopping-list domain module + migration (pure aggregation logic, no resolver)
+
+- **Delivers:** `shopping_lists`/`shopping_list_items` tables (new migration, matching PRD §9's columns; `source_recipe_id` doubles as D8's origin marker, no separate boolean column); `api/src/domain/shoppingListGeneration.ts` — `isStapleExcluded(ingredient, recipeCategorySet)` (PRD §9's three-part OR), `aggregateIngredients(menuItems, recipesById)` (D2's normalize-then-fuzzy-cluster pipeline, `INGREDIENT_SIMILARITY_THRESHOLD` as a named exported constant, unit-gated per D3), `subtractPantry(aggregated, pantryItems)` (D3's conversion-table-aware reduction, never negative, falls back to full-quantity only when `convertQuantity` returns `null`), `categorize(items)`; `api/src/domain/unitConversion.ts` — `convertQuantity(quantity, fromUnit, toUnit)` sourced from `pantryUnits.ts`'s real `KNOWN_PANTRY_UNITS` (mass family `g`/`kg`; volume family `ml`/`l`/`tsp`/`tbsp`/`cup`; `piece`/`packet`/`bunch` uncovertible). All pure functions, deterministic, no DB/IO.
+- **Files:** `api/migrations/<ts>_shopping-lists.ts`; `api/src/domain/shoppingListGeneration.ts` (+ test); `api/src/domain/unitConversion.ts` (+ test).
+- **Depends on:** nothing — starts immediately.
+- **Size/Risk:** ~3.0 hrs / Medium-High — up from the pre-decision draft's 2.0 hrs: D2's fuzzy-matching pipeline and D3's conversion table are both genuinely new engineering surface with no precedent in this codebase.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `code-reviewer`. `security-reviewer` skips (no I/O).
+- **RED tests:** two menu items using recipes that share an identically-spelled ingredient in the same unit sum correctly; two clearly-different ingredients that are superficially similar in text never falsely merge (`"onion"` vs `"onion powder"`, D2); a same-ingredient pair with a small spelling/pluralization difference does merge (`"onion"` vs `"onions"`, D2); `INGREDIENT_SIMILARITY_THRESHOLD` is a named, exported constant and a pair straddling it flips the merge outcome (D2); a `tsp`/`tbsp`/`pinch`/`to_taste`-unit ingredient is excluded regardless of `is_staple`; an `is_staple = true` ingredient is excluded regardless of unit; a `category ∈ {spice, masala, salt, oil}` ingredient is excluded regardless of the other two; an ingredient satisfying none of the three exclusions appears in the main list; `convertQuantity` correctly converts within the mass family and within the volume family, and returns `null` across families or for `piece`/`packet`/`bunch` (D3); pantry subtraction removes a line fully covered in matching (or same-family-convertible) name+unit, partially reduces a partially-covered one, converts a same-family cross-unit pair correctly (e.g. pantry `tbsp` against a recipe's `tsp` requirement), and leaves a cross-family-mismatched or absent pantry item at full recipe-required quantity; a zero-or-negative post-subtraction result is clamped to zero and the line dropped, never shown as "buy -2"; a recipe contributing zero non-staple ingredients contributes nothing to the list; `servings_override` on a `menu_items` row scales that recipe's ingredient quantities before aggregation.
+
+#### S2 — `Mutation.generateShoppingList(menuId)` / `regenerateShoppingList(menuId, confirmed)` + repository layer + `onMenuChanged` (D9-carryover)
+
+- **Delivers:** SDL for `ShoppingList`/`ShoppingListItem`/`ShoppingListItemInput` (`generateShoppingList` already returns `ShoppingList!`, no widening needed); `Mutation.regenerateShoppingList(menuId: ID!, confirmed: Boolean!): ShoppingList!` per D8's merge-regenerate design; `Subscription.onMenuChanged(householdId: ID!): Menu` attached to `["createMenu"]` only, per D9-carryover, plus its subscribe-time `requireHouseholdMember` authorizer resolver; `shoppingListRepository.ts` — `insertShoppingList`, `insertShoppingListItems` (batch), `findShoppingListByMenu`, `findOpenShoppingListForHousehold`, `mergeRegenerateShoppingList` (D8's preserve-had/preserve-manual/recompute-rest logic); `generateShoppingList.ts` resolver: `requireHouseholdMember` → fetch menu's `menu_items` + their recipes' ingredients + household's pantry → S1's pure pipeline → insert transactionally → return.
+- **Files:** `shared/schema.graphql`; `api/src/repositories/shoppingListRepository.ts`; `api/src/validation/shoppingList.ts`; `api/src/resolvers/generateShoppingList.ts`; `api/src/resolvers/regenerateShoppingList.ts`; `api/src/resolvers/onMenuChanged.ts`; `api/src/mappers/shoppingList.ts`; `infra/stacks/api-stack.ts`.
+- **Depends on:** S1.
+- **Size/Risk:** ~2.5 hrs / Medium — up from 2.0 hrs for D8's merge-regenerate logic and D9-carryover's small addition.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `database-reviewer` → `security-reviewer` → `code-reviewer` → `doc-updater`.
+- **RED tests:** a menu with a full week of items generates a list matching S1's own aggregation invariants end-to-end against Testcontainers Postgres; an empty menu generates an empty list, not an error; a recipe from another household never contributes ingredients; non-member denied identically for both real-other-household and nonexistent `menuId`; explicit `null` on `menuId`/`confirmed` rejected; `regenerateShoppingList(confirmed: false)` writes nothing and reports accurate replace-counts; `regenerateShoppingList(confirmed: true)` preserves every already-`purchased`/`movedToPantry` item byte-identical; preserves a manually-added item seeded directly via the repository (bypassing the not-yet-built resolver, per D8); recomputes only the remaining auto-generated portion against current menu state; `confirmed: true` with no prior list behaves identically to a first `generateShoppingList` call; `onMenuChanged` fires on `createMenu` and is denied to a non-member identically to every other subscribe-time authorizer; `onMenuChanged` is **not** wired to `addMenuItem`/`removeMenuItem`/`autoFillWeek` (asserted directly — a regression test for D9-carryover's scope boundary, not left implicit).
+
+#### S3 — `Mutation.haveIt(itemId, quantity)` — the pantry-write transaction
+
+- **Delivers:** SD §5.7's transaction: `requireHouseholdMember` (discovered via the item's list's household, matching `updatePantryItem`'s id-only pattern); upsert-or-increment into `pantry_items` using D3's conversion-table-aware match (same-family cross-unit increments correctly; cross-family or unrecognized-unit creates a new row); `UPDATE shopping_list_items SET moved_to_pantry = true, purchased = true, purchased_by = $caller, purchased_at = now()`; return type widened to **`ShoppingList!`** per D1.
+- **Files:** `shared/schema.graphql` (D1's widened return type); `api/src/repositories/shoppingListRepository.ts` (add `markItemHaveIt`); `api/src/repositories/pantryRepository.ts` (add the conversion-aware upsert-or-increment helper, using S1's `convertQuantity`); `api/src/resolvers/haveIt.ts`; `api/src/mappers/shoppingList.ts`.
+- **Depends on:** S1, S2 (needs `shopping_list_items` to exist).
+- **Size/Risk:** ~2.0 hrs / Medium — up from 1.5 hrs for D3's conversion-aware match logic on the write path.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `database-reviewer` → `security-reviewer` → `code-reviewer`.
+- **RED tests:** an item with no matching pantry row creates one at the confirmed quantity; an item matching an existing pantry row by exact name+unit increments it; an item matching by name and a same-family convertible unit (e.g. shopping-list `tbsp` against a pantry `tsp` row) converts and increments correctly (D3); an item whose name matches an existing pantry row in a cross-family or unrecognized unit creates a **second** row rather than incorrectly summing; the shopping-list item is marked `moved_to_pantry`/`purchased` atomically with the pantry write (a forced mid-transaction failure leaves neither side changed); a zero or negative `quantity` argument is rejected at validation; calling `haveIt` twice on the same item is idempotent-safe or explicitly rejected (named as its own test); the mutation's return value satisfies `ShoppingList!`'s shape end-to-end, not just at the SDL level; non-member denied identically to S2's pattern; explicit `null` rejected for `quantity`.
+
+#### S4 — RDS Proxy load spike (R6) + AppSync 5-client subscription soak (R3)
+
+- **Delivers:** R6: 20-30 genuinely concurrent direct Lambda invocations (the W9 S7/W10 S7 method) against `generateShoppingList` and/or `haveIt`, recording connection-refused/error rates at real dev Aurora's actual `max_connections`; a written go/no-go on RDS Proxy per Q1's "only if the spike shows failures" instruction. R3: 5 concurrent WebSocket clients subscribed to the household's three already-shipped topics (`onPantryChanged`/`onRecipeChanged`/`onHouseholdChanged`) for a 30-minute soak against a scripted background mutation rate, per D6 — run as soon as S3 lands, not gated on `onShoppingListChanged`/`onMenuChanged`, though both can join the mix once they exist later in the week.
+- **Files:** a throwaway spike script (not shipped code, results written into `docs/E2E_MVP_PLAN.md`'s W11 section); `docs/RUNBOOK.md` (if the soak method becomes repeatable).
+- **Depends on:** S3 (needs live mutations to generate real load — D6). Independent of S5/S6/S7/S8 (mobile UI, D7's auth fix) — runs in parallel with them.
+- **Size/Risk:** ~2.5 hrs / Medium-High — a failing result on either spike triggers real, unbudgeted follow-up work.
+- **Agents:** `database-reviewer` (R6) and `architect` (R3) review the spike design before it runs; `doc-updater` records the result.
+- **RED tests:** N/A — a measurement slice, matching W7's JSON-LD spike and W17's planned vision spike.
+
+#### S5 — Mobile: `ShoppingListRepository` plumbing + `haveIt`/generate/regenerate wiring
+
+- **Delivers:** `ShoppingListRepository.generateShoppingList(menuId)`, `.regenerateShoppingList(menuId, confirmed)`, and `.haveIt(itemId, quantity)` (interface, Ferry impl, fake) mirroring `MenuRepository`'s W9/W10 shape; a `CurrentShoppingListController` with the same throwing-`AppError`-on-failure contract W10 S4 established; `.graphql` operation files + codegen; `mobile/lib/features/shopping_list/domain/shopping_list_item.dart`/`checklist_item.dart`; the mobile `schema.graphql` re-sync.
+- **Files:** `mobile/lib/features/shopping_list/data/shopping_list_repository.dart`, `shopping_list_mapper.dart`; `mobile/lib/features/shopping_list/domain/shopping_list_item.dart`; `mobile/lib/features/shopping_list/state/current_shopping_list_controller.dart`; new `.graphql` operation files + codegen.
+- **Depends on:** S2, S3.
+- **Size/Risk:** ~1.5 hrs / Low.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** `generateShoppingList` returns the full list on success; `regenerateShoppingList(confirmed: false)` surfaces the preview counts without mutating controller state as "committed"; `regenerateShoppingList(confirmed: true)` refreshes state with the merged result; `haveIt` refreshes controller state (item removed from the "to buy" view, per `movedToPantry`) on success; a rejection at any step surfaces as a typed `AppError`; the fake repository round-trips all states used by the UI tests below.
+
+#### S6 — Week-confirmed prompt + List preview + Shopping List screen (wireframes 35-38/49)
+
+- **Delivers:** a "Generate shopping list" affordance surfaced once a week's plan is confirmed; the **List preview** screen (categorized, staples excluded per S1's rules, an honest empty state); the persistent **Shopping List** screen (`ChecklistItem` rows, category grouping); a "Regenerate" affordance that calls `regenerateShoppingList(confirmed: false)` first to populate the confirm dialog's copy (real counts, per D8) and only calls `confirmed: true` on an affirmative tap; the Q14-mandated notification-permission prompt inserted at the end of this flow.
+- **Files:** `mobile/lib/features/shopping_list/presentation/list_generated_prompt_screen.dart`, `list_preview_screen.dart`, `shopping_list_screen.dart`, `checklist_item.dart`, `regenerate_confirm_dialog.dart`; `mobile/lib/app/router.dart`; the notification-permission prompt call site.
+- **Depends on:** S5.
+- **Size/Risk:** ~2.5 hrs / Medium.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** the generate affordance calls `generateShoppingList` with the correct `menuId`; a fully-staples-excluded week renders a real empty state; categories render in a stable, defined order; items group correctly per S1's category output; regenerate's confirm dialog shows real counts of items that will be preserved vs. recomputed, sourced from the `confirmed: false` preview call, never hardcoded copy; **no path calls `regenerateShoppingList(confirmed: true)` without an affirmatively-dismissed confirmation** (D8's own version of W10 S6's confirm-gate test); the notification prompt fires exactly once at the end of this flow and never during onboarding; a generation/regeneration failure renders inline, never a silent no-op.
+
+#### S7 — Swipe · Have it + Have-it quantity (wireframes 38-39/49)
+
+- **Delivers:** the swipe-to-"Have it" gesture on a `ChecklistItem` row; the **Have-it quantity** screen/sheet pre-filled with the shopping-list quantity and editable inline (D5); calling `CurrentShoppingListController.haveIt` on confirm; honest UI feedback distinguishing "moved to pantry" from a failed write.
+- **Files:** `mobile/lib/features/shopping_list/presentation/have_it_quantity_sheet.dart`; `checklist_item.dart` (swipe affordance); `shopping_list_screen.dart`.
+- **Depends on:** S6.
+- **Size/Risk:** ~1.5 hrs / Medium.
+- **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`. `security-reviewer` skips.
+- **RED tests:** swiping calls up the quantity affordance, not `haveIt` directly; the pre-filled quantity matches the shopping-list item's own quantity exactly (D5); confirming calls `haveIt` with the edited (or unedited default) quantity, never the wrong one; cancelling calls nothing; a failed `haveIt` leaves the item visible and unmoved, with a visible error.
+
+#### S8 — Subscribe-time re-authorization gap fix: `onMembershipRevoked` (D7)
+
+- **Delivers:** §17.2.7's design in full. SDL: `Subscription.onMembershipRevoked(householdId: ID!): Boolean`, `@aws_subscribe(mutations: ["deleteHousehold"])` (zero widening — `deleteHousehold` already returns `Boolean!`); a subscribe-time Lambda-resolver authorizer (`api/src/resolvers/onMembershipRevoked.ts`), identical shape to `onPantryChanged`/`onRecipeChanged`/`onHouseholdChanged`'s existing authorizers, reusing `requireHouseholdMember` unchanged; mobile wiring — the generic WebSocket link registers this topic per-household exactly like every other one, and on receipt of `true`, the client unsubscribes every live subscription scoped to that `householdId` and routes away, without waiting for backoff/foreground.
+- **Files:** `shared/schema.graphql`; `api/src/resolvers/onMembershipRevoked.ts` (+ test); `infra/stacks/api-stack.ts`; `mobile/lib/features/household/data/household_repository.dart` or wherever the subscription-teardown trigger cleanly lives (existing subscription registration call sites); new `.graphql` subscription operation + codegen.
+- **Depends on:** nothing — independent of the shopping-list domain work, can start day 1 in parallel with S1.
+- **Size/Risk:** ~1.5 hrs / Low-Medium — small, precedented SDL/resolver shape (mirrors three already-shipped authorizers), the only real new surface is the mobile teardown-on-push handler.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `database-reviewer` → `security-reviewer` → `code-reviewer` (API side); `tdd-guide` → `flutter-reviewer` → `code-reviewer` (mobile side).
+- **RED tests:** a non-member cannot subscribe to `onMembershipRevoked` for a household they don't belong to, denied identically to every other subscribe-time authorizer; `deleteHousehold` triggers a `true` push to every subscriber of that `householdId`'s topic; on receipt, the mobile client unsubscribes every other live topic scoped to that household (asserted directly against the fake WebSocket link, not inferred); the client navigates away from any currently-visible screen for that household; a push for a **different** household's `onMembershipRevoked` never affects this household's subscriptions (cross-household isolation, asserted directly — the same class of test `requireHouseholdMember`'s own cache-key design already guards elsewhere).
+
+#### S9 — Real-AWS verification + spike write-up + weekly doc pass
+
+- **Delivers:** direct-Lambda-invoke verification of `generateShoppingList`/`regenerateShoppingList` (a seeded household's real week produces the expected staples-excluded, pantry-subtracted, correctly-fuzzy-merged list; a regenerate preserves had/manual items live) and `haveIt` (pantry row created/incremented/converted correctly, shopping-list item flips `moved_to_pantry`/`purchased`) against real dev Aurora/AppSync, throwaway households deleted afterward; `deleteHousehold` verified to actually push `onMembershipRevoked` and close a live second-device connection's subscriptions end-to-end (D7); S4's two spike results written up with a go/no-go on RDS Proxy; §4.2's mandatory weekly pass — actual-vs-planned hours into §4's W11 row, a decisions-versus-shipped audit of §17.7 D1–D9.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 row, a W11-result subsection); `docs/SYSTEM_DESIGN.md` (§6.1's shape — D1's widened `haveIt`, D9-carryover's `onMenuChanged`, D7's new `onMembershipRevoked`); `docs/RUNBOOK.md` (R3's soak method, if repeatable).
+- **Depends on:** all slices.
+- **Size/Risk:** ~1.5 hrs / Low, non-optional.
+- **Agents:** `doc-updater`.
+
+**Planned total: ~18.5 hrs** against §4's nominal ~10-12 — up from the pre-decision draft's own 15.0 hr estimate, reflecting D2's full-fuzzy-matching choice (the founder's own explicit trade of engineering time for a shorter list), D3's conversion table, D7's new slice, and D9-carryover's addition, all landing on the more expensive side of what the pre-decision draft had sketched as options. Consistent with the pattern every prior week's actuals have overrun their nominal by 20-40%. No lever is proposed to bring this down — every added scope item this week came from a direct founder decision (D2, D7, D9-carryover), not from an autonomous judgment call this plan is free to walk back.
+
+### 17.4 Sequencing
+
+```
+S1 (shopping-list domain module, pure)     S8 (onMembershipRevoked — D7, independent)
+  │
+  ▼
+S2 (generateShoppingList + regenerateShoppingList
+    + onMenuChanged (createMenu-only) + repository)
+  │
+  ▼
+S3 (haveIt transaction — D1 widening, D3 conversion match)
+  │
+  ├──────────────────────────────┐
+  ▼                               ▼
+S4 (RDS Proxy spike +      S5 (mobile plumbing)
+    5-client soak, D6)            │
+                          ┌───────┴───────┐
+                          ▼               ▼
+                     S6 (generate/list  S7 (Swipe · Have it +
+                         + regenerate       quantity)
+                         screens)
+                          └───────┬───────┘
+                                  ▼
+                    S9 (real-AWS verification + spike write-up + doc pass)
+```
+
+S4 and S8 both start as soon as their own dependency (S3, or nothing at all for S8) is satisfied, and run fully in parallel with the mobile track — S8 touches no shopping-list file at all and can genuinely start on day one alongside S1. S7 depends on S6 only for the `ChecklistItem` widget it swipes; if that proves fiddly to land together, S7 can stub a bare checklist row and let S6 supply the final widget once ready, the same escape hatch W10 §16.4 gave S5/S6. S9 waits on every slice, S8 included, since its live-AWS pass verifies D7's push end-to-end.
+
+### 17.5 Risks
+
+#### 17.5.1 The fuzzy-matching aggregation (D2) is the week's largest correctness-vs-recall trade, and a wrong merge is worse than a missed one
+
+Unlike exact-match aggregation, a fuzzy false-positive silently combines two genuinely different ingredients into one buy-quantity — a correctness bug a user might not notice until they're short an ingredient mid-cook. Mitigation: the Dice-coefficient-over-bigrams choice (§17.2.2) is specifically chosen for how sharply it penalizes length mismatches between short tokens, `INGREDIENT_SIMILARITY_THRESHOLD` is a single, named, re-tunable constant rather than several ad-hoc heuristics, and S1's RED tests assert both the "onion"/"onion powder" false-positive guard and the "onion"/"onions" true-positive case directly, not inferred from a general "similar things merge" test.
+
+#### 17.5.2 Two infrastructure spikes in one week, with a failing result on either one triggering unbudgeted follow-up work
+
+R6 failing means adding RDS Proxy (infra work, a new construct in `data-stack`, cost implications per Q1's own $18/mo note); R3 failing means AppSync's subscription architecture needs real re-design. Mitigation: both spikes are scheduled early (S4, right after S3 per D6) so a bad result has several remaining slices' worth of the week left to react to.
+
+#### 17.5.3 The `haveIt`/pantry-upsert name-and-unit matching (D3) can still create duplicate pantry rows outside the conversion table's coverage
+
+If a household's pantry holds an ingredient in a unit the conversion table doesn't cover for that ingredient's family (e.g. `piece` vs `g` for something normally sold by count but occasionally weighed), `haveIt` creates a second row rather than incrementing the existing one — an accepted, narrower version of the correctness cost §17.2.3 already scopes for. Mitigation: D3's table covers the two families that account for the large majority of pantry/recipe unit pairs in this domain (mass, volume), and S3's own RED tests assert the covered and uncovered cases both directly.
+
+#### 17.5.4 `deleteHousehold`-triggered disconnection (D7) is the only removal event covered — a future "remove one member" mutation is not
+
+Nothing in this codebase today lets one member remove *another* member (only self-service `leaveHousehold` and primary-only `deleteHousehold`). Mitigation: D7's design is explicitly scoped to the mutation that exists; whichever future week adds a real "remove member" mutation must extend `onMembershipRevoked`'s `@aws_subscribe` list at that time — a small, precedented addition given this slice's shape, flagged here so it isn't rediscovered as a surprise gap later.
+
+#### 17.5.5 `onMenuChanged`'s W11 coverage (createMenu-only) is thin enough that a user could reasonably expect a push that doesn't come
+
+A household member adding/auto-filling menu items on one device produces no `onMenuChanged` push to a second device this week — only creating the week's menu itself does. Mitigation: this is the same accepted staleness gap already documented for `onHouseholdChanged`'s exclusion of `leaveHousehold`/`deleteHousehold` (refetch-on-route-entry/foreground covers it), stated plainly in §17.2.9 rather than left to be discovered as a live-testing surprise in S9.
+
+### 17.6 W11 exit criteria
+
+- [ ] `generateShoppingList` correctly excludes every PRD §9 staples case, verified against a real seeded household, not only Testcontainers (S1, S2, S9)
+- [ ] Fuzzy aggregation (D2) never merges two genuinely different ingredients in a seeded real-data check, and does merge a real spelling/pluralization variant pair (S1, S9)
+- [ ] Pantry subtraction and `haveIt`'s upsert-match correctly convert within D3's covered unit families and never produce a negative or falsely-summed cross-family quantity (S1, S3)
+- [ ] `haveIt` writes the pantry row and flips `moved_to_pantry`/`purchased` atomically — a forced failure leaves neither side changed (S3, S9)
+- [ ] `haveIt`'s return type satisfies `ShoppingList!` and attaches cleanly to `onShoppingListChanged` (D1) (S3, S9)
+- [ ] `regenerateShoppingList(confirmed: true)` preserves every already-had and manually-added item unchanged, recomputing only the remaining auto-generated portion, and no path reaches `confirmed: true` without an affirmatively-dismissed confirmation (D8) (S2, S6)
+- [ ] No path calls `haveIt` without going through the Have-it-quantity confirmation affordance, pre-filled per D5 (S7)
+- [ ] The notification-permission prompt fires at the end of the "Generate list · preview" flow and nowhere during onboarding, per Q14 (S6)
+- [ ] R6's RDS Proxy spike ran 20-30 genuinely concurrent Lambda invocations against real dev Aurora and produced a written go/no-go (S4, S9)
+- [ ] R3's 5-concurrent-client, 30-minute subscription soak ran early (post-S3, per D6) against real AppSync and produced a dropped-event count (S4, S9)
+- [ ] `onMenuChanged` fires on `createMenu` and is verifiably NOT wired to `addMenuItem`/`removeMenuItem`/`autoFillWeek` this week, matching D9-carryover's locked scope (S2, S9)
+- [ ] `deleteHousehold` pushes `onMembershipRevoked`, and a live second-device connection actually tears down its subscriptions on receipt, verified against real AppSync, not only a fake link (S8, S9)
+- [ ] Every nullable/new argument tested with an explicit `null` (§11.5.5's standing convention) — this week's exposure is `ShoppingListItemInput`'s optional fields, `haveIt`'s `quantity`, and `regenerateShoppingList`'s `confirmed`
+- [ ] Non-member access denied identically across `generateShoppingList`/`regenerateShoppingList`/`haveIt`/`onMenuChanged`/`onMembershipRevoked` (S2, S3, S8)
+- [ ] §4's W11 row has actual hours and §17.7's decisions are audited against what shipped (S9)
+
+### 17.7 W11 locked decisions
+
+| # | Question | Decision |
+|---|---|---|
+| **D1** | `haveIt`'s return type is locked as `ShoppingListItem!` in SD §6.1, which cannot satisfy `@aws_subscribe` against `onShoppingListChanged: ShoppingList` (§17.2.1) — widen it, or ship without the subscription this week? | **Widen `haveIt` → `ShoppingList!`**, same precedent as W8 D4 (`updateHouseholdSettings`). `generateShoppingList` needs no change. |
+| **D2** | How exact must cross-recipe ingredient aggregation be for MVP, given there is no normalization layer (§17.2.2)? | **Full fuzzy/similarity matching** — Sørensen–Dice coefficient over character bigrams, normalize (lowercase/trim) first, `INGREDIENT_SIMILARITY_THRESHOLD = 0.75` as a named, tunable constant, unit-gated per D3. Chosen over the cheaper exact-match/light-normalization options for pure risk tolerance — no measurable perf/cost difference at MVP scale, founder wants the shorter/better-merged list. |
+| **D3** | Does pantry subtraction (and `haveIt`'s upsert-match, §17.2.3) require exact name+unit match, or does it need any cross-unit conversion? | **A small hardcoded conversion table**, sourced from `pantryUnits.ts`'s real enum: mass family (`g`/`kg`), volume family (`ml`/`l`/`tsp`/`tbsp`/`cup`), `piece`/`packet`/`bunch` uncovertible. Falls back to full-quantity/new-row only outside the table's coverage. |
+| **D4** | Does the running-low predicate (§17.2.4, row 10) need a server-side duplicate this week? | **No.** Neither S1's aggregation/subtraction nor S3's `haveIt` need it — they need existence-and-quantity, not running-low. Forward-reference closed as checked-not-needed. |
+| **D5** | "Have it" quantity: default to the shopping-list quantity with optional edit, or require entry every time? | **Default to the list quantity**, single confirm, inline-editable — matches the PRD's own stated lean. |
+| **D6** | Does the R3 5-client subscription soak wait for `onShoppingListChanged`/`onMenuChanged` to exist, or run against the three already-shipped topics as soon as S3 lands? | **Run early** (post-S3) against `onPantryChanged`/`onRecipeChanged`/`onHouseholdChanged`; both new topics can join the mix once they exist, but the soak's timing does not wait on them. |
+| **D7** | Does W11 fix the subscribe-time-only re-authorization gap (row 14, a removed member's socket stays live)? | **Fixed in W11.** AppSync provides no server-side connection-eviction API (confirmed while designing this slice), so the tractable fix is reactive: a new `onMembershipRevoked(householdId): Boolean` subscription, `@aws_subscribe`d to `deleteHousehold` (zero widening, `deleteHousehold` already returns `Boolean!`), that tells every other live client to tear down its own subscriptions and leave the moment access is revoked — the only member-removal event this codebase currently has. A future "remove one member" mutation must extend this list when it ships (§17.5.4). |
+| **D8** | Regenerating a shopping list for a menu that already has one: new list, replace in place, or reject? | **Merge-regenerate, behind a confirm dialog.** Already-had and manually-added items (identified via `source_recipe_id IS NOT NULL` as the origin marker — no new column) are preserved untouched; only the not-yet-had auto-generated portion recomputes. Shape: `regenerateShoppingList(menuId: ID!, confirmed: Boolean!): ShoppingList!` — `confirmed: false` previews counts without writing, `confirmed: true` commits. |
+| **D9-carryover** | (Originally §16.2.9/D9.) Does `onMenuChanged` ship in W11, get explicitly pushed to W12, or stay unassigned again? | **Ships in W11**, reversing the pre-decision draft's own W12 recommendation — attached only to `createMenu`, since `addMenuItem`/`removeMenuItem`/`autoFillWeek` all return actively-consumed non-`Menu` shapes that a D1-style widening would need to change at real cost to their existing callers, out of this week's budget. Broadening coverage is a real, separate future slice. |
+
+**Decision density: 9** (8 new + 1 carryover), matching W10's pattern of decisions put directly to the founder rather than resolved as autonomous judgment calls — every one of the eight new questions above changed the plan's slice count, hours, or both once answered, none were rubber-stamps of the drafting pass's own recommendations (D2, D7, and D9-carryover each explicitly went the *opposite* way from what the drafting pass had recommended).
