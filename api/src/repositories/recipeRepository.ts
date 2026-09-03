@@ -207,6 +207,30 @@ export const findRecipeIngredientsByRecipeId = async (
   return result.rows.map(mapRecipeIngredientRow);
 };
 
+/**
+ * Batch read, for `generateShoppingList`/`regenerateShoppingList`
+ * (E2E_MVP_PLAN.md §17.3 S2) — those resolvers already have a menu's
+ * distinct `recipeId`s in hand (via `findMenuItems`) and need every one of
+ * those recipes' ingredients to build S1's `RecipesById` map, without one
+ * round trip per recipe. Same `= ANY($1::uuid[])` shape and same
+ * RLS-alone-gates-this contract as `findRecipesByIds` — a recipe id the
+ * caller isn't authorized for simply contributes no rows, not an error,
+ * which is exactly what lets a cross-household `menu_items` row (however
+ * it got there) silently contribute zero ingredients rather than leaking
+ * another household's recipe content. An empty `recipeIds` array returns
+ * an empty result rather than every row, same as `findRecipesByIds`.
+ */
+export const findRecipeIngredientsByRecipeIds = async (
+  client: PoolClient,
+  recipeIds: readonly string[],
+): Promise<RecipeIngredientRow[]> => {
+  const result = await client.query<RawRecipeIngredientRow>(
+    `SELECT * FROM recipe_ingredients WHERE recipe_id = ANY($1::uuid[]) ORDER BY recipe_id, sort_order`,
+    [recipeIds],
+  );
+  return result.rows.map(mapRecipeIngredientRow);
+};
+
 export interface InsertRecipeInput {
   householdId: string;
   sourceType: RecipeSourceType;

@@ -284,6 +284,24 @@ const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'autoFillWeek',
   },
+  {
+    id: 'GenerateShoppingList',
+    entryFile: 'generateShoppingList.ts',
+    typeName: 'Mutation',
+    fieldName: 'generateShoppingList',
+  },
+  {
+    id: 'RegenerateShoppingList',
+    entryFile: 'regenerateShoppingList.ts',
+    typeName: 'Mutation',
+    fieldName: 'regenerateShoppingList',
+  },
+  {
+    id: 'OnMenuChanged',
+    entryFile: 'onMenuChanged.ts',
+    typeName: 'Subscription',
+    fieldName: 'onMenuChanged',
+  },
 ];
 
 /**
