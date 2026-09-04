@@ -225,6 +225,90 @@ export const findMenuItemHousehold = async (
   return row === undefined ? null : { id: row.id, householdId: row.household_id };
 };
 
+export interface MenuItemForMarkMade {
+  id: string;
+  menuId: string;
+  householdId: string;
+  recipeId: string;
+  servingsOverride: number | null;
+  madeAt: Date | null;
+}
+
+/**
+ * `markMade`'s (W12 S2) single id-only lookup — joins through to `menus` to
+ * resolve the item's household in the same round trip as everything the
+ * resolver's pure `computeDeductionLines` call needs (`recipeId`,
+ * `servingsOverride`), the identical "resolve household from an id-only
+ * argument via a join" shape `findMenuItemHousehold` already establishes
+ * for `removeMenuItem`, just widened to avoid a second query. Both tables'
+ * own RLS policies apply, so a non-member gets `null` for a real id in
+ * another household, indistinguishable from a genuinely nonexistent one —
+ * see `resolvers/markMade.ts`'s own comment for how that collapses into one
+ * denial.
+ */
+export const findMenuItemForMarkMade = async (
+  client: PoolClient,
+  id: string,
+): Promise<MenuItemForMarkMade | null> => {
+  const result = await client.query<{
+    id: string;
+    menu_id: string;
+    household_id: string;
+    recipe_id: string;
+    servings_override: number | null;
+    made_at: Date | null;
+  }>(
+    `SELECT mi.id, mi.menu_id, m.household_id, mi.recipe_id, mi.servings_override, mi.made_at
+     FROM menu_items mi
+     JOIN menus m ON m.id = mi.menu_id
+     WHERE mi.id = $1`,
+    [id],
+  );
+  const row = result.rows[0];
+  return row === undefined
+    ? null
+    : {
+        id: row.id,
+        menuId: row.menu_id,
+        householdId: row.household_id,
+        recipeId: row.recipe_id,
+        servingsOverride: row.servings_override,
+        madeAt: row.made_at,
+      };
+};
+
+/**
+ * `markMade`'s (W12 S2, E2E_MVP_PLAN.md §18.3 S2) `made_at` write —
+ * `WHERE made_at IS NULL` guards a second call on an already-made item the
+ * same way `markItemHaveIt` (`shoppingListRepository.ts`, W11 S3) guards a
+ * second `haveIt` on an already-purchased item: no matching row comes back
+ * (`null`), which the resolver maps to `CONFLICT` rather than silently
+ * re-running the pantry deduction a second time for the same cook. Returns
+ * the bare updated row, mirroring `insertMenuItem`'s own "caller already has
+ * the hydrated `Recipe`, don't re-fetch it here" shape.
+ */
+export const setMenuItemMadeAt = async (
+  client: PoolClient,
+  menuItemId: string,
+): Promise<NewMenuItemRow | null> => {
+  const result = await client.query<RawMenuItemRow>(
+    `UPDATE menu_items SET made_at = now() WHERE id = $1 AND made_at IS NULL RETURNING *`,
+    [menuItemId],
+  );
+  const row = result.rows[0];
+  return row === undefined
+    ? null
+    : {
+        id: row.id,
+        menuId: row.menu_id,
+        dayOfWeek: row.day_of_week,
+        mealSlot: row.meal_slot,
+        slotRole: row.slot_role,
+        servingsOverride: row.servings_override,
+        madeAt: row.made_at,
+      };
+};
+
 /**
  * Idempotent by return value, not by query shape: a `DELETE` for an
  * already-removed (or never-existed) id simply matches zero rows, which

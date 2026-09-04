@@ -12,9 +12,11 @@ import {
   deleteUnmadeMenuItems,
   findInRotationRecipesForAutoFill,
   findMenuByWeek,
+  findMenuItemForMarkMade,
   findMenuItems,
   findRecentRecipeUsage,
   lockMenu,
+  setMenuItemMadeAt,
 } from './menuRepository.js';
 import type { UserRow } from './userRepository.js';
 
@@ -490,6 +492,82 @@ describe('menuRepository', () => {
 
       const remaining = await asUser(owner.id, (client) => findMenuItems(client, menu.id));
       expect(remaining.map((item) => item.id)).toEqual([madeItem.id]);
+    });
+  });
+
+  describe('findMenuItemForMarkMade', () => {
+    it('resolves householdId/recipeId/servingsOverride for a real item', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+      const item = await asUser(owner.id, (client) => insertMenuItem(client, menu.id, recipe.id));
+
+      const found = await asUser(owner.id, (client) => findMenuItemForMarkMade(client, item.id));
+
+      expect(found).toMatchObject({
+        id: item.id,
+        menuId: menu.id,
+        householdId,
+        recipeId: recipe.id,
+        servingsOverride: null,
+        madeAt: null,
+      });
+    });
+
+    it('returns null for a nonexistent id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+      const found = await asUser(owner.id, (client) => findMenuItemForMarkMade(client, randomUUID()));
+      expect(found).toBeNull();
+    });
+
+    it('returns null for an item belonging to a household the caller is not a member of (RLS)', async () => {
+      const owner = await createUser();
+      const outsider = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+      const item = await asUser(owner.id, (client) => insertMenuItem(client, menu.id, recipe.id));
+
+      const found = await asUser(outsider.id, (client) => findMenuItemForMarkMade(client, item.id));
+      expect(found).toBeNull();
+    });
+  });
+
+  describe('setMenuItemMadeAt', () => {
+    it('sets madeAt and returns the updated row', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+      const item = await asUser(owner.id, (client) => insertMenuItem(client, menu.id, recipe.id));
+
+      const updated = await asUser(owner.id, (client) => setMenuItemMadeAt(client, item.id));
+
+      expect(updated?.id).toBe(item.id);
+      expect(updated?.madeAt).toBeInstanceOf(Date);
+    });
+
+    it('returns null (rejects) a second call on an already-made item', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+      const recipe = await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id));
+      const item = await asUser(owner.id, (client) => insertMenuItem(client, menu.id, recipe.id));
+
+      const first = await asUser(owner.id, (client) => setMenuItemMadeAt(client, item.id));
+      expect(first).not.toBeNull();
+
+      const second = await asUser(owner.id, (client) => setMenuItemMadeAt(client, item.id));
+      expect(second).toBeNull();
+    });
+
+    it('returns null for a nonexistent id', async () => {
+      const owner = await createUser();
+      await createHouseholdWithMember(owner);
+      const result = await asUser(owner.id, (client) => setMenuItemMadeAt(client, randomUUID()));
+      expect(result).toBeNull();
     });
   });
 });

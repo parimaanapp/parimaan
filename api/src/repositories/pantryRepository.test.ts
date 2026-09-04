@@ -8,6 +8,7 @@ import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from './userRepository.js';
 import { insertHousehold, insertMembership } from './householdRepository.js';
 import {
+  applyDeductionLines,
   deletePantryItemById,
   findPantryItemById,
   findPantryItems,
@@ -501,6 +502,167 @@ describe('pantryRepository', () => {
 
       const stillThere = await asUser(owner.id, (client) => findPantryItemById(client, item.id));
       expect(stillThere?.id).toBe(item.id);
+    });
+  });
+
+  describe('applyDeductionLines', () => {
+    it('updates a matched row to its already-computed newQuantity', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Onion',
+          quantity: 5,
+          unit: 'piece',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      await asUser(owner.id, (client) =>
+        applyDeductionLines(client, [item], [{ pantryItemId: item.id, newQuantity: 2 }]),
+      );
+
+      const updated = await asUser(owner.id, (client) => findPantryItemById(client, item.id));
+      expect(updated?.quantity).toBe(2);
+    });
+
+    it('skips every { pantryItemId: null } line without touching any row', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const item = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Salt',
+          quantity: 1,
+          unit: 'kg',
+          category: 'spice',
+          isStaple: true,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      await asUser(owner.id, (client) => applyDeductionLines(client, [item], [{ pantryItemId: null }]));
+
+      const stillThere = await asUser(owner.id, (client) => findPantryItemById(client, item.id));
+      expect(stillThere?.quantity).toBe(1);
+    });
+
+    it('applies multiple lines in one call, each to its own row', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const onion = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Onion',
+          quantity: 5,
+          unit: 'piece',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+      const tomato = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Tomato',
+          quantity: 3,
+          unit: 'piece',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      await asUser(owner.id, (client) =>
+        applyDeductionLines(client, [onion, tomato], [
+          { pantryItemId: onion.id, newQuantity: 0 },
+          { pantryItemId: tomato.id, newQuantity: 1 },
+          { pantryItemId: null },
+        ]),
+      );
+
+      const updatedOnion = await asUser(owner.id, (client) => findPantryItemById(client, onion.id));
+      const updatedTomato = await asUser(owner.id, (client) => findPantryItemById(client, tomato.id));
+      expect(updatedOnion?.quantity).toBe(0);
+      expect(updatedTomato?.quantity).toBe(1);
+    });
+
+    it('sums two lines targeting the SAME pantry row instead of the second overwriting the first (e.g. two recipe ingredients fuzzy-matching one pantry item)', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const onion = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Onion',
+          quantity: 10,
+          unit: 'piece',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      // Two independently-computed lines against the SAME original snapshot
+      // (10), as S1's computeDeductionLines would produce for two recipe
+      // ingredients ("onion" and "onions") that both fuzzy-match this one
+      // row: line 1 requires 3 (newQuantity 7), line 2 requires 2
+      // (newQuantity 8) — both computed off the SAME starting 10, not
+      // chained. The correct combined result is 10 - 3 - 2 = 5, not 8 (the
+      // second line's own newQuantity silently overwriting the first).
+      await asUser(owner.id, (client) =>
+        applyDeductionLines(client, [onion], [
+          { pantryItemId: onion.id, newQuantity: 7 },
+          { pantryItemId: onion.id, newQuantity: 8 },
+        ]),
+      );
+
+      const updated = await asUser(owner.id, (client) => findPantryItemById(client, onion.id));
+      expect(updated?.quantity).toBe(5);
+    });
+
+    it('sums two same-row lines and still floors the combined result at zero when it would otherwise go negative', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const onion = await asUser(owner.id, (client) =>
+        insertPantryItem(client, {
+          householdId,
+          name: 'Onion',
+          quantity: 4,
+          unit: 'piece',
+          category: null,
+          isStaple: false,
+          expiryDate: null,
+          lowThreshold: null,
+          addedBy: owner.id,
+        }),
+      );
+
+      // Two lines each individually floored at 0 by S1 (4 - 6 and 4 - 5 both
+      // go negative) — the combined requirement (6 + 5 = 11) also exceeds
+      // stock (4), so the correct combined result is still 0, not a
+      // double-counted negative or an incorrect partial value.
+      await asUser(owner.id, (client) =>
+        applyDeductionLines(client, [onion], [
+          { pantryItemId: onion.id, newQuantity: 0 },
+          { pantryItemId: onion.id, newQuantity: 0 },
+        ]),
+      );
+
+      const updated = await asUser(owner.id, (client) => findPantryItemById(client, onion.id));
+      expect(updated?.quantity).toBe(0);
     });
   });
 });
