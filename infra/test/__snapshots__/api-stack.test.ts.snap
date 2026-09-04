@@ -2369,6 +2369,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "Custom::LogRetention",
     },
+    "ApiMarkPurchasedDataSourceF6DF548A": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "MarkPurchasedFnB1FC41D5",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "MarkPurchasedDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiMarkPurchasedDataSourceServiceRole9A85B191",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiMarkPurchasedDataSourceServiceRole9A85B191": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiMarkPurchasedDataSourceServiceRoleDefaultPolicy83CE17C6": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "MarkPurchasedFnB1FC41D5",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "MarkPurchasedFnB1FC41D5",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiMarkPurchasedDataSourceServiceRoleDefaultPolicy83CE17C6",
+        "Roles": [
+          {
+            "Ref": "ApiMarkPurchasedDataSourceServiceRole9A85B191",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiMarkPurchasedResolver59708C8F": {
+      "DependsOn": [
+        "ApiMarkPurchasedDataSourceF6DF548A",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "MarkPurchasedDataSource",
+        "FieldName": "markPurchased",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiMeDataSourceB2BBE10F": {
       "Properties": {
         "ApiId": {
@@ -3204,6 +3309,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
         },
         "DataSourceName": "OnRecipeChangedDataSource",
         "FieldName": "onRecipeChanged",
+        "Kind": "UNIT",
+        "TypeName": "Subscription",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiOnShoppingListChangedDataSource23667B6E": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "OnShoppingListChangedFn9995066B",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "OnShoppingListChangedDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiOnShoppingListChangedDataSourceServiceRole181C2C00",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiOnShoppingListChangedDataSourceServiceRole181C2C00": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiOnShoppingListChangedDataSourceServiceRoleDefaultPolicy3D35DE66": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "OnShoppingListChangedFn9995066B",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "OnShoppingListChangedFn9995066B",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiOnShoppingListChangedDataSourceServiceRoleDefaultPolicy3D35DE66",
+        "Roles": [
+          {
+            "Ref": "ApiOnShoppingListChangedDataSourceServiceRole181C2C00",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiOnShoppingListChangedResolver62CC5139": {
+      "DependsOn": [
+        "ApiOnShoppingListChangedDataSource23667B6E",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "OnShoppingListChangedDataSource",
+        "FieldName": "onShoppingListChanged",
         "Kind": "UNIT",
         "TypeName": "Subscription",
       },
@@ -4501,6 +4711,35 @@ type Mutation {
   validation, before any write.
   """
   haveIt(itemId: ID!, quantity: Float!): ShoppingList!
+
+  """
+  Marks \`itemId\` bought and moves it into the household's pantry in one
+  transaction (D5/D6, E2E_MVP_PLAN.md §18.2.5/§18.2.6, W12 S3) — the
+  "check off" counterpart to \`haveIt\`. Deliberately takes NO \`quantity\`
+  argument (D5, locked): the pantry write always uses the shopping-list
+  item's own already-known \`quantity\`/\`unit\`, since a purchase is closing
+  out something the list already specified, not a fresh manual entry.
+  Matched against an existing pantry row by the identical D2/D3 fuzzy-name
+  and unit-conversion-aware compatibility \`haveIt\` already uses (a
+  same-family cross-unit pair converts and increments, preserving that
+  row's own existing \`expiryDate\` untouched; a cross-family or
+  unrecognised-unit match creates a fresh row instead of incorrectly
+  summing). A fresh row (no match) is inserted with its \`expiryDate\` set
+  from the item's \`category\` via the locked default-expiry table (O3,
+  §18.3 S1) rather than \`haveIt\`'s own \`null\` — PRD's "bought items ...
+  with expiry defaults" requirement, absent from "Have it." \`itemId\` is
+  flipped \`purchased\`/\`movedToPantry\` (with \`purchasedBy\`/\`purchasedAt\`
+  stamped) atomically with that pantry write: a failure on either half
+  rolls back both. Returns the item's full parent \`ShoppingList!\` (D1's
+  widened return type, §18.2.1) so this mutation can attach to
+  \`onShoppingListChanged\` below. Takes no \`householdId\`: the item's
+  household is looked up via its parent list, the same \`id\`-only,
+  RLS-scoped membership resolution \`haveIt\` uses — a non-member is denied
+  identically to a nonexistent \`itemId\`. A second call on an
+  already-\`purchased\` item is rejected with \`CONFLICT\` rather than
+  silently double-counting the pantry increment.
+  """
+  markPurchased(itemId: ID!): ShoppingList!
 }
 
 type Subscription {
@@ -4604,6 +4843,28 @@ type Subscription {
   """
   onMembershipRevoked(householdId: ID!): Boolean
     @aws_subscribe(mutations: ["deleteHousehold"])
+
+  """
+  Pushes the \`ShoppingList\` to every other connected device in
+  \`householdId\` on any of the four mutations that change it (D1, cashing
+  in W11 D1's own promise — E2E_MVP_PLAN.md §18.2.1, W12 S3):
+  \`generateShoppingList\`/\`regenerateShoppingList\` (already \`ShoppingList!\`
+  since W11 S2, no change needed) and \`haveIt\`/\`markPurchased\` (both
+  widened to \`ShoppingList!\` specifically so they could attach here — SD
+  §6.1's own comment on \`haveIt\` named this subscription as future work
+  since W11). Per §11.2.12's already-locked "every push means refetch, no
+  event-type discriminator" contract, the pushed payload's exact shape
+  doesn't matter to any consumer — the affected item remains reachable via
+  \`ShoppingList.items\` regardless of which of the four mutations fired.
+  Same subscribe-time Lambda-resolver authorization pattern as every other
+  subscription in this schema (SD §10.4 deviation, §11.2.9), reusing
+  \`requireHouseholdMember\` unchanged: a non-member or nonexistent
+  \`householdId\` is denied identically.
+  """
+  onShoppingListChanged(householdId: ID!): ShoppingList
+    @aws_subscribe(
+      mutations: ["generateShoppingList", "regenerateShoppingList", "haveIt", "markPurchased"]
+    )
 }
 
 type User {
@@ -8008,6 +8269,140 @@ input RecipePatchInput {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "MarkPurchasedFnB1FC41D5": {
+      "DependsOn": [
+        "MarkPurchasedFnServiceRoleDefaultPolicyF7F7F0AA",
+        "MarkPurchasedFnServiceRole4E2EBE9C",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "MarkPurchasedFnServiceRole4E2EBE9C",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "MarkPurchasedFnServiceRole4E2EBE9C": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "MarkPurchasedFnServiceRoleDefaultPolicyF7F7F0AA": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "MarkPurchasedFnServiceRoleDefaultPolicyF7F7F0AA",
+        "Roles": [
+          {
+            "Ref": "MarkPurchasedFnServiceRole4E2EBE9C",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "MeFn340BB2F9": {
       "DependsOn": [
         "MeFnServiceRoleDefaultPolicy0F8D993D",
@@ -9038,6 +9433,140 @@ input RecipePatchInput {
       "Type": "AWS::IAM::Policy",
     },
     "OnRecipeChangedFnServiceRoleF7C23BD1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "OnShoppingListChangedFn9995066B": {
+      "DependsOn": [
+        "OnShoppingListChangedFnServiceRoleDefaultPolicy890EC028",
+        "OnShoppingListChangedFnServiceRoleEE88F8B9",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "OnShoppingListChangedFnServiceRoleEE88F8B9",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "OnShoppingListChangedFnServiceRoleDefaultPolicy890EC028": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "OnShoppingListChangedFnServiceRoleDefaultPolicy890EC028",
+        "Roles": [
+          {
+            "Ref": "OnShoppingListChangedFnServiceRoleEE88F8B9",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "OnShoppingListChangedFnServiceRoleEE88F8B9": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [

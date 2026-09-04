@@ -172,7 +172,35 @@ export interface HaveItPantryUpsertInput {
   /** The shopping-list item's own unit — `null` (an unparsed/free-text quantity) never matches an existing row's non-null unit, matching D3's own "either side null and they differ" fallback in `shoppingListGeneration.ts`'s `unitsCompatible`. */
   unit: string | null;
   addedBy: string;
+  /**
+   * Optional day count (S1's `defaultExpiryDaysForCategory`, O3) applied
+   * ONLY on the "no match, insert fresh row" branch to compute that row's
+   * `expiryDate` as `today + expiryDays` days. `haveIt`'s own caller omits
+   * this (or passes explicit `null`), preserving W11's original
+   * `null`-expiry fresh-row insert unchanged; `markPurchased` (W12 S3,
+   * §18.5.2) is the first caller to pass a real value. Threaded as a
+   * plain parameter, per §18.5.2's own design note — never an internal
+   * caller-identity branch — so a third future caller can supply its own
+   * value without this function needing another internal branch.
+   */
+  expiryDays?: number | null;
 }
+
+/**
+ * `today + days` as a `YYYY-MM-DD` string (`toAwsDateString`'s own local-
+ * calendar convention, so the computed date reads the same regardless of
+ * process timezone) — `null`/`undefined` input passes through as `null`,
+ * matching `insertFreshPantryItemForHaveIt`'s pre-existing hard-coded
+ * `null` fallback for every caller that doesn't supply a day count.
+ */
+const expiryDateFromDays = (days: number | null | undefined): string | null => {
+  if (days === null || days === undefined) {
+    return null;
+  }
+  const target = new Date();
+  target.setDate(target.getDate() + days);
+  return toAwsDateString(target);
+};
 
 /**
  * The "no match" (or defensively, "matched but somehow unconvertible")
@@ -196,7 +224,7 @@ const insertFreshPantryItemForHaveIt = (
     unit: input.unit ?? '',
     category: null,
     isStaple: false,
-    expiryDate: null,
+    expiryDate: expiryDateFromDays(input.expiryDays),
     lowThreshold: null,
     addedBy: input.addedBy,
   });
