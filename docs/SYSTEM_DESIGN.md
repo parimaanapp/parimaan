@@ -657,6 +657,17 @@ type Mutation {
   addMenuItem(menuId: ID!, input: MenuItemInput!): MenuItem!
   removeMenuItem(id: ID!): Boolean!
   autoFillWeek(menuId: ID!, overwrite: Boolean!): Menu!
+  # SHIPPED W12 (E2E_MVP_PLAN.md §18.2.4 D4). Zero widening from this
+  # sketch — deliberately NOT attached to onMenuChanged below, same
+  # structural reasoning as W11's D9-carryover (this return value is
+  # directly consumed by the caller that just marked it made). Pantry
+  # deduction (§18.2.2/§18.2.3) applies isStapleExcluded before matching
+  # (never decrements a staple) and floors any matched row at zero, never
+  # negative (§18.7 O1/O2 — both reverse the pre-decision draft's own
+  # recommendation). Mobile-side "undo" (§18.2.8 D8) is a client-side
+  # deferred commit: this mutation is only actually called once an undo
+  # window elapses uninterrupted — no compensating/reversal mutation
+  # exists for it.
   markMade(menuItemId: ID!): MenuItem!
 
   # Shopping list
@@ -670,7 +681,18 @@ type Mutation {
   # replace-counts without writing; `confirmed: true` commits.
   regenerateShoppingList(menuId: ID!, confirmed: Boolean!): ShoppingList!
   addShoppingListItem(listId: ID!, input: ShoppingListItemInput!): ShoppingListItem!
-  markPurchased(itemId: ID!): ShoppingListItem!
+  # SHIPPED W12 (E2E_MVP_PLAN.md §18.2.1/§18.2.5, D1/D5). Widened from this
+  # sketch's own ShoppingListItem! to ShoppingList!, same precedent as
+  # haveIt's own W11 D1 widening below — so it can attach to
+  # Subscription.onShoppingListChanged (the affected item remains
+  # reachable via ShoppingList.items). Deliberately takes NO quantity
+  # argument (D5): always uses the shopping-list item's own already-known
+  # quantity/unit, never a caller-supplied re-confirmation, per PRD's own
+  # "check off, no prompt" framing for this flow (contrast haveIt below).
+  # A fresh pantry row this mutation creates (no existing match) carries a
+  # category-specific default expiry (§18.7 O3's locked table); the
+  # match/increment path's existing expiry is never overwritten.
+  markPurchased(itemId: ID!): ShoppingList!
   # Returns ShoppingList!, not ShoppingListItem! (W11, E2E_MVP_PLAN.md
   # §17.2.1 D1 — same precedent as W8 D4's `updateHouseholdSettings`
   # widening: widened so it can attach to Subscription.onShoppingListChanged
@@ -708,8 +730,9 @@ type Subscription {
   # subscription coverage (`onPantryBulkChanged` or a refetch) is an open
   # W18 item, not solved here. `haveIt` itself was widened to `ShoppingList!`
   # in W11 (§17.2.1 D1) specifically to close its own mismatch;
-  # `markPurchased` is W12 and still carries the mismatch until whichever
-  # week ships it repeats D1's widening.
+  # `markPurchased` repeated the identical widening in W12
+  # (§18.2.1 D1) and is now attached below — no mutation in this schema
+  # still carries the original mismatch.
   #
   # `onPantryChanged` **is implemented** (W5 S8) — the first field in this
   # type to go live, authorized by a per-field Lambda resolver rather than
@@ -718,7 +741,8 @@ type Subscription {
   # `onMembershipRevoked` below **are also implemented** (W11,
   # E2E_MVP_PLAN.md §17 — see each field's own doc for its exact mutation
   # coverage, which is narrower than this section's original sketch in
-  # `onMenuChanged`'s case). The pushed payload carries no event-type
+  # `onMenuChanged`'s case; `onShoppingListChanged`'s own coverage grew
+  # again in W12, §18.2.1 D1, to include `markPurchased`). The pushed payload carries no event-type
   # discriminator —
   # see E2E_MVP_PLAN.md §11.2.12 for why the mobile client treats every push
   # as "refetch", not a local add/update/delete patch — the same constraint
@@ -746,21 +770,26 @@ type Subscription {
   # then, the other three mutations are covered by the same
   # refetch-on-route-entry/refetch-on-foreground gap already accepted for
   # `onHouseholdChanged`'s exclusion of `leaveHousehold`/`deleteHousehold`
-  # below.
+  # below. `markMade` (W12) was evaluated against this same list and
+  # deliberately excluded for the identical reason (E2E_MVP_PLAN.md
+  # §18.2.4 D4) — its `MenuItem!` return value is actively consumed by its
+  # own caller, and a D1-style widening would cost more than this week's
+  # budget allows. Not reopened piecemeal each week it comes up.
   onMenuChanged(householdId: ID!): Menu
     @aws_subscribe(mutations: ["createMenu"])
 
   # SHIPPED W11 (E2E_MVP_PLAN.md §17.2.1, D1). `haveIt`'s return type was
   # widened from `ShoppingListItem!` to `ShoppingList!` specifically so it
   # can attach here — same precedent as W8 D4's `updateHouseholdSettings`
-  # widening. `addShoppingListItem`/`markPurchased` remain unattached this
-  # week: both are out of W11's own resolver scope (`addShoppingListItem`
-  # was never scheduled; `markPurchased` is W12) and still return
-  # `ShoppingListItem!`, the same structural mismatch D1 fixed for `haveIt`
-  # alone — whichever week ships either resolver must repeat D1's widening
-  # if it wants this subscription's coverage, not assume it inherits it.
+  # widening. `markPurchased` joined this list in W12 (E2E_MVP_PLAN.md
+  # §18.2.1 D1), repeating the identical widening
+  # (`ShoppingListItem! → ShoppingList!`) for the same reason. Still
+  # unattached: `addShoppingListItem`, which is out of scope for both
+  # weeks (never scheduled) and still returns `ShoppingListItem!` —
+  # whichever week ships it must repeat D1's widening if it wants this
+  # subscription's coverage, not assume it inherits it.
   onShoppingListChanged(householdId: ID!): ShoppingList
-    @aws_subscribe(mutations: ["generateShoppingList", "regenerateShoppingList", "haveIt"])
+    @aws_subscribe(mutations: ["generateShoppingList", "regenerateShoppingList", "haveIt", "markPurchased"])
 
   # SHIPPED W11 (E2E_MVP_PLAN.md §17.2.7, D7) — closes the standing
   # "subscribe-time-only re-authorization" gap (§14, flagged W11/W20) for
