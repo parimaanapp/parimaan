@@ -360,9 +360,11 @@ const pantryQuantityInItemUnit = (item: AggregatedIngredient, match: PantryItemF
  * anything at or below this epsilon as "fully covered" keeps the
  * documented "never shown as a zero or negative amount" contract honest
  * against floating-point noise, not just against a mathematically exact
- * subtraction.
+ * subtraction. Exported so `pantryDeduction.ts` (W12 S1) can apply the
+ * identical epsilon to its own cross-unit zero-floor rather than a second,
+ * independently-tuned constant.
  */
-const SUBTRACTION_EPSILON = 1e-9;
+export const SUBTRACTION_EPSILON = 1e-9;
 
 /** D3's reduction for one aggregated line: the line unchanged (full quantity) if unmatched or unconvertible, `null` if fully covered (dropped, never shown as zero/negative), or the line with its remaining quantity otherwise. */
 const subtractOneLine = (item: AggregatedIngredient, pantryItems: readonly PantryItemForSubtraction[]): AggregatedIngredient | null => {
