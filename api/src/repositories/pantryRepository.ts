@@ -3,6 +3,7 @@ import { toAwsDateString } from '../domain/pgDate.js';
 import { canonicalizePantryUnit } from '../domain/pantryUnits.js';
 import { convertQuantity } from '../domain/unitConversion.js';
 import { namesMatch, normalizeIngredientName, unitsCompatible } from '../domain/shoppingListGeneration.js';
+import type { DeductionLine } from '../domain/pantryDeduction.js';
 
 export interface PantryItemRow {
   id: string;
@@ -328,6 +329,75 @@ export const upsertOrIncrementPantryItemForHaveIt = async (
     throw new Error('upsertOrIncrementPantryItemForHaveIt: matched row vanished mid-transaction.');
   }
   return updated;
+};
+
+/**
+ * `markMade`'s (W12 S2, E2E_MVP_PLAN.md §18.3 S2) write half of S1's pure
+ * `computeDeductionLines`. Every `DeductionLine`'s `newQuantity` is computed
+ * by S1 independently, off the SAME unmodified `pantryItemsBeforeDeduction`
+ * snapshot (`computeOneLine`'s own doc) — two recipe ingredients that both
+ * fuzzy-match the SAME pantry row (e.g. "onion"/"onions" both listed on one
+ * recipe) therefore produce two lines with the identical `pantryItemId`,
+ * each an independently-computed `newQuantity` relative to that one shared
+ * starting quantity. Writing either line's `newQuantity` as an absolute
+ * `SET quantity = $2` would let the second write silently clobber the
+ * first's decrement instead of compounding both — one ingredient's
+ * consumption would be lost entirely. This function instead re-derives each
+ * line's own decrement amount (`originalQuantity - line.newQuantity`,
+ * `originalQuantity` from `pantryItemsBeforeDeduction`, the exact same
+ * snapshot S1 computed against), SUMS every line's decrement per
+ * `pantryItemId`, and applies the total as ONE relative `UPDATE ... SET
+ * quantity = GREATEST(0, quantity - $delta)` per distinct row — correct
+ * and additive regardless of how many lines target the same row, and still
+ * zero-floored (O1) even when the summed requirement exceeds what a single
+ * line's own already-per-line-floored `newQuantity` would have reflected.
+ *
+ * A `{ pantryItemId: null }` line (staple-excluded, unmatched, or an
+ * unconvertible-unit "match") is skipped entirely — it was already a no-op
+ * decision made by the pure function, not something this function decides.
+ *
+ * Callers MUST call {@link lockPantryForHousehold} and read pantry state
+ * (the SAME `pantryItemsBeforeDeduction` array passed to
+ * `computeDeductionLines` and here) BEFORE calling this — the same ordering
+ * `upsertOrIncrementPantryItemForHaveIt` already enforces for its own
+ * read-then-decide-write sequence, closing the identical
+ * concurrent-double-decrement race for two `markMade` calls touching the
+ * same household's pantry at once. Writes run sequentially (not
+ * `Promise.all`) since `PoolClient` serializes queries on one connection
+ * regardless, and a sequential loop keeps a failure partway through
+ * attributable to a specific row for debugging.
+ */
+export const applyDeductionLines = async (
+  client: PoolClient,
+  pantryItemsBeforeDeduction: readonly PantryItemRow[],
+  lines: readonly DeductionLine[],
+): Promise<void> => {
+  const originalQuantityById = new Map(pantryItemsBeforeDeduction.map((item) => [item.id, item.quantity]));
+
+  const totalDeltaByPantryItemId = new Map<string, number>();
+  for (const line of lines) {
+    if (line.pantryItemId === null) {
+      continue;
+    }
+    const originalQuantity = originalQuantityById.get(line.pantryItemId);
+    if (originalQuantity === undefined) {
+      // Unreachable against real data — every `DeductionLine`'s
+      // `pantryItemId` came from matching against `pantryItemsBeforeDeduction`
+      // itself (S1's `findMatchingPantryItem`) — but a defensive skip
+      // rather than writing a `NaN` delta, matching this file's other
+      // "should never happen, fail safe" guards.
+      continue;
+    }
+    const delta = originalQuantity - line.newQuantity;
+    totalDeltaByPantryItemId.set(line.pantryItemId, (totalDeltaByPantryItemId.get(line.pantryItemId) ?? 0) + delta);
+  }
+
+  for (const [pantryItemId, totalDelta] of totalDeltaByPantryItemId) {
+    await client.query(
+      `UPDATE pantry_items SET quantity = GREATEST(0, quantity - $2), updated_at = NOW() WHERE id = $1`,
+      [pantryItemId, totalDelta],
+    );
+  }
 };
 
 export interface PantryItemPatch {

@@ -2369,6 +2369,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "Custom::LogRetention",
     },
+    "ApiMarkMadeDataSourceF127E79E": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "MarkMadeFn8BB9D9D3",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "MarkMadeDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiMarkMadeDataSourceServiceRole80A187F1",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiMarkMadeDataSourceServiceRole80A187F1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiMarkMadeDataSourceServiceRoleDefaultPolicy9DAE8976": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "MarkMadeFn8BB9D9D3",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "MarkMadeFn8BB9D9D3",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiMarkMadeDataSourceServiceRoleDefaultPolicy9DAE8976",
+        "Roles": [
+          {
+            "Ref": "ApiMarkMadeDataSourceServiceRole80A187F1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiMarkMadeResolver45A798E5": {
+      "DependsOn": [
+        "ApiMarkMadeDataSourceF127E79E",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "MarkMadeDataSource",
+        "FieldName": "markMade",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiMarkPurchasedDataSourceF6DF548A": {
       "Properties": {
         "ApiId": {
@@ -4740,6 +4845,30 @@ type Mutation {
   silently double-counting the pantry increment.
   """
   markPurchased(itemId: ID!): ShoppingList!
+
+  """
+  Marks \`menuItemId\` as cooked and deducts its recipe's ingredients from the
+  household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
+  §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
+  W11's exact fuzzy-name (\`namesMatch\`) and unit-conversion (\`convertQuantity\`)
+  matching, unmodified (D2): a non-staple ingredient (never staple-flagged,
+  staple-category, or staple-unit, per \`isStapleExcluded\` — O2) that matches
+  an existing pantry row by name and a convertible unit has that row's
+  \`quantity\` decremented by the recipe's (optionally \`servingsOverride\`-
+  scaled) required amount, floored at exactly zero rather than going
+  negative (O1). An ingredient with no matching pantry row, or one excluded
+  as a staple, is left untouched — deduction never fabricates a new pantry
+  row (D3). Takes no \`householdId\`: the item's household is looked up via
+  its parent menu, the same \`id\`-only, RLS-scoped membership resolution
+  \`addMenuItem\` uses — a non-member is denied identically to a nonexistent
+  \`menuItemId\`. A second call on an already-made item (\`madeAt\` already set)
+  is rejected with \`CONFLICT\`, matching \`haveIt\`'s own already-purchased
+  guard shape. Deliberately NOT attached to \`onMenuChanged\` (D4) — the
+  directly-consumed \`MenuItem!\` return type isn't worth widening this week,
+  the same structural call W11's D9-carryover already made for
+  \`addMenuItem\`/\`removeMenuItem\`/\`autoFillWeek\`.
+  """
+  markMade(menuItemId: ID!): MenuItem!
 }
 
 type Subscription {
@@ -8264,6 +8393,140 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "MarkMadeFn8BB9D9D3": {
+      "DependsOn": [
+        "MarkMadeFnServiceRoleDefaultPolicy703DC0AB",
+        "MarkMadeFnServiceRoleBC0D3341",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "MarkMadeFnServiceRoleBC0D3341",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "MarkMadeFnServiceRoleBC0D3341": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "MarkMadeFnServiceRoleDefaultPolicy703DC0AB": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "MarkMadeFnServiceRoleDefaultPolicy703DC0AB",
+        "Roles": [
+          {
+            "Ref": "MarkMadeFnServiceRoleBC0D3341",
           },
         ],
       },

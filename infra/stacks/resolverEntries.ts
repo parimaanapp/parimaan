@@ -250,6 +250,12 @@ export const DB_RESOLVERS: readonly DbResolverEntry[] = [
     fieldName: 'haveIt',
   },
   {
+    id: 'MarkMade',
+    entryFile: 'markMade.ts',
+    typeName: 'Mutation',
+    fieldName: 'markMade',
+  },
+  {
     id: 'OnMenuChanged',
     entryFile: 'onMenuChanged.ts',
     typeName: 'Subscription',

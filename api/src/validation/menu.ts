@@ -136,3 +136,10 @@ export const autoFillWeekArgsSchema = z.object({
 });
 
 export type AutoFillWeekArgs = z.infer<typeof autoFillWeekArgsSchema>;
+
+/** `Mutation.markMade`'s only argument (W12 S2, E2E_MVP_PLAN.md §18.3 S2). */
+export const markMadeArgsSchema = z.object({
+  menuItemId: z.string().uuid('menuItemId must be a valid UUID'),
+});
+
+export type MarkMadeArgs = z.infer<typeof markMadeArgsSchema>;

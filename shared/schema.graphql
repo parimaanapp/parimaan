@@ -471,6 +471,30 @@ type Mutation {
   silently double-counting the pantry increment.
   """
   markPurchased(itemId: ID!): ShoppingList!
+
+  """
+  Marks `menuItemId` as cooked and deducts its recipe's ingredients from the
+  household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
+  §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
+  W11's exact fuzzy-name (`namesMatch`) and unit-conversion (`convertQuantity`)
+  matching, unmodified (D2): a non-staple ingredient (never staple-flagged,
+  staple-category, or staple-unit, per `isStapleExcluded` — O2) that matches
+  an existing pantry row by name and a convertible unit has that row's
+  `quantity` decremented by the recipe's (optionally `servingsOverride`-
+  scaled) required amount, floored at exactly zero rather than going
+  negative (O1). An ingredient with no matching pantry row, or one excluded
+  as a staple, is left untouched — deduction never fabricates a new pantry
+  row (D3). Takes no `householdId`: the item's household is looked up via
+  its parent menu, the same `id`-only, RLS-scoped membership resolution
+  `addMenuItem` uses — a non-member is denied identically to a nonexistent
+  `menuItemId`. A second call on an already-made item (`madeAt` already set)
+  is rejected with `CONFLICT`, matching `haveIt`'s own already-purchased
+  guard shape. Deliberately NOT attached to `onMenuChanged` (D4) — the
+  directly-consumed `MenuItem!` return type isn't worth widening this week,
+  the same structural call W11's D9-carryover already made for
+  `addMenuItem`/`removeMenuItem`/`autoFillWeek`.
+  """
+  markMade(menuItemId: ID!): MenuItem!
 }
 
 type Subscription {
