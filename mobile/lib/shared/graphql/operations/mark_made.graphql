@@ -1,0 +1,14 @@
+#import "./menu_item_fields.graphql"
+
+# `Mutation.markMade` — sets `madeAt` on `menuItemId` and deducts pantry
+# stock for the recipe's non-staple ingredients (D2/D3/D4,
+# E2E_MVP_PLAN.md §18.2.2/§18.2.3/§18.2.4, W12 S2). Deliberately not
+# attached to any subscription (D4) — this codebase's mobile plumbing
+# (`CurrentMenuController.markMade`, W12 S4) refreshes explicitly rather
+# than waiting on a push. A second call on an already-`madeAt`-set item is
+# rejected with `CONFLICT`.
+mutation MarkMade($menuItemId: ID!) {
+  markMade(menuItemId: $menuItemId) {
+    ...MenuItemFields
+  }
+}

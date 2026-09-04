@@ -17,6 +17,9 @@ import '../../../shared/graphql/operations/__generated__/auto_fill_week.var.gql.
 import '../../../shared/graphql/operations/__generated__/create_menu.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/mark_made.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/mark_made.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/mark_made.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/menu.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/menu.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/menu.var.gql.dart';
@@ -102,6 +105,19 @@ abstract interface class MenuRepository {
     required bool overwrite,
     required List<NewMenuItem> items,
   });
+
+  /// Marks the `MenuItem` with [menuItemId] made — sets `madeAt` and
+  /// deducts pantry stock for the recipe's non-staple ingredients
+  /// (E2E_MVP_PLAN.md §18.2.2/§18.2.3, W12 S2). Returns the updated
+  /// `MenuItem` directly (D4, §18.2.4) — deliberately NOT attached to any
+  /// subscription this week, so a caller must call
+  /// `CurrentMenuController.refresh` explicitly rather than wait for a
+  /// push.
+  ///
+  /// A second call on an already-made item is rejected with
+  /// `ConflictError`, matching `ShoppingListRepository.haveIt`'s own
+  /// already-purchased rejection shape.
+  Future<MenuItem> markMade(String menuItemId);
 }
 
 /// Ferry-backed [MenuRepository].
@@ -209,6 +225,16 @@ class FerryMenuRepository with FerryExecuteMixin implements MenuRepository {
     );
   }
 
+  @override
+  Future<MenuItem> markMade(String menuItemId) async {
+    final GMarkMadeReq request = GMarkMadeReq(
+      (GMarkMadeReqBuilder b) =>
+          b..vars = (GMarkMadeVarsBuilder()..menuItemId = menuItemId),
+    );
+
+    final GMarkMadeData data = await execute(request);
+    return menuItemFromGraphQL(data.markMade);
+  }
 }
 
 /// Injection point for [MenuRepository] — same default-to-real-Ferry-impl

@@ -118,3 +118,20 @@ Map<String, dynamic> regenerateShoppingListWireData({
 
 Map<String, dynamic> haveItWireData({Map<String, dynamic>? shoppingList}) =>
     <String, dynamic>{'haveIt': shoppingList ?? shoppingListWireNode()};
+
+/// `Mutation.markPurchased`'s own response shape (D5/D6, W12 S3/S4) — the
+/// same `ShoppingListFields` selection `haveIt` returns.
+Map<String, dynamic> markPurchasedWireData({
+  Map<String, dynamic>? shoppingList,
+}) => <String, dynamic>{
+  'markPurchased': shoppingList ?? shoppingListWireNode(),
+};
+
+/// `Subscription.onShoppingListChanged`'s own response shape (D1, W12 S3/S4)
+/// — the pushed payload IS the full `ShoppingList`, unlike
+/// `onPantryChanged`'s pure-signal `PantryItem` push.
+Map<String, dynamic> onShoppingListChangedWireData({
+  Map<String, dynamic>? shoppingList,
+}) => <String, dynamic>{
+  'onShoppingListChanged': shoppingList ?? shoppingListWireNode(),
+};

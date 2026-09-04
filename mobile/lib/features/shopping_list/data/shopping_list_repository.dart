@@ -3,12 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/graphql/client.dart';
 import '../../../shared/graphql/ferry_execute.dart';
+import '../../../shared/graphql/graphql_error_mapper.dart';
 import '../../../shared/graphql/operations/__generated__/generate_shopping_list.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/generate_shopping_list.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/generate_shopping_list.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/have_it.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/have_it.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/have_it.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/mark_purchased.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/mark_purchased.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/mark_purchased.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_shopping_list_changed.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_shopping_list_changed.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/on_shopping_list_changed.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/regenerate_shopping_list.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/regenerate_shopping_list.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/regenerate_shopping_list.var.gql.dart';
@@ -58,6 +65,39 @@ abstract interface class ShoppingListRepository {
   /// same D1 return-type widening the server made. A second call on an
   /// already-`purchased` item is rejected with `ConflictError`.
   Future<ShoppingList> haveIt(String itemId, double quantity);
+
+  /// Marks the `ShoppingListItem` with [itemId] as bought and moves it into
+  /// the household's pantry, mirroring [haveIt]'s shape but with NO
+  /// `quantity` argument (D5, E2E_MVP_PLAN.md §18.2.5, W12 S3) — the pantry
+  /// write always uses the item's own already-known `quantity`/`unit`.
+  ///
+  /// Returns the item's full parent `ShoppingList`, same D1 widened return
+  /// type as [haveIt]. A second call on an already-`purchased` item is
+  /// rejected with `ConflictError`.
+  Future<ShoppingList> markPurchased(String itemId);
+
+  /// Emits the fresh `ShoppingList` every time another device runs
+  /// [generateShoppingList], [regenerateShoppingList], [haveIt], or
+  /// [markPurchased] against [householdId]'s shopping list
+  /// (`Subscription.onShoppingListChanged`, D1, E2E_MVP_PLAN.md §18.2.1,
+  /// W12 S3/S4).
+  ///
+  /// **Unlike `PantryRepository.watchPantryChanges`'s pure `Stream<void>`
+  /// signal:** there is no `Query.shoppingList` this week to separately
+  /// refetch from, and — unlike `onPantryChanged`'s ambiguous single-item
+  /// payload — the pushed payload here IS the complete, current
+  /// `ShoppingList` (every attached mutation already returns the full
+  /// `ShoppingList!`, per D1). Consuming that payload directly is therefore
+  /// both the only available option and a strictly more useful one; a
+  /// caller's `state` is simply set from what this stream emits, the
+  /// functional equivalent of "every push means refetch" without a second,
+  /// impossible round trip.
+  ///
+  /// Errors (e.g. the subscribe-time `ForbiddenError` this field's own
+  /// resolver can throw) surface through this stream — a consuming
+  /// controller is expected to swallow them rather than fail the whole
+  /// read, same convention as `watchPantryChanges`.
+  Stream<ShoppingList> watchShoppingListChanges(String householdId);
 }
 
 /// Ferry-backed [ShoppingListRepository].
@@ -115,6 +155,47 @@ class FerryShoppingListRepository
 
     final GHaveItData data = await execute(request);
     return shoppingListFromGraphQL(data.haveIt);
+  }
+
+  @override
+  Future<ShoppingList> markPurchased(String itemId) async {
+    final GMarkPurchasedReq request = GMarkPurchasedReq(
+      (GMarkPurchasedReqBuilder b) =>
+          b..vars = (GMarkPurchasedVarsBuilder()..itemId = itemId),
+    );
+
+    final GMarkPurchasedData data = await execute(request);
+    return shoppingListFromGraphQL(data.markPurchased);
+  }
+
+  @override
+  Stream<ShoppingList> watchShoppingListChanges(String householdId) async* {
+    final GOnShoppingListChangedReq request = GOnShoppingListChangedReq(
+      (GOnShoppingListChangedReqBuilder b) =>
+          b
+            ..vars = (GOnShoppingListChangedVarsBuilder()
+              ..householdId = householdId),
+    );
+
+    await for (final OperationResponse<
+          GOnShoppingListChangedData,
+          GOnShoppingListChangedVars
+        >
+        response
+        in client.request(request)) {
+      if (response.hasErrors) {
+        throw mapOperationFailure(
+          graphqlErrors: response.graphqlErrors,
+          linkException: response.linkException,
+        );
+      }
+      final GOnShoppingListChangedData? data = response.data;
+      final GOnShoppingListChangedData_onShoppingListChanged? pushed =
+          data?.onShoppingListChanged;
+      if (pushed != null) {
+        yield shoppingListFromGraphQL(pushed);
+      }
+    }
   }
 }
 

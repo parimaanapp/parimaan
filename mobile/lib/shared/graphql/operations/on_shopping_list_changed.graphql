@@ -1,0 +1,15 @@
+#import "./shopping_list_fields.graphql"
+
+# `Subscription.onShoppingListChanged` — pushed whenever another device
+# runs `generateShoppingList`/`regenerateShoppingList`/`haveIt`/
+# `markPurchased` for `householdId` (D1, E2E_MVP_PLAN.md §18.2.1, W12 S3).
+# Unlike `OnPantryChanged`, the pushed payload IS the full current
+# `ShoppingList` — there is no `Query.shoppingList` this week to separately
+# refetch from, so `ShoppingListRepository.watchShoppingListChanges` maps
+# this payload straight into the domain `ShoppingList` `CurrentShoppingListController`
+# adopts as its new state.
+subscription OnShoppingListChanged($householdId: ID!) {
+  onShoppingListChanged(householdId: $householdId) {
+    ...ShoppingListFields
+  }
+}

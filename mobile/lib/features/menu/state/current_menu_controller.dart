@@ -57,10 +57,13 @@ bool _isCanonicalWeekStartDate(DateTime weekStartDate) =>
 /// that interface's own doc for why the two operations stay separate there.
 ///
 /// No live-push subscription wiring (unlike `CurrentHouseholdController`'s
-/// `watchHouseholdChanges`): W9 has no `onMenuChanged` (deferred,
-/// E2E_MVP_PLAN.md §15.2 D1) — [refresh] is called explicitly by whichever
-/// screen/controller just mutated the menu (`addMenuItem`/`removeMenuItem`),
-/// not by a background push.
+/// `watchHouseholdChanges`): `Subscription.onMenuChanged` exists (shipped
+/// W11 S2), but this controller deliberately doesn't consume it — the same
+/// structural reasoning W11's D9-carryover gives for `addMenuItem`/
+/// `removeMenuItem`/`autoFillWeek`, now explicitly extended to `markMade`
+/// too (E2E_MVP_PLAN.md §18.2.4 D4): [refresh] is called explicitly by
+/// whichever screen/controller just mutated the menu, not by a background
+/// push.
 class CurrentMenuController extends FamilyAsyncNotifier<Menu, MenuKey> {
   /// `read`, not `watch` — consistent with every other controller in this
   /// codebase.
@@ -141,6 +144,33 @@ class CurrentMenuController extends FamilyAsyncNotifier<Menu, MenuKey> {
   /// succeeded-but-refresh-failed case.
   Future<void> removeMenuItem(String id) async {
     await _repository.removeMenuItem(id);
+    await refresh();
+    if (state.hasError) {
+      // ignore: only_throw_errors
+      throw state.error!;
+    }
+  }
+
+  /// Marks the `MenuItem` with [menuItemId] made, then [refresh]es so the
+  /// item's new `madeAt` (and any pantry deduction it triggered) is
+  /// reflected from the server's own state rather than a hand-patched local
+  /// guess — same shape as [addMenuItem]/[removeMenuItem].
+  ///
+  /// **Not** attached to `onMenuChanged` (D4, E2E_MVP_PLAN.md §18.2.4) — no
+  /// other device sees this change until it next refreshes/re-enters this
+  /// screen; this explicit [refresh] is the only way this controller's own
+  /// state learns of it.
+  ///
+  /// **Throws**, same contract as [addMenuItem] — including a rejection on
+  /// an already-made item (`ConflictError`) and the succeeded-but-refresh-
+  /// failed case.
+  ///
+  /// The raw, immediate mutation call — a caller wanting the "single tap +
+  /// undo snackbar" UX (D8, §18.2.8) schedules this behind a cancellable
+  /// deferred timer rather than calling it directly (a later slice's own
+  /// `PendingMarkMadeAction`, not built here).
+  Future<void> markMade(String menuItemId) async {
+    await _repository.markMade(menuItemId);
     await refresh();
     if (state.hasError) {
       // ignore: only_throw_errors
