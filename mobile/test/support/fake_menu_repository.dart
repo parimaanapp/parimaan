@@ -19,6 +19,8 @@ class FakeMenuRepository implements MenuRepository {
     this.previewError,
     this.autoFillResult,
     this.autoFillError,
+    this.markMadeResult,
+    this.markMadeError,
     this.delay,
   });
 
@@ -78,6 +80,12 @@ class FakeMenuRepository implements MenuRepository {
   Object? autoFillError;
   final List<(String menuId, bool overwrite, List<NewMenuItem> items)>
   autoFillCalls = <(String, bool, List<NewMenuItem>)>[];
+
+  // ── markMade ───────────────────────────────────────────────────────────
+
+  MenuItem? markMadeResult;
+  Object? markMadeError;
+  final List<String> markMadeCalls = <String>[];
 
   @override
   Future<Menu?> fetchMenu(String householdId, DateTime weekStartDate) async {
@@ -154,6 +162,20 @@ class FakeMenuRepository implements MenuRepository {
     if (result == null) {
       throw StateError(
         'FakeMenuRepository.autoFillWeek: no autoFillResult configured.',
+      );
+    }
+    return result;
+  }
+
+  @override
+  Future<MenuItem> markMade(String menuItemId) async {
+    markMadeCalls.add(menuItemId);
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (markMadeError != null) throw markMadeError!;
+    final MenuItem? result = markMadeResult;
+    if (result == null) {
+      throw StateError(
+        'FakeMenuRepository.markMade: no markMadeResult configured.',
       );
     }
     return result;

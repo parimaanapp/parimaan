@@ -215,4 +215,98 @@ void main() {
       },
     );
   });
+
+  group('FerryShoppingListRepository.markPurchased', () {
+    test('sends the MarkPurchased mutation with itemId (no quantity) and returns the full parent list', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': markPurchasedWireData(
+            shoppingList: shoppingListWireNode(
+              items: <Map<String, dynamic>>[
+                shoppingListItemWireNode(
+                  purchased: true,
+                  purchasedBy: 'user-1',
+                  purchasedAt: '2026-09-03T12:00:00.000Z',
+                  movedToPantry: true,
+                ),
+              ],
+            ),
+          ),
+        },
+      );
+
+      final ShoppingList result = await subject.repository.markPurchased(
+        'item-1',
+      );
+
+      final Request sent = subject.link.requests.single;
+      expect(sent.operation.operationName, 'MarkPurchased');
+      expect(sent.variables['itemId'], 'item-1');
+      expect(sent.variables.containsKey('quantity'), isFalse);
+      expect(result.items.single.purchased, isTrue);
+      expect(result.items.single.movedToPantry, isTrue);
+    });
+
+    test(
+      'an already-purchased item rejection surfaces as a typed ConflictError',
+      () async {
+        final subject = _subject(
+          (Request _) =>
+              _errorBody('CONFLICT', 'This item was already bought.'),
+        );
+
+        await expectLater(
+          subject.repository.markPurchased('item-1'),
+          throwsA(isA<ConflictError>()),
+        );
+      },
+    );
+  });
+
+  group('FerryShoppingListRepository.watchShoppingListChanges', () {
+    test(
+      'sends the OnShoppingListChanged operation with the householdId variable',
+      () async {
+        final subject = _subject(
+          (Request _) => <String, dynamic>{
+            'data': onShoppingListChangedWireData(),
+          },
+        );
+
+        await subject.repository.watchShoppingListChanges('household-1').first;
+
+        final Request sent = subject.link.requests.single;
+        expect(sent.operation.operationName, 'OnShoppingListChanged');
+        expect(sent.variables['householdId'], 'household-1');
+      },
+    );
+
+    test('emits the pushed ShoppingList — unlike watchPantryChanges, the payload IS the fresh state', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': onShoppingListChangedWireData(
+            shoppingList: shoppingListWireNode(id: 'shopping-list-2'),
+          ),
+        },
+      );
+
+      final ShoppingList result = await subject.repository
+          .watchShoppingListChanges('household-1')
+          .first;
+
+      expect(result.id, 'shopping-list-2');
+    });
+
+    test('a subscribe-time FORBIDDEN denial maps to ForbiddenError', () async {
+      final subject = _subject(
+        (Request _) =>
+            _errorBody('FORBIDDEN', 'You are not a member of this household.'),
+      );
+
+      await expectLater(
+        subject.repository.watchShoppingListChanges('household-1').first,
+        throwsA(isA<ForbiddenError>()),
+      );
+    });
+  });
 }

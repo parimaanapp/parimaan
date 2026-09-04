@@ -163,6 +163,14 @@ Map<String, dynamic> createMenuWireData({Map<String, dynamic>? menu}) =>
 Map<String, dynamic> addMenuItemWireData({Map<String, dynamic>? item}) =>
     <String, dynamic>{'addMenuItem': item ?? menuItemWireNode()};
 
+/// `Mutation.markMade`'s own response shape (W12 S2/S4) — the same
+/// `MenuItemFields` selection `addMenuItem` returns, with `madeAt` set by
+/// default since that's the whole point of this mutation.
+Map<String, dynamic> markMadeWireData({Map<String, dynamic>? item}) =>
+    <String, dynamic>{
+      'markMade': item ?? menuItemWireNode(madeAt: '2026-09-04T12:00:00.000Z'),
+    };
+
 Map<String, dynamic> removeMenuItemWireData({bool result = true}) =>
     <String, dynamic>{'removeMenuItem': result};
 
@@ -202,7 +210,8 @@ Map<String, dynamic> autoFillPreviewWireData({
   int? filledCount,
   List<Map<String, dynamic>>? unfilledSlots,
 }) {
-  final List<Map<String, dynamic>> resolvedItems = items ?? <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> resolvedItems =
+      items ?? <Map<String, dynamic>>[];
   return <String, dynamic>{
     'autoFillPreview': <String, dynamic>{
       '__typename': 'AutoFillPreviewResult',
@@ -224,7 +233,8 @@ Map<String, dynamic> autoFillWeekWireData({
     'autoFillWeek': <String, dynamic>{
       '__typename': 'AutoFillResult',
       'menu': resolvedMenu,
-      'filledCount': filledCount ?? (resolvedMenu['items'] as List<dynamic>).length,
+      'filledCount':
+          filledCount ?? (resolvedMenu['items'] as List<dynamic>).length,
       'unfilledSlots': unfilledSlots ?? <Map<String, dynamic>>[],
     },
   };

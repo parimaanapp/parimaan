@@ -262,6 +262,93 @@ void main() {
     });
   });
 
+  group('CurrentMenuController.markMade', () {
+    test('marks the item made by id, then refreshes from the server — the item\'s madeAt is visible after refresh', () async {
+      final MenuItem madeItem = MenuItem(
+        id: 'menu-item-1',
+        menuId: 'menu-1',
+        recipe: testMenuRecipe,
+        dayOfWeek: 0,
+        mealSlot: 'lunch',
+        slotRole: RecipeRole.sabziDal,
+        madeAt: DateTime.utc(2026, 9, 4, 12),
+      );
+      final Menu menuAfterMade = Menu(
+        id: 'menu-1',
+        householdId: 'household-1',
+        weekStartDate: DateTime.utc(2026, 9, 7),
+        items: <MenuItem>[madeItem],
+      );
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testMenuWithItems,
+        markMadeResult: madeItem,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(currentMenuControllerProvider(key).future);
+      // The second fetchMenu call (the post-markMade refresh) returns the
+      // menu with the item now made.
+      repository.fetchResult = menuAfterMade;
+
+      await container
+          .read(currentMenuControllerProvider(key).notifier)
+          .markMade('menu-item-1');
+
+      expect(repository.markMadeCalls, <String>['menu-item-1']);
+      // Refreshed: fetchMenu called again after the mark-made call.
+      expect(repository.fetchCalls, hasLength(2));
+      expect(
+        container
+            .read(currentMenuControllerProvider(key))
+            .requireValue
+            .items
+            .single
+            .madeAt,
+        isNotNull,
+      );
+    });
+
+    test(
+      'a rejection throws — the caller must see it, never swallowed',
+      () async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testMenuWithItems,
+          markMadeError: const ConflictError('This item was already made.'),
+        );
+        final ProviderContainer container = _container(repository);
+        await container.read(currentMenuControllerProvider(key).future);
+
+        await expectLater(
+          container
+              .read(currentMenuControllerProvider(key).notifier)
+              .markMade('menu-item-1'),
+          throwsA(isA<ConflictError>()),
+        );
+      },
+    );
+
+    test(
+      'the mutation succeeding but the follow-up refresh failing still throws',
+      () async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testMenuWithItems,
+          markMadeResult: testMenuItem,
+          fetchErrorFromCall: 2,
+          fetchError: const InternalError('refresh failed'),
+        );
+        final ProviderContainer container = _container(repository);
+        await container.read(currentMenuControllerProvider(key).future);
+
+        await expectLater(
+          container
+              .read(currentMenuControllerProvider(key).notifier)
+              .markMade('menu-item-1'),
+          throwsA(isA<InternalError>()),
+        );
+        expect(repository.markMadeCalls, hasLength(1));
+      },
+    );
+  });
+
   group('CurrentMenuController.previewAutoFill', () {
     test('previews against the current menu id and returns the proposal — mutates NOTHING in state', () async {
       final AutoFillPreviewResult preview = AutoFillPreviewResult(

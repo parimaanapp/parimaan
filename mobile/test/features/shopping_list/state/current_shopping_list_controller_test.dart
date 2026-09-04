@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/shopping_list/data/shopping_list_repository.dart';
@@ -330,6 +332,155 @@ void main() {
             .requireValue,
         testShoppingList,
       );
+    });
+  });
+
+  group('CurrentShoppingListController.markPurchased', () {
+    test('refreshes controller state from the response — the item drops out of toBuy (D5, same toBuy getter haveIt already relies on)', () async {
+      final ShoppingList afterMarkPurchased = ShoppingList(
+        id: 'shopping-list-1',
+        householdId: 'household-1',
+        generatedFromMenuId: 'menu-1',
+        createdAt: DateTime.utc(2026, 9, 1),
+        closedAt: null,
+        aiStaplesNote: null,
+        items: <ShoppingListItem>[testPurchasedShoppingListItem],
+      );
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+        markPurchasedResult: afterMarkPurchased,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentShoppingListControllerProvider('menu-1').future,
+      );
+
+      final ShoppingList result = await container
+          .read(currentShoppingListControllerProvider('menu-1').notifier)
+          .markPurchased('item-1');
+
+      expect(result, afterMarkPurchased);
+      expect(repository.markPurchasedCalls, <String>['item-1']);
+      expect(
+        container
+            .read(currentShoppingListControllerProvider('menu-1'))
+            .requireValue
+            .toBuy,
+        isEmpty,
+      );
+    });
+
+    test('a markPurchased rejection throws — the caller must see it, state is left unchanged', () async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+        markPurchasedError: const ConflictError(
+          'This item was already bought.',
+        ),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentShoppingListControllerProvider('menu-1').future,
+      );
+
+      await expectLater(
+        container
+            .read(currentShoppingListControllerProvider('menu-1').notifier)
+            .markPurchased('item-1'),
+        throwsA(isA<ConflictError>()),
+      );
+      expect(
+        container
+            .read(currentShoppingListControllerProvider('menu-1'))
+            .requireValue,
+        testShoppingList,
+      );
+    });
+  });
+
+  group('CurrentShoppingListController — live updates (onShoppingListChanged, W12 S4)', () {
+    test('subscribes to watchShoppingListChanges for the household its current list belongs to', () async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+      );
+      final ProviderContainer container = _container(repository);
+
+      await container.read(
+        currentShoppingListControllerProvider('menu-1').future,
+      );
+
+      expect(repository.watchCalls, <String>['household-1']);
+    });
+
+    test('a pushed ShoppingList triggers a refetch — the controller\'s state reflects the pushed list', () async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentShoppingListControllerProvider('menu-1').future,
+      );
+
+      final ShoppingList pushed = ShoppingList(
+        id: 'shopping-list-1',
+        householdId: 'household-1',
+        generatedFromMenuId: 'menu-1',
+        createdAt: DateTime.utc(2026, 9, 1),
+        closedAt: null,
+        aiStaplesNote: null,
+        items: <ShoppingListItem>[testPurchasedShoppingListItem],
+      );
+      repository.watchControllers['household-1']!.add(pushed);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container
+            .read(currentShoppingListControllerProvider('menu-1'))
+            .requireValue,
+        pushed,
+      );
+    });
+
+    test('an error on the change stream is swallowed — the shopping list stays as last known', () async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentShoppingListControllerProvider('menu-1').future,
+      );
+
+      repository.watchControllers['household-1']!.addError(
+        const ForbiddenError('You are not a member of this household.'),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final AsyncValue<ShoppingList> state = container.read(
+        currentShoppingListControllerProvider('menu-1'),
+      );
+      expect(state.hasError, isFalse);
+      expect(state.value, testShoppingList);
+    });
+
+    test('disposing the container cancels the change subscription — no state change after', () async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(
+        currentShoppingListControllerProvider('menu-1').future,
+      );
+      final StreamController<ShoppingList> watchController =
+          repository.watchControllers['household-1']!;
+
+      container.dispose();
+      // Broadcast controllers accept `.add` with no listeners without
+      // throwing — this only proves the controller-side subscription is
+      // gone, not that `.add` itself would have failed.
+      watchController.add(testEmptyShoppingList);
+      await Future<void>.delayed(Duration.zero);
+
+      // No crash, no leaked listener — nothing further to assert once the
+      // container (and the provider it owned) is disposed.
     });
   });
 }

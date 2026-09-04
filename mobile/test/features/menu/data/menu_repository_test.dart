@@ -259,16 +259,26 @@ void main() {
         (Request _) => <String, dynamic>{
           'data': autoFillPreviewWireData(
             items: <Map<String, dynamic>>[
-              proposedMenuItemWireNode(recipeId: 'recipe-1', dayOfWeek: 0, mealSlot: 'lunch', slotRole: 'carb'),
+              proposedMenuItemWireNode(
+                recipeId: 'recipe-1',
+                dayOfWeek: 0,
+                mealSlot: 'lunch',
+                slotRole: 'carb',
+              ),
             ],
             unfilledSlots: <Map<String, dynamic>>[
-              unfilledSlotWireNode(dayOfWeek: 1, mealSlot: 'lunch', slotRole: 'sabzi_dal'),
+              unfilledSlotWireNode(
+                dayOfWeek: 1,
+                mealSlot: 'lunch',
+                slotRole: 'sabzi_dal',
+              ),
             ],
           ),
         },
       );
 
-      final AutoFillPreviewResult result = await subject.repository.autoFillPreview('menu-1');
+      final AutoFillPreviewResult result = await subject.repository
+          .autoFillPreview('menu-1');
 
       final Request sent = subject.link.requests.single;
       expect(sent.operation.operationName, 'AutoFillPreview');
@@ -297,22 +307,26 @@ void main() {
       expect(subject.link.requests, hasLength(2));
     });
 
-    test('a partial proposal (some slots unfilled) surfaces cleanly, not an error', () async {
-      final subject = _subject(
-        (Request _) => <String, dynamic>{
-          'data': autoFillPreviewWireData(
-            items: <Map<String, dynamic>>[],
-            filledCount: 0,
-            unfilledSlots: <Map<String, dynamic>>[unfilledSlotWireNode()],
-          ),
-        },
-      );
+    test(
+      'a partial proposal (some slots unfilled) surfaces cleanly, not an error',
+      () async {
+        final subject = _subject(
+          (Request _) => <String, dynamic>{
+            'data': autoFillPreviewWireData(
+              items: <Map<String, dynamic>>[],
+              filledCount: 0,
+              unfilledSlots: <Map<String, dynamic>>[unfilledSlotWireNode()],
+            ),
+          },
+        );
 
-      final AutoFillPreviewResult result = await subject.repository.autoFillPreview('menu-1');
-      expect(result.items, isEmpty);
-      expect(result.filledCount, 0);
-      expect(result.unfilledSlots, hasLength(1));
-    });
+        final AutoFillPreviewResult result = await subject.repository
+            .autoFillPreview('menu-1');
+        expect(result.items, isEmpty);
+        expect(result.filledCount, 0);
+        expect(result.unfilledSlots, hasLength(1));
+      },
+    );
   });
 
   group('FerryMenuRepository.autoFillWeek', () {
@@ -320,7 +334,9 @@ void main() {
       final subject = _subject(
         (Request _) => <String, dynamic>{
           'data': autoFillWeekWireData(
-            menu: menuWireNode(items: <Map<String, dynamic>>[menuItemWireNode()]),
+            menu: menuWireNode(
+              items: <Map<String, dynamic>>[menuItemWireNode()],
+            ),
             filledCount: 1,
           ),
         },
@@ -344,7 +360,8 @@ void main() {
       expect(sent.variables['overwrite'], isTrue);
       final List<dynamic> items = sent.variables['items'] as List<dynamic>;
       expect(items, hasLength(1));
-      final Map<String, dynamic> sentItem = items.single as Map<String, dynamic>;
+      final Map<String, dynamic> sentItem =
+          items.single as Map<String, dynamic>;
       expect(sentItem['recipeId'], 'recipe-1');
       expect(sentItem['mealSlot'], 'lunch');
       expect(sentItem['slotRole'], 'sabzi_dal');
@@ -354,10 +371,16 @@ void main() {
 
     test('an empty items list sends an empty array, not null', () async {
       final subject = _subject(
-        (Request _) => <String, dynamic>{'data': autoFillWeekWireData(filledCount: 0)},
+        (Request _) => <String, dynamic>{
+          'data': autoFillWeekWireData(filledCount: 0),
+        },
       );
 
-      await subject.repository.autoFillWeek('menu-1', overwrite: false, items: const <NewMenuItem>[]);
+      await subject.repository.autoFillWeek(
+        'menu-1',
+        overwrite: false,
+        items: const <NewMenuItem>[],
+      );
 
       final Request sent = subject.link.requests.single;
       expect(sent.variables['items'], isEmpty);
@@ -379,7 +402,12 @@ void main() {
         'menu-1',
         overwrite: false,
         items: <NewMenuItem>[
-          NewMenuItem(recipeId: 'recipe-1', dayOfWeek: 0, mealSlot: 'lunch', slotRole: RecipeRole.sabziDal),
+          NewMenuItem(
+            recipeId: 'recipe-1',
+            dayOfWeek: 0,
+            mealSlot: 'lunch',
+            slotRole: RecipeRole.sabziDal,
+          ),
         ],
       );
 
@@ -389,12 +417,49 @@ void main() {
 
     test('a server rejection of the whole call surfaces as a typed AppError, not swallowed', () async {
       final subject = _subject(
-        (Request _) => _errorBody('FORBIDDEN', 'You are not a member of this household.'),
+        (Request _) =>
+            _errorBody('FORBIDDEN', 'You are not a member of this household.'),
       );
 
       await expectLater(
-        subject.repository.autoFillWeek('menu-1', overwrite: false, items: const <NewMenuItem>[]),
+        subject.repository.autoFillWeek(
+          'menu-1',
+          overwrite: false,
+          items: const <NewMenuItem>[],
+        ),
         throwsA(isA<ForbiddenError>()),
+      );
+    });
+  });
+
+  group('FerryMenuRepository.markMade', () {
+    test(
+      'sends the MarkMade mutation with menuItemId and maps the returned item',
+      () async {
+        final subject = _subject(
+          (Request _) => <String, dynamic>{'data': markMadeWireData()},
+        );
+
+        final MenuItem result = await subject.repository.markMade(
+          'menu-item-1',
+        );
+
+        final Request sent = subject.link.requests.single;
+        expect(sent.operation.operationName, 'MarkMade');
+        expect(sent.variables['menuItemId'], 'menu-item-1');
+        expect(result.id, 'menu-item-1');
+        expect(result.madeAt, isNotNull);
+      },
+    );
+
+    test('a rejection on an already-made item surfaces as a typed AppError, not swallowed', () async {
+      final subject = _subject(
+        (Request _) => _errorBody('CONFLICT', 'This item was already made.'),
+      );
+
+      await expectLater(
+        subject.repository.markMade('menu-item-1'),
+        throwsA(isA<ConflictError>()),
       );
     });
   });

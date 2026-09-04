@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mobile/features/shopping_list/data/shopping_list_repository.dart';
 import 'package:mobile/features/shopping_list/domain/shopping_list_item.dart';
 
@@ -12,6 +14,8 @@ class FakeShoppingListRepository implements ShoppingListRepository {
     this.regenerateError,
     this.haveItResult,
     this.haveItError,
+    this.markPurchasedResult,
+    this.markPurchasedError,
     this.delay,
   });
 
@@ -38,6 +42,26 @@ class FakeShoppingListRepository implements ShoppingListRepository {
   Object? haveItError;
   final List<(String itemId, double quantity)> haveItCalls =
       <(String, double)>[];
+
+  // ── markPurchased ────────────────────────────────────────────────────
+
+  ShoppingList? markPurchasedResult;
+  Object? markPurchasedError;
+  final List<String> markPurchasedCalls = <String>[];
+
+  // ── watchShoppingListChanges ────────────────────────────────────────
+
+  /// One controller per `householdId` a test has called
+  /// [watchShoppingListChanges] for, so a test can `.add(shoppingList)`/
+  /// `.addError(...)` to simulate a live-update push without any real
+  /// subscription transport — same shape as `FakePantryRepository.
+  /// watchControllers`. Never emits on its own.
+  final Map<String, StreamController<ShoppingList>> watchControllers =
+      <String, StreamController<ShoppingList>>{};
+
+  /// Every `householdId` [watchShoppingListChanges] was called with, in
+  /// order.
+  final List<String> watchCalls = <String>[];
 
   @override
   Future<ShoppingList> generateShoppingList(String menuId) async {
@@ -82,5 +106,30 @@ class FakeShoppingListRepository implements ShoppingListRepository {
       );
     }
     return result;
+  }
+
+  @override
+  Future<ShoppingList> markPurchased(String itemId) async {
+    markPurchasedCalls.add(itemId);
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (markPurchasedError != null) throw markPurchasedError!;
+    final ShoppingList? result = markPurchasedResult;
+    if (result == null) {
+      throw StateError(
+        'FakeShoppingListRepository.markPurchased: no markPurchasedResult configured.',
+      );
+    }
+    return result;
+  }
+
+  @override
+  Stream<ShoppingList> watchShoppingListChanges(String householdId) {
+    watchCalls.add(householdId);
+    return watchControllers
+        .putIfAbsent(
+          householdId,
+          () => StreamController<ShoppingList>.broadcast(),
+        )
+        .stream;
   }
 }

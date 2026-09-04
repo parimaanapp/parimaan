@@ -461,6 +461,59 @@ type Mutation {
   validation, before any write.
   """
   haveIt(itemId: ID!, quantity: Float!): ShoppingList!
+
+  """
+  Marks `itemId` bought and moves it into the household's pantry in one
+  transaction (D5/D6, E2E_MVP_PLAN.md §18.2.5/§18.2.6, W12 S3) — the
+  "check off" counterpart to `haveIt`. Deliberately takes NO `quantity`
+  argument (D5, locked): the pantry write always uses the shopping-list
+  item's own already-known `quantity`/`unit`, since a purchase is closing
+  out something the list already specified, not a fresh manual entry.
+  Matched against an existing pantry row by the identical D2/D3 fuzzy-name
+  and unit-conversion-aware compatibility `haveIt` already uses (a
+  same-family cross-unit pair converts and increments, preserving that
+  row's own existing `expiryDate` untouched; a cross-family or
+  unrecognised-unit match creates a fresh row instead of incorrectly
+  summing). A fresh row (no match) is inserted with its `expiryDate` set
+  from the item's `category` via the locked default-expiry table (O3,
+  §18.3 S1) rather than `haveIt`'s own `null` — PRD's "bought items ...
+  with expiry defaults" requirement, absent from "Have it." `itemId` is
+  flipped `purchased`/`movedToPantry` (with `purchasedBy`/`purchasedAt`
+  stamped) atomically with that pantry write: a failure on either half
+  rolls back both. Returns the item's full parent `ShoppingList!` (D1's
+  widened return type, §18.2.1) so this mutation can attach to
+  `onShoppingListChanged` below. Takes no `householdId`: the item's
+  household is looked up via its parent list, the same `id`-only,
+  RLS-scoped membership resolution `haveIt` uses — a non-member is denied
+  identically to a nonexistent `itemId`. A second call on an
+  already-`purchased` item is rejected with `CONFLICT` rather than
+  silently double-counting the pantry increment.
+  """
+  markPurchased(itemId: ID!): ShoppingList!
+
+  """
+  Marks `menuItemId` as cooked and deducts its recipe's ingredients from the
+  household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
+  §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
+  W11's exact fuzzy-name (`namesMatch`) and unit-conversion (`convertQuantity`)
+  matching, unmodified (D2): a non-staple ingredient (never staple-flagged,
+  staple-category, or staple-unit, per `isStapleExcluded` — O2) that matches
+  an existing pantry row by name and a convertible unit has that row's
+  `quantity` decremented by the recipe's (optionally `servingsOverride`-
+  scaled) required amount, floored at exactly zero rather than going
+  negative (O1). An ingredient with no matching pantry row, or one excluded
+  as a staple, is left untouched — deduction never fabricates a new pantry
+  row (D3). Takes no `householdId`: the item's household is looked up via
+  its parent menu, the same `id`-only, RLS-scoped membership resolution
+  `addMenuItem` uses — a non-member is denied identically to a nonexistent
+  `menuItemId`. A second call on an already-made item (`madeAt` already set)
+  is rejected with `CONFLICT`, matching `haveIt`'s own already-purchased
+  guard shape. Deliberately NOT attached to `onMenuChanged` (D4) — the
+  directly-consumed `MenuItem!` return type isn't worth widening this week,
+  the same structural call W11's D9-carryover already made for
+  `addMenuItem`/`removeMenuItem`/`autoFillWeek`.
+  """
+  markMade(menuItemId: ID!): MenuItem!
 }
 
 type Subscription {
@@ -564,6 +617,28 @@ type Subscription {
   """
   onMembershipRevoked(householdId: ID!): Boolean
     @aws_subscribe(mutations: ["deleteHousehold"])
+
+  """
+  Pushes the `ShoppingList` to every other connected device in
+  `householdId` on any of the four mutations that change it (D1, cashing
+  in W11 D1's own promise — E2E_MVP_PLAN.md §18.2.1, W12 S3):
+  `generateShoppingList`/`regenerateShoppingList` (already `ShoppingList!`
+  since W11 S2, no change needed) and `haveIt`/`markPurchased` (both
+  widened to `ShoppingList!` specifically so they could attach here — SD
+  §6.1's own comment on `haveIt` named this subscription as future work
+  since W11). Per §11.2.12's already-locked "every push means refetch, no
+  event-type discriminator" contract, the pushed payload's exact shape
+  doesn't matter to any consumer — the affected item remains reachable via
+  `ShoppingList.items` regardless of which of the four mutations fired.
+  Same subscribe-time Lambda-resolver authorization pattern as every other
+  subscription in this schema (SD §10.4 deviation, §11.2.9), reusing
+  `requireHouseholdMember` unchanged: a non-member or nonexistent
+  `householdId` is denied identically.
+  """
+  onShoppingListChanged(householdId: ID!): ShoppingList
+    @aws_subscribe(
+      mutations: ["generateShoppingList", "regenerateShoppingList", "haveIt", "markPurchased"]
+    )
 }
 
 type User {

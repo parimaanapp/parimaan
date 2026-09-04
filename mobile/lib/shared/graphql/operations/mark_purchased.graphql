@@ -1,0 +1,14 @@
+#import "./shopping_list_fields.graphql"
+
+# `Mutation.markPurchased` — the "check off" counterpart to `haveIt` (D5/D6,
+# E2E_MVP_PLAN.md §18.2.5/§18.2.6, W12 S3). Deliberately takes NO `quantity`
+# argument (D5): the pantry write always uses the shopping-list item's own
+# already-known `quantity`/`unit`. Returns the item's full parent
+# `ShoppingList!` (D1's widened return type) so this mutation can attach to
+# `onShoppingListChanged`. A second call on an already-`purchased` item is
+# rejected with `CONFLICT`.
+mutation MarkPurchased($itemId: ID!) {
+  markPurchased(itemId: $itemId) {
+    ...ShoppingListFields
+  }
+}
