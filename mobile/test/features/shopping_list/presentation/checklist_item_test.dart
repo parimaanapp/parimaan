@@ -7,6 +7,7 @@ import 'package:mobile/features/shopping_list/data/shopping_list_repository.dart
 import 'package:mobile/features/shopping_list/domain/shopping_list_item.dart';
 import 'package:mobile/features/shopping_list/presentation/checklist_item.dart';
 import 'package:mobile/features/shopping_list/presentation/have_it_quantity_sheet.dart';
+import 'package:mobile/features/shopping_list/state/current_shopping_list_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
@@ -259,5 +260,233 @@ void main() {
       expect(find.byType(Dismissible), findsNothing);
       expect(find.byKey(ChecklistItem.rowKey('item-1')), findsOneWidget);
     });
+
+    testWidgets(
+      'the "bought" checkbox is ABSENT (not merely disabled) — matches the swipe gesture\'s own menuId gate (D6, W12 S6)',
+      (WidgetTester tester) async {
+        final ProviderContainer container = ProviderContainer(
+          overrides: <Override>[
+            shoppingListRepositoryProvider.overrideWithValue(
+              FakeShoppingListRepository(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: parimaanTheme(),
+              home: Scaffold(body: ChecklistItem(item: testShoppingListItem)),
+            ),
+          ),
+        );
+
+        expect(find.byKey(ChecklistItem.checkboxKey('item-1')), findsNothing);
+      },
+    );
+  });
+
+  group('ChecklistItem — "bought" checkbox (D6, W12 S6)', () {
+    testWidgets(
+      'tapping the checkbox calls markPurchased with the correct itemId, never haveIt',
+      (WidgetTester tester) async {
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(
+              generateResult: testShoppingList,
+              markPurchasedResult: testEmptyShoppingList,
+            );
+        await _pump(tester, repository: repository);
+
+        await tester.tap(find.byKey(ChecklistItem.checkboxKey('item-1')));
+        await tester.pumpAndSettle();
+
+        expect(repository.markPurchasedCalls, <String>['item-1']);
+        expect(repository.haveItCalls, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'no confirmation sheet is shown for the checkbox path (D5/D6)',
+      (WidgetTester tester) async {
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(
+              generateResult: testShoppingList,
+              markPurchasedResult: testEmptyShoppingList,
+            );
+        await _pump(tester, repository: repository);
+
+        await tester.tap(find.byKey(ChecklistItem.checkboxKey('item-1')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(HaveItQuantitySheet), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the checkbox and the swipe gesture on the same row never double-fire in quick succession — checkbox first, then swipe',
+      (WidgetTester tester) async {
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(
+              generateResult: testShoppingList,
+              markPurchasedResult: testEmptyShoppingList,
+              delay: const Duration(milliseconds: 50),
+            );
+        await _pump(tester, repository: repository);
+
+        // Tap the checkbox but don't let its markPurchased call resolve yet.
+        await tester.tap(find.byKey(ChecklistItem.checkboxKey('item-1')));
+        await tester.pump();
+
+        // A swipe landing while the checkbox tap is still in flight must be
+        // rejected immediately by the SAME `_isProcessing` guard the swipe
+        // gesture already uses for itself — never opening the Have-it
+        // sheet, never calling haveIt.
+        final Dismissible dismissible = tester.widget<Dismissible>(
+          find.ancestor(
+            of: find.byKey(ChecklistItem.rowKey('item-1')),
+            matching: find.byType(Dismissible),
+          ),
+        );
+        final bool? swipeResult = await dismissible.confirmDismiss!(
+          DismissDirection.startToEnd,
+        );
+        expect(swipeResult, false);
+        expect(find.byType(HaveItQuantitySheet), findsNothing);
+        expect(repository.haveItCalls, isEmpty);
+
+        await tester.pumpAndSettle();
+        expect(repository.markPurchasedCalls, <String>['item-1']);
+      },
+    );
+
+    testWidgets(
+      'the checkbox and the swipe gesture on the same row never double-fire in quick succession — swipe first, then checkbox',
+      (WidgetTester tester) async {
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(haveItResult: testEmptyShoppingList);
+        await _pump(tester, repository: repository);
+
+        final Dismissible dismissible = tester.widget<Dismissible>(
+          find.ancestor(
+            of: find.byKey(ChecklistItem.rowKey('item-1')),
+            matching: find.byType(Dismissible),
+          ),
+        );
+        final Future<bool?> swipeFuture = dismissible.confirmDismiss!(
+          DismissDirection.startToEnd,
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(HaveItQuantitySheet), findsOneWidget);
+
+        // The checkbox is still on-screen behind the sheet, but the Have-it
+        // sheet's own modal barrier sits on top of it, so a `tester.tap`
+        // wouldn't reliably land on the checkbox itself — asserting on the
+        // widget directly is what actually proves the shared `_isProcessing`
+        // guard disabled it (`onChanged: null`) while the swipe attempt is
+        // still pending, rather than merely proving a tap missed.
+        expect(
+          tester
+              .widget<Checkbox>(find.byKey(ChecklistItem.checkboxKey('item-1')))
+              .onChanged,
+          isNull,
+        );
+        expect(repository.markPurchasedCalls, isEmpty);
+
+        await tester.tap(
+          find.byKey(HaveItQuantitySheet.cancelButtonKey),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+        expect(await swipeFuture, false);
+        expect(repository.markPurchasedCalls, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'a successful markPurchased removes the row via the controller\'s own state rebuild, not a locally-hidden checkbox',
+      (WidgetTester tester) async {
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(
+              generateResult: testShoppingList,
+              markPurchasedResult: testEmptyShoppingList,
+            );
+        final ProviderContainer container = ProviderContainer(
+          overrides: <Override>[
+            shoppingListRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: parimaanTheme(),
+              home: Scaffold(
+                body: Consumer(
+                  builder: (BuildContext context, WidgetRef ref, _) {
+                    final AsyncValue<ShoppingList> list = ref.watch(
+                      currentShoppingListControllerProvider(_menuId),
+                    );
+                    final List<ShoppingListItem> toBuy =
+                        list.valueOrNull?.toBuy ?? const <ShoppingListItem>[];
+                    return CategorizedChecklist(items: toBuy, menuId: _menuId);
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(ChecklistItem.rowKey('item-1')), findsOneWidget);
+
+        await tester.tap(find.byKey(ChecklistItem.checkboxKey('item-1')));
+        await tester.pumpAndSettle();
+
+        expect(repository.markPurchasedCalls, <String>['item-1']);
+        expect(find.byKey(ChecklistItem.rowKey('item-1')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a failed markPurchased reverts the optimistic checked state and shows a visible error',
+      (WidgetTester tester) async {
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(
+              generateResult: testShoppingList,
+              markPurchasedError: const ConflictError(
+                'This item was already bought.',
+              ),
+              delay: const Duration(milliseconds: 50),
+            );
+        await _pump(tester, repository: repository);
+
+        await tester.tap(find.byKey(ChecklistItem.checkboxKey('item-1')));
+        await tester.pump();
+        // Optimistically checked the instant the tap lands, before the
+        // failing call has even resolved.
+        expect(
+          tester
+              .widget<Checkbox>(find.byKey(ChecklistItem.checkboxKey('item-1')))
+              .value,
+          true,
+        );
+
+        await tester.pumpAndSettle();
+
+        // Reverted back to unchecked on failure — never a silent no-op.
+        expect(
+          tester
+              .widget<Checkbox>(find.byKey(ChecklistItem.checkboxKey('item-1')))
+              .value,
+          false,
+        );
+        expect(find.byKey(ChecklistItem.rowKey('item-1')), findsOneWidget);
+        expect(find.text('This item was already bought.'), findsOneWidget);
+      },
+    );
   });
 }

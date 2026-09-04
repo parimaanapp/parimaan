@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
@@ -36,15 +37,47 @@ import 'have_it_quantity_sheet.dart';
 /// itself would race that rebuild. Returning `false` unconditionally means
 /// a cancelled or failed attempt leaves the row exactly where it was, and a
 /// successful one is removed exactly once, by the state rebuild alone.
+///
+/// **Leading "bought" checkbox (D6, E2E_MVP_PLAN.md §18.2.6, W12 S6).**
+/// A SEPARATE affordance from the swipe gesture above, sitting to the left
+/// of the row's name/quantity content — locked over a second swipe
+/// direction specifically to avoid "two different swipe gestures mean two
+/// different consequential actions" (this class's own swipe-gesture doc
+/// already cites `p_button.dart`'s "never rely on gesture-direction-alone
+/// semantics" rule; a second, oppositely-coloured swipe on the identical
+/// row would repeat that exact mistake). Gated on the identical
+/// `menuId != null` condition as the swipe gesture — same row, same
+/// "persistent Shopping List screen only" reasoning. Tapping it calls
+/// [CurrentShoppingListController.markPurchased] directly, no confirmation
+/// sheet: D5 already established `markPurchased` needs no quantity input,
+/// which is what makes a bare tap safe here, unlike `haveIt`'s
+/// quantity-sheet flow. Shows an immediate optimistic-checked state,
+/// reverting on failure with a visible error — mirroring
+/// `have_it_quantity_sheet.dart`'s own "honest UI feedback, never a silent
+/// no-op" convention. A successful call is never locally hidden by this
+/// widget — same "never let the widget remove itself" discipline as the
+/// swipe gesture above: the parent list rebuilds from
+/// `ShoppingList.toBuy`, which already excludes a just-purchased item.
+///
+/// **Shared in-flight guard.** [_isProcessing] below guards BOTH triggers
+/// on this one row, not just the swipe gesture alone — a checkbox tap and a
+/// swipe landing in quick succession on the same row must never both reach
+/// the network: whichever happens first wins, the other is a no-op.
 class ChecklistItem extends ConsumerStatefulWidget {
   const ChecklistItem({super.key, required this.item, this.menuId});
 
   final ShoppingListItem item;
 
-  /// Non-null enables the swipe gesture — see this class's own doc.
+  /// Non-null enables the swipe gesture AND the "bought" checkbox — see
+  /// this class's own doc.
   final String? menuId;
 
   static Key rowKey(String itemId) => Key('checklist-item-$itemId');
+
+  /// The leading "bought" checkbox (D6) — present only when [menuId] is
+  /// non-null, see this class's own doc.
+  static Key checkboxKey(String itemId) =>
+      Key('checklist-item-checkbox-$itemId');
 
   @override
   ConsumerState<ChecklistItem> createState() => _ChecklistItemState();
@@ -58,7 +91,20 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
   /// entire attempt, not just the network call" discipline
   /// `ShoppingListScreen._isBusy` already applies to Regenerate (W10
   /// S5/S11 S6b precedent).
+  ///
+  /// **Shared with the "bought" checkbox (D6, W12 S6):** this is the SAME
+  /// flag both [_handleSwipe] and [_handleMarkPurchased] check, so a
+  /// checkbox tap and a swipe landing on this row in quick succession can
+  /// never both reach the network — whichever sets this `true` first wins,
+  /// the other trigger's own guard clause returns immediately.
   bool _isProcessing = false;
+
+  /// The checkbox's own optimistic-checked visual state (D6) — set `true`
+  /// the instant a tap lands, reverted to `false` on a failed
+  /// `markPurchased`. A successful call never reads this again: the row is
+  /// removed by the parent's own state rebuild before it would matter (see
+  /// this class's own doc for why the checkbox never locally hides itself).
+  bool _isOptimisticallyChecked = false;
 
   /// `"2 kg"`, `"3"` (no unit), or `""` (neither present) — never a
   /// dangling `"null null"` for an item whose free-text quantity/unit came
@@ -96,12 +142,68 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
     return false;
   }
 
+  /// The "bought" checkbox's tap handler (D6). Shares [_isProcessing] with
+  /// [_handleSwipe] — see that field's own doc — so this guard clause is
+  /// what stops a checkbox tap from firing while a swipe attempt on this
+  /// exact row is already in flight, and vice versa (the checkbox's own
+  /// `onChanged` is already `null` whenever `_isProcessing` is true, which
+  /// makes a swipe-in-flight tap unreachable in practice; this check is
+  /// belt-and-suspenders defense-in-depth for the same guard, not the sole
+  /// line of defense the way [_handleSwipe]'s identical check is against an
+  /// un-disableable `Dismissible`).
+  Future<void> _handleMarkPurchased() async {
+    if (_isProcessing) return;
+    setState(() {
+      _isProcessing = true;
+      _isOptimisticallyChecked = true;
+    });
+    final String menuId = widget.menuId!;
+    try {
+      await ref
+          .read(currentShoppingListControllerProvider(menuId).notifier)
+          .markPurchased(widget.item.id);
+      // Success: the controller's own state rebuild removes this row from
+      // the parent list (`ShoppingList.toBuy` no longer includes it) — see
+      // this class's own doc for why this widget never hides itself. If
+      // this instance somehow survives that rebuild, just clear the guard.
+      if (mounted) setState(() => _isProcessing = false);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+        _isOptimisticallyChecked = false;
+      });
+      final String message = error is AppError
+          ? error.errorMessage
+          : 'Could not mark this item as bought. Please try again.';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final String? menuId = widget.menuId;
     final Widget row = PCard(
       key: ChecklistItem.rowKey(widget.item.id),
       child: Row(
         children: <Widget>[
+          if (menuId != null) ...<Widget>[
+            // Labelled explicitly (rather than left to merge with the
+            // sibling name `Text` below) so a screen reader announces which
+            // item this checkbox marks bought, not just "checkbox".
+            Semantics(
+              label: 'Mark ${widget.item.name} as bought',
+              child: Checkbox(
+                key: ChecklistItem.checkboxKey(widget.item.id),
+                value: _isOptimisticallyChecked,
+                onChanged: _isProcessing
+                    ? null
+                    : (bool? _) => _handleMarkPurchased(),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s1),
+          ],
           Expanded(
             child: Text(
               widget.item.name,
@@ -119,7 +221,6 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
       ),
     );
 
-    final String? menuId = widget.menuId;
     if (menuId == null) return row;
 
     return Dismissible(
