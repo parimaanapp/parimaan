@@ -311,6 +311,38 @@ export const markItemHaveIt = async (
 };
 
 /**
+ * D5/D6's `markPurchased` write (W12 S3, E2E_MVP_PLAN.md §18.3): flips
+ * `purchased`/`movedToPantry` true and stamps `purchasedBy`/`purchasedAt`,
+ * in the SAME statement as the guard that makes double-calling
+ * `markPurchased` on the same item a clean, atomic `CONFLICT` rather than
+ * a silent double pantry-increment — `WHERE id = $1 AND purchased = FALSE`
+ * returns zero rows (mapped to `null` here) if the item was already
+ * marked, whether by an earlier `markPurchased` call, a concurrent one
+ * from another device, or `haveIt` itself (both mutations share this same
+ * `purchased` flag — the exact identical shape as {@link markItemHaveIt}'s
+ * own doc). The resolver throws `ConflictError` on `null`, which rolls
+ * back this transaction's pantry write too (`withUserTransaction`).
+ * Callers run the pantry upsert-or-increment FIRST in the same
+ * transaction, then this — matching `markItemHaveIt`'s own ordering so a
+ * rejected double-call never leaves either side half-applied.
+ */
+export const markItemPurchased = async (
+  client: PoolClient,
+  itemId: string,
+  purchasedBy: string,
+): Promise<ShoppingListItemRow | null> => {
+  const result = await client.query<RawShoppingListItemRow>(
+    `UPDATE shopping_list_items
+     SET moved_to_pantry = TRUE, purchased = TRUE, purchased_by = $2, purchased_at = NOW()
+     WHERE id = $1 AND purchased = FALSE
+     RETURNING *`,
+    [itemId, purchasedBy],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapShoppingListItemRow(row);
+};
+
+/**
  * D8's own preserve/replace predicate (§17.2.8), as a pure function so the
  * resolver's `confirmed: false` preview path (which never runs the DELETE
  * below) and this repository's actual DELETE predicate can never drift
