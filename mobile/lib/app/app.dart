@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../shared/graphql/client.dart';
+import '../shared/ui/components/offline_banner.dart';
 import '../shared/ui/theme.dart';
 import 'join_deep_link_listener.dart';
 import 'router.dart';
@@ -47,6 +49,19 @@ class _RoutedApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: parimaanTheme(),
       routerConfig: router,
+      // Mounted once here, above the `Navigator` `MaterialApp.router` builds
+      // internally — every screen/route/tab gets the offline banner with no
+      // per-screen wiring (E2E_MVP_PLAN.md §18.2.7/D7, §18.3 S7). `builder`'s
+      // `child` is the routed `Navigator`; `OfflineBanner` wraps it rather
+      // than replacing it.
+      builder: (BuildContext context, Widget? child) {
+        return OfflineBanner(
+          connectionState: ref
+              .watch(subscriptionClientProvider)
+              .connectionState,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }
