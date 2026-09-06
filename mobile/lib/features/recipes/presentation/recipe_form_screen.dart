@@ -100,6 +100,7 @@ class RecipeFormScreen extends ConsumerStatefulWidget {
   static const Key submitButtonKey = Key('recipe-form-submit');
   static const Key reviewAttributionKey = Key('recipe-form-review-attribution');
   static const Key reviewWarningsKey = Key('recipe-form-review-warnings');
+  static const Key roleConfirmHintKey = Key('recipe-form-role-confirm-hint');
 
   bool get isEditMode => initialRecipe != null;
 
@@ -755,6 +756,12 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
     final AiRecipeDraftController? draftNotifier = widget.isReviewMode
         ? ref.read(aiRecipeDraftControllerProvider(widget.initialDraft!).notifier)
         : null;
+    // See the role `PChip`'s own `selected:` comment below — this is
+    // `_isValid`'s exact same "still needs an affirmative tap" condition
+    // (§13.2.6 D5), reused here purely to drive what the role chip/hint
+    // look like, not to gate submission a second time.
+    final bool roleNeedsConfirmation =
+        draftState != null && draftState.role.isProposed && draftState.role.value != null;
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -827,12 +834,31 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
                           for (final RecipeRole role in RecipeRole.selectable)
                             PChip(
                               label: role.displayLabel,
-                              selected: _role == role,
+                              // While the AI's proposed role sits unconfirmed
+                              // (§13.2.6 D5), it must NOT render `selected`
+                              // — `PChip`'s selected look (inverted fill,
+                              // checkmark) is indistinguishable from an
+                              // actually-confirmed chip, which left a real
+                              // dead end: the chip looked already chosen, so
+                              // nothing on screen explained why Save stayed
+                              // disabled until this exact chip was tapped
+                              // again.
+                              selected: _role == role && !roleNeedsConfirmation,
                               onTap: isBusy ? null : () => _onRoleTap(role),
                             ),
                         ],
                       ),
                     ),
+                    if (roleNeedsConfirmation) ...<Widget>[
+                      const SizedBox(height: AppSpacing.s0),
+                      Text(
+                        'Tap the suggested role to confirm it, or choose a different one.',
+                        key: RecipeFormScreen.roleConfirmHintKey,
+                        style: AppTypography.label.copyWith(
+                          color: AppColors.inkMid,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.s2),
                     _proposalWrap<String>(
                       field: draftState?.description,
