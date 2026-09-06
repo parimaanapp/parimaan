@@ -57,4 +57,24 @@ describe('withErrorHandling', () => {
       errorType: 'VALIDATION',
     });
   });
+
+  it(
+    "sets the thrown error's `name` to the client errorType, not just an inert `errorType` " +
+      'own-property — AppSync Direct Lambda Resolvers (no VTL in front, see api-stack.ts) read ' +
+      "a thrown error's wire-level `errorType` sibling from the Lambda runtime's own invocation-" +
+      "error envelope, which Node derives from `Error.prototype.name` (defaulting to the generic " +
+      "string \"Error\" for a plain `new Error(...)`), never from an arbitrary same-named own " +
+      'property. Before this test, every typed error this API throws was silently downgraded to ' +
+      "a generic \"Error\"/INTERNAL classification on the wire — invisible in unit tests (which " +
+      'never go through real Lambda/AppSync serialization) but breaking any client logic that ' +
+      'branches on a specific errorType (e.g. `ConflictError` triggering a client-side redirect).',
+    async () => {
+      const wrapped = withErrorHandling(async () => {
+        throw new ValidationError('name is required');
+      });
+      await expect(wrapped(undefined)).rejects.toMatchObject({
+        name: 'VALIDATION',
+      });
+    },
+  );
 });
