@@ -35,6 +35,8 @@ class FakeHouseholdRepository implements HouseholdRepository {
     this.fetchError,
     this.myHouseholdsResult,
     this.myHouseholdsError,
+    this.myUserIdResult,
+    this.myUserIdError,
     this.rotateResult,
     this.rotateError,
     this.leaveResult = true,
@@ -121,6 +123,16 @@ class FakeHouseholdRepository implements HouseholdRepository {
   /// How many times [fetchMyHouseholds] was called — this method takes no
   /// arguments, so a count is all there is to assert.
   int myHouseholdsCallCount = 0;
+
+  // ── fetchMyUserId ──────────────────────────────────────────────────────────
+
+  /// Returned by [fetchMyUserId]. No fallback to [result] — a `Household`
+  /// and the caller's own `users.id` are different shapes entirely.
+  String? myUserIdResult;
+  Object? myUserIdError;
+
+  /// How many times [fetchMyUserId] was called.
+  int myUserIdCallCount = 0;
 
   // ── rotateInviteCode ───────────────────────────────────────────────────────
 
@@ -236,6 +248,12 @@ class FakeHouseholdRepository implements HouseholdRepository {
       myHouseholdsResult,
       'myHouseholdsResult',
     );
+  }
+
+  @override
+  Future<String> fetchMyUserId() {
+    myUserIdCallCount++;
+    return _answer<String>(myUserIdError, myUserIdResult, 'myUserIdResult');
   }
 
   @override

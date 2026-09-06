@@ -55,5 +55,19 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Required so amplify_auth_cognito's Hosted UI flow can resolve a
+             browser/Custom Tabs handler on Android 11+ (package visibility).
+             Without these, PackageManager.queryIntentActivities/resolveService
+             return empty even when Chrome is installed, and sign-in fails with
+             UrlLauncherException("No browser available for launching URL intent").
+             See https://docs.amplify.aws/flutter/build-a-backend/auth/manage-user-session/#android -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService"/>
+        </intent>
     </queries>
 </manifest>

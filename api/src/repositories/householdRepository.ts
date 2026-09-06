@@ -212,6 +212,19 @@ export interface MembershipWithHouseholdRow extends MembershipRow {
  * (its RLS policy requires `parimaan.user_id` to be set to a matching
  * member) — this function takes a `PoolClient` and never opens its own
  * transaction, so that scoping is entirely the caller's responsibility.
+ *
+ * `ORDER BY m.joined_at ASC` is load-bearing, not cosmetic: the mobile
+ * client's `activeHouseholdProvider` falls back to
+ * `meHouseholdsControllerProvider`'s **first** entry whenever nothing is
+ * session-scoped-active (e.g. after a cold app restart), so this query's row
+ * order is what decides which household a multi-household user lands on.
+ * Postgres makes no ordering guarantee at all without an explicit `ORDER BY`
+ * — the previous, unordered version could and did return a different
+ * "first" household across calls for the same user, observed live while
+ * testing a delete-then-join-then-restart sequence (W12-era manual QA).
+ * Oldest-membership-first matches the intuitive "your original household"
+ * default and is what `findMembersForHousehold` already does for the
+ * members-of-one-household direction.
  */
 export const findMembershipsForUser = async (
   client: PoolClient,
@@ -227,7 +240,8 @@ export const findMembershipsForUser = async (
      FROM household_memberships m
      JOIN households h ON h.id = m.household_id
      JOIN household_settings s ON s.household_id = m.household_id
-     WHERE m.user_id = $1`,
+     WHERE m.user_id = $1
+     ORDER BY m.joined_at ASC`,
     [userId],
   );
 

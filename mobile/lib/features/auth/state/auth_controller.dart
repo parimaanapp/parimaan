@@ -3,7 +3,16 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/storage/app_database.dart';
+import '../../household/state/current_household_controller.dart';
+import '../../household/state/current_user_id_controller.dart';
 import '../../household/state/me_households_controller.dart';
+import '../../household/state/notification_preferences_controller.dart';
+import '../../menu/state/current_menu_controller.dart';
+import '../../menu/state/recipe_picker_controller.dart';
+import '../../pantry/state/pantry_controller.dart';
+import '../../recipes/state/recipe_detail_controller.dart';
+import '../../recipes/state/recipe_library_controller.dart';
+import '../../shopping_list/state/current_shopping_list_controller.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_session.dart';
 
@@ -55,19 +64,33 @@ class AuthController extends AsyncNotifier<AuthSession> {
 
   /// Signs out locally and remotely. Never throws.
   ///
-  /// Also evicts the entire pantry read cache (W5 S7) and invalidates
-  /// [meHouseholdsControllerProvider] (W8 S1) — a household's pantry, or its
-  /// membership list, surviving sign-out on a shared family phone would let
-  /// the next person to sign in read the previous user's data straight off
-  /// disk or out of a still-cached provider, before ever making a network
-  /// request of their own. The pantry cache is cleared unconditionally
-  /// (`clearAll`, not scoped to one household) since [signOut] has no
-  /// reliable "whose data was this" to scope narrower than that;
-  /// `meHouseholdsControllerProvider` is invalidated rather than cleared —
-  /// `AsyncNotifier` has no "empty" state of its own, and `app/router.dart`'s
-  /// `_redirect` needs the *next* signed-in read to be a real, freshly-fetched
-  /// answer for whichever user just signed in, not a stale value belonging to
-  /// whoever signed out.
+  /// Also evicts the entire pantry read cache (W5 S7) and invalidates every
+  /// household-scoped family controller — [meHouseholdsControllerProvider]
+  /// (W8 S1) plus [currentHouseholdControllerProvider],
+  /// [notificationPreferencesControllerProvider], [pantryControllerProvider],
+  /// [recipeLibraryControllerProvider], [recipeDetailControllerProvider],
+  /// [currentMenuControllerProvider], [recipePickerControllerProvider], and
+  /// [currentShoppingListControllerProvider] — a household's pantry, recipes,
+  /// menu, shopping list, or membership list, surviving sign-out on a shared
+  /// family phone would let the next person to sign in read the previous
+  /// user's data straight off disk or out of a still-cached provider, before
+  /// ever making a network request of their own.
+  ///
+  /// This also fixes a real bug: a family `AsyncNotifier` instance that had
+  /// already parked an `UnauthorizedError` (e.g. the household read on a
+  /// screen left open while the token expired) survived sign-out untouched,
+  /// so the *next* sign-in's first read of that same screen replayed the
+  /// previous session's stale error instead of issuing a fresh, now-valid
+  /// request — see `CurrentHouseholdController`'s own field doc, which
+  /// already anticipated this invalidation happening here.
+  ///
+  /// The pantry cache is cleared unconditionally (`clearAll`, not scoped to
+  /// one household) since [signOut] has no reliable "whose data was this" to
+  /// scope narrower than that; every provider above is invalidated rather
+  /// than cleared — `AsyncNotifier` has no "empty" state of its own, and
+  /// `app/router.dart`'s `_redirect` needs the *next* signed-in read to be a
+  /// real, freshly-fetched answer for whichever user just signed in, not a
+  /// stale value belonging to whoever signed out.
   ///
   /// The cache clear/invalidation is deliberately isolated from
   /// `_repository.signOut()`'s own error handling: `_run` treats any thrown
@@ -85,6 +108,15 @@ class AuthController extends AsyncNotifier<AuthSession> {
       // Best-effort — see the method doc above.
     }
     ref.invalidate(meHouseholdsControllerProvider);
+    ref.invalidate(currentUserIdControllerProvider);
+    ref.invalidate(currentHouseholdControllerProvider);
+    ref.invalidate(notificationPreferencesControllerProvider);
+    ref.invalidate(pantryControllerProvider);
+    ref.invalidate(recipeLibraryControllerProvider);
+    ref.invalidate(recipeDetailControllerProvider);
+    ref.invalidate(currentMenuControllerProvider);
+    ref.invalidate(recipePickerControllerProvider);
+    ref.invalidate(currentShoppingListControllerProvider);
     return const AuthSession.signedOut();
   });
 

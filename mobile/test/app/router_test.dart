@@ -17,6 +17,7 @@ import 'package:mobile/features/recipes/presentation/ai_failure_screen.dart';
 import 'package:mobile/features/recipes/presentation/freeform_input_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_detail_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_draft_review_screen.dart';
+import 'package:mobile/features/recipes/presentation/recipe_form_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_method_screen.dart';
 import 'package:mobile/features/recipes/presentation/url_import_screen.dart';
 import 'package:mobile/shared/errors/app_error.dart';
@@ -604,6 +605,31 @@ void main() {
         expect(screen.householdId, 'household-1');
         expect(screen.error, error);
         expect(screen.preservedInput, 'https://example.com/unreadable');
+      },
+    );
+
+    testWidgets(
+      '/home/recipes/new stays reachable and renders RecipeFormScreen — '
+      'the real bug this guards: `:recipeId` is a single path segment, same '
+      'as the literal "new", so with the detail route registered first '
+      'go_router matched "new" as a recipeId and this route was completely '
+      'unreachable ("Type it in" always ended up on RecipeDetailScreen '
+      'failing UUID validation)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.recipeCreate('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RecipeFormScreen), findsOneWidget);
+        expect(find.byType(RecipeDetailScreen), findsNothing);
+        expect(
+          tester.widget<RecipeFormScreen>(find.byType(RecipeFormScreen)).householdId,
+          'household-1',
+        );
       },
     );
 

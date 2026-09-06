@@ -681,6 +681,28 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         ),
       ),
       GoRoute(
+        path: AppRoutes._recipeCreatePattern,
+        // Registered before `_recipeDetailPattern` deliberately: go_router
+        // matches sibling routes in list order, and both this route
+        // (`/home/recipes/new`) and the detail route below
+        // (`/home/recipes/:recipeId`) are exactly one path segment past
+        // `/home/recipes` — a dynamic segment matches any literal, so with
+        // the detail route first, every navigation here previously landed
+        // on `RecipeDetailScreen(recipeId: 'new')` instead, which then
+        // failed the server's UUID validation ("id must be a valid UUID").
+        // That made "Type it in" completely unreachable — the real bug this
+        // reordering fixes. The `/home/recipes/new/...` AI-import routes
+        // below (method, url, freeform, review, ai-failure) were never
+        // affected: they are two-or-more segments past `/home/recipes`, so
+        // `:recipeId` alone never matched them regardless of order.
+        //
+        // Same query-param reader as pantry's add/edit routes — the
+        // parameter itself is generic (just `householdId`), not
+        // pantry-specific, despite the helper's name.
+        builder: (BuildContext context, GoRouterState state) =>
+            RecipeFormScreen(householdId: _pantryHouseholdId(state)),
+      ),
+      GoRoute(
         path: AppRoutes._recipeDetailPattern,
         builder: (BuildContext context, GoRouterState state) =>
             RecipeDetailScreen(
@@ -725,14 +747,6 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             inputLabel: extra.inputLabel,
           );
         },
-      ),
-      GoRoute(
-        path: AppRoutes._recipeCreatePattern,
-        // Same query-param reader as pantry's add/edit routes — the
-        // parameter itself is generic (just `householdId`), not
-        // pantry-specific, despite the helper's name.
-        builder: (BuildContext context, GoRouterState state) =>
-            RecipeFormScreen(householdId: _pantryHouseholdId(state)),
       ),
       GoRoute(
         path: AppRoutes._recipeEditPattern,

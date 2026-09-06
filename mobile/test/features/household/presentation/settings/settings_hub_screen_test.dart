@@ -2,7 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/router.dart';
+import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/household/data/notification_preferences_repository.dart';
+import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/household/domain/notification_preferences.dart';
 import 'package:mobile/features/household/presentation/settings/settings_hub_screen.dart';
 import 'package:mobile/features/household/state/current_household_controller.dart';
@@ -186,6 +188,43 @@ void main() {
       expect(find.byKey(SettingsHubScreen.leaveRowKey), findsOne);
       expect(find.byKey(SettingsHubScreen.deleteRowKey), findsNothing);
     });
+
+    testWidgets(
+      'a real primary still sees Delete when the Cognito sub does not equal '
+      'their users.id — the two are genuinely different ID spaces',
+      (WidgetTester tester) async {
+        // A session whose `userId` (the Cognito sub) looks nothing like
+        // `testHousehold.primaryUserId` ('user-1', a `users.id`) — exactly
+        // the real-world shape: Cognito subs are UUIDs Postgres never
+        // generated. If the screen ever again compares
+        // `authControllerProvider`'s `AuthSession.userId` against
+        // `primaryUserId` directly (the bug `currentUserIdControllerProvider`
+        // fixed), this caller would wrongly see Leave instead of Delete.
+        const AuthSession sessionWithUnrelatedSub = AuthSession.signedIn(
+          userId: 'a1b2c3d4-cognito-sub-not-a-users-id',
+          email: 'owner@example.com',
+        );
+        final FakeHouseholdRepository repo = FakeHouseholdRepository(
+          result: testHousehold,
+          fetchResult: testHouseholdWithMembers,
+          myHouseholdsResult: const <Household>[],
+          // The server-side identity — 'user-1' really is this household's
+          // `primaryUserId` — deliberately unrelated to the session's sub.
+          myUserIdResult: 'user-1',
+        );
+
+        await pumpHouseholdRoute(
+          tester,
+          _route,
+          session: sessionWithUnrelatedSub,
+          repository: repo,
+        );
+        await _reveal(tester, SettingsHubScreen.signOutRowKey);
+
+        expect(find.byKey(SettingsHubScreen.deleteRowKey), findsOne);
+        expect(find.byKey(SettingsHubScreen.leaveRowKey), findsNothing);
+      },
+    );
 
     testWidgets('Leave calls the mutation and returns to first-run', (
       WidgetTester tester,
