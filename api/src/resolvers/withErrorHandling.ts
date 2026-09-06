@@ -18,10 +18,22 @@ import { toClientError } from '../errors.js';
  *
  * Logs the original, unredacted error server-side (CloudWatch) before
  * throwing its sanitized replacement — the detail belongs in logs, not the
- * client response. AppSync recognizes a thrown error's own `errorType`
- * property (in addition to `message`) and surfaces it to the client, so the
- * client-safe `errorType` from `toClientError` is preserved, not just the
- * message.
+ * client response. For a Direct Lambda Resolver with no VTL in front (every
+ * resolver in this stack — see `infra/stacks/api-stack.ts`), AppSync's
+ * wire-level `errorType` sibling comes from the Lambda runtime's own
+ * invocation-error envelope, which Node derives from the thrown error's
+ * `name` (defaulting to the generic string "Error" for a plain
+ * `new Error(...)`) — NOT from an arbitrary same-named own property. Setting
+ * only an `errorType` own-property (as this used to do) is inert on the
+ * wire: every typed error was silently downgraded to a generic "Error", and
+ * any client logic branching on a specific errorType (e.g. `ConflictError`
+ * triggering a redirect) silently fell through to its default case. Setting
+ * `name` is what actually reaches the client (`errors.ts`'s `AppError` base
+ * class does the same for the in-process object, via `this.name =
+ * new.target.name`). The `errorType` own-property is kept alongside it —
+ * inert on the real AppSync wire, but relied on by this file's own unit
+ * tests and by any direct (non-AppSync) Lambda invoke, which see the raw
+ * thrown object rather than its Lambda-runtime-serialized wire form.
  */
 export const withErrorHandling =
   <Event, Result>(handler: (event: Event) => Promise<Result>) =>
@@ -31,8 +43,10 @@ export const withErrorHandling =
     } catch (error) {
       console.error('Resolver error:', error);
       const clientError = toClientError(error);
-      throw Object.assign(new Error(clientError.errorMessage), {
+      const clientSafeError = Object.assign(new Error(clientError.errorMessage), {
         errorType: clientError.errorType,
       });
+      clientSafeError.name = clientError.errorType;
+      throw clientSafeError;
     }
   };
