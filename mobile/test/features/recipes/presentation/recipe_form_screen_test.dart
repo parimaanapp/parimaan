@@ -627,6 +627,45 @@ void main() {
       },
     );
 
+    testWidgets(
+      'the still-proposed role chip does not render as already selected, and a confirm '
+      'hint explains why Save is disabled — otherwise the AI-suggested chip (dark fill, '
+      'checkmark, same "selected" look a user gets after actually confirming it) reads as '
+      'already done, and a user has no way to discover that Save is inertly disabled until '
+      'they tap that exact chip again (the real-device bug this guards: the AI-import → '
+      'review → save flow was a silent dead end)',
+      (WidgetTester tester) async {
+        await _pumpPushed(
+          tester,
+          repository: FakeRecipeRepository(),
+          initialDraft: _rajmaDraft,
+        );
+
+        expect(
+          tester
+              .widget<PChip>(
+                find.ancestor(of: find.text('Sabzi/Dal'), matching: find.byType(PChip)),
+              )
+              .selected,
+          isFalse,
+        );
+        expect(find.byKey(RecipeFormScreen.roleConfirmHintKey), findsOneWidget);
+
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
+
+        expect(
+          tester
+              .widget<PChip>(
+                find.ancestor(of: find.text('Sabzi/Dal'), matching: find.byType(PChip)),
+              )
+              .selected,
+          isTrue,
+        );
+        expect(find.byKey(RecipeFormScreen.roleConfirmHintKey), findsNothing);
+      },
+    );
+
     testWidgets('warnings render as non-blocking notes', (WidgetTester tester) async {
       await _pumpPushed(
         tester,
