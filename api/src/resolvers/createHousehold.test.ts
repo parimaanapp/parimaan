@@ -92,7 +92,7 @@ describe('createHousehold resolver', () => {
     expect(result.members).toHaveLength(1);
     expect(result.members[0]).toMatchObject({ role: 'primary' });
     expect(result.settings.mealsEnabled).toEqual(['breakfast', 'lunch', 'dinner']);
-    expect(JSON.parse(result.settings.mealStructure)).toEqual({
+    expect(result.settings.mealStructure).toEqual({
       lunch: { carb: 1, sabzi_dal: 2, accompaniment: 1 },
       dinner: { carb: 1, sabzi_dal: 2, accompaniment: 1 },
     });

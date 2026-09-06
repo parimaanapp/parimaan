@@ -12,11 +12,31 @@ import type { GraphQLUser } from './user.js';
 export interface GraphQLSettings {
   householdId: string;
   mealsEnabled: readonly string[];
-  /** AWSJSON scalar — AppSync serializes this as a JSON *string*, not a nested object. */
-  mealStructure: string;
+  /**
+   * AWSJSON scalar. The resolver hands AppSync the parsed object, not a
+   * pre-stringified string — AppSync's own AWSJSON scalar serializer is what
+   * turns this into the wire's JSON-string representation, exactly once.
+   *
+   * A manual `JSON.stringify` here used to precede this (this codebase's own
+   * `build.yaml` comment on the mobile side even documented "the wire value
+   * really is a string" as the *reason* to map AWSJSON to Dart `String`).
+   * That was wrong: this is a Direct Lambda Resolver, and AppSync applies its
+   * own AWSJSON serialization to whatever the resolver returns regardless —
+   * handing it an *already*-stringified string made AppSync serialize that
+   * string too, double-encoding the wire value. A client's single `jsonDecode`
+   * then produced the intermediate string back, not a map — silently
+   * treating every `mealStructure`-typed lunch/dinner slot as absent
+   * (`plannedSlotsForDay`'s "malformed input fails closed to zero slots" path
+   * firing on data that was never actually malformed). Only a real signed-in
+   * client hitting the genuine AppSync endpoint surfaces this; the direct
+   * Lambda invokes this codebase's own real-AWS verification passes have
+   * used throughout bypass AppSync's scalar layer entirely and could not
+   * have caught it.
+   */
+  mealStructure: Record<string, unknown>;
   cuisineTier1: readonly string[];
   /** AWSJSON scalar — see mealStructure. */
-  cuisineTier2Weights: string;
+  cuisineTier2Weights: Record<string, unknown>;
   dietaryTags: readonly string[];
   allergens: readonly string[];
   skipIngredients: readonly string[];
@@ -25,9 +45,9 @@ export interface GraphQLSettings {
 export const toGraphQLSettings = (row: SettingsRow): GraphQLSettings => ({
   householdId: row.householdId,
   mealsEnabled: row.mealsEnabled,
-  mealStructure: JSON.stringify(row.mealStructure),
+  mealStructure: row.mealStructure,
   cuisineTier1: row.cuisineTier1,
-  cuisineTier2Weights: JSON.stringify(row.cuisineTier2Weights),
+  cuisineTier2Weights: row.cuisineTier2Weights,
   dietaryTags: row.dietaryTags,
   allergens: row.allergens,
   skipIngredients: row.skipIngredients,
