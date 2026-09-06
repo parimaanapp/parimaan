@@ -34,13 +34,21 @@ const user: GraphQLUser = {
 };
 
 describe('toGraphQLSettings', () => {
-  it('serializes AWSJSON fields (mealStructure, cuisineTier2Weights) as JSON strings', () => {
-    const result = toGraphQLSettings(settingsRow);
-    expect(typeof result.mealStructure).toBe('string');
-    expect(JSON.parse(result.mealStructure)).toEqual(settingsRow.mealStructure);
-    expect(typeof result.cuisineTier2Weights).toBe('string');
-    expect(JSON.parse(result.cuisineTier2Weights)).toEqual(settingsRow.cuisineTier2Weights);
-  });
+  it(
+    'passes AWSJSON fields (mealStructure, cuisineTier2Weights) through as ' +
+      'the parsed object, NOT a pre-stringified string — this is a Direct ' +
+      'Lambda Resolver, and AppSync applies its own AWSJSON serialization to ' +
+      'whatever the resolver returns; a manual JSON.stringify here made ' +
+      "AppSync stringify an already-stringified value, double-encoding the " +
+      'wire response (the real bug this guards: a client that correctly ' +
+      "does ONE jsonDecode got back the intermediate string, not the map, " +
+      'and every mealStructure-driven lunch/dinner slot silently vanished)',
+    () => {
+      const result = toGraphQLSettings(settingsRow);
+      expect(result.mealStructure).toEqual(settingsRow.mealStructure);
+      expect(result.cuisineTier2Weights).toEqual(settingsRow.cuisineTier2Weights);
+    },
+  );
 
   it('maps snake_case-derived fields to camelCase', () => {
     const result = toGraphQLSettings(settingsRow);

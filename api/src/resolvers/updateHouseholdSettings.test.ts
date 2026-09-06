@@ -219,7 +219,7 @@ describe('updateHouseholdSettings resolver', () => {
         'sub-owner-json',
       ),
     );
-    expect(JSON.parse(result.settings.mealStructure)).toEqual({
+    expect(result.settings.mealStructure).toEqual({
       lunch: { carb: 2, sabzi_dal: 1, accompaniment: 0 },
     });
   });
