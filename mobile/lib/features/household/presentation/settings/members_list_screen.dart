@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,11 +10,10 @@ import '../../../../shared/ui/radius.dart';
 import '../../../../shared/ui/sizing.dart';
 import '../../../../shared/ui/spacing.dart';
 import '../../../../shared/ui/typography.dart';
-import '../../../auth/domain/auth_session.dart';
-import '../../../auth/state/auth_controller.dart';
 import '../../domain/household.dart';
 import '../../domain/member_avatar.dart';
 import '../../state/current_household_controller.dart';
+import '../../state/current_user_id_controller.dart';
 import '../household_error_copy.dart';
 import 'household_sync_scope.dart';
 
@@ -21,9 +21,15 @@ import 'household_sync_scope.dart';
 ///
 /// Avatar circle + name + role, one row per membership, with the invite code in
 /// a dashed-bordered share area at the bottom. The trailing "+" in the top bar
-/// and the share area both lead to the same place: the invite-code screen the
-/// create-wizard slice already built (`presentation/create/invite_code_screen.dart`),
-/// reused rather than reimplemented.
+/// and the share area both copy the invite code straight to the clipboard
+/// (via [copyInviteCode]) rather than navigating to
+/// `presentation/create/invite_code_screen.dart`'s `InviteCodeScreen` — that
+/// screen reads the create-wizard's own in-memory state, which is empty for
+/// any household not created earlier in the *same* app session (i.e. every
+/// household on a second launch or a second device), so routing there used
+/// to show a false "No household yet" for a household that plainly exists.
+/// The code is already in hand here from `currentHouseholdControllerProvider`,
+/// so copying directly needs no navigation at all.
 ///
 /// Avatar colours come from `domain/member_avatar.dart` — a deterministic
 /// hash of the user id into five existing `AppColors` tokens. See that file for
@@ -47,12 +53,23 @@ class MembersListScreen extends ConsumerWidget {
     final AsyncValue<Household> household = ref.watch(
       currentHouseholdControllerProvider(householdId),
     );
-    final String? userId = switch (ref
-        .watch(authControllerProvider)
-        .valueOrNull) {
-      SignedIn(:final String userId) => userId,
-      _ => null,
-    };
+    // The caller's own `users.id` — see `currentUserIdControllerProvider`'s
+    // doc for why this must not be `authControllerProvider`'s Cognito-sub
+    // `AuthSession.userId` (a comparison against `membership.user.id`, which
+    // is a `users.id`, would then never match — the concrete bug that made
+    // "· you" never appear on the caller's own row).
+    final String? userId = ref.watch(currentUserIdControllerProvider).valueOrNull;
+    // Copied directly rather than navigated to: `AppRoutes.createHouseholdInvite`
+    // is `InviteCodeScreen` (wireframe 2.7), which reads the create-wizard's
+    // own in-memory `householdWizardControllerProvider` state — empty for
+    // every household not created earlier in *this* app session, which is
+    // every household on a second launch or a second device. Both this
+    // button and `_ShareCodeArea` below used to `context.go` there and land
+    // on that screen's "No household yet" empty state even though the
+    // household plainly exists — the real bug this fixes. The invite code is
+    // already in hand from `currentHouseholdControllerProvider` right here,
+    // so there is nothing to navigate anywhere else to fetch.
+    final String? inviteCode = household.valueOrNull?.inviteCode;
 
     return HouseholdSyncScope(
       householdId: householdId,
@@ -71,7 +88,9 @@ class MembersListScreen extends ConsumerWidget {
                   icon: Icons.add,
                   semanticLabel: 'Share the invite code',
                   variant: PButtonVariant.ghost,
-                  onPressed: () => context.go(AppRoutes.createHouseholdInvite),
+                  onPressed: inviteCode == null
+                      ? null
+                      : () => copyInviteCode(context, inviteCode),
                 ),
               ),
               Expanded(
@@ -283,7 +302,7 @@ class _ShareCodeArea extends StatelessWidget {
     child: GestureDetector(
       key: MembersListScreen.shareCodeKey,
       behavior: HitTestBehavior.opaque,
-      onTap: () => context.go(AppRoutes.createHouseholdInvite),
+      onTap: () => copyInviteCode(context, inviteCode),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.s3,
@@ -309,5 +328,25 @@ class _ShareCodeArea extends StatelessWidget {
         ),
       ),
     ),
+  );
+}
+
+/// Puts [inviteCode] on the clipboard and shows a confirming toast.
+///
+/// Shared by the top-bar "+" button and [_ShareCodeArea] — both want the
+/// identical action, and duplicating it would risk the two drifting (one
+/// updated to say "copied", the other still saying whatever it said before).
+/// Mirrors `InviteCodeScreen.copiedToast`'s wording (that screen's own
+/// "Copy" button, for the create-wizard's post-creation moment) so the same
+/// action reads the same way everywhere in the app it appears.
+Future<void> copyInviteCode(BuildContext context, String inviteCode) async {
+  await Clipboard.setData(ClipboardData(text: inviteCode));
+  if (!context.mounted) {
+    return;
+  }
+  PToast.show(
+    context: context,
+    toast: const PToast(message: 'Copied', tone: PToastTone.success),
+    duration: const Duration(seconds: 2),
   );
 }

@@ -7,10 +7,10 @@ import '../../../../shared/ui/colors.dart';
 import '../../../../shared/ui/components/components.dart';
 import '../../../../shared/ui/spacing.dart';
 import '../../../../shared/ui/typography.dart';
-import '../../../auth/domain/auth_session.dart';
 import '../../../auth/state/auth_controller.dart';
 import '../../domain/household.dart';
 import '../../state/current_household_controller.dart';
+import '../../state/current_user_id_controller.dart';
 import '../../state/household_settings_controller.dart';
 import '../household_error_copy.dart';
 import 'delete_household_dialog.dart';
@@ -140,17 +140,15 @@ class _HubBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // `AuthSession` is sealed, so this is exhaustive and type-safe — no cast.
-    final String? userId = switch (ref
-        .watch(authControllerProvider)
-        .valueOrNull) {
-      SignedIn(:final String userId) => userId,
-      _ => null,
-    };
-
-    // An unresolved session is treated as "not the primary", which is the
-    // safe default: it hides Delete rather than offering an irreversible
-    // action to a caller whose identity is not established.
+    // The caller's own `users.id` — NOT `authControllerProvider`'s
+    // `AuthSession.userId` (the Cognito sub, a different ID space than
+    // `Household.primaryUserId`; see `currentUserIdControllerProvider`'s doc
+    // for the bug that comparing the two produced).
+    //
+    // An unresolved read is treated as "not the primary", which is the safe
+    // default: it hides Delete rather than offering an irreversible action
+    // to a caller whose identity is not yet established.
+    final String? userId = ref.watch(currentUserIdControllerProvider).valueOrNull;
     final bool isPrimary = userId != null && household.isPrimary(userId);
 
     final AsyncValue<void> settings = ref.watch(

@@ -9,8 +9,10 @@ import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
+import 'package:mobile/features/household/state/current_household_controller.dart';
 import 'package:mobile/features/household/state/me_households_controller.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
+import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/storage/app_database.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -232,6 +234,66 @@ void main() {
         // repository), not silently return the first user's cached list.
         await container.read(meHouseholdsControllerProvider.future);
         expect(households.myHouseholdsCallCount, 2);
+      },
+    );
+
+    test(
+      'invalidates a household-scoped controller that had parked a stale '
+      'UnauthorizedError, so the next sign-in gets a fresh read instead of '
+      'replaying the previous session\'s error',
+      () async {
+        final MockAuthRepository repository = stubbedAuthRepository(
+          session: testSignedInSession,
+        );
+        final FakeHouseholdRepository households = FakeHouseholdRepository(
+          fetchError: const UnauthorizedError('expired'),
+        );
+        final ProviderContainer container = ProviderContainer(
+          overrides: <Override>[
+            authRepositoryProvider.overrideWithValue(repository),
+            appDatabaseProvider.overrideWithValue(
+              AppDatabase(NativeDatabase.memory()),
+            ),
+            householdRepositoryProvider.overrideWithValue(households),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(authControllerProvider.future);
+
+        // Simulate a screen that read this household while the token was
+        // expired, exactly as `SettingsHubScreen` did in the field — the
+        // controller's state is now permanently parked on this error.
+        await expectLater(
+          container.read(
+            currentHouseholdControllerProvider('household-1').future,
+          ),
+          throwsA(isA<UnauthorizedError>()),
+        );
+        expect(households.fetchCalls, <String>['household-1']);
+        expect(
+          container
+              .read(currentHouseholdControllerProvider('household-1'))
+              .hasError,
+          isTrue,
+        );
+
+        await container.read(authControllerProvider.notifier).signOut();
+        households.fetchError = null;
+        households.fetchResult = testHousehold;
+
+        // Invalidated, not merely re-read: re-fetching after a fresh
+        // sign-in must be a genuinely new request, not the same cached
+        // `AsyncError` from before sign-out.
+        await container.read(
+          currentHouseholdControllerProvider('household-1').future,
+        );
+        expect(households.fetchCalls, <String>['household-1', 'household-1']);
+        expect(
+          container
+              .read(currentHouseholdControllerProvider('household-1'))
+              .hasError,
+          isFalse,
+        );
       },
     );
 

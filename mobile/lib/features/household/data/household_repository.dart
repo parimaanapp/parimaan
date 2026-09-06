@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/graphql/client.dart';
+import '../../../shared/graphql/ferry_execute.dart';
 import '../../../shared/graphql/graphql_error_mapper.dart';
 import '../../../shared/graphql/operations/__generated__/create_household.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_household.req.gql.dart';
@@ -135,6 +136,23 @@ abstract interface class HouseholdRepository {
   /// a household id.
   Future<List<Household>> fetchMyHouseholds();
 
+  /// The caller's own `users.id`, via `Query.me`.
+  ///
+  /// **This is not the Cognito sub.** `AuthSession.userId`
+  /// (`amplify_auth_repository.dart`) is Amplify's `AuthUser.userId`, which
+  /// for a Cognito user pool *is* the sub — a different value from the
+  /// server's internal `users.id` that `Household.primaryUserId` and every
+  /// `User.id` in a GraphQL response actually carry (`createHousehold.ts`'s
+  /// own comment: `primaryUserId` is "derived exclusively from `identity.sub`
+  /// ... via the resolved `users.id`"). Comparing the sub against
+  /// `primaryUserId` compares two different ID spaces and is essentially
+  /// never equal — the real bug this method exists to fix: a household's
+  /// actual primary member saw "Leave household" instead of "Delete
+  /// household" in the Settings hub, because `isPrimary` had nothing but the
+  /// sub to compare with. Any "is this the caller's own household row"
+  /// comparison must use this, not `AuthSession.userId`.
+  Future<String> fetchMyUserId();
+
   /// Replaces [householdId]'s invite code with a freshly-generated one and
   /// returns the updated household.
   ///
@@ -193,9 +211,12 @@ abstract interface class HouseholdRepository {
 ///
 /// The only file besides `household_mapper.dart` that touches generated
 /// GraphQL types.
-class FerryHouseholdRepository implements HouseholdRepository {
+class FerryHouseholdRepository
+    with FerryExecuteMixin
+    implements HouseholdRepository {
   const FerryHouseholdRepository({required this.client});
 
+  @override
   final Client client;
 
   @override
@@ -205,7 +226,7 @@ class FerryHouseholdRepository implements HouseholdRepository {
           b..vars = (GCreateHouseholdVarsBuilder()..name = name.trim()),
     );
 
-    final GCreateHouseholdData data = await _execute(request);
+    final GCreateHouseholdData data = await execute(request);
     return householdFromGraphQL(data.createHousehold);
   }
 
@@ -222,7 +243,7 @@ class FerryHouseholdRepository implements HouseholdRepository {
               ..input = householdSettingsInputFromPatch(patch).toBuilder()),
     );
 
-    final GUpdateHouseholdSettingsData data = await _execute(request);
+    final GUpdateHouseholdSettingsData data = await execute(request);
     return householdFromGraphQL(data.updateHouseholdSettings);
   }
 
@@ -256,7 +277,7 @@ class FerryHouseholdRepository implements HouseholdRepository {
               ..inviteCode = normalizeInviteCode(inviteCode)),
     );
 
-    final GJoinHouseholdData data = await _execute(request);
+    final GJoinHouseholdData data = await execute(request);
     return householdFromGraphQL(data.joinHousehold);
   }
 
@@ -282,17 +303,24 @@ class FerryHouseholdRepository implements HouseholdRepository {
         ..fetchPolicy = FetchPolicy.NoCache,
     );
 
-    final GHouseholdData data = await _execute(request);
+    final GHouseholdData data = await execute(request);
     return householdFromGraphQL(data.household);
   }
 
   @override
   Future<List<Household>> fetchMyHouseholds() async {
     final GMeReq request = GMeReq();
-    final GMeData data = await _execute(request);
+    final GMeData data = await execute(request);
     return data.me.households
         .map((GMeData_me_households m) => meHouseholdFromGraphQL(m.household))
         .toList(growable: false);
+  }
+
+  @override
+  Future<String> fetchMyUserId() async {
+    final GMeReq request = GMeReq();
+    final GMeData data = await execute(request);
+    return data.me.id;
   }
 
   @override
@@ -302,7 +330,7 @@ class FerryHouseholdRepository implements HouseholdRepository {
           b..vars = (GRotateInviteCodeVarsBuilder()..householdId = householdId),
     );
 
-    final GRotateInviteCodeData data = await _execute(request);
+    final GRotateInviteCodeData data = await execute(request);
     return householdFromGraphQL(data.rotateInviteCode);
   }
 
@@ -313,7 +341,7 @@ class FerryHouseholdRepository implements HouseholdRepository {
           b..vars = (GLeaveHouseholdVarsBuilder()..householdId = householdId),
     );
 
-    final GLeaveHouseholdData data = await _execute(request);
+    final GLeaveHouseholdData data = await execute(request);
     return data.leaveHousehold;
   }
 
@@ -331,7 +359,7 @@ class FerryHouseholdRepository implements HouseholdRepository {
           ..confirmationName = confirmationName),
     );
 
-    final GDeleteHouseholdData data = await _execute(request);
+    final GDeleteHouseholdData data = await execute(request);
     return data.deleteHousehold;
   }
 
@@ -354,49 +382,6 @@ class FerryHouseholdRepository implements HouseholdRepository {
         yield null;
       }
     }
-  }
-
-  /// Runs one operation and reduces ferry's stream-of-responses to a single
-  /// value or a single [AppError].
-  ///
-  /// Takes the first *settled* response rather than `stream.first`: ferry
-  /// emits a placeholder response (no data, no errors) before the network
-  /// result for some fetch policies, and `first` would treat that as the
-  /// answer.
-  ///
-  /// "Settled" is spelled out here rather than using ferry's own
-  /// `response.loading`, which is `linkException == null && data == null` — so
-  /// a **failed** GraphQL response (`data: null` plus an `errors` array, which
-  /// is exactly what AppSync returns when a non-nullable root field throws)
-  /// reads as still-loading and would hang forever.
-  Future<TData> _execute<TData, TVars>(
-    OperationRequest<TData, TVars> request,
-  ) async {
-    OperationResponse<TData, TVars>? settled;
-    await for (final OperationResponse<TData, TVars> response in client.request(
-      request,
-    )) {
-      if (response.data != null || response.hasErrors) {
-        settled = response;
-        break;
-      }
-    }
-
-    // The stream ended without ever settling. Not expected, but returning
-    // null or letting a `StateError` escape would both break the "throws only
-    // AppError" contract.
-    if (settled == null) {
-      throw const InternalError(genericErrorMessage);
-    }
-
-    final TData? data = settled.data;
-    if (settled.hasErrors || data == null) {
-      throw mapOperationFailure(
-        graphqlErrors: settled.graphqlErrors,
-        linkException: settled.linkException,
-      );
-    }
-    return data;
   }
 }
 

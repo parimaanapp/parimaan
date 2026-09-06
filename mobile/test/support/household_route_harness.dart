@@ -93,6 +93,21 @@ Future<HouseholdHarness> pumpHouseholdRoute(
   // mid-run rather than only choosing a starting state.
   when(auth.sessionChanges).thenAnswer((_) => sessions.stream);
 
+  // `fetchMyUserId()` — not `session.userId` — is what the app now reads for
+  // any "is this the caller's own row" comparison (`currentUserIdControllerProvider`'s
+  // doc has the full story: `session.userId` is a Cognito sub, a different ID
+  // space from the `users.id` that `Household.primaryUserId` and every
+  // `HouseholdMember.id` actually carry). Every fixture household in
+  // `household_fixtures.dart` was built using the same `user-1`/`user-2`
+  // literals for both spaces, so defaulting this from [session] here keeps
+  // every existing primary/member-role test's intent working unchanged
+  // through the corrected seam — `??=` so a test that wants to exercise a
+  // genuine mismatch can still set `repo.myUserIdResult` itself first.
+  repo.myUserIdResult ??= switch (session) {
+    SignedIn(:final String userId) => userId,
+    _ => null,
+  };
+
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
       authRepositoryProvider.overrideWithValue(auth),

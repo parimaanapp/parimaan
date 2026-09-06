@@ -152,6 +152,32 @@ describe('householdRepository', () => {
     expect(membershipsB[0]).toMatchObject({ userId: ownerB.id });
   });
 
+  it(
+    'findMembershipsForUser orders by joined_at ascending, so a multi-' +
+      "household user's client-side default household is deterministic " +
+      '(the real bug: Postgres makes no ordering guarantee without an ' +
+      'explicit ORDER BY, and the mobile client picks `households[0]` as ' +
+      'its post-restart fallback — an unordered query returned a different ' +
+      '"first" household across calls for the same user, observed live)',
+    async () => {
+      const owner = await createUser();
+
+      const firstHouseholdId = await createFullHousehold(owner, 'ORD001');
+      const secondHouseholdId = await createFullHousehold(owner, 'ORD002');
+      const thirdHouseholdId = await createFullHousehold(owner, 'ORD003');
+
+      const memberships = await asUser(owner.id, (client) =>
+        findMembershipsForUser(client, owner.id),
+      );
+
+      expect(memberships.map((m) => m.householdId)).toEqual([
+        firstHouseholdId,
+        secondHouseholdId,
+        thirdHouseholdId,
+      ]);
+    },
+  );
+
   it('findHouseholdById returns null when the household does not exist', async () => {
     const owner = await createUser();
     const result = await asUser(owner.id, (client) => findHouseholdById(client, randomUUID()));

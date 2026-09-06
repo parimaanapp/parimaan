@@ -1,5 +1,5 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/app/router.dart';
 import 'package:mobile/features/household/presentation/settings/members_list_screen.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/components/components.dart';
@@ -8,6 +8,36 @@ import '../../../../support/fake_household_repository.dart';
 import '../../../../support/household_route_harness.dart';
 
 const String _route = '/household/household-1/members';
+
+/// Captures whatever the screen writes to the clipboard.
+///
+/// `Clipboard.setData` is a platform-channel call, which does nothing in a
+/// widget test unless the channel is mocked — without this, `await
+/// Clipboard.getData(...)` never resolves and the test hangs until Flutter's
+/// own harness timeout. Same pattern as `invite_code_screen_test.dart`'s
+/// identical helper — `copyInviteCode` mirrors that screen's own copy
+/// behaviour, so the test does too.
+List<String> _interceptClipboard(WidgetTester tester) {
+  final List<String> written = <String>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (MethodCall call) async {
+      if (call.method == 'Clipboard.setData') {
+        written.add(
+          (call.arguments as Map<Object?, Object?>)['text']! as String,
+        );
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+  return written;
+}
 
 void main() {
   group('MembersListScreen — the roster', () {
@@ -97,27 +127,51 @@ void main() {
       expect(find.text('ABC123'), findsOne);
     });
 
-    testWidgets('the share area reuses the wizard invite-code screen', (
-      WidgetTester tester,
-    ) async {
-      final HouseholdHarness harness = await pumpHouseholdRoute(tester, _route);
+    testWidgets(
+      'the share area copies the code to the clipboard without navigating '
+      'away — it must not reuse the wizard-only invite-code screen, which '
+      'has no way to know about a household not created this app session '
+      '(the real bug: it showed a false "No household yet" for exactly this '
+      'screen\'s every real-world household)',
+      (WidgetTester tester) async {
+        final List<String> written = _interceptClipboard(tester);
+        final HouseholdHarness harness = await pumpHouseholdRoute(
+          tester,
+          _route,
+        );
 
-      await tester.tap(find.byKey(MembersListScreen.shareCodeKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(MembersListScreen.shareCodeKey));
+        await tester.pump();
 
-      expect(location(harness.router), AppRoutes.createHouseholdInvite);
-    });
+        expect(written, <String>['ABC123']);
+        expect(find.text('Copied'), findsOne);
+        expect(
+          location(harness.router),
+          '/household/household-1/members',
+          reason: 'copying the code is not a navigation event',
+        );
+      },
+    );
 
-    testWidgets('the top-bar "+" reuses the same screen', (
-      WidgetTester tester,
-    ) async {
-      final HouseholdHarness harness = await pumpHouseholdRoute(tester, _route);
+    testWidgets(
+      'the top-bar "+" does the identical copy, not the wizard screen',
+      (WidgetTester tester) async {
+        final List<String> written = _interceptClipboard(tester);
+        final HouseholdHarness harness = await pumpHouseholdRoute(
+          tester,
+          _route,
+        );
 
-      await tester.tap(find.byKey(MembersListScreen.addButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(MembersListScreen.addButtonKey));
+        await tester.pump();
 
-      expect(location(harness.router), AppRoutes.createHouseholdInvite);
-    });
+        expect(written, <String>['ABC123']);
+        expect(
+          location(harness.router),
+          '/household/household-1/members',
+        );
+      },
+    );
   });
 
   group('MembersListScreen — navigation and failure', () {
