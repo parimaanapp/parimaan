@@ -1,9 +1,18 @@
 # Parimaan — Product Requirements Document
 
-**Version:** 0.3
+**Version:** 0.4
 **Owner:** Amogh Kulkarni
-**Last updated:** 2026-07-28
+**Last updated:** 2026-09-07
 **Status:** Draft — pending review
+
+**Changelog v0.3 → v0.4 (2026-09-07, from live user testing of the shipped W12 build):**
+- **First-run welcome screen** added to onboarding: a household with no real activity yet is asked "What would you like to do first?" with "Add to Pantry" / "Add New Recipe" (§7.1 Onboarding, §14 item 9).
+- **Meal-instance grouping** in the weekly plan: each day renders under Breakfast / Lunch / Snacks / Dinner headers rather than as one flat slot list (§7.1 Meal plan, §14 item 10).
+- **Meal config is snapshotted per week, not read live.** A configuration change never alters a week already in progress; it applies from the next week onward (§7.1 Household configuration + Meal plan, §14 item 11).
+- **`Which meals to plan` is editable after household creation**, covering all four meal types, and per-meal-type structure editing covers Lunch *and* Dinner (§7.1 Household configuration, §14 item 12).
+- **Curated per-category pantry suggestions** alongside (never replacing) free-text entry (§7.1 Pantry, §14 item 13).
+- Sweet and Drink remain unplanned roles — explicitly **not** promoted to configurable slot types (§14 item 14).
+- No change to the 50-recipe curated library's scope or content; it simply lands two weeks later on the calendar (§12 Month 4).
 
 **Changelog v0.2 → v0.3:**
 - Meal structure config is now MAX slots per meal, not required fills. A 2-2-2 config allows 0–2 of each type per meal.
@@ -129,7 +138,7 @@ Everything else in the app supports or extends this loop.
 
 ## 7. Feature scope
 
-### 7.1 MVP (must ship in 6 months)
+### 7.1 MVP (must ship in 6 months — now ~6.5 months post-v0.4, see §12's timeline note)
 
 **Household**
 - Create a household → become its **primary user** → get a 6-char invite code (alphanumeric, unambiguous — no O/0/I/1).
@@ -140,12 +149,15 @@ Everything else in the app supports or extends this loop.
 - All pantry/recipe/plan/list data is scoped to `householdId`. No user-scoped data.
 
 **Household configuration (settings)**
-Set at household creation with sensible defaults, editable anytime by any member of the household (settings are not primary-only — the same "any member can do everything" trust model that governs invite-code rotation):
-- **Which meals to plan:** any subset of {Breakfast, Lunch, Snacks, Dinner}
+Set at household creation with sensible defaults, editable anytime by any member of the household (settings are not primary-only — the same "any member can do everything" trust model that governs invite-code rotation).
+
+**When a configuration change takes effect (v0.4):** meal configuration — *which meals to plan* and *the per-type slot counts for Lunch/Dinner* — is **durable, not per-week**, but a change **never retroactively alters a week that has already started**. Each week's plan is created against a frozen copy of the configuration that was in force when that week's plan was created, and keeps it for that week's whole life. A change made on Wednesday shows up in next week's plan, not in the one being cooked. Every other setting (cuisine, dietary tags, allergens, skip-ingredients) is read live as before — those affect *suggestions*, not the shape of an in-progress week.
+
+- **Which meals to plan:** any subset of {Breakfast, Lunch, Snacks, Dinner}. **Editable after creation (v0.4)** from household settings, covering all four meal types — not only the three the create wizard offers.
 - **Meal structure per meal type:**
   - Breakfast = 1 recipe (a "breakfast" recipe may bundle its sides — Idli+Sambar+Chutney counts as one recipe)
   - Snacks = 1 recipe
-  - Lunch & Dinner = configurable structure with named slots. Default = `{Carb: 1, Sabzi/Dal: 2, Accompaniment: 1}`. **The configured number is the MAX per meal instance, not a required fill.** A `Carb: 2, Sabzi/Dal: 2, Accompaniment: 2` config lets a specific lunch have 0 carbs, 2 sabzi/dals, 1 accompaniment (or any 0..N within the caps). Auto-fill from rotation respects the caps and prefers full slates but never forces a slot.
+  - Lunch & Dinner = configurable structure with named slots, **each editable separately after creation (v0.4)**. Default = `{Carb: 1, Sabzi/Dal: 2, Accompaniment: 1}`. **The configured number is the MAX per meal instance, not a required fill.** The three types are Carb, Sabzi/Dal and Accompaniment only — `sweet` and `drink` are recipe roles, not planned slot types (see Recipe roles below, and §14 item 14). A `Carb: 2, Sabzi/Dal: 2, Accompaniment: 2` config lets a specific lunch have 0 carbs, 2 sabzi/dals, 1 accompaniment (or any 0..N within the caps). Auto-fill from rotation respects the caps and prefers full slates but never forces a slot.
 - **Cuisine preferences (see §7.2)**
 - **Dietary tags** (household-wide): veg / vegan / jain / eggetarian / gluten-free / dairy-free. Filters recipes at pick time.
 - **Allergen warnings list**: free-list of allergens. When picking a recipe containing a matching ingredient, show a warning. (Ingredient normalization is v1.1; MVP does substring match — imperfect but useful.)
@@ -153,6 +165,7 @@ Set at household creation with sensible defaults, editable anytime by any member
 
 **Pantry**
 - Manual add: name, quantity, unit, category (dal, spice, dairy, produce, dry goods, staple, etc.), optional expiry
+- **Curated per-category suggestions (new in v0.4):** picking a category offers a short, hand-ordered list of the items that category most commonly holds — most-likely first, e.g. Dal → Toor Dal, Masoor Dal Whole, Masoor Dal Split (Red), Urad Dal Black — multi-select, with a quantity + unit step per ticked item using the app's standard units. This **sits alongside free-text entry, it does not replace it**: "Search the pantry" free text remains fully available and co-equal, and a category with no curated list simply falls through to typing. The lists are deliberately incomplete and expected to grow by editing, not by any kind of catalog build-out.
 - Edit / delete items
 - Search + filter by category
 - "Running low" flag (user-set threshold, or quantity < 20% of a user-defined "typical")
@@ -197,6 +210,8 @@ Every recipe carries one primary role. Drives which meal slot it can fill:
 
 **Meal plan**
 - 7-day calendar view; each day shows only the meal types the household has enabled
+- **Grouped by meal instance (new in v0.4):** within a day, slots render under their meal — Breakfast, Lunch, Snacks, Dinner — rather than as one flat list. Breakfast and Snacks each hold a single standalone item; Lunch and Dinner each hold the household's configured count of Carb / Sabzi-Dal / Accompaniment sub-slots. A meal the household does not plan gets no header at all.
+- **Runs on the configuration frozen at plan creation (new in v0.4):** the meal types and per-type counts a week renders and enforces are that week's own snapshot, not the household's current settings — see Household configuration above.
 - Add via tap: tap a slot → picker filtered by role → pick recipe (favorites and rotation surfaced first)
 - Copy day, copy week, clear day, clear week
 - "Mark as made" on a scheduled recipe → deducts pantry
@@ -211,6 +226,10 @@ Every recipe carries one primary role. Drives which meal slot it can fill:
 - Check off items when bought (any household member) → item enters pantry with default expiry
 - **Share list:** exports the list as a clean categorized image and opens native share sheet → send to Swiggy / WhatsApp / Blinkit / Instamart / anywhere. No direct cart API integration is possible today (see §15 Risks).
 - Live, shared view — no "share to phone" step needed
+
+**Onboarding (new in v0.4)**
+- After sign-in and household create/join, a household that has not done anything real yet lands on a **welcome screen**: "Welcome! What would you like to do first?", with two equal choices — **Add to Pantry** and **Add New Recipe**.
+- "Has not done anything real yet" means **no recipes, no pantry items, and no planned meals**. As soon as any one of those exists, the household lands on Home instead and never sees the welcome screen again. This is a live check on actual content, not a one-time "dismissed" flag — the point is to stop showing a first-run prompt to a household that has moved past it, not to count how many times it has been seen.
 
 **Auth**
 - **Google SSO only** (via Cognito Google Identity Provider). No email/password, no other providers in MVP.
@@ -386,7 +405,11 @@ pantry_items
   expiry_date, low_threshold, added_by, added_at, updated_at
 
 menus
-  id, household_id, week_start_date
+  id, household_id, week_start_date,
+  meal_config_snapshot (jsonb: { mealsEnabled: [...], mealStructure: {...}, snapshotAt })
+    -- v0.4: frozen copy of the household's meal config at plan-creation time.
+    -- Written once, never updated; a later settings edit cannot change a
+    -- week already in progress. See SYSTEM_DESIGN.md §7.1.
 
 menu_items
   id, menu_id, recipe_id, day_of_week (0–6),
@@ -479,7 +502,7 @@ MVP is a success if, after 3 months of your household using it daily:
 
 ---
 
-## 12. Timeline (6 months, ~10 hrs/week)
+## 12. Timeline (6 months as originally scoped, ~10 hrs/week; see the v0.4 note below — now ~6.5 months / 28 weeks. "Month N" labels below are kept as milestone names, not literal calendar months, matching `E2E_MVP_PLAN.md`'s own convention.)
 
 **Month 1 — Foundations + Configuration**
 - Flutter app scaffold, AWS account + CDK skeleton
@@ -504,6 +527,8 @@ MVP is a success if, after 3 months of your household using it daily:
 - "Have it" flow → pantry
 - Check-off → pantry sync
 - **Milestone:** end-to-end core loop working
+
+**Note (v0.4, 2026-09-07):** two weeks of live-feedback work were inserted after the Month 3 core-loop milestone (`E2E_MVP_PLAN.md` §3, Phase 3b / W13–W14: first-run welcome screen, meal-instance grouping, editable meal config with per-week snapshotting, curated pantry suggestions). Everything below from Month 4 onward keeps its content and order and lands **two calendar weeks later**; the curated library is `E2E_MVP_PLAN.md`'s W15–W16, not W13–W14. The MVP date moves accordingly — this was additive scope against no remaining buffer, not a re-plan.
 
 **Month 4 — Curated library + Sharing**
 - Author 30 North Indian + 20 South Indian recipes (mix of carb / sabzi / dal / chicken / egg / salad / raita / kozhambu variants)
@@ -536,7 +561,7 @@ MVP is a success if, after 3 months of your household using it daily:
 4. Bedrock Claude is accurate enough at parsing freeform Indian recipe text (mix of English + Hindi/regional words, informal instructions). **Prototype in week 2 of month 2.**
 5. Aurora Serverless v2 stays cheap at MVP scale. Ballpark: <$25/month for the first 6 months.
 6. Founder learns Flutter/Dart during month 1. This will slow month 1 by ~30%.
-7. Curated 50-recipe library can be authored in ~2 weeks by one person (month 4).
+7. Curated 50-recipe library can be authored in ~2 weeks by one person (month 4 — `E2E_MVP_PLAN.md` W15–W16 after the v0.4 insertion).
 8. Google SSO through Cognito is sufficient for MVP audience (no push against adding email/OTP for users without Google accounts). If a beta tester pushes back, we add email/OTP in v1.1.
 
 ---
@@ -545,7 +570,7 @@ MVP is a success if, after 3 months of your household using it daily:
 
 Open questions from v0.1, now decided:
 
-1. **Recipe library sourcing:** hand-authored by founder. 30 North Indian + 20 South Indian recipes covering carbs, sabzis, dals, chicken, egg, salads/raitas/kozhambu. Month 4.
+1. **Recipe library sourcing:** hand-authored by founder. 30 North Indian + 20 South Indian recipes covering carbs, sabzis, dals, chicken, egg, salads/raitas/kozhambu. Month 4 (`E2E_MVP_PLAN.md` W15–W16 after the v0.4 insertion — unchanged in content and order, two weeks later on the calendar).
 2. **Household size cap:** 5 members total (primary + 4).
 3. **Data export:** not in scope. No commitment made in UI.
 4. **Offline behavior:** cheapest — read-cache only. Full offline write-and-sync deferred to v1.1.
@@ -553,6 +578,16 @@ Open questions from v0.1, now decided:
 6. **Analytics stack:** PostHog. Free tier + open source + all-in-one + easy self-host later.
 7. **Push notifications:** MVP. FCM via Cognito or direct. Minimal set: list changes, meal reminder, expiry, activity.
 8. **Trademarking Parimaan:** don't file yet. Do the cheap protective steps now (buy `parimaan.app` / `.in` / `.com`, grab @parimaanapp on socials, run a free IP India Class 9 + 42 + 30 search). File after MVP + ~100 users.
+
+**Resolved 2026-09-07 (v0.4), from live user testing of the shipped core loop.** These are product decisions, not scheduling ones; their execution detail lives in `E2E_MVP_PLAN.md` §10 (Q16–Q21) and §19–§20.
+
+9. **First-run welcome screen:** ship it. After onboarding, a household with nothing in it is asked "What would you like to do first?" and offered **Add to Pantry** / **Add New Recipe** — the same two-choice shape the existing Create/Join chooser uses. Users were landing on a Home screen that assumed content they had not created yet.
+10. **Weekly plan is grouped by meal instance:** Breakfast / Lunch / Snacks / Dinner headers per day, with Lunch and Dinner holding the household's configured per-type sub-slots. The flat slot list read as undifferentiated. Only meals the household actually plans get a header.
+11. **Meal config is snapshotted per week, applied from the next week:** the configuration is durable (not re-entered weekly), but a change never rewrites a week already in progress — that week keeps the configuration it was created under. Rejected: making config per-week (re-entry burden), and applying changes immediately (a plan that reshapes itself under the people cooking it).
+12. **"Which meals to plan" is editable after household creation, for all four meal types**, and Lunch and Dinner structures are each editable separately. Previously this could only be set once, during the create wizard, which offered three of the four meals. Directly closes a long-standing gap where Snacks could be turned off but never back on.
+13. **Curated per-category pantry suggestions, hardcoded and hand-ordered:** a short most-likely-first list per category, with a quantity + unit step per selected item, **alongside** free-text entry rather than replacing it. Deliberately not a database, not a catalog, and not required to be complete — same posture as the app's existing unit and category lists, which are edited rather than migrated.
+14. **Sweet and Drink stay unplanned:** they remain recipe roles that exist and are not planned into meal slots. Meal-instance grouping and per-type counts cover Carb, Sabzi/Dal and Accompaniment only. (Consistent with §7.1's existing framing of `drink` as "post-MVP scope for planning, but role exists".)
+15. **Recipe catalog expectation is a scheduling matter, not a scope gap:** users assumed a large catalog. The 50-recipe curated library was always in MVP scope and is simply not yet reached; nothing about it changed except that it now lands two weeks later (§12). No new decision was required.
 
 ## 14b. New open questions (from v0.2 changes)
 
@@ -605,7 +640,7 @@ Open questions from v0.1, now decided:
 - **Push notifications:** MVP.
 - **Offline:** Read-cache only in MVP.
 - **i18n:** Design for it (Flutter `intl` from day 1), ship it post-MVP.
-- **Timeline:** 6 months, ~10 hrs/week, phased month-by-month.
+- **Timeline:** 6 months as originally scoped (now ~6.5 months / 28 weeks post-v0.4, see §12), ~10 hrs/week, phased month-by-month.
 
 ---
 
