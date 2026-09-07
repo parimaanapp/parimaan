@@ -382,6 +382,146 @@ describe('householdRepository', () => {
       );
       expect(stillDefault?.allergens).toEqual([]);
     });
+
+    // W13 S1: the live bug and its fix. `meal_structure` used to be replaced
+    // whole-column, so patching only `lunch` silently wiped out `dinner`'s
+    // stored configuration (visible symptom: Dinner rendering zero slots on
+    // the Weekly Plan, because `getMealSlotCap` fails closed to 0 for a
+    // missing entry). The fix merges at the JSONB top level instead of
+    // replacing the whole column — these tests exercise real Postgres `||`
+    // semantics, which a mocked `pg` client cannot do.
+    describe('meal_structure top-level JSONB merge (W13 S1)', () => {
+      it("patching only lunch leaves dinner's previously-configured counts byte-identical (the direct regression test for the live bug)", async () => {
+        const owner = await createUser();
+        const householdId = await createFullHousehold(owner, 'MRG001');
+
+        // Establish a non-default dinner configuration first.
+        await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { dinner: { carb: 2, sabzi_dal: 3, accompaniment: 2 } },
+          }),
+        );
+
+        const updated = await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { lunch: { carb: 1, sabzi_dal: 1, accompaniment: 0 } },
+          }),
+        );
+
+        expect(updated?.mealStructure).toEqual({
+          lunch: { carb: 1, sabzi_dal: 1, accompaniment: 0 },
+          dinner: { carb: 2, sabzi_dal: 3, accompaniment: 2 },
+        });
+      });
+
+      it('patching only dinner leaves lunch intact (the mirror case — the fix must not be direction-specific)', async () => {
+        const owner = await createUser();
+        const householdId = await createFullHousehold(owner, 'MRG002');
+
+        await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { lunch: { carb: 2, sabzi_dal: 1, accompaniment: 1 } },
+          }),
+        );
+
+        const updated = await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { dinner: { carb: 0, sabzi_dal: 2, accompaniment: 3 } },
+          }),
+        );
+
+        expect(updated?.mealStructure).toEqual({
+          lunch: { carb: 2, sabzi_dal: 1, accompaniment: 1 },
+          dinner: { carb: 0, sabzi_dal: 2, accompaniment: 3 },
+        });
+      });
+
+      it('patching lunch twice in a row: the second write fully overwrites the key it is given (merge is top-level only, not deep)', async () => {
+        const owner = await createUser();
+        const householdId = await createFullHousehold(owner, 'MRG003');
+
+        await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { lunch: { carb: 5, sabzi_dal: 5, accompaniment: 5 } },
+          }),
+        );
+
+        const updated = await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { lunch: { carb: 1, sabzi_dal: 2, accompaniment: 1 } },
+          }),
+        );
+
+        expect(updated?.mealStructure.lunch).toEqual({ carb: 1, sabzi_dal: 2, accompaniment: 1 });
+      });
+
+      it('a mealStructure patch against a row whose meal_structure is NULL produces the patch itself, not a NULL result (the COALESCE(meal_structure, \'{}\') guard)', async () => {
+        const owner = await createUser();
+        const householdId = await createFullHousehold(owner, 'MRG004');
+
+        // The column is `NOT NULL` at the DDL level (defense-in-depth), but
+        // this test exercises the repository's own `COALESCE(meal_structure,
+        // '{}')` guard as belt-and-suspenders — dropping the constraint here,
+        // scoped to this test's row, is the only way to construct that state
+        // without weakening the schema for real callers.
+        await db.adminClient.query(
+          'ALTER TABLE household_settings ALTER COLUMN meal_structure DROP NOT NULL',
+        );
+        await db.adminClient.query(
+          'UPDATE household_settings SET meal_structure = NULL WHERE household_id = $1',
+          [householdId],
+        );
+
+        const updated = await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { lunch: { carb: 1, sabzi_dal: 1, accompaniment: 1 } },
+          }),
+        );
+
+        expect(updated?.mealStructure).toEqual({
+          lunch: { carb: 1, sabzi_dal: 1, accompaniment: 1 },
+        });
+      });
+
+      it('a mealsEnabled patch still REPLACES the whole array and does NOT concatenate (asymmetry regression: || on a JSONB array concatenates, which would duplicate entries on every edit)', async () => {
+        const owner = await createUser();
+        const householdId = await createFullHousehold(owner, 'MRG005');
+
+        await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealsEnabled: ['breakfast', 'lunch', 'dinner'],
+          }),
+        );
+
+        const updated = await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealsEnabled: ['lunch', 'dinner'],
+          }),
+        );
+
+        expect(updated?.mealsEnabled).toEqual(['lunch', 'dinner']);
+      });
+
+      it('an updateSettingsPartial call with no mealStructure argument at all leaves the meal_structure column completely untouched', async () => {
+        const owner = await createUser();
+        const householdId = await createFullHousehold(owner, 'MRG006');
+
+        await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, {
+            mealStructure: { lunch: { carb: 7, sabzi_dal: 7, accompaniment: 7 } },
+          }),
+        );
+
+        const updated = await asUser(owner.id, (client) =>
+          updateSettingsPartial(client, householdId, { allergens: ['peanuts'] }),
+        );
+
+        expect(updated?.mealStructure).toEqual({
+          lunch: { carb: 7, sabzi_dal: 7, accompaniment: 7 },
+          dinner: { carb: 1, sabzi_dal: 2, accompaniment: 1 },
+        });
+      });
+    });
   });
 
   describe('updateInviteCode', () => {

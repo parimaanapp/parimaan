@@ -473,6 +473,24 @@ export interface SettingsPatch {
  * error) if no row matched `householdId`, so callers can turn that into a
  * `NotFoundError` themselves.
  *
+ * ASYMMETRY, DELIBERATE: every column here is whole-value-replace via
+ * `COALESCE` *except* `meal_structure`, which top-level-merges via
+ * `COALESCE(meal_structure, '{}'::jsonb) || $3::jsonb`. `meal_structure` is a
+ * JSONB *object* keyed by meal type (`lunch`, `dinner`, ...); a patch that
+ * carries only `{"lunch": {...}}` (as the mobile meal-structure screen does)
+ * must not wipe out a sibling key like `dinner` that the patch didn't
+ * mention — that whole-column replace was a live bug (Dinner silently
+ * rendering zero slots on the Weekly Plan, because `getMealSlotCap` fails
+ * closed to 0 for a missing entry). All the *other* JSONB columns here
+ * (`meals_enabled`, `cuisine_tier1`, `cuisine_tier2_weights`, `dietary_tags`,
+ * `allergens`, `skip_ingredients`) are JSONB *arrays*, where `||` means
+ * concatenate, not merge — applying the same `||` treatment to them would
+ * make every edit append and duplicate entries instead of replacing them, a
+ * strictly worse bug. Do not "fix" this asymmetry into consistency; see
+ * `repositories/householdRepository.test.ts`'s `meal_structure top-level
+ * JSONB merge (W13 S1)` tests, particularly the `mealsEnabled` replace-not-
+ * concatenate regression test.
+ *
  * Subject to `household_settings`'s own RLS policy (member-only) — must run
  * inside a `withUserTransaction(userId, ...)` scope. `updateHouseholdSettings`
  * additionally gates on `requireHouseholdMember` *before* calling this as its
@@ -492,7 +510,10 @@ export const updateSettingsPartial = async (
   const result = await client.query<RawSettingsRow>(
     `UPDATE household_settings SET
        meals_enabled = COALESCE($2::jsonb, meals_enabled),
-       meal_structure = COALESCE($3::jsonb, meal_structure),
+       meal_structure = CASE
+         WHEN $3::jsonb IS NULL THEN meal_structure
+         ELSE COALESCE(meal_structure, '{}'::jsonb) || $3::jsonb
+       END,
        cuisine_tier1 = COALESCE($4::jsonb, cuisine_tier1),
        cuisine_tier2_weights = COALESCE($5::jsonb, cuisine_tier2_weights),
        dietary_tags = COALESCE($6::jsonb, dietary_tags),

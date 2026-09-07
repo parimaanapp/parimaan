@@ -207,7 +207,7 @@ describe('updateHouseholdSettings resolver', () => {
     expect(result.settings.skipIngredients).toEqual(['cilantro']);
   });
 
-  it('accepts and round-trips a mealStructure AWSJSON string', async () => {
+  it('accepts and round-trips a mealStructure AWSJSON string, merging at the top level rather than replacing the whole column (W13 S1)', async () => {
     const owner = await createUser('sub-owner-json');
     const householdId = await createHousehold(owner, 'JSN234');
 
@@ -219,8 +219,12 @@ describe('updateHouseholdSettings resolver', () => {
         'sub-owner-json',
       ),
     );
+    // A patch carrying only `lunch` must not clobber `dinner`'s untouched,
+    // still-default configuration — this is the direct regression test for
+    // the live Dinner-clobber bug, exercised at the resolver layer.
     expect(result.settings.mealStructure).toEqual({
       lunch: { carb: 2, sabzi_dal: 1, accompaniment: 0 },
+      dinner: { carb: 1, sabzi_dal: 2, accompaniment: 1 },
     });
   });
 
