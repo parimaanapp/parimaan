@@ -289,6 +289,35 @@ describe('haveIt resolver (Mutation.haveIt)', () => {
     expect(pantryItems[0]?.quantity).toBe(5);
   });
 
+  it(
+    'increments an existing no-unit pantry row rather than inserting a duplicate — an EMPTY-STRING ' +
+      "persisted unit (pantry_items.unit is NOT NULL, so a prior no-unit have-it/markPurchased write " +
+      "stored '' rather than null) must still be treated as \"no unit\", the same as a fresh null " +
+      'incoming unit, per unitsCompatible\'s own "two no-unit ingredients are compatible" contract ' +
+      '(the real bug this guards: a pantry row created from a null-unit shopping-list item, followed ' +
+      "by a second no-unit have-it for the same ingredient, produced TWO separate rows instead of one " +
+      'incremented row, because canonicalizePantryUnit(\'\') returns \'\' rather than null, and ' +
+      "unitsCompatible('', null) is false)",
+    async () => {
+      const owner = await createUser('sub-hi-nounit');
+      const householdId = await createHouseholdWithOwner(owner, 'HVI00N');
+      await seedPantryItem(owner, householdId, { name: 'toor dal', quantity: 0, unit: '' });
+      const itemId = await seedShoppingListItem(owner, householdId, {
+        name: 'toor dal',
+        quantity: 2,
+        unit: null,
+        category: null,
+      });
+
+      const handler = createHaveItHandler(baseDeps);
+      await handler(buildEvent(itemId, 2, 'sub-hi-nounit'));
+
+      const pantryItems = await getPantryItems(owner, householdId);
+      expect(pantryItems).toHaveLength(1);
+      expect(pantryItems[0]?.quantity).toBe(2);
+    },
+  );
+
   it('converts and increments across a same-family, different unit (D3: shopping-list g against a pantry kg row)', async () => {
     const owner = await createUser('sub-hi-convert');
     const householdId = await createHouseholdWithOwner(owner, 'HVI005');
