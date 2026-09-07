@@ -9,6 +9,7 @@ import '../../../../shared/ui/spacing.dart';
 import '../../../../shared/ui/typography.dart';
 import '../../../auth/state/auth_controller.dart';
 import '../../domain/household.dart';
+import '../../domain/meal_type.dart';
 import '../../state/current_household_controller.dart';
 import '../../state/current_user_id_controller.dart';
 import '../../state/household_settings_controller.dart';
@@ -40,14 +41,21 @@ import 'settings_row.dart';
 ///
 /// ## The preference rows reuse the wizard's own screens
 ///
-/// "Meals to plan", "Meal structure", "Cuisine preferences", "Dietary tags"
-/// and "Allergens & skip list" navigate to the *same widgets* the create
-/// wizard uses, entered in [WizardFlow.edit]. See
+/// "Meals to plan", "Lunch structure", "Dinner structure", "Cuisine
+/// preferences", "Dietary tags" and "Allergens & skip list" navigate to the
+/// *same widgets* the create wizard uses, entered in [WizardFlow.edit]. See
 /// `presentation/create/wizard_flow.dart` for the adapter and for why
 /// "Dietary tags" and "Allergens & skip list" — two rows here — both land on
 /// the single screen 2.6 that owns both. "Meals to plan" (`W13 S3`) is the
-/// one row of the five whose wizard screen offers a *different* set of
+/// one row of the six whose wizard screen offers a *different* set of
 /// toggles in edit mode — see `WhichMealsScreen`'s doc.
+///
+/// "Lunch structure" and "Dinner structure" were a single "Meal structure"
+/// row before W13 S2 (`E2E_MVP_PLAN.md` §19.3 "S2") — `MealStructureScreen`
+/// was hardcoded to Lunch, and there was nowhere in the app that could edit
+/// Dinner's counts at all. Both rows route through
+/// `AppRoutes.editMealStructure`, which now carries a `:mealType` segment;
+/// see that route's own doc for why there is no single-argument fallback.
 class SettingsHubScreen extends ConsumerWidget {
   const SettingsHubScreen({super.key, required this.householdId});
 
@@ -56,7 +64,8 @@ class SettingsHubScreen extends ConsumerWidget {
   static const Key householdRowKey = Key('settings-household');
   static const Key membersRowKey = Key('settings-members');
   static const Key mealsRowKey = Key('settings-meals');
-  static const Key mealStructureRowKey = Key('settings-meal-structure');
+  static const Key lunchStructureRowKey = Key('settings-lunch-structure');
+  static const Key dinnerStructureRowKey = Key('settings-dinner-structure');
   static const Key cuisineRowKey = Key('settings-cuisine');
   static const Key dietaryRowKey = Key('settings-dietary');
   static const Key allergensRowKey = Key('settings-allergens');
@@ -196,9 +205,18 @@ class _HubBody extends ConsumerWidget {
           onTap: () => context.go(AppRoutes.editMeals(household.id)),
         ),
         SettingsRow(
-          key: SettingsHubScreen.mealStructureRowKey,
-          label: 'Meal structure',
-          onTap: () => context.go(AppRoutes.editMealStructure(household.id)),
+          key: SettingsHubScreen.lunchStructureRowKey,
+          label: 'Lunch structure',
+          onTap: () => context.go(
+            AppRoutes.editMealStructure(household.id, MealType.lunch),
+          ),
+        ),
+        SettingsRow(
+          key: SettingsHubScreen.dinnerStructureRowKey,
+          label: 'Dinner structure',
+          onTap: () => context.go(
+            AppRoutes.editMealStructure(household.id, MealType.dinner),
+          ),
         ),
         SettingsRow(
           key: SettingsHubScreen.cuisineRowKey,

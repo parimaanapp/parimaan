@@ -109,6 +109,41 @@ void main() {
       );
     });
 
+    test(
+      'mealStructure(dinner, ...) sends only the dinner-keyed mealStructure '
+      'JSON (W13 S2)',
+      () {
+        final HouseholdSettingsPatch patch = HouseholdSettingsPatch.mealStructure(
+          MealType.dinner,
+          LunchMealStructure.defaults,
+        );
+
+        expect(patch.fieldCount, 1);
+        expect(
+          patch.mealStructureJson,
+          '{"dinner":{"carb":2,"sabzi_dal":2,"accompaniment":1}}',
+        );
+      },
+    );
+
+    test(
+      'mealStructure(lunch, ...) matches the lunchStructure factory exactly',
+      () {
+        final HouseholdSettingsPatch viaMealType =
+            HouseholdSettingsPatch.mealStructure(
+              MealType.lunch,
+              LunchMealStructure.defaults,
+            );
+        final HouseholdSettingsPatch viaLunchStructure =
+            HouseholdSettingsPatch.lunchStructure(LunchMealStructure.defaults);
+
+        expect(
+          viaMealType.mealStructureJson,
+          viaLunchStructure.mealStructureJson,
+        );
+      },
+    );
+
     test('cuisineRegions sends only cuisineTier1, in schema order', () {
       final HouseholdSettingsPatch patch =
           HouseholdSettingsPatch.cuisineRegions(<CuisineRegion>{

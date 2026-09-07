@@ -71,8 +71,22 @@ class HouseholdSettingsPatch {
       );
 
   /// Wizard step 2/4 (screen 2.3). Sends only the `lunch` key.
+  ///
+  /// Equivalent to `mealStructure(MealType.lunch, structure)` — kept as its
+  /// own factory because the create wizard's Lunch step is this type's
+  /// original, unchanged caller (D3, `E2E_MVP_PLAN.md` §19.2.3: "the create
+  /// wizard is left at three toggles, unchanged").
   factory HouseholdSettingsPatch.lunchStructure(LunchMealStructure structure) =>
       HouseholdSettingsPatch(mealStructureJson: structure.toWireJson());
+
+  /// The Settings "Lunch structure"/"Dinner structure" edit rows (W13 S2).
+  /// Sends only [mealType]'s key — the server's per-key JSONB merge (W13 S1,
+  /// `api/src/repositories/householdRepository.ts`) is what makes a one-key
+  /// patch here safe rather than clobbering the sibling meal type's counts.
+  factory HouseholdSettingsPatch.mealStructure(
+    MealType mealType,
+    LunchMealStructure structure,
+  ) => HouseholdSettingsPatch(mealStructureJson: structure.toWireJson(mealType));
 
   /// Wizard step 3/4, first frame (screen 2.4). Schema order, as with
   /// [HouseholdSettingsPatch.meals].

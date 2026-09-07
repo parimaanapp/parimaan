@@ -132,18 +132,39 @@ void main() {
     test('setSlotCount clamps to the server bounds', () async {
       final subject = await _started();
 
-      subject.controller.setSlotCount(MealSlot.carb, 99);
+      subject.controller.setSlotCount(MealType.lunch, MealSlot.carb, 99);
       expect(
         _data(subject.container).lunchStructure.countFor(MealSlot.carb),
         10,
       );
 
-      subject.controller.setSlotCount(MealSlot.carb, -1);
+      subject.controller.setSlotCount(MealType.lunch, MealSlot.carb, -1);
       expect(
         _data(subject.container).lunchStructure.countFor(MealSlot.carb),
         0,
       );
     });
+
+    test(
+      'setSlotCount(dinner, ...) edits dinnerStructure and leaves '
+      'lunchStructure alone',
+      () async {
+        final subject = await _started();
+
+        subject.controller.setSlotCount(MealType.dinner, MealSlot.carb, 5);
+
+        expect(
+          _data(subject.container).dinnerStructure.countFor(MealSlot.carb),
+          5,
+        );
+        expect(
+          _data(subject.container).lunchStructure.countFor(MealSlot.carb),
+          LunchMealStructure.defaults.carb,
+          reason: 'editing Dinner must not touch Lunch — the live bug W13 '
+              'S1 fixed server-side, regression-tested client-side too',
+        );
+      },
+    );
 
     test('toggling a region re-derives the sub-cuisine weight map', () async {
       final subject = await _started();
@@ -267,9 +288,9 @@ void main() {
       'submitMealStructure sends only the lunch-keyed mealStructure',
       () async {
         final subject = await _started();
-        subject.controller.setSlotCount(MealSlot.carb, 3);
+        subject.controller.setSlotCount(MealType.lunch, MealSlot.carb, 3);
 
-        await subject.controller.submitMealStructure();
+        await subject.controller.submitMealStructure(MealType.lunch);
 
         final HouseholdSettingsPatch patch =
             subject.repository.settingsCalls.single.patch;
@@ -278,6 +299,26 @@ void main() {
           patch.mealStructureJson,
           '{"lunch":{"carb":3,"sabzi_dal":2,"accompaniment":1}}',
         );
+      },
+    );
+
+    test(
+      'submitMealStructure(dinner) sends only the dinner-keyed '
+      'mealStructure',
+      () async {
+        final subject = await _started();
+        subject.controller.setSlotCount(MealType.dinner, MealSlot.carb, 4);
+
+        await subject.controller.submitMealStructure(MealType.dinner);
+
+        final HouseholdSettingsPatch patch =
+            subject.repository.settingsCalls.single.patch;
+        expect(patch.fieldCount, 1);
+        expect(
+          patch.mealStructureJson,
+          '{"dinner":{"carb":4,"sabzi_dal":2,"accompaniment":1}}',
+        );
+        expect(patch.mealStructureJson, isNot(contains('lunch')));
       },
     );
 
@@ -384,10 +425,10 @@ void main() {
     test('the draft is still readable after a failure, so the user can '
         'retry without re-entering anything', () async {
       final subject = await _started();
-      subject.controller.setSlotCount(MealSlot.carb, 7);
+      subject.controller.setSlotCount(MealType.lunch, MealSlot.carb, 7);
       subject.repository.settingsError = const RateLimitedError('slow down');
 
-      await subject.controller.submitMealStructure();
+      await subject.controller.submitMealStructure(MealType.lunch);
 
       final AsyncValue<HouseholdWizardData> state = subject.container.read(
         householdWizardControllerProvider,
