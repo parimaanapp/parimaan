@@ -405,6 +405,51 @@ export const subtractPantry = (
   return result;
 };
 
+/** The subset of a shopping list line `excludeItemsAlreadyPreserved` needs to match against. */
+export interface ItemForPreservedMatch {
+  name: string;
+  unit: string | null;
+}
+
+/**
+ * Drops any freshly-recomputed line (D2's same fuzzy-name rule, unit-gated
+ * per D3) that already matches a PRESERVED item on the list being merged
+ * into (`isPreservedShoppingListItem` — already-had or manually-added).
+ *
+ * Without this, `regenerateShoppingList`'s merge (D8, §17.2.8) inserts a
+ * second, competing line for an ingredient the list already has a preserved
+ * record of, whenever that ingredient is still on the menu and isn't
+ * currently covered by real pantry stock (e.g. the household bought it,
+ * checked it off, and then the household's pantry row for it was later
+ * removed/consumed) — the freshly-recomputed portion has no visibility into
+ * what the list's own preserved rows already cover, only into the
+ * household's live `pantry_items` table (`subtractPantry`, above). Confirmed
+ * live against the dev AppSync backend: a menu with one recipe/one
+ * ingredient whose prior list had that ingredient already checked off
+ * produced two "Toor Dal" lines in the "List preview" screen — one
+ * preserved/purchased, one freshly recomputed/unpurchased — because nothing
+ * excluded the fresh recomputation from re-adding an ingredient the
+ * preserved portion already accounts for.
+ */
+export const excludeItemsAlreadyPreserved = <T extends ItemForPreservedMatch>(
+  freshItems: readonly T[],
+  preservedItems: readonly ItemForPreservedMatch[],
+): T[] => {
+  const preservedCanonical = preservedItems.map((item) => ({
+    normalizedName: normalize(item.name),
+    canonicalUnit: item.unit === null ? null : canonicalizePantryUnit(item.unit),
+  }));
+
+  return freshItems.filter((item) => {
+    const normalizedName = normalize(item.name);
+    const canonicalUnit = item.unit === null ? null : canonicalizePantryUnit(item.unit);
+    return !preservedCanonical.some(
+      (preserved) =>
+        namesMatch(preserved.normalizedName, normalizedName) && unitsCompatible(preserved.canonicalUnit, canonicalUnit),
+    );
+  });
+};
+
 /**
  * Groups aggregated items by category for display, `null` bucketed under
  * `"other"`. Categories appear in first-seen order; items keep their

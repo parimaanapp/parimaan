@@ -13,6 +13,7 @@ import {
   isPreservedShoppingListItem,
   mergeRegenerateShoppingList,
 } from '../repositories/shoppingListRepository.js';
+import { excludeItemsAlreadyPreserved } from '../domain/shoppingListGeneration.js';
 import type { ShoppingListRow } from '../repositories/shoppingListRepository.js';
 import {
   buildEphemeralMergePreview,
@@ -54,7 +55,8 @@ const buildPreview = async (
 
   const currentItems = await findShoppingListItems(client, existingList.id);
   const preservedItems = currentItems.filter(isPreservedShoppingListItem);
-  return buildEphemeralMergePreview(existingList, preservedItems, freshAutoItems);
+  const dedupedFreshItems = excludeItemsAlreadyPreserved(freshAutoItems, preservedItems);
+  return buildEphemeralMergePreview(existingList, preservedItems, dedupedFreshItems);
 };
 
 /**
@@ -74,7 +76,13 @@ const buildPreview = async (
  *   remaining auto-generated, not-yet-had portion with a fresh
  *   recomputation against CURRENT menu/pantry state
  *   (`mergeRegenerateShoppingList`); `confirmed: false` previews that same
- *   merge without writing.
+ *   merge without writing. Either way, the fresh recomputation is filtered
+ *   through `excludeItemsAlreadyPreserved` first — an ingredient the
+ *   preserved portion already accounts for (still on the menu, but no
+ *   longer covered by live pantry stock) must not get a second, competing
+ *   line alongside its preserved one (confirmed live-testing bug, W11 S2:
+ *   a since-consumed already-purchased ingredient showed up twice in the
+ *   "List preview" screen without this).
  */
 export const createRegenerateShoppingListHandler =
   (deps: RegenerateShoppingListResolverDeps) =>
@@ -123,7 +131,10 @@ export const createRegenerateShoppingListHandler =
         }
 
         const freshAutoItems = await computeFreshShoppingListItems(client, menu);
-        const mergedItems = await mergeRegenerateShoppingList(client, existingList.id, freshAutoItems);
+        const currentItems = await findShoppingListItems(client, existingList.id);
+        const preservedItems = currentItems.filter(isPreservedShoppingListItem);
+        const dedupedFreshItems = excludeItemsAlreadyPreserved(freshAutoItems, preservedItems);
+        const mergedItems = await mergeRegenerateShoppingList(client, existingList.id, dedupedFreshItems);
         return toGraphQLShoppingList(existingList, mergedItems);
       },
       pool,
