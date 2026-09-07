@@ -272,6 +272,26 @@ export const lockPantryForHousehold = async (client: PoolClient, householdId: st
  * `LIKE` substring search, and the only way to run D2's fuzzy match at all
  * (it can't be pushed into a `WHERE` clause).
  */
+
+/**
+ * `canonicalizePantryUnit` for an EXISTING `pantry_items` row's own unit
+ * specifically — `pantry_items.unit` is `NOT NULL`, so
+ * `insertFreshPantryItemForHaveIt` above persists a no-unit have-it as an
+ * empty string (`input.unit ?? ''`), never `null`. `canonicalizePantryUnit`
+ * itself doesn't know that `''` means "no unit was ever given" rather than
+ * "the literal unit is an empty string" — it just trims and returns `''`
+ * unchanged (it isn't in `KNOWN_PANTRY_UNITS`). Left uncorrected,
+ * `unitsCompatible('', null)` returns `false` (its own doc's "two no-unit
+ * ingredients are compatible" rule only fires for `null === null`), so a
+ * second no-unit have-it for the same ingredient never matches this row —
+ * it falls through to `insertFreshPantryItemForHaveIt` and creates a
+ * duplicate row instead of incrementing this one. Normalizing `''` back to
+ * `null` here (defined only for a value already read FROM the database,
+ * never for a fresh incoming argument) restores that guarantee.
+ */
+const canonicalizeExistingPantryUnit = (unit: string): string | null =>
+  unit === '' ? null : canonicalizePantryUnit(unit);
+
 export const upsertOrIncrementPantryItemForHaveIt = async (
   client: PoolClient,
   input: HaveItPantryUpsertInput,
@@ -284,7 +304,7 @@ export const upsertOrIncrementPantryItemForHaveIt = async (
   const canonicalIncomingUnit = input.unit === null ? null : canonicalizePantryUnit(input.unit);
 
   const match = existingItems.find((item) => {
-    const canonicalExistingUnit = canonicalizePantryUnit(item.unit);
+    const canonicalExistingUnit = canonicalizeExistingPantryUnit(item.unit);
     return (
       namesMatch(normalizeIngredientName(item.name), normalizedIncomingName) &&
       unitsCompatible(canonicalExistingUnit, canonicalIncomingUnit)
@@ -295,18 +315,19 @@ export const upsertOrIncrementPantryItemForHaveIt = async (
     return insertFreshPantryItemForHaveIt(client, input);
   }
 
-  const canonicalExistingUnit = canonicalizePantryUnit(match.unit);
-  // The `?? ''` fallback below is unreachable in practice: `unitsCompatible`
-  // (the gate `match` was found through) only ever returns `true` for a
-  // `null` `canonicalIncomingUnit` when `canonicalExistingUnit` is ALSO
-  // `null` — but that case is caught by the `canonicalExistingUnit ===
-  // canonicalIncomingUnit` branch just above, never reaching this call.
-  // Kept only so `convertQuantity`'s `string` parameter type is satisfied
-  // without an unsafe cast.
+  const canonicalExistingUnit = canonicalizeExistingPantryUnit(match.unit);
+  // Both `?? ''` fallbacks below are unreachable in practice: whenever
+  // either canonical unit is `null`, `canonicalExistingUnit ===
+  // canonicalIncomingUnit` is only `true` if BOTH are `null` (caught by
+  // the branch just above, never reaching this call) — a `null`/non-`null`
+  // mix can't reach here at all, since `unitsCompatible` (the gate `match`
+  // was found through) requires both non-`null` to return `true` in that
+  // case. Kept only so `convertQuantity`'s `string` parameter type is
+  // satisfied without an unsafe cast.
   const convertedIncoming =
     canonicalExistingUnit === canonicalIncomingUnit
       ? input.quantity
-      : convertQuantity(input.quantity, canonicalIncomingUnit ?? '', canonicalExistingUnit);
+      : convertQuantity(input.quantity, canonicalIncomingUnit ?? '', canonicalExistingUnit ?? '');
 
   // Defensive only — `unitsCompatible` already guaranteed convertibility
   // to reach this branch, so `convertedIncoming` should never be `null`
