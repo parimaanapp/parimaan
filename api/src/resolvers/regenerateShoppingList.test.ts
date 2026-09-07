@@ -379,6 +379,16 @@ describe('regenerateShoppingList resolver (Mutation.regenerateShoppingList)', ()
     expect(riceLine?.id).not.toBe(
       generated.items.find((entry) => entry.name.toLowerCase() === 'rice')?.id,
     );
+
+    // Regression (live iOS/dev-AppSync bug, W11 S2): "moong dal" is still on
+    // the menu, unchanged, and its preserved line already covers it — the
+    // freshly-recomputed portion must not add a second "moong dal" line
+    // alongside the preserved one. Before the fix, this produced two rows
+    // for the same ingredient (one preserved/purchased, one freshly
+    // recomputed/unpurchased) in the "List preview" screen.
+    const dalLines = result.items.filter((entry) => entry.name.toLowerCase() === 'moong dal');
+    expect(dalLines).toHaveLength(1);
+    expect(result.items).toHaveLength(2);
   });
 
   it('confirmed:true preserves a manually-added item (sourceRecipeId null), seeded directly via the repository', async () => {

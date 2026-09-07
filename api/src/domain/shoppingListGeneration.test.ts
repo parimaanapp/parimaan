@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { AggregatedIngredient, AggregationMenuItem, AggregationRecipe, PantryItemForSubtraction, RecipeIngredient } from './shoppingListGeneration.js';
-import { INGREDIENT_SIMILARITY_THRESHOLD, aggregateIngredients, categorize, isStapleExcluded, subtractPantry } from './shoppingListGeneration.js';
+import {
+  INGREDIENT_SIMILARITY_THRESHOLD,
+  aggregateIngredients,
+  categorize,
+  excludeItemsAlreadyPreserved,
+  isStapleExcluded,
+  subtractPantry,
+} from './shoppingListGeneration.js';
 
 const ingredient = (overrides: Partial<RecipeIngredient> = {}): RecipeIngredient => ({
   name: 'onion',
@@ -247,6 +254,39 @@ describe('subtractPantry', () => {
     );
     const result = subtractPantry(aggregated, [pantryItem({ quantity: 10 })]);
     expect(result).toHaveLength(0);
+  });
+});
+
+describe('excludeItemsAlreadyPreserved', () => {
+  it('drops a freshly-recomputed line that matches a preserved item by name and unit', () => {
+    const fresh = [{ name: 'Toor Dal', unit: null, quantity: null }];
+    const preserved = [{ name: 'toor dal', unit: null }];
+    expect(excludeItemsAlreadyPreserved(fresh, preserved)).toHaveLength(0);
+  });
+
+  it('keeps a freshly-recomputed line whose name does not match any preserved item', () => {
+    const fresh = [{ name: 'Moong Dal', unit: 'g', quantity: 300 }];
+    const preserved = [{ name: 'rice', unit: 'g' }];
+    const result = excludeItemsAlreadyPreserved(fresh, preserved);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.name).toBe('Moong Dal');
+  });
+
+  it('keeps a line whose name fuzzy-matches a preserved item but whose unit is incompatible', () => {
+    const fresh = [{ name: 'ghee', unit: 'cup', quantity: 1 }];
+    const preserved = [{ name: 'ghee', unit: 'g' }];
+    expect(excludeItemsAlreadyPreserved(fresh, preserved)).toHaveLength(1);
+  });
+
+  it('drops a match under a same-family unit conversion, not just an identical unit', () => {
+    const fresh = [{ name: 'atta', unit: 'g', quantity: 500 }];
+    const preserved = [{ name: 'atta', unit: 'kg' }];
+    expect(excludeItemsAlreadyPreserved(fresh, preserved)).toHaveLength(0);
+  });
+
+  it('returns every fresh item unchanged when there are no preserved items', () => {
+    const fresh = [{ name: 'onion', unit: 'piece', quantity: 2 }];
+    expect(excludeItemsAlreadyPreserved(fresh, [])).toEqual(fresh);
   });
 });
 
