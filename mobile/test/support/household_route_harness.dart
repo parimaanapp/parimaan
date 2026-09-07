@@ -16,6 +16,7 @@ import 'package:mobile/shared/ui/theme.dart';
 
 import 'fake_auth_repository.dart';
 import 'fake_household_repository.dart';
+import 'household_activity_overrides.dart';
 import 'household_fixtures.dart';
 
 /// What a pumped household route hands back to a test.
@@ -113,6 +114,16 @@ Future<HouseholdHarness> pumpHouseholdRoute(
       authRepositoryProvider.overrideWithValue(auth),
       householdRepositoryProvider.overrideWithValue(repo),
       linkStreamProvider.overrideWithValue(links.stream),
+      // W13 S6 (Q20/D2) — `_redirect` now also reads
+      // `householdHasActivityProvider` for any household `repo` resolves
+      // with a non-empty `myHouseholdsResult`. Defaulted non-empty so every
+      // pre-S6 caller of this harness reproduces its pre-S6 landing
+      // (`/home`, never `/welcome`) without knowing this provider exists —
+      // see that override helper's own doc. Listed before `...overrides`
+      // so a caller that DOES care about the Q20 threshold can still
+      // override it (`ProviderContainer` resolves a duplicate override to
+      // its last entry in this list).
+      ...defaultHouseholdActivityOverrides(),
       ...overrides,
     ],
   );

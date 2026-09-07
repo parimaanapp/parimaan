@@ -17,6 +17,7 @@ class FakeRecipeRepository implements RecipeRepository {
     this.result,
     this.error,
     this.delay,
+    this.neverCompletes = false,
     this.detailResult,
     this.detailError,
     this.favoriteResult,
@@ -38,6 +39,14 @@ class FakeRecipeRepository implements RecipeRepository {
   /// state.
   Duration? delay;
 
+  /// When `true`, [fetchRecipes] never completes at all — a genuinely
+  /// pending `Completer`, not a `Future.delayed` — same shape as
+  /// `FakeHouseholdRepository.neverCompletes`. Deliberately not a very-long
+  /// `delay`: a real `Timer` left pending past a widget test's own teardown
+  /// trips `flutter_test`'s "a Timer is still pending" assertion, where an
+  /// uncompleted `Completer` leaves nothing scheduled to trip on.
+  final bool neverCompletes;
+
   /// Every `(householdId, role, isFavorite, inRotation)` quadruple, in order.
   final List<({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>
   calls = <({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>[];
@@ -55,6 +64,9 @@ class FakeRecipeRepository implements RecipeRepository {
       isFavorite: isFavorite,
       inRotation: inRotation,
     ));
+    if (neverCompletes) {
+      await Completer<List<Recipe>>().future;
+    }
     final Duration? delay = this.delay;
     if (delay != null) {
       await Future<void>.delayed(delay);

@@ -26,6 +26,7 @@ import 'package:mobile/shared/ui/theme.dart';
 
 import '../support/fake_auth_repository.dart';
 import '../support/fake_household_repository.dart';
+import '../support/household_activity_overrides.dart';
 import '../support/household_fixtures.dart';
 import '../support/household_route_harness.dart'
     show HouseholdHarness, pumpHouseholdRoute;
@@ -51,6 +52,16 @@ Future<GoRouter> _pumpRouter(
   List<Household> households = const <Household>[],
   Object? householdsError,
   bool neverResolveHouseholds = false,
+  // ── W13 S6 (Q20/D2) — the three `householdHasActivityProvider` sources ──
+  //
+  // Defaulted to `defaultHouseholdActivityOverrides()` (all three
+  // non-empty) rather than left unconfigured: every pre-S6 test in this
+  // file was written against a redirect that never read these providers at
+  // all, and an unconfigured default would either hit the real network or
+  // silently change those tests' landing spot from `/home` to `/welcome`.
+  // The non-empty default reproduces the pre-S6 landing exactly, so only
+  // tests that actually care about the Q20 threshold need to override this.
+  List<Override> activityOverrides = const <Override>[],
 }) async {
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
@@ -64,6 +75,12 @@ Future<GoRouter> _pumpRouter(
           neverCompletes: neverResolveHouseholds,
         ),
       ),
+      ...defaultHouseholdActivityOverrides(),
+      // Caller overrides last — Riverpod's `ProviderContainer` resolves a
+      // provider overridden more than once to its LAST entry in this list,
+      // which is what lets a caller's `activityOverrides` win over the
+      // default above.
+      ...activityOverrides,
     ],
   );
   addTearDown(container.dispose);
@@ -787,6 +804,125 @@ void main() {
 
       expect(_location(router), AppRoutes.joinHousehold);
     });
+  });
+
+  group('router — welcome screen + activity threshold (W13 S6, Q20/D2)', () {
+    testWidgets(
+      'a household with zero recipes, pantry items, and menu items lands on /welcome',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+          activityOverrides: emptyHouseholdActivityOverrides(
+            householdId: testHousehold.id,
+          ),
+        );
+
+        expect(_location(router), AppRoutes.welcome);
+      },
+    );
+
+    testWidgets(
+      'exactly one recipe, nothing else, lands on /home — one arm of the OR',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+          activityOverrides: recipeOnlyActivityOverrides(
+            householdId: testHousehold.id,
+          ),
+        );
+
+        expect(_location(router), AppRoutes.home);
+      },
+    );
+
+    testWidgets(
+      'exactly one pantry item, nothing else, lands on /home — the second arm',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+          activityOverrides: pantryOnlyActivityOverrides(
+            householdId: testHousehold.id,
+          ),
+        );
+
+        expect(_location(router), AppRoutes.home);
+      },
+    );
+
+    testWidgets(
+      'exactly one planned menu item, nothing else, lands on /home — the third arm',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+          activityOverrides: menuOnlyActivityOverrides(
+            householdId: testHousehold.id,
+          ),
+        );
+
+        expect(_location(router), AppRoutes.home);
+      },
+    );
+
+    testWidgets(
+      'holds on splash while any activity source is still resolving — never '
+      'flashes /welcome',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+          activityOverrides: resolvingActivityOverrides(
+            householdId: testHousehold.id,
+          ),
+        );
+
+        // Same proof shape as the household-list "stays on splash" test
+        // above: this is the guard's permanent answer for the duration of
+        // this test (the recipes source never actually resolves within it),
+        // not a snapshot mid-transition — so this proves the loading state
+        // is read BEFORE any flash to /welcome, not just that the final
+        // location happens to be right.
+        expect(_location(router), AppRoutes.splash);
+      },
+    );
+
+    testWidgets(
+      'an errored activity source is treated as unknown and holds on splash '
+      '— never read as empty and never bounces to /welcome',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+          activityOverrides: erroredActivityOverrides(
+            householdId: testHousehold.id,
+          ),
+        );
+
+        expect(_location(router), AppRoutes.splash);
+      },
+    );
+
+    testWidgets(
+      'a signed-in user with NO household still lands on /first-run, '
+      'unchanged — regression against W8 S1 (D2 does not touch this branch)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        expect(_location(router), AppRoutes.firstRun);
+      },
+    );
   });
 
   group('router — the household setup wizard', () {

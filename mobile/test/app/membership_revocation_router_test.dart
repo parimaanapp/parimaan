@@ -11,6 +11,7 @@ import 'package:mobile/shared/ui/theme.dart';
 
 import '../support/fake_auth_repository.dart';
 import '../support/fake_household_repository.dart';
+import '../support/household_activity_overrides.dart';
 import '../support/household_fixtures.dart';
 
 String _location(GoRouter router) =>
@@ -36,6 +37,12 @@ Future<({GoRouter router, FakeHouseholdRepository repository})> _pumpSignedInHom
         stubbedAuthRepository(session: testSignedInSession),
       ),
       householdRepositoryProvider.overrideWithValue(repository),
+      // W13 S6 (Q20/D2) — `_redirect` now also reads
+      // `householdHasActivityProvider` for a household with a resolved
+      // list; see that override helper's own doc for why this must be
+      // configured (never left to hit the real network) and why it
+      // defaults non-empty (this test's whole point is /home, not /welcome).
+      ...defaultHouseholdActivityOverrides(householdId: testHousehold.id),
     ],
   );
   addTearDown(container.dispose);

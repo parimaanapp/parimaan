@@ -24,6 +24,7 @@ import '../features/household/presentation/settings/members_list_screen.dart';
 import '../features/household/presentation/settings/notification_preferences_screen.dart';
 import '../features/household/presentation/settings/settings_hub_screen.dart';
 import '../features/household/presentation/settings/settings_placeholder_screen.dart';
+import '../features/household/state/household_activity_provider.dart';
 import '../features/household/state/me_households_controller.dart';
 import '../features/household/state/pending_join_code_controller.dart';
 import '../features/menu/presentation/auto_fill_preview_screen.dart';
@@ -32,6 +33,7 @@ import '../features/menu/presentation/today_screen.dart';
 import '../features/menu/presentation/weekly_plan_screen.dart';
 import '../features/menu/state/current_menu_controller.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
+import '../features/onboarding/presentation/welcome_choose_path_screen.dart';
 import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
@@ -62,6 +64,12 @@ abstract final class AppRoutes {
 
   /// The post-sign-in landing screen: create a household, or join one.
   static const String firstRun = '/first-run';
+
+  /// Where a signed-in user **with** a household, but no real activity yet
+  /// (Q20/D2, W13 S6 — see `household_activity_provider.dart`), lands
+  /// instead of [home]. A routed location, not a modal/banner, because
+  /// `_redirect` needs a real destination to send people to.
+  static const String welcome = '/welcome';
 
   // ── The join flow (wireframe flow 3) ──────────────────────────────────────
 
@@ -470,6 +478,18 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         refresh.value++,
   );
 
+  // Same reasoning again, one level further out: `householdHasActivityProvider`
+  // (W13 S6, §19.2.2 D2) itself watches `meHouseholdsControllerProvider` plus
+  // the recipes/pantry/menu controllers for the resolved household, and its
+  // own resolving → resolved transition has to re-run `_redirect` the same
+  // way — otherwise a signed-in user with a household would be stranded on
+  // splash forever once `_redirect` starts holding for this provider below,
+  // with nothing left to wake it back up.
+  ref.listen<AsyncValue<bool>>(
+    householdHasActivityProvider,
+    (AsyncValue<bool>? _, AsyncValue<bool> _) => refresh.value++,
+  );
+
   final GoRouter router = GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refresh,
@@ -490,6 +510,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.firstRun,
         builder: (BuildContext context, GoRouterState state) =>
             const FirstRunChoosePathScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.welcome,
+        builder: (BuildContext context, GoRouterState state) =>
+            const WelcomeChoosePathScreen(),
       ),
       GoRoute(
         path: AppRoutes.joinHousehold,
@@ -932,7 +957,22 @@ String? _redirect(Ref ref, GoRouterState state) {
     // same as "no households yet" — /first-run offers both create and join,
     // the only safe landing when the real answer is unknown.
     final bool hasHouseholds = households.valueOrNull?.isNotEmpty ?? false;
-    return hasHouseholds ? AppRoutes.home : AppRoutes.firstRun;
+    if (!hasHouseholds) {
+      return AppRoutes.firstRun;
+    }
+
+    // A signed-in user WITH a household lands on /home if it has done
+    // anything real yet, or /welcome if it hasn't (Q20/D2, W13 S6). Three
+    // states again, for the identical reason the household-existence check
+    // just above needs them — but this check's error handling is the
+    // OPPOSITE of that one's: `householdHasActivityProvider`'s own doc has
+    // the full reasoning for why an errored source here is held, never read
+    // as "empty."
+    final AsyncValue<bool> activity = ref.read(householdHasActivityProvider);
+    if (!activity.hasValue) {
+      return _holdOnSplash(location);
+    }
+    return activity.value! ? AppRoutes.home : AppRoutes.welcome;
   }
   return location == AppRoutes.signIn ? null : AppRoutes.signIn;
 }
