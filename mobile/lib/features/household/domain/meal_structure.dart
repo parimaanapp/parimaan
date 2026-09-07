@@ -32,17 +32,26 @@ enum MealSlot {
   };
 }
 
-/// How many slots of each type a lunch may hold.
+/// How many slots of each type one meal (Lunch or Dinner) may hold.
 ///
-/// ## Why lunch only
+/// ## Why the name still says "Lunch"
 ///
-/// `mealStructure` is an `AWSJSON` map keyed by meal type, so it *could*
-/// carry `breakfast`, `lunch`, `snacks` and `dinner` at once. Wireframe screen
-/// 2.3 configures lunch and says so in its own italic footnote — *"Dinner uses
-/// the same structure — edit separately later."* Silently writing a `dinner`
-/// key here would contradict the copy on the screen and quietly overwrite a
-/// value the user believes they have not touched yet, so [toJson] emits
-/// exactly one key.
+/// `mealStructure` is an `AWSJSON` map keyed by meal type, so it *could* carry
+/// `breakfast`, `lunch`, `snacks` and `dinner` at once. Wireframe screen 2.3
+/// originally configured lunch only, which is where this class's name comes
+/// from — but the counts themselves (`carb`/`sabziDal`/`accompaniment`) are
+/// not lunch-specific, and W13 S2 (`E2E_MVP_PLAN.md` §19.3 "S2") reuses this
+/// exact shape for Dinner too, via `MealStructureScreen`'s `mealType`
+/// parameter. Renaming the class was judged a larger, unrequested diff than
+/// keeping the name and generalising [toJson]/[toWireJson] to take the meal
+/// type as a parameter — the caller (`HouseholdSettingsPatch.mealStructure`)
+/// always supplies it explicitly, so a patch built for Dinner can never emit
+/// a `lunch` key by accident.
+///
+/// Breakfast and Snacks are deliberately never valid callers of [toJson] —
+/// they are single-item meals with no per-role structure anywhere in this
+/// system (`api/src/domain/mealStructure.ts`'s `SINGLE_ITEM_MEAL_SLOTS`), and
+/// nothing in this codebase constructs a structure screen for either.
 ///
 /// Immutable: [withCount] returns a new value rather than mutating.
 class LunchMealStructure {
@@ -93,20 +102,28 @@ class LunchMealStructure {
   }
 
   /// The decoded `mealStructure` document: one meal-type key, three slot keys.
-  Map<String, Object?> toJson() => <String, Object?>{
-    MealType.lunch.wireValue: <String, Object?>{
-      MealSlot.carb.wireKey: carb,
-      MealSlot.sabziDal.wireKey: sabziDal,
-      MealSlot.accompaniment.wireKey: accompaniment,
-    },
-  };
+  ///
+  /// [mealType] defaults to [MealType.lunch] so every existing call site
+  /// (the create wizard's Lunch step, and every test written before W13 S2)
+  /// keeps emitting exactly what it always has. A caller editing Dinner
+  /// passes [MealType.dinner] explicitly — see
+  /// `HouseholdSettingsPatch.mealStructure`.
+  Map<String, Object?> toJson([MealType mealType = MealType.lunch]) =>
+      <String, Object?>{
+        mealType.wireValue: <String, Object?>{
+          MealSlot.carb.wireKey: carb,
+          MealSlot.sabziDal.wireKey: sabziDal,
+          MealSlot.accompaniment.wireKey: accompaniment,
+        },
+      };
 
   /// [toJson] as the JSON **string** `AWSJSON` actually is on the wire.
   ///
   /// See `build.yaml`'s `type_overrides` note and
   /// `api/src/mappers/household.ts`: this scalar is `JSON.stringify`'d in both
   /// directions, never a nested object.
-  String toWireJson() => jsonEncode(toJson());
+  String toWireJson([MealType mealType = MealType.lunch]) =>
+      jsonEncode(toJson(mealType));
 
   @override
   String toString() =>

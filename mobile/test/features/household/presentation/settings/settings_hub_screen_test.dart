@@ -43,9 +43,14 @@ void main() {
       expect(find.text('Kulkarni Kitchen'), findsOne);
       expect(find.text('Members (4)'), findsOne);
       expect(find.text('Meals to plan'), findsOne);
-      expect(find.text('Meal structure'), findsOne);
+      expect(find.text('Lunch structure'), findsOne);
+      expect(find.text('Dinner structure'), findsOne);
+      expect(find.text('Meal structure'), findsNothing);
       expect(find.text('Cuisine preferences'), findsOne);
 
+      // The extra "Meals to plan" (W13 S3) and "Dinner structure" (W13 S2)
+      // rows push Dietary/Allergens below the fold that used to hold them
+      // without scrolling.
       await _reveal(tester, SettingsHubScreen.allergensRowKey);
       expect(find.text('Dietary tags'), findsOne);
       expect(find.text('Allergens & skip list'), findsOne);
@@ -78,8 +83,12 @@ void main() {
             '/household/household-1/settings/meals',
           ),
           (
-            SettingsHubScreen.mealStructureRowKey,
-            '/household/household-1/settings/meal-structure',
+            SettingsHubScreen.lunchStructureRowKey,
+            '/household/household-1/settings/meal-structure/lunch',
+          ),
+          (
+            SettingsHubScreen.dinnerStructureRowKey,
+            '/household/household-1/settings/meal-structure/dinner',
           ),
           (
             SettingsHubScreen.cuisineRowKey,

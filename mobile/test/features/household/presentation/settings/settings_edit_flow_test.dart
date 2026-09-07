@@ -22,7 +22,9 @@ import '../../../../support/household_route_harness.dart';
 
 const String _settingsRoute = '/household/household-1/settings';
 const String _mealStructureRoute =
-    '/household/household-1/settings/meal-structure';
+    '/household/household-1/settings/meal-structure/lunch';
+const String _dinnerStructureRoute =
+    '/household/household-1/settings/meal-structure/dinner';
 const String _dietaryRoute = '/household/household-1/settings/dietary';
 const String _mealsRoute = '/household/household-1/settings/meals';
 
@@ -176,6 +178,11 @@ void main() {
         // step" into a whole-settings overwrite.
         expect(patch.fieldCount, 1);
         expect(patch.mealStructureJson, isNotNull);
+        // RED test #3 (W13 S2): saving from the Lunch screen still carries
+        // only `lunch` — the wizard's own path, unchanged. This is the direct
+        // regression test against the shared-screen change.
+        expect(patch.mealStructureJson, contains('"lunch"'));
+        expect(patch.mealStructureJson, isNot(contains('"dinner"')));
 
         expect(location(harness.router), _settingsRoute);
       },
@@ -358,4 +365,129 @@ void main() {
       );
     },
   );
+
+  group('the Dinner structure row (W13 S2)', () {
+    testWidgets(
+      // RED test #1: the screen opened for Dinner shows Dinner's stored
+      // counts, not Lunch's.
+      'the screen shows the stored Dinner structure, not Lunch\'s',
+      (WidgetTester tester) async {
+        final HouseholdSettings distinguishingSettings = HouseholdSettings(
+          householdId: testHouseholdWithMembers.settings.householdId,
+          mealsEnabled: testHouseholdWithMembers.settings.mealsEnabled,
+          // Lunch and Dinner deliberately hold *different* counts, so a
+          // screen that silently read Lunch instead of Dinner fails loudly
+          // rather than by coincidence matching defaults.
+          mealStructureJson:
+              '{"lunch":{"carb":4,"sabzi_dal":3,"accompaniment":2},'
+              '"dinner":{"carb":6,"sabzi_dal":5,"accompaniment":1}}',
+          cuisineTier1: testHouseholdWithMembers.settings.cuisineTier1,
+          cuisineTier2WeightsJson:
+              testHouseholdWithMembers.settings.cuisineTier2WeightsJson,
+          dietaryTags: testHouseholdWithMembers.settings.dietaryTags,
+          allergens: testHouseholdWithMembers.settings.allergens,
+          skipIngredients: testHouseholdWithMembers.settings.skipIngredients,
+        );
+        final Household stored = Household(
+          id: testHouseholdWithMembers.id,
+          name: testHouseholdWithMembers.name,
+          inviteCode: testHouseholdWithMembers.inviteCode,
+          primaryUserId: testHouseholdWithMembers.primaryUserId,
+          subscriptionStatus: testHouseholdWithMembers.subscriptionStatus,
+          settings: distinguishingSettings,
+          members: testHouseholdWithMembers.members,
+        );
+
+        await pumpHouseholdRoute(
+          tester,
+          _dinnerStructureRoute,
+          repository: FakeHouseholdRepository(
+            result: testHousehold,
+            fetchResult: stored,
+          ),
+        );
+
+        expect(find.text('Dinner structure'), findsOne);
+        Text valueText(MealSlot slot) =>
+            tester.widget<Text>(find.byKey(SlotStepper.valueKey(slot)));
+        expect(valueText(MealSlot.carb).data, '6');
+        expect(valueText(MealSlot.sabziDal).data, '5');
+        expect(valueText(MealSlot.accompaniment).data, '1');
+      },
+    );
+
+    testWidgets(
+      // RED test #2: saving from the Dinner screen submits a patch whose
+      // `mealStructure` carries only the `dinner` key.
+      'Save sends a patch whose mealStructure carries only the dinner key',
+      (WidgetTester tester) async {
+        final HouseholdHarness harness = await pumpHouseholdRoute(
+          tester,
+          _dinnerStructureRoute,
+        );
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(harness.repository.settingsCalls, hasLength(1));
+        final HouseholdSettingsPatch patch =
+            harness.repository.settingsCalls.single.patch;
+        expect(patch.fieldCount, 1);
+        expect(patch.mealStructureJson, contains('"dinner"'));
+        expect(patch.mealStructureJson, isNot(contains('"lunch"')));
+
+        expect(location(harness.router), _settingsRoute);
+      },
+    );
+
+    testWidgets('the step indicator and Continue label are absent, as with '
+        'every other edit row', (WidgetTester tester) async {
+      await pumpHouseholdRoute(tester, _dinnerStructureRoute);
+
+      expect(find.byKey(WizardStepScaffold.stepIndicatorKey), findsNothing);
+      expect(find.text('Save'), findsOne);
+    });
+  });
+
+  group('an invalid or missing :mealType segment (W13 S2)', () {
+    // RED test #6: no route can reach this screen without a meal type — a
+    // missing/invalid segment renders the router's existing error state
+    // (matching `router.dart`'s `_householdId` fallback discipline), not a
+    // silent default to Lunch.
+    for (final String badRoute in <String>[
+      '/household/household-1/settings/meal-structure/breakfast',
+      '/household/household-1/settings/meal-structure/snacks',
+      '/household/household-1/settings/meal-structure/not-a-meal',
+      // The bare path — no :mealType segment at all, e.g. an old bookmark
+      // from before this route grew the segment. go_router won't match
+      // this against the segmented pattern; it needs its own route to
+      // reach the same honest error state rather than a generic
+      // "no route" page.
+      '/household/household-1/settings/meal-structure',
+    ]) {
+      testWidgets('"$badRoute" renders the honest error state, not Lunch', (
+        WidgetTester tester,
+      ) async {
+        await pumpHouseholdRoute(tester, badRoute);
+
+        expect(find.text('Could not open this screen'), findsOne);
+        expect(find.text('Lunch structure'), findsNothing);
+        expect(find.text('Dinner structure'), findsNothing);
+      });
+    }
+
+    testWidgets('"Back to settings" on the error state returns to the hub', (
+      WidgetTester tester,
+    ) async {
+      final HouseholdHarness harness = await pumpHouseholdRoute(
+        tester,
+        '/household/household-1/settings/meal-structure/not-a-meal',
+      );
+
+      await tester.tap(find.text('Back to settings'));
+      await tester.pumpAndSettle();
+
+      expect(location(harness.router), _settingsRoute);
+    });
+  });
 }

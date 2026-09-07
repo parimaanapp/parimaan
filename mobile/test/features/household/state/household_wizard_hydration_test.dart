@@ -61,6 +61,44 @@ void main() {
       );
     });
 
+    test(
+      'decodes the dinner structure from the same AWSJSON blob, '
+      'independently of lunch (W13 S2)',
+      () {
+        final HouseholdWizardData data = wizardDataFromHousehold(
+          _withSettings(
+            _settings(
+              mealStructureJson:
+                  '{"lunch":{"carb":3,"sabzi_dal":1,"accompaniment":2},'
+                  '"dinner":{"carb":6,"sabzi_dal":5,"accompaniment":4}}',
+            ),
+          ),
+        );
+
+        expect(
+          data.dinnerStructure,
+          const LunchMealStructure(carb: 6, sabziDal: 5, accompaniment: 4),
+        );
+        expect(
+          data.lunchStructure,
+          const LunchMealStructure(carb: 3, sabziDal: 1, accompaniment: 2),
+          reason: 'decoding dinner must not disturb the lunch decode',
+        );
+      },
+    );
+
+    test(
+      'a document with no dinner key defaults dinnerStructure, leaving '
+      'lunchStructure decoded normally',
+      () {
+        final HouseholdWizardData data = wizardDataFromHousehold(
+          _withSettings(_settings()),
+        );
+
+        expect(data.dinnerStructure, LunchMealStructure.defaults);
+      },
+    );
+
     test('decodes the cuisine regions and their bias', () {
       final HouseholdWizardData data = wizardDataFromHousehold(
         _withSettings(_settings()),

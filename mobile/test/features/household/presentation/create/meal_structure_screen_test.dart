@@ -42,7 +42,9 @@ void main() {
     ) async {
       await _pump(tester);
 
-      expect(find.text(MealStructureScreen.heading), findsOne);
+      // The create wizard's step 2/4 configures Lunch only (D3) — the
+      // heading is now derived from `mealType`, no longer a static const.
+      expect(find.text('Lunch structure'), findsOne);
       expect(find.text(MealStructureScreen.hint), findsOne);
       expect(find.text(MealStructureScreen.stepIndicator), findsOne);
       expect(find.text(MealStructureScreen.dinnerNote), findsOne);

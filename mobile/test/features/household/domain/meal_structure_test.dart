@@ -145,6 +145,47 @@ void main() {
     });
   });
 
+  group('LunchMealStructure serialization — explicit meal type (W13 S2)', () {
+    test('toJson(MealType.dinner) nests under the dinner key, not lunch', () {
+      expect(LunchMealStructure.defaults.toJson(MealType.dinner), <String, Object?>{
+        'dinner': <String, Object?>{
+          'carb': 2,
+          'sabzi_dal': 2,
+          'accompaniment': 1,
+        },
+      });
+    });
+
+    test('carries no lunch key when serialized for dinner', () {
+      expect(
+        LunchMealStructure.defaults.toJson(MealType.dinner).keys,
+        <String>['dinner'],
+      );
+    });
+
+    test('toWireJson(MealType.dinner) is a JSON string keyed dinner', () {
+      final String wire = LunchMealStructure.defaults.toWireJson(
+        MealType.dinner,
+      );
+
+      expect(jsonDecode(wire), <String, Object?>{
+        'dinner': <String, Object?>{
+          'carb': 2,
+          'sabzi_dal': 2,
+          'accompaniment': 1,
+        },
+      });
+    });
+
+    test('the default (no argument) call is unchanged — still lunch', () {
+      expect(LunchMealStructure.defaults.toJson().keys, <String>['lunch']);
+      expect(
+        jsonDecode(LunchMealStructure.defaults.toWireJson()),
+        jsonDecode(LunchMealStructure.defaults.toWireJson(MealType.lunch)),
+      );
+    });
+  });
+
   group('LunchMealStructure value semantics', () {
     test('equal counts compare equal and hash equal', () {
       const LunchMealStructure a = LunchMealStructure(

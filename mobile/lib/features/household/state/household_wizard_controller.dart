@@ -115,17 +115,33 @@ class HouseholdWizardController extends AsyncNotifier<HouseholdWizardData> {
     await _submit(HouseholdSettingsPatch.meals(draft.mealsEnabled));
   }
 
-  // ── Screen 2.3 — lunch structure ──────────────────────────────────────────
+  // ── Screen 2.3 — meal structure (Lunch in the wizard, Lunch or Dinner from
+  //    Settings — W13 S2, `MealStructureScreen`'s `mealType` parameter) ─────
 
-  void setSlotCount(MealSlot slot, int count) => _updateDraft(
-    (HouseholdWizardData d) =>
-        d.copyWith(lunchStructure: d.lunchStructure.withCount(slot, count)),
-  );
+  /// Updates one slot's count within [mealType]'s structure, leaving the
+  /// other meal type's structure — and the other two slots of this one —
+  /// untouched.
+  void setSlotCount(MealType mealType, MealSlot slot, int count) =>
+      _updateDraft(
+        (HouseholdWizardData d) => d.copyWithStructure(
+          mealType,
+          d.structureFor(mealType).withCount(slot, count),
+        ),
+      );
 
-  Future<void> submitMealStructure() async {
+  /// Sends a patch carrying only [mealType]'s key — never both, even though
+  /// the draft holds both structures. See `HouseholdSettingsPatch.mealStructure`
+  /// and W13 S1's server-side merge, which is what makes this safe for the
+  /// meal type *not* being submitted.
+  Future<void> submitMealStructure(MealType mealType) async {
     final HouseholdWizardData? draft = _draft;
     if (draft == null) return;
-    await _submit(HouseholdSettingsPatch.lunchStructure(draft.lunchStructure));
+    await _submit(
+      HouseholdSettingsPatch.mealStructure(
+        mealType,
+        draft.structureFor(mealType),
+      ),
+    );
   }
 
   // ── Screen 2.4 — cuisine regions ──────────────────────────────────────────

@@ -38,7 +38,14 @@ HouseholdWizardData wizardDataFromHousehold(Household household) {
   return HouseholdWizardData(
     household: household,
     mealsEnabled: _decodeMeals(settings.mealsEnabled),
-    lunchStructure: _decodeLunchStructure(settings.mealStructureJson),
+    lunchStructure: _decodeMealStructure(
+      settings.mealStructureJson,
+      MealType.lunch,
+    ),
+    dinnerStructure: _decodeMealStructure(
+      settings.mealStructureJson,
+      MealType.dinner,
+    ),
     regions: _decodeRegions(settings.cuisineTier1),
     subCuisineWeights: _decodeWeights(
       settings.cuisineTier2WeightsJson,
@@ -82,26 +89,30 @@ Set<DietaryTag> _decodeDietaryTags(List<String> names) => names
     .nonNulls
     .toSet();
 
-/// Reads the `lunch` key out of the `mealStructure` document.
+/// Reads [mealType]'s key out of the `mealStructure` document, ignoring
+/// every other key.
 ///
-/// Only `lunch` — matching what `LunchMealStructure.toJson` writes and what
-/// wireframe screen 2.3 configures. A `dinner` key written by some later
-/// screen is left strictly alone rather than read into this type and
-/// round-tripped back as a lunch value.
-LunchMealStructure _decodeLunchStructure(String json) {
+/// Reading only the one requested key — never both at once, never "whichever
+/// is present" — is what keeps this decode symmetric with
+/// `LunchMealStructure.toJson`'s single-key encode (W13 S1's server-side
+/// merge is what makes editing one key safe for the other; this is the
+/// client-side half of the same discipline). A key belonging to a *different*
+/// meal type is left strictly alone rather than read into this value and
+/// round-tripped back under the wrong one.
+LunchMealStructure _decodeMealStructure(String json, MealType mealType) {
   final Object? decoded = _tryDecode(json);
   if (decoded is! Map<String, dynamic>) {
     return LunchMealStructure.defaults;
   }
 
-  final Object? lunch = decoded[MealType.lunch.wireValue];
-  if (lunch is! Map<String, dynamic>) {
+  final Object? entry = decoded[mealType.wireValue];
+  if (entry is! Map<String, dynamic>) {
     return LunchMealStructure.defaults;
   }
 
   LunchMealStructure structure = LunchMealStructure.defaults;
   for (final MealSlot slot in MealSlot.values) {
-    final Object? count = lunch[slot.wireKey];
+    final Object? count = entry[slot.wireKey];
     if (count is int) {
       // `withCount` clamps into the server's own `[0, 10]`.
       structure = structure.withCount(slot, count);

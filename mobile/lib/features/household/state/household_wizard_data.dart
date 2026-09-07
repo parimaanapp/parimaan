@@ -20,6 +20,7 @@ class HouseholdWizardData {
     this.household,
     Set<MealType>? mealsEnabled,
     this.lunchStructure = LunchMealStructure.defaults,
+    this.dinnerStructure = LunchMealStructure.defaults,
     Set<CuisineRegion>? regions,
     Map<String, CuisineBias>? subCuisineWeights,
     Set<DietaryTag>? dietaryTags,
@@ -52,7 +53,17 @@ class HouseholdWizardData {
   final Household? household;
 
   final Set<MealType> mealsEnabled;
+
+  /// Lunch's stepper counts — screen 2.3 in the create wizard, and the
+  /// "Lunch structure" Settings row (W13 S2).
   final LunchMealStructure lunchStructure;
+
+  /// Dinner's stepper counts — Settings-only until W13 S2 added a "Dinner
+  /// structure" row; the create wizard never edits this field (D3,
+  /// `E2E_MVP_PLAN.md` §19.2.3 — the wizard stays at three toggles and one
+  /// structure step).
+  final LunchMealStructure dinnerStructure;
+
   final Set<CuisineRegion> regions;
 
   /// Sub-cuisine key -> bias. Keys are always exactly the sub-cuisines of
@@ -73,10 +84,30 @@ class HouseholdWizardData {
   /// The sub-cuisine rows screen 2.5 renders, in taxonomy order.
   List<SubCuisine> get visibleSubCuisines => subCuisinesForRegions(regions);
 
+  /// [lunchStructure] or [dinnerStructure], selected by [mealType].
+  ///
+  /// Only [MealType.lunch] and [MealType.dinner] have a structure anywhere in
+  /// this system (D3, `E2E_MVP_PLAN.md` §19.2.3) — [MealSlot]-per-meal is
+  /// meaningless for Breakfast/Snacks, and no caller should ever ask this for
+  /// either. Falling back to [lunchStructure] rather than throwing keeps this
+  /// a total function; nothing in this codebase calls it with the other two.
+  LunchMealStructure structureFor(MealType mealType) =>
+      mealType == MealType.dinner ? dinnerStructure : lunchStructure;
+
+  /// A copy with [mealType]'s structure replaced by [structure], leaving the
+  /// other meal type's untouched. The write-side mirror of [structureFor].
+  HouseholdWizardData copyWithStructure(
+    MealType mealType,
+    LunchMealStructure structure,
+  ) => mealType == MealType.dinner
+      ? copyWith(dinnerStructure: structure)
+      : copyWith(lunchStructure: structure);
+
   HouseholdWizardData copyWith({
     Household? household,
     Set<MealType>? mealsEnabled,
     LunchMealStructure? lunchStructure,
+    LunchMealStructure? dinnerStructure,
     Set<CuisineRegion>? regions,
     Map<String, CuisineBias>? subCuisineWeights,
     Set<DietaryTag>? dietaryTags,
@@ -86,6 +117,7 @@ class HouseholdWizardData {
     household: household ?? this.household,
     mealsEnabled: mealsEnabled ?? this.mealsEnabled,
     lunchStructure: lunchStructure ?? this.lunchStructure,
+    dinnerStructure: dinnerStructure ?? this.dinnerStructure,
     regions: regions ?? this.regions,
     subCuisineWeights: subCuisineWeights ?? this.subCuisineWeights,
     dietaryTags: dietaryTags ?? this.dietaryTags,

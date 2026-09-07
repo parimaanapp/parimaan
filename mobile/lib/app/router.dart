@@ -7,6 +7,7 @@ import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/state/auth_controller.dart';
 import '../features/household/domain/household.dart';
+import '../features/household/domain/meal_type.dart';
 import '../features/household/presentation/create/cuisine_regions_screen.dart';
 import '../features/household/presentation/create/cuisine_sub_bias_screen.dart';
 import '../features/household/presentation/create/dietary_allergens_screen.dart';
@@ -133,8 +134,17 @@ abstract final class AppRoutes {
 
   /// The Settings rows that reuse the wizard's own screens in edit mode. See
   /// `presentation/create/wizard_flow.dart`.
+  ///
+  /// The meal-structure row's pattern carries a `:mealType` segment (W13 S2)
+  /// — there is no single "Meal structure" row any more, only "Lunch
+  /// structure" and "Dinner structure", so there is no default this pattern
+  /// could sensibly fall back to. A missing or unrecognised segment renders
+  /// `InvalidMealTypeScreen` (see [mealTypeParameter] and the route builder
+  /// in [goRouterProvider]) rather than silently choosing Lunch. The
+  /// meals-to-plan row (W13 S3) has no such segment — it offers all four
+  /// `MealType.values` in edit mode unconditionally, see [editMealsPattern].
   static const String editMealStructurePattern =
-      '/household/:householdId/settings/meal-structure';
+      '/household/:householdId/settings/meal-structure/:mealType';
   static const String editCuisinePattern =
       '/household/:householdId/settings/cuisine';
   static const String editCuisineBiasPattern =
@@ -151,6 +161,9 @@ abstract final class AppRoutes {
   /// The path parameter every settings route carries.
   static const String householdIdParameter = 'householdId';
 
+  /// The `:mealType` segment [editMealStructurePattern] carries (W13 S2).
+  static const String mealTypeParameter = 'mealType';
+
   static String settingsHub(String householdId) =>
       '/household/$householdId/settings';
   static String members(String householdId) =>
@@ -159,8 +172,12 @@ abstract final class AppRoutes {
       '/household/$householdId/settings/notifications';
   static String settingsAbout(String householdId) =>
       '/household/$householdId/settings/about';
-  static String editMealStructure(String householdId) =>
-      '/household/$householdId/settings/meal-structure';
+  /// Only [MealType.lunch] and [MealType.dinner] are valid — Breakfast and
+  /// Snacks have no structure screen (D3). The old single-argument
+  /// `editMealStructure(householdId)` was removed rather than kept as a
+  /// silently-Lunch alias — every caller now says which meal it means.
+  static String editMealStructure(String householdId, MealType mealType) =>
+      '/household/$householdId/settings/meal-structure/${mealType.wireValue}';
   static String editCuisine(String householdId) =>
       '/household/$householdId/settings/cuisine';
   static String editCuisineBias(String householdId) =>
@@ -501,8 +518,10 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       ),
       GoRoute(
         path: AppRoutes.createHouseholdStructure,
+        // The create wizard configures Lunch only (D3, §19.2.3) — Dinner is
+        // reachable exclusively through the Settings edit route below.
         builder: (BuildContext context, GoRouterState state) =>
-            const MealStructureScreen(),
+            const MealStructureScreen(mealType: MealType.lunch),
       ),
       GoRoute(
         path: AppRoutes.createHouseholdCuisine,
@@ -549,12 +568,30 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       // the draft from it. See `household_edit_entry.dart`.
       GoRoute(
         path: AppRoutes.editMealStructurePattern,
+        builder: (BuildContext context, GoRouterState state) {
+          final MealType? mealType = _structureMealType(state);
+          if (mealType == null) {
+            return InvalidMealTypeScreen(householdId: _householdId(state));
+          }
+          return HouseholdEditEntry(
+            householdId: _householdId(state),
+            builder: (WizardFlowContext flow) =>
+                MealStructureScreen(mealType: mealType, flow: flow),
+          );
+        },
+      ),
+      // The bare, segment-less path — the route this replaced, pre-W13-S2.
+      // go_router will not match a URL missing the `:mealType` segment
+      // against [AppRoutes.editMealStructurePattern] at all (it falls
+      // through to whatever unmatched route is registered), so an old
+      // bookmark or deep link to that path needs its own explicit route to
+      // reach the same honest [InvalidMealTypeScreen] every other invalid
+      // segment reaches — rather than a bare "no route" error page, and
+      // never a silent default to Lunch.
+      GoRoute(
+        path: '${AppRoutes.settingsHubPattern}/meal-structure',
         builder: (BuildContext context, GoRouterState state) =>
-            HouseholdEditEntry(
-              householdId: _householdId(state),
-              builder: (WizardFlowContext flow) =>
-                  MealStructureScreen(flow: flow),
-            ),
+            InvalidMealTypeScreen(householdId: _householdId(state)),
       ),
       GoRoute(
         path: AppRoutes.editCuisinePattern,
@@ -797,6 +834,27 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
 /// bad link into a redscreen.
 String _householdId(GoRouterState state) =>
     state.pathParameters[AppRoutes.householdIdParameter] ?? '';
+
+/// The `:mealType` segment of [AppRoutes.editMealStructurePattern], or `null`
+/// for a missing or unrecognised value.
+///
+/// Only [MealType.lunch] and [MealType.dinner] are valid destinations —
+/// Breakfast and Snacks have no structure screen at all (D3, §19.2.3) — so a
+/// segment naming either of those two is treated exactly like a segment this
+/// build has never heard of. `null` here, unlike [_householdId]'s empty-string
+/// fallback, is not passed on to build a widget: there is no round trip that
+/// could turn an invalid meal type into an honest server error the way a bad
+/// household id can, so the route builder renders `InvalidMealTypeScreen`
+/// directly instead of a silent default to Lunch.
+MealType? _structureMealType(GoRouterState state) {
+  final String raw = state.pathParameters[AppRoutes.mealTypeParameter] ?? '';
+  for (final MealType candidate in <MealType>[MealType.lunch, MealType.dinner]) {
+    if (candidate.wireValue == raw) {
+      return candidate;
+    }
+  }
+  return null;
+}
 
 /// The `householdId` query parameter both pantry add/edit routes carry —
 /// see `AppRoutes`' doc on why it travels as a query param rather than a
