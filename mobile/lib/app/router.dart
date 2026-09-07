@@ -131,8 +131,8 @@ abstract final class AppRoutes {
   static const String settingsAboutPattern =
       '/household/:householdId/settings/about';
 
-  /// The four Settings rows that reuse the wizard's own screens in edit mode.
-  /// See `presentation/create/wizard_flow.dart`.
+  /// The Settings rows that reuse the wizard's own screens in edit mode. See
+  /// `presentation/create/wizard_flow.dart`.
   static const String editMealStructurePattern =
       '/household/:householdId/settings/meal-structure';
   static const String editCuisinePattern =
@@ -141,6 +141,12 @@ abstract final class AppRoutes {
       '/household/:householdId/settings/cuisine-bias';
   static const String editDietaryPattern =
       '/household/:householdId/settings/dietary';
+
+  /// "Meals to plan" (W13 S3) — `WhichMealsScreen` in [WizardFlow.edit],
+  /// offering all four `MealType.values` rather than the create wizard's
+  /// three. See `meal_type.dart`'s `editMealTypes`.
+  static const String editMealsPattern =
+      '/household/:householdId/settings/meals';
 
   /// The path parameter every settings route carries.
   static const String householdIdParameter = 'householdId';
@@ -161,6 +167,8 @@ abstract final class AppRoutes {
       '/household/$householdId/settings/cuisine-bias';
   static String editDietary(String householdId) =>
       '/household/$householdId/settings/dietary';
+  static String editMeals(String householdId) =>
+      '/household/$householdId/settings/meals';
 
   static const String home = '/home';
 
@@ -536,7 +544,7 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) =>
             SettingsPlaceholderScreen.about(householdId: _householdId(state)),
       ),
-      // The four edit routes. Each is the *same widget* the create wizard
+      // The edit routes. Each is the *same widget* the create wizard
       // renders, wrapped in the entry point that loads the household and seeds
       // the draft from it. See `household_edit_entry.dart`.
       GoRoute(
@@ -573,6 +581,15 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
               householdId: _householdId(state),
               builder: (WizardFlowContext flow) =>
                   DietaryAllergensScreen(flow: flow),
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes.editMealsPattern,
+        builder: (BuildContext context, GoRouterState state) =>
+            HouseholdEditEntry(
+              householdId: _householdId(state),
+              builder: (WizardFlowContext flow) =>
+                  WhichMealsScreen(flow: flow),
             ),
       ),
       StatefulShellRoute.indexedStack(

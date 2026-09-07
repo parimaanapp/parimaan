@@ -184,6 +184,44 @@ void main() {
       );
     });
 
+    testWidgets(
+      'toggling every meal off and continuing surfaces the server '
+      '"at least one meal" VALIDATION error inline, unchanged',
+      (WidgetTester tester) async {
+        // No client-side guard stops an empty `mealsEnabled` submit — the
+        // screen relies on the server's own VALIDATION rejection and its
+        // existing error-rendering path, identically to any other server
+        // error. This RED test asserts that behaviour rather than adding a
+        // new one (E2E_MVP_PLAN.md §19.3 S3's RED list).
+        final subject = await _pump(
+          tester,
+          repository: FakeHouseholdRepository(
+            result: testHousehold,
+            settingsError: const ValidationError('mealsEnabled is invalid'),
+          ),
+        );
+
+        for (final MealType meal in wizardMealTypes) {
+          await tester.tap(find.byKey(WhichMealsScreen.toggleKey(meal)));
+          await tester.pumpAndSettle();
+        }
+        expect(
+          subject.container
+              .read(householdWizardControllerProvider)
+              .requireValue
+              .mealsEnabled,
+          isEmpty,
+        );
+
+        await tester.tap(find.byKey(WhichMealsScreen.continueButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(WizardStepScaffold.errorKey), findsOne);
+        expect(find.text('mealsEnabled is invalid'), findsOne);
+        expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);
+      },
+    );
+
     testWidgets('editing after a failure clears the stale message', (
       WidgetTester tester,
     ) async {

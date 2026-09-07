@@ -42,8 +42,11 @@ void main() {
 
       expect(find.text('Kulkarni Kitchen'), findsOne);
       expect(find.text('Members (4)'), findsOne);
+      expect(find.text('Meals to plan'), findsOne);
       expect(find.text('Meal structure'), findsOne);
       expect(find.text('Cuisine preferences'), findsOne);
+
+      await _reveal(tester, SettingsHubScreen.allergensRowKey);
       expect(find.text('Dietary tags'), findsOne);
       expect(find.text('Allergens & skip list'), findsOne);
 
@@ -65,11 +68,15 @@ void main() {
     });
 
     testWidgets(
-      'the four preference rows reach the wizard screens in edit mode',
+      'the preference rows reach the wizard screens in edit mode',
       (WidgetTester tester) async {
         // A list of records rather than a map: `Key` overrides `==`, so it
         // cannot be a const map key.
         const List<(Key, String)> expected = <(Key, String)>[
+          (
+            SettingsHubScreen.mealsRowKey,
+            '/household/household-1/settings/meals',
+          ),
           (
             SettingsHubScreen.mealStructureRowKey,
             '/household/household-1/settings/meal-structure',
@@ -96,6 +103,7 @@ void main() {
             _route,
           );
 
+          await _reveal(tester, key);
           await tester.tap(find.byKey(key));
           await tester.pumpAndSettle();
 
