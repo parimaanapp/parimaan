@@ -38,13 +38,16 @@ import 'settings_row.dart';
 /// So the two rows are mutually exclusive: every member sees exactly one of
 /// them, and it is the one that works for them.
 ///
-/// ## The four preference rows reuse the wizard's own screens
+/// ## The preference rows reuse the wizard's own screens
 ///
-/// "Meal structure", "Cuisine preferences", "Dietary tags" and "Allergens &
-/// skip list" navigate to the *same widgets* the create wizard uses, entered in
-/// [WizardFlow.edit]. See `presentation/create/wizard_flow.dart` for the
-/// adapter and for why "Dietary tags" and "Allergens & skip list" — two rows
-/// here — both land on the single screen 2.6 that owns both.
+/// "Meals to plan", "Meal structure", "Cuisine preferences", "Dietary tags"
+/// and "Allergens & skip list" navigate to the *same widgets* the create
+/// wizard uses, entered in [WizardFlow.edit]. See
+/// `presentation/create/wizard_flow.dart` for the adapter and for why
+/// "Dietary tags" and "Allergens & skip list" — two rows here — both land on
+/// the single screen 2.6 that owns both. "Meals to plan" (`W13 S3`) is the
+/// one row of the five whose wizard screen offers a *different* set of
+/// toggles in edit mode — see `WhichMealsScreen`'s doc.
 class SettingsHubScreen extends ConsumerWidget {
   const SettingsHubScreen({super.key, required this.householdId});
 
@@ -52,6 +55,7 @@ class SettingsHubScreen extends ConsumerWidget {
 
   static const Key householdRowKey = Key('settings-household');
   static const Key membersRowKey = Key('settings-members');
+  static const Key mealsRowKey = Key('settings-meals');
   static const Key mealStructureRowKey = Key('settings-meal-structure');
   static const Key cuisineRowKey = Key('settings-cuisine');
   static const Key dietaryRowKey = Key('settings-dietary');
@@ -182,6 +186,14 @@ class _HubBody extends ConsumerWidget {
           key: SettingsHubScreen.membersRowKey,
           label: 'Members (${household.members.length})',
           onTap: () => context.go(AppRoutes.members(household.id)),
+        ),
+        SettingsRow(
+          key: SettingsHubScreen.mealsRowKey,
+          label: 'Meals to plan',
+          // W13 S3 — the settings-edit path the wizard's three-toggle screen
+          // (`wizardMealTypes`) promised but never had. `WhichMealsScreen`
+          // offers all four `MealType.values` here, including Snacks.
+          onTap: () => context.go(AppRoutes.editMeals(household.id)),
         ),
         SettingsRow(
           key: SettingsHubScreen.mealStructureRowKey,

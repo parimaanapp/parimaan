@@ -55,13 +55,24 @@ enum MealType {
 /// server-side snacks default rather than preserving it. That is the correct
 /// reading of a screen whose copy is "Toggle on the meals you plan weekly":
 /// a meal the user was never shown is a meal they did not opt into. Snacks
-/// remains reachable through the Settings → Meal structure screen (wireframe
-/// 4.1), which is a later slice.
+/// is reachable through Settings → "Meals to plan" (`WhichMealsScreen` in
+/// [WizardFlow.edit], via [editMealTypes]), shipped in `W13 S3`.
 const List<MealType> wizardMealTypes = <MealType>[
   MealType.breakfast,
   MealType.lunch,
   MealType.dinner,
 ];
+
+/// The meals the Settings "Meals to plan" row offers — all four, including
+/// Snacks (`W13 S3`).
+///
+/// `WhichMealsScreen` renders [wizardMealTypes] in [WizardFlow.create] and
+/// this list in [WizardFlow.edit] — the flow context the screen already
+/// receives is what selects between them, so there is no second screen and
+/// no duplicated toggle widget. This is [MealType.values] itself rather than
+/// a hand-picked subset, on purpose: a fifth `MealType` added to the schema
+/// should reach Settings without anyone remembering to update this list.
+const List<MealType> editMealTypes = MealType.values;
 
 /// All three wizard meals start on, per wireframe screen 2.2.
 const Set<MealType> defaultMealsEnabled = <MealType>{
