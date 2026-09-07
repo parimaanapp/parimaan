@@ -9,8 +9,10 @@ import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../../household/domain/household.dart';
+import '../../household/domain/meal_type.dart';
 import '../../household/state/current_household_controller.dart';
 import '../domain/current_week.dart';
+import '../domain/meal_instance_plan.dart';
 import '../domain/meal_slot_plan.dart';
 import '../domain/menu.dart';
 import '../state/current_menu_controller.dart';
@@ -41,6 +43,20 @@ const List<String> weekdayNames = <String>[
 /// literal 7-column grid does not fit a phone width at any useful slot size;
 /// flagged here rather than presented as locked, same as every other
 /// undocumented-in-the-wireframe call this codebase makes explicitly.
+///
+/// **A second, later judgment call, same discipline:** each day's slots are
+/// grouped under one [MealInstanceHeader] row per meal instance —
+/// Breakfast, Lunch, Snacks, Dinner, in that fixed order — instead of the
+/// flat, undifferentiated slot list this screen originally rendered
+/// (E2E_MVP_PLAN.md §19.2.5 D5, W13 S5). Like the seven-stacked-days call
+/// above, no wireframe asset exists for this grouping — only the founder's
+/// own ASCII sketch — so the specific rendering (a header row + indented
+/// cards, inside the existing `_DaySection`) is this slice's own call,
+/// flagged rather than presented as locked. The grouping itself comes from
+/// `groupSlotsByMealInstance` (`domain/meal_instance_plan.dart`), which
+/// derives nothing new — it only partitions `plannedSlotsForDay`'s own
+/// output, so this screen still has exactly one place that decides *how
+/// many* slots exist per meal type.
 ///
 /// The "Plan" shell tab (S6) — no back button, same as `PantryListScreen`/
 /// `RecipesLibraryScreen`'s own tab-root `PTopBar`s (a tab is a peer of
@@ -248,22 +264,13 @@ class _DaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Each slot's 0-based position among every OTHER slot sharing its own
-    // `(mealType, slotRole)` triple, for `MealSlotCard.emptyKey`'s
-    // collision-free key. A running per-triple count keyed by a `Map`
-    // rather than a reset-on-change counter — deliberately NOT assuming
-    // `plannedSlotsForDay` emits same-triple slots contiguously, so this
-    // stays correct even if that function's own emission order ever
-    // changes (grouped/sorted differently, items interleaved across
-    // roles, ...).
-    final Map<String, int> countByTriple = <String, int>{};
-    final List<int> indexWithinTriple = <int>[];
-    for (final PlannedSlot slot in slots) {
-      final String tripleKey = '${slot.mealType.name}-${slot.slotRole.name}';
-      final int index = countByTriple[tripleKey] ?? 0;
-      indexWithinTriple.add(index);
-      countByTriple[tripleKey] = index + 1;
-    }
+    // `groupSlotsByMealInstance` derives nothing (domain/meal_instance_plan.dart's
+    // own doc) — it only partitions this already-computed `slots` list by
+    // meal type, preserving order and multiplicity exactly. A meal type
+    // absent from `mealsEnabled` never appears in `slots` in the first
+    // place, so it falls out of this call with no group and no header —
+    // no separate branch needed here for "meal not planned".
+    final List<MealInstanceGroup> groups = groupSlotsByMealInstance(slots);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.s4),
@@ -272,43 +279,125 @@ class _DaySection extends StatelessWidget {
         children: <Widget>[
           Text(dayName, style: AppTypography.title),
           const SizedBox(height: AppSpacing.s2),
-          if (slots.isEmpty)
+          if (groups.isEmpty)
             Text(
               'No meals configured for this day.',
               style: AppTypography.meta.copyWith(color: AppColors.inkMid),
             )
           else
-            ...List<Widget>.generate(
-              slots.length,
-              (int i) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-                child: MealSlotCard(
-                  slot: slots[i],
-                  dayOfWeek: dayOfWeek,
-                  slotIndex: indexWithinTriple[i],
-                  // A filled slot has no view/replace/remove destination
-                  // yet (meal_slot_card.dart's own doc) — routing it to
-                  // the SAME picker as an empty slot would silently let a
-                  // second recipe be added to an already-filled slot
-                  // (W10 S5's own review pass caught this). `null` here
-                  // renders that card non-interactive until a later slice
-                  // gives it a real destination, rather than a misleading
-                  // one now.
-                  onTap: slots[i].isFilled
-                      ? null
-                      : () => context.push(
-                          AppRoutes.recipePicker,
-                          extra: (
-                            dayOfWeek: dayOfWeek,
-                            mealSlot: slots[i].mealType.wireValue,
-                            slotRole: slots[i].slotRole,
-                          ),
-                        ),
-                ),
-              ),
-            ),
+            for (final MealInstanceGroup group in groups)
+              _MealInstanceSection(dayOfWeek: dayOfWeek, group: group),
         ],
       ),
     );
   }
+}
+
+/// One meal instance's worth of rendering inside a [_DaySection] — a
+/// [MealInstanceHeader] naming the meal, then that meal's own slot cards
+/// beneath it, in [MealInstanceGroup.slots]' own order (E2E_MVP_PLAN.md
+/// §19.2.5 D5, W13 S5).
+class _MealInstanceSection extends StatelessWidget {
+  const _MealInstanceSection({required this.dayOfWeek, required this.group});
+
+  final int dayOfWeek;
+  final MealInstanceGroup group;
+
+  @override
+  Widget build(BuildContext context) {
+    // Each slot's 0-based position among every OTHER slot in THIS group
+    // sharing its own `slotRole`, for `MealSlotCard.emptyKey`'s
+    // collision-free key. Grouping by `slotRole` alone (not the
+    // `mealType`-`slotRole` pair `_DaySection` used before this slice) is
+    // equivalent here — every slot in [group] already shares one
+    // `mealType` by construction — and stays correct however
+    // `plannedSlotsForDay` orders same-role slots, same "don't assume
+    // contiguous emission" reasoning as before.
+    final Map<String, int> countByRole = <String, int>{};
+    final List<int> indexWithinRole = <int>[];
+    for (final PlannedSlot slot in group.slots) {
+      final String roleKey = slot.slotRole.name;
+      final int index = countByRole[roleKey] ?? 0;
+      indexWithinRole.add(index);
+      countByRole[roleKey] = index + 1;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          MealInstanceHeader(dayOfWeek: dayOfWeek, mealType: group.mealType),
+          const SizedBox(height: AppSpacing.s1),
+          ...List<Widget>.generate(
+            group.slots.length,
+            (int i) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+              child: MealSlotCard(
+                slot: group.slots[i],
+                dayOfWeek: dayOfWeek,
+                slotIndex: indexWithinRole[i],
+                // A filled slot has no view/replace/remove destination
+                // yet (meal_slot_card.dart's own doc) — routing it to
+                // the SAME picker as an empty slot would silently let a
+                // second recipe be added to an already-filled slot
+                // (W10 S5's own review pass caught this). `null` here
+                // renders that card non-interactive until a later slice
+                // gives it a real destination, rather than a misleading
+                // one now.
+                onTap: group.slots[i].isFilled
+                    ? null
+                    : () => context.push(
+                        AppRoutes.recipePicker,
+                        extra: (
+                          dayOfWeek: dayOfWeek,
+                          mealSlot: group.slots[i].mealType.wireValue,
+                          slotRole: group.slots[i].slotRole,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A meal-instance header row inside [_DaySection] — one per
+/// [MealInstanceGroup] `groupSlotsByMealInstance` produces, naming *which*
+/// meal (Breakfast, Lunch, Snacks, Dinner) the cards beneath it belong to
+/// (E2E_MVP_PLAN.md §19.2.5 D5 — the founder's own restructuring ask, the
+/// reason this slice exists). Only [MealType]'s four real values ever
+/// reach this widget — [MealInstanceHeader] renders whatever
+/// [MealType.displayLabel] the caller hands it, and that enum has no
+/// Sweet/Drink member to hand it (Q18) — so "no Sweet/Drink header" is
+/// enforced by [MealType]'s own shape, not by a check here.
+///
+/// A small `StatelessWidget` of its own, not inlined into
+/// [_MealInstanceSection], so it has a stable [headerKey] a test can find
+/// directly, the same reason [MealSlotCard] exposes [MealSlotCard.filledKey]
+/// / [MealSlotCard.emptyKey] rather than leaving callers to match on text.
+class MealInstanceHeader extends StatelessWidget {
+  const MealInstanceHeader({
+    super.key,
+    required this.dayOfWeek,
+    required this.mealType,
+  });
+
+  final int dayOfWeek;
+  final MealType mealType;
+
+  static Key headerKey(int dayOfWeek, MealType mealType) =>
+      Key('meal-instance-header-$dayOfWeek-${mealType.wireValue}');
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    child: Text(
+      mealType.displayLabel,
+      key: headerKey(dayOfWeek, mealType),
+      style: AppTypography.bodyStrong.copyWith(color: AppColors.ink),
+    ),
+  );
 }
