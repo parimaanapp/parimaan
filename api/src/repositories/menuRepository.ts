@@ -458,6 +458,49 @@ export const findMenuItems = async (client: PoolClient, menuId: string): Promise
   });
 };
 
+/**
+ * `findMenuItems` narrowed to one `dayOfWeek` — `clearMenuDay`'s read
+ * half (W14 S8, E2E_MVP_PLAN.md §20.2.8) and `copyMenuDay`/`copyMenuWeek`'s
+ * source-day read, both of which only ever need one day's items, never the
+ * whole week's. Shares `findMenuItems`' identical hydration (batch
+ * `findRecipesByIds`, same defensive drop-if-recipe-missing posture) via a
+ * simple client-side filter rather than a second hand-written query — the
+ * per-menu item count is small enough (bounded by the same per-slot caps
+ * `addMenuItem` enforces) that filtering in memory costs nothing measurable
+ * and avoids a second SQL shape to keep in sync with `findMenuItems`' own.
+ */
+export const findMenuItemsForDay = async (
+  client: PoolClient,
+  menuId: string,
+  dayOfWeek: number,
+): Promise<MenuItemRow[]> => {
+  const items = await findMenuItems(client, menuId);
+  return items.filter((item) => item.dayOfWeek === dayOfWeek);
+};
+
+/**
+ * Batch-deletes `menu_items` by id, for `clearMenuDay`/`clearMenuWeek` (W14
+ * S8, E2E_MVP_PLAN.md §20.2.8) — the caller has already partitioned the
+ * candidate set into "clear" vs "preserve" (by `madeAt`) before calling
+ * this, but the `AND made_at IS NULL` clause below is belt-and-suspenders
+ * defense-in-depth against that partition ever drifting: a row that somehow
+ * slipped through with `madeAt` set is silently NOT deleted rather than
+ * deleted, the same fail-closed posture `deleteUnmadeMenuItems` already
+ * takes for `autoFillWeek`'s `overwrite: true` path. Returns the number of
+ * rows actually removed (which can be fewer than `ids.length` if a
+ * concurrent caller already removed one, or if the defense-in-depth clause
+ * above caught one) rather than assuming every id was deleted.
+ */
+export const deleteMenuItemsByIds = async (client: PoolClient, ids: readonly string[]): Promise<number> => {
+  if (ids.length === 0) {
+    return 0;
+  }
+  const result = await client.query(`DELETE FROM menu_items WHERE id = ANY($1::uuid[]) AND made_at IS NULL`, [
+    [...ids],
+  ]);
+  return result.rowCount ?? 0;
+};
+
 export interface RotationCandidateRow {
   id: string;
   role: string;

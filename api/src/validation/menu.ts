@@ -75,11 +75,19 @@ const recipeIdSchema = z.string().uuid('recipeId must be a valid UUID');
  * `dayOfWeek` mirrors `menu_items.day_of_week`'s own `CHECK (day_of_week
  * BETWEEN 0 AND 6)` — validated here too so an out-of-range value surfaces
  * as a typed `ValidationError` before it ever reaches that constraint as a
- * raw `pg` `23514` error.
+ * raw `pg` `23514` error. Shared by `menuItemInputSchema` below and W14
+ * S8's `clearMenuDay`/`copyMenuDay` argument schemas (E2E_MVP_PLAN.md
+ * §20.2.8) — one definition, not three independently-drifting copies.
  */
+const dayOfWeekSchema = z
+  .number()
+  .int()
+  .min(0, 'dayOfWeek must be between 0 and 6')
+  .max(6, 'dayOfWeek must be between 0 and 6');
+
 export const menuItemInputSchema = z.object({
   recipeId: recipeIdSchema,
-  dayOfWeek: z.number().int().min(0, 'dayOfWeek must be between 0 and 6').max(6, 'dayOfWeek must be between 0 and 6'),
+  dayOfWeek: dayOfWeekSchema,
   mealSlot: mealTypeSchema,
   slotRole: recipeRoleSchema,
   servingsOverride: z.number().int().positive('servingsOverride must be a positive integer').nullish(),
@@ -143,3 +151,53 @@ export const markMadeArgsSchema = z.object({
 });
 
 export type MarkMadeArgs = z.infer<typeof markMadeArgsSchema>;
+
+// ---------------------------------------------------------------------
+// W14 S8 (E2E_MVP_PLAN.md §20.2.8/§20.3) — copy/clear day-week. All four
+// mutations' arguments are REQUIRED (no `!`-free field in any of their
+// locked SDL signatures), so none of them exercises §11.5.5's "explicit
+// null on a nullable argument" regression class the way `addMenuItem`'s
+// `servingsOverride` or the various `*Patch` inputs do — noted here rather
+// than left as a silent gap, since the S8 RED list calls that convention
+// out explicitly and this is the file where a reader would expect to find
+// it addressed.
+// ---------------------------------------------------------------------
+
+/** `Mutation.clearMenuDay`'s arguments (W14 S8). */
+export const clearMenuDayArgsSchema = z.object({
+  menuId: menuIdSchema,
+  dayOfWeek: dayOfWeekSchema,
+});
+
+export type ClearMenuDayArgs = z.infer<typeof clearMenuDayArgsSchema>;
+
+/** `Mutation.clearMenuWeek`'s arguments (W14 S8). */
+export const clearMenuWeekArgsSchema = z.object({
+  menuId: menuIdSchema,
+});
+
+export type ClearMenuWeekArgs = z.infer<typeof clearMenuWeekArgsSchema>;
+
+/** `Mutation.copyMenuDay`'s arguments (W14 S8). */
+export const copyMenuDayArgsSchema = z.object({
+  menuId: menuIdSchema,
+  fromDay: dayOfWeekSchema,
+  toDay: dayOfWeekSchema,
+});
+
+export type CopyMenuDayArgs = z.infer<typeof copyMenuDayArgsSchema>;
+
+/**
+ * `Mutation.copyMenuWeek`'s arguments (W14 S8) — `fromMenuId`, not
+ * `fromWeekStartDate`: the SOURCE is an existing menu the caller already
+ * has an id for (typically the currently-open Weekly plan screen). The
+ * TARGET, by contrast, is `toWeekStartDate` — a week that may not have a
+ * menu yet at all (D8's whole point), so it can't be identified by an id
+ * that might not exist.
+ */
+export const copyMenuWeekArgsSchema = z.object({
+  fromMenuId: menuIdSchema,
+  toWeekStartDate: weekStartDateSchema,
+});
+
+export type CopyMenuWeekArgs = z.infer<typeof copyMenuWeekArgsSchema>;

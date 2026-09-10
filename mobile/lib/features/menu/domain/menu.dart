@@ -370,3 +370,67 @@ class AutoFillResult {
     const ListEquality<UnfilledSlot>().hash(unfilledSlots),
   );
 }
+
+/// `Mutation.clearMenuDay`/`clearMenuWeek`'s shared result (W14 S8,
+/// E2E_MVP_PLAN.md §20.2.8, D8). [clearedCount]/[preservedCount] are always
+/// reported together — a household always sees both how much was cleared
+/// AND how much survived because it was cooked (`MenuItem.madeAt` set),
+/// never just one number, matching [AutoFillResult]'s own
+/// never-a-silent-partial-result posture.
+class ClearMenuResult {
+  const ClearMenuResult({
+    required this.clearedCount,
+    required this.preservedCount,
+  });
+
+  final int clearedCount;
+  final int preservedCount;
+
+  @override
+  String toString() =>
+      'ClearMenuResult(clearedCount: $clearedCount, preservedCount: $preservedCount)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClearMenuResult &&
+          other.clearedCount == clearedCount &&
+          other.preservedCount == preservedCount;
+
+  @override
+  int get hashCode => Object.hash(clearedCount, preservedCount);
+}
+
+/// `Mutation.copyMenuDay`/`copyMenuWeek`'s shared result (W14 S8,
+/// E2E_MVP_PLAN.md §20.2.8, D8). [menu] is the TARGET menu post-copy — for
+/// `copyMenuDay` that's the same menu the caller passed in; for
+/// `copyMenuWeek` it's the (possibly freshly get-or-created) target week's
+/// own menu. [skippedCount] counts source items that didn't fit the
+/// target — never an error on its own, only an honestly-reported partial
+/// result, the same posture [AutoFillResult] already uses.
+class CopyMenuResult {
+  const CopyMenuResult({
+    required this.menu,
+    required this.copiedCount,
+    required this.skippedCount,
+  });
+
+  final Menu menu;
+  final int copiedCount;
+  final int skippedCount;
+
+  @override
+  String toString() =>
+      'CopyMenuResult(menu: $menu, copiedCount: $copiedCount, skippedCount: $skippedCount)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CopyMenuResult &&
+          other.menu == menu &&
+          other.copiedCount == copiedCount &&
+          other.skippedCount == skippedCount;
+
+  @override
+  int get hashCode => Object.hash(menu, copiedCount, skippedCount);
+}

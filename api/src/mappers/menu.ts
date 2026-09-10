@@ -85,3 +85,28 @@ export interface GraphQLAutoFillResult {
   filledCount: number;
   unfilledSlots: readonly GraphQLUnfilledSlot[];
 }
+
+/**
+ * W14 S8 (E2E_MVP_PLAN.md §20.2.8, D8) — `clearMenuDay`/`clearMenuWeek`'s
+ * shared return shape. `clearedCount`/`preservedCount` are always reported
+ * together, matching `AutoFillResult`'s own "never a silent partial result"
+ * posture: a household always sees both how much was cleared AND how much
+ * survived (because it was cooked), never just one number.
+ */
+export interface GraphQLClearMenuResult {
+  clearedCount: number;
+  preservedCount: number;
+}
+
+/**
+ * W14 S8 (E2E_MVP_PLAN.md §20.2.8, D8) — `copyMenuDay`/`copyMenuWeek`'s
+ * shared return shape. `menu` is the TARGET menu (post-copy) — for
+ * `copyMenuDay` that's the same `menuId` the caller passed in; for
+ * `copyMenuWeek` it's the (possibly freshly get-or-created) target week's
+ * own menu, carrying its OWN independent `mealConfigSnapshot`.
+ */
+export interface GraphQLCopyMenuResult {
+  menu: GraphQLMenu;
+  copiedCount: number;
+  skippedCount: number;
+}

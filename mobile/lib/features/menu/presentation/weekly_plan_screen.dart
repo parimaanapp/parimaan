@@ -16,7 +16,9 @@ import '../domain/meal_instance_plan.dart';
 import '../domain/meal_slot_plan.dart';
 import '../domain/menu.dart';
 import '../state/current_menu_controller.dart';
+import 'day_overflow_menu.dart';
 import 'meal_slot_card.dart';
+import 'week_overflow_menu.dart';
 
 /// The seven weekday names for `Menu.dayOfWeek: 0..6` — `0` is Monday, per
 /// this codebase's own migration/test precedent (`Menu.itemsForDay`'s own
@@ -85,6 +87,12 @@ class WeeklyPlanScreen extends ConsumerWidget {
   static const Key generateShoppingListButtonKey = Key(
     'weekly-plan-generate-shopping-list',
   );
+
+  /// The week-level Overflow action (W14 S8, E2E_MVP_PLAN.md §20.2.8/§20.3)
+  /// — opens `WeekOverflowMenu`'s "Clear week"/"Copy to next week" sheet.
+  /// See that widget's own doc for why this placement (next to the
+  /// existing week-scoped trailing actions) is a flagged judgment call.
+  static const Key weekOverflowButtonKey = Key('weekly-plan-week-overflow');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -165,6 +173,20 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
                 onPressed: () =>
                     context.push(AppRoutes.autoFillPreview, extra: menuKey),
               ),
+              PButton.icon(
+                key: WeeklyPlanScreen.weekOverflowButtonKey,
+                icon: Icons.more_vert,
+                semanticLabel: 'More week actions',
+                variant: PButtonVariant.ghost,
+                onPressed: menu.valueOrNull == null
+                    ? null
+                    : () => showModalBottomSheet<void>(
+                        context: context,
+                        backgroundColor: AppColors.paper,
+                        builder: (BuildContext context) =>
+                            WeekOverflowMenu(menuKey: menuKey),
+                      ),
+              ),
             ],
           ),
         ),
@@ -183,6 +205,7 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
               // sourced from a different place.
               settings: menuValue.mealConfigSettings,
               householdId: householdId,
+              menuKey: menuKey,
             ),
             _ when menu.hasError => Center(
               key: WeeklyPlanScreen.errorKey,
@@ -234,11 +257,13 @@ class _WeekBody extends StatelessWidget {
     required this.menu,
     required this.settings,
     required this.householdId,
+    required this.menuKey,
   });
 
   final Menu menu;
   final HouseholdSettings settings;
   final String householdId;
+  final MenuKey menuKey;
 
   @override
   Widget build(BuildContext context) => ListView.builder(
@@ -249,6 +274,7 @@ class _WeekBody extends StatelessWidget {
       dayName: weekdayNames[dayOfWeek],
       slots: plannedSlotsForDay(settings, menu.itemsForDay(dayOfWeek)),
       householdId: householdId,
+      menuKey: menuKey,
     ),
   );
 }
@@ -259,12 +285,20 @@ class _DaySection extends StatelessWidget {
     required this.dayName,
     required this.slots,
     required this.householdId,
+    required this.menuKey,
   });
 
   final int dayOfWeek;
   final String dayName;
   final List<PlannedSlot> slots;
   final String householdId;
+  final MenuKey menuKey;
+
+  /// Keyed per [dayOfWeek] so a widget test can find this exact day's
+  /// overflow trigger (W14 S8) — same `Key(...$suffix)` convention
+  /// `MealInstanceHeader.headerKey` already uses for a per-day/per-meal key.
+  static Key overflowButtonKey(int dayOfWeek) =>
+      Key('day-section-overflow-$dayOfWeek');
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +315,23 @@ class _DaySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(dayName, style: AppTypography.title),
+          Row(
+            children: <Widget>[
+              Expanded(child: Text(dayName, style: AppTypography.title)),
+              PButton.icon(
+                key: _DaySection.overflowButtonKey(dayOfWeek),
+                icon: Icons.more_horiz,
+                semanticLabel: 'More $dayName actions',
+                variant: PButtonVariant.ghost,
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  backgroundColor: AppColors.paper,
+                  builder: (BuildContext context) =>
+                      DayOverflowMenu(menuKey: menuKey, dayOfWeek: dayOfWeek),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.s2),
           if (groups.isEmpty)
             Text(

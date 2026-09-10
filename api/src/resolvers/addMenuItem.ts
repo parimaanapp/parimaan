@@ -59,8 +59,18 @@ import { withErrorHandling } from './withErrorHandling.js';
  * Lock ordering is byte-for-byte unchanged by W14 S3 — only the SOURCE of
  * `mealsEnabled`/`mealStructure` moved, not when or in what order anything
  * is acquired.
+ *
+ * Exported (W14 S8, E2E_MVP_PLAN.md §20.2.8) — `copyMenuDay`/`copyMenuWeek`
+ * reuse this EXACT function, unchanged, against the TARGET day's own menu
+ * row (its own `mealConfigSnapshot`), the same "re-check everything at the
+ * target, assume nothing from the source" posture D8 locks. A copy caller
+ * catches this function's `ConflictError`/`NotFoundError` and treats either
+ * as "this source item doesn't fit the target" (skip + count), rather than
+ * letting it propagate and abort the whole copy — see `copyMenuDay.ts`'s
+ * own comment for why `NotFoundError` is reachable there too (not just
+ * `ConflictError`).
  */
-const validateAddMenuItem = async (
+export const validateAddMenuItem = async (
   client: PoolClient,
   menu: MenuRow,
   input: MenuItemInput,

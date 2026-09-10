@@ -1,0 +1,10 @@
+# `Mutation.clearMenuDay` (W14 S8) — deletes every `MenuItem` on `dayOfWeek`
+# of `menuId`'s menu EXCEPT one with `madeAt` set. `clearedCount`/
+# `preservedCount` report both halves honestly — a household always sees
+# how much was cleared AND how much survived because it was cooked.
+mutation ClearMenuDay($menuId: ID!, $dayOfWeek: Int!) {
+  clearMenuDay(menuId: $menuId, dayOfWeek: $dayOfWeek) {
+    clearedCount
+    preservedCount
+  }
+}

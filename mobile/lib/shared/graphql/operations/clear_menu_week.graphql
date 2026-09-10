@@ -1,0 +1,9 @@
+# `Mutation.clearMenuWeek` (W14 S8) — `clearMenuDay` widened to every day of
+# `menuId`'s menu in one call. Identical "never delete a cooked item"
+# invariant, identical honest `clearedCount`/`preservedCount` reporting.
+mutation ClearMenuWeek($menuId: ID!) {
+  clearMenuWeek(menuId: $menuId) {
+    clearedCount
+    preservedCount
+  }
+}

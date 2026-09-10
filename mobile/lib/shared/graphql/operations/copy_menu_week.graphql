@@ -1,0 +1,16 @@
+#import "./menu_fields.graphql"
+
+# `Mutation.copyMenuWeek` (W14 S8) — copies every day of `fromMenuId`'s menu
+# onto the WEEK starting `toWeekStartDate`, get-or-creating that week's menu
+# via the same `createMenu` path if it doesn't exist yet. The target week
+# always gets its OWN independent snapshot, never a copy of the source
+# week's — the single most important invariant of this mutation.
+mutation CopyMenuWeek($fromMenuId: ID!, $toWeekStartDate: AWSDateTime!) {
+  copyMenuWeek(fromMenuId: $fromMenuId, toWeekStartDate: $toWeekStartDate) {
+    menu {
+      ...MenuFields
+    }
+    copiedCount
+    skippedCount
+  }
+}

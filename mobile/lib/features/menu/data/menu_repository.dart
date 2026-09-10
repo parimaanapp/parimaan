@@ -14,6 +14,18 @@ import '../../../shared/graphql/operations/__generated__/auto_fill_preview.var.g
 import '../../../shared/graphql/operations/__generated__/auto_fill_week.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/auto_fill_week.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/auto_fill_week.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/clear_menu_day.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/clear_menu_day.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/clear_menu_day.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/clear_menu_week.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/clear_menu_week.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/clear_menu_week.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/copy_menu_day.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/copy_menu_day.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/copy_menu_day.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/copy_menu_week.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/copy_menu_week.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/copy_menu_week.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/create_menu.var.gql.dart';
@@ -118,6 +130,35 @@ abstract interface class MenuRepository {
   /// `ConflictError`, matching `ShoppingListRepository.haveIt`'s own
   /// already-purchased rejection shape.
   Future<MenuItem> markMade(String menuItemId);
+
+  /// Deletes every `MenuItem` on [dayOfWeek] of [menuId]'s menu EXCEPT one
+  /// with `madeAt` set (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8). A household's
+  /// cooking history is never silently erased by this call — the returned
+  /// [ClearMenuResult] reports both how much was cleared and how much
+  /// survived, honestly.
+  Future<ClearMenuResult> clearMenuDay(String menuId, int dayOfWeek);
+
+  /// [clearMenuDay] widened to every day of [menuId]'s menu in one call
+  /// (W14 S8). Identical "never delete a cooked item" invariant.
+  Future<ClearMenuResult> clearMenuWeek(String menuId);
+
+  /// Copies every `MenuItem` on [fromDay] of [menuId]'s menu onto [toDay]
+  /// of the SAME menu (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8). Each source
+  /// item is re-validated against the target day's own config — one that
+  /// doesn't fit (a cap conflict, or a cooked target slot) is skipped and
+  /// counted in [CopyMenuResult.skippedCount], never silently dropped and
+  /// never an error that aborts the whole copy.
+  Future<CopyMenuResult> copyMenuDay(String menuId, int fromDay, int toDay);
+
+  /// Copies every day of [fromMenuId]'s menu onto the WEEK starting
+  /// [toWeekStartDate] (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8) —
+  /// get-or-creating that week's menu first if it doesn't exist yet. The
+  /// target week always gets its OWN independent config snapshot, never a
+  /// copy of the source week's.
+  Future<CopyMenuResult> copyMenuWeek(
+    String fromMenuId,
+    DateTime toWeekStartDate,
+  );
 }
 
 /// Ferry-backed [MenuRepository].
@@ -234,6 +275,78 @@ class FerryMenuRepository with FerryExecuteMixin implements MenuRepository {
 
     final GMarkMadeData data = await execute(request);
     return menuItemFromGraphQL(data.markMade);
+  }
+
+  @override
+  Future<ClearMenuResult> clearMenuDay(String menuId, int dayOfWeek) async {
+    final GClearMenuDayReq request = GClearMenuDayReq(
+      (GClearMenuDayReqBuilder b) => b
+        ..vars = (GClearMenuDayVarsBuilder()
+          ..menuId = menuId
+          ..dayOfWeek = dayOfWeek),
+    );
+
+    final GClearMenuDayData data = await execute(request);
+    return ClearMenuResult(
+      clearedCount: data.clearMenuDay.clearedCount,
+      preservedCount: data.clearMenuDay.preservedCount,
+    );
+  }
+
+  @override
+  Future<ClearMenuResult> clearMenuWeek(String menuId) async {
+    final GClearMenuWeekReq request = GClearMenuWeekReq(
+      (GClearMenuWeekReqBuilder b) =>
+          b..vars = (GClearMenuWeekVarsBuilder()..menuId = menuId),
+    );
+
+    final GClearMenuWeekData data = await execute(request);
+    return ClearMenuResult(
+      clearedCount: data.clearMenuWeek.clearedCount,
+      preservedCount: data.clearMenuWeek.preservedCount,
+    );
+  }
+
+  @override
+  Future<CopyMenuResult> copyMenuDay(
+    String menuId,
+    int fromDay,
+    int toDay,
+  ) async {
+    final GCopyMenuDayReq request = GCopyMenuDayReq(
+      (GCopyMenuDayReqBuilder b) => b
+        ..vars = (GCopyMenuDayVarsBuilder()
+          ..menuId = menuId
+          ..fromDay = fromDay
+          ..toDay = toDay),
+    );
+
+    final GCopyMenuDayData data = await execute(request);
+    return CopyMenuResult(
+      menu: menuFromGraphQL(data.copyMenuDay.menu),
+      copiedCount: data.copyMenuDay.copiedCount,
+      skippedCount: data.copyMenuDay.skippedCount,
+    );
+  }
+
+  @override
+  Future<CopyMenuResult> copyMenuWeek(
+    String fromMenuId,
+    DateTime toWeekStartDate,
+  ) async {
+    final GCopyMenuWeekReq request = GCopyMenuWeekReq(
+      (GCopyMenuWeekReqBuilder b) => b
+        ..vars = (GCopyMenuWeekVarsBuilder()
+          ..fromMenuId = fromMenuId
+          ..toWeekStartDate = toWeekStartDate),
+    );
+
+    final GCopyMenuWeekData data = await execute(request);
+    return CopyMenuResult(
+      menu: menuFromGraphQL(data.copyMenuWeek.menu),
+      copiedCount: data.copyMenuWeek.copiedCount,
+      skippedCount: data.copyMenuWeek.skippedCount,
+    );
   }
 }
 
