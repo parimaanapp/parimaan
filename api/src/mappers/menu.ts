@@ -1,4 +1,4 @@
-import type { MenuItemRow, MenuRow } from '../repositories/menuRepository.js';
+import type { MealConfigSnapshot, MenuItemRow, MenuRow } from '../repositories/menuRepository.js';
 import type { GraphQLRecipe } from './recipe.js';
 import { toGraphQLRecipe } from './recipe.js';
 
@@ -37,6 +37,16 @@ export interface GraphQLMenu {
    * shape.
    */
   weekStartDate: string;
+  /**
+   * `AWSJSON!` (W14 S2, D1/D4, E2E_MVP_PLAN.md §20.2.1/§20.2.4) — the
+   * household's `mealsEnabled`/`mealStructure` frozen at this menu's
+   * creation time, never updated after insert. Passed through byte-for-byte
+   * like `GraphQLSettings.mealStructure` (`mappers/household.ts`'s own
+   * comment on why: this is a Direct Lambda Resolver, and AppSync applies
+   * its own AWSJSON serialization to whatever the resolver returns — a
+   * manual re-stringify here would double-encode the wire value).
+   */
+  mealConfigSnapshot: MealConfigSnapshot;
   items: readonly GraphQLMenuItem[];
 }
 
@@ -44,6 +54,7 @@ export const toGraphQLMenu = (row: MenuRow, items: readonly MenuItemRow[]): Grap
   id: row.id,
   householdId: row.householdId,
   weekStartDate: `${row.weekStartDate}T00:00:00.000Z`,
+  mealConfigSnapshot: row.mealConfigSnapshot,
   items: items.map(toGraphQLMenuItem),
 });
 

@@ -249,4 +249,39 @@ describe('createMenu resolver (Mutation.createMenu)', () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.recipe.title).toBe('Rajma');
   });
+
+  // W14 S2 (E2E_MVP_PLAN.md §20.3 S2) — "Menu.mealConfigSnapshot is
+  // non-null in every query response," asserted at the resolver/GraphQL
+  // mapper boundary (menuRepository.test.ts covers the repository-level
+  // shape/immutability guarantees directly).
+  it('mealConfigSnapshot is present and non-null on the resolver response, both halves populated', async () => {
+    const owner = await createUser('sub-cm-owner-snapshot');
+    const householdId = await createHouseholdWithMembers(owner, 'CMS234');
+
+    const handler = createCreateMenuHandler(baseDeps);
+    const result = await handler(
+      buildEvent(householdId, '2026-09-07T00:00:00.000Z', 'sub-cm-owner-snapshot'),
+    );
+
+    expect(result.mealConfigSnapshot).toBeDefined();
+    expect(result.mealConfigSnapshot).not.toBeNull();
+    expect(Array.isArray(result.mealConfigSnapshot.mealsEnabled)).toBe(true);
+    expect(result.mealConfigSnapshot.mealsEnabled.length).toBeGreaterThan(0);
+    expect(typeof result.mealConfigSnapshot.mealStructure).toBe('object');
+    expect(typeof result.mealConfigSnapshot.snapshotAt).toBe('string');
+  });
+
+  it('mealConfigSnapshot stays present and non-null on the idempotent get-or-create response too', async () => {
+    const owner = await createUser('sub-cm-owner-snapshot-idem');
+    const householdId = await createHouseholdWithMembers(owner, 'CMSI234');
+
+    const handler = createCreateMenuHandler(baseDeps);
+    await handler(buildEvent(householdId, '2026-09-07T00:00:00.000Z', 'sub-cm-owner-snapshot-idem'));
+    const second = await handler(
+      buildEvent(householdId, '2026-09-07T00:00:00.000Z', 'sub-cm-owner-snapshot-idem'),
+    );
+
+    expect(second.mealConfigSnapshot).toBeDefined();
+    expect(second.mealConfigSnapshot).not.toBeNull();
+  });
 });
