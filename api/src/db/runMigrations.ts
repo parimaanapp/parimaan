@@ -62,18 +62,28 @@ const migrationsTable = 'pgmigrations';
  * SQL must pass it here. **Never pass `verbose: true` to this function's
  * underlying `runner()` call** against a real database — it would print
  * every statement's SQL text on success too, not just on failure.
+ *
+ * `count` caps how many pending migrations this call applies (or reverses),
+ * defaulting to `Infinity` (every existing caller's behaviour, unaffected).
+ * Added for `migrations.menuConfigSnapshot.test.ts`'s backfill test, which
+ * needs to insert a `menus` row under the pre-migration schema shape before
+ * the migration under test runs — the only way to do that against this
+ * runner's directory-of-files model is to stop partway through with an
+ * explicit count, insert, then call `runMigrations` again (count defaulting
+ * back to `Infinity`) to apply the rest.
  */
 export const runMigrations = async (
   databaseUrl: string,
   direction: MigrationDirection = 'up',
   migrationsDirOverride?: string,
   secretsToRedact: readonly string[] = [],
+  count: number = Infinity,
 ): Promise<RunMigrationResult> =>
   runner({
     databaseUrl,
     dir: migrationsDirOverride ?? migrationsDir,
     direction,
     migrationsTable,
-    count: Infinity,
+    count,
     logger: createRedactingLogger(secretsToRedact),
   });

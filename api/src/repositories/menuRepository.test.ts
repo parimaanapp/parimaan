@@ -6,7 +6,7 @@ import { startTestDatabase, truncateAll } from '../testing/postgres.js';
 import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from './userRepository.js';
-import { insertHousehold, insertMembership } from './householdRepository.js';
+import { insertDefaultSettings, insertHousehold, insertMembership } from './householdRepository.js';
 import {
   createMenu,
   deleteUnmadeMenuItems,
@@ -63,6 +63,14 @@ describe('menuRepository', () => {
         primaryUserId: owner.id,
       });
       await insertMembership(client, { householdId: household.id, userId: owner.id, role: 'primary' });
+      // W14 S1: `createMenu` now reads this household's CURRENT
+      // `household_settings` to populate `meal_config_snapshot` (D1/D3), so
+      // every household this test file creates needs a settings row —
+      // mirroring `createHousehold`'s own production transaction, which
+      // always calls `insertDefaultSettings` alongside `insertHousehold`
+      // (this raw two-call helper previously only needed the household
+      // itself, since nothing in this file read settings before now).
+      await insertDefaultSettings(client, household.id);
       return household.id;
     });
 

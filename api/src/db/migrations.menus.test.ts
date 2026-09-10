@@ -79,10 +79,22 @@ describe('menus and menu_items, once migrated', () => {
     return firstRow(result.rows);
   };
 
+  // `meal_config_snapshot` (W14 S1, `1788500000001_menu-config-snapshot.ts`)
+  // is `NOT NULL` with no default, so every direct `INSERT INTO menus` in
+  // this file must supply one — a fixed placeholder here since this file's
+  // own tests are about the `menus`/`menu_items` DDL and RLS shipped in
+  // `1788100000000_menus.ts`, not the snapshot's content (that lives in
+  // `migrations.menuConfigSnapshot.test.ts`).
+  const placeholderSnapshot = JSON.stringify({
+    mealsEnabled: ['breakfast', 'lunch', 'dinner'],
+    mealStructure: { lunch: { carb: 1, sabzi_dal: 2, accompaniment: 1 } },
+    snapshotAt: '2026-01-01T00:00:00.000Z',
+  });
+
   const insertMenu = async (householdId: string, weekStartDate = '2026-09-07'): Promise<{ id: string }> => {
     const result = await client.query<{ id: string }>(
-      `INSERT INTO menus (household_id, week_start_date) VALUES ($1, $2) RETURNING id`,
-      [householdId, weekStartDate],
+      `INSERT INTO menus (household_id, week_start_date, meal_config_snapshot) VALUES ($1, $2, $3) RETURNING id`,
+      [householdId, weekStartDate, placeholderSnapshot],
     );
     return firstRow(result.rows);
   };
@@ -272,9 +284,10 @@ describe('menus and menu_items, once migrated', () => {
     const asOutsider = await connectAsRlsProbe(ownerB.id);
     try {
       await expect(
-        asOutsider.query(`INSERT INTO menus (household_id, week_start_date) VALUES ($1, '2026-09-07')`, [
-          householdA.id,
-        ]),
+        asOutsider.query(
+          `INSERT INTO menus (household_id, week_start_date, meal_config_snapshot) VALUES ($1, '2026-09-07', $2)`,
+          [householdA.id, placeholderSnapshot],
+        ),
       ).rejects.toThrow(/row-level security/);
     } finally {
       await asOutsider.end();
@@ -413,8 +426,8 @@ describe('menus and menu_items, once migrated', () => {
     try {
       await appClient.query(`SELECT set_config('parimaan.user_id', $1, false)`, [owner.id]);
       const insertedMenu = await appClient.query<{ id: string }>(
-        `INSERT INTO menus (household_id, week_start_date) VALUES ($1, '2026-09-07') RETURNING id`,
-        [household.id],
+        `INSERT INTO menus (household_id, week_start_date, meal_config_snapshot) VALUES ($1, '2026-09-07', $2) RETURNING id`,
+        [household.id, placeholderSnapshot],
       );
       const menuId = firstRow(insertedMenu.rows).id;
 

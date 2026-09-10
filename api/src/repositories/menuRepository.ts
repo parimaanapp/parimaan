@@ -35,21 +35,57 @@ const mapMenuRow = (row: RawMenuRow): MenuRow => ({
  * has no `RETURNING` row on the conflicting branch, and this call always
  * needs the (possibly pre-existing) row back.
  */
+/**
+ * `meal_config_snapshot` (W14 S1, `1788500000001_menu-config-snapshot.ts`)
+ * is `NOT NULL` with no default, so `INSERT`ing a new row requires a value —
+ * computed here from `householdId`'s CURRENT `household_settings`, per D1/D3
+ * (E2E_MVP_PLAN.md §20.2.1/§20.2.3): "creating a menu reads live
+ * `household_settings` — that read IS the snapshot." Deliberately minimal:
+ * this INSERT-time computation is the only piece of D1/D3 the migration's
+ * own build depends on landing alongside it, so it lives here rather than
+ * leaving `createMenu` broken until W14 S2. S2 (§20.3) is still the slice
+ * that formalizes this properly — `Menu.mealConfigSnapshot` in the SDL, the
+ * mapper, and its own dedicated RED tests (snapshot matches settings at
+ * creation time, survives a later settings edit unchanged, no re-snapshot
+ * on the get-or-create branch below). The `ON CONFLICT ... DO UPDATE SET
+ * household_id = EXCLUDED.household_id` no-op branch already guarantees
+ * "never updated after insert" for this column too, unmodified — it was
+ * never in that `SET` clause and still isn't.
+ *
+ * The `SELECT ... FROM household_settings` join mirrors the migration's own
+ * backfill query exactly (same `jsonb_build_object` shape, same
+ * `snapshotAt` derivation) — the two are the same rule applied at two
+ * different times (D2 backfills what a row's household's settings are NOW,
+ * for rows that predate this column; this computes the same shape for a
+ * brand-new row, also NOW). If `householdId` has no `household_settings`
+ * row (should be unreachable — `insertDefaultSettings` runs inside
+ * `createHousehold`'s own transaction), the `SELECT` returns zero rows and
+ * this throws below rather than silently defaulting, the same fail-closed
+ * posture the migration's backfill guard uses.
+ */
 export const createMenu = async (
   client: PoolClient,
   householdId: string,
   weekStartDate: string,
 ): Promise<MenuRow> => {
   const result = await client.query<RawMenuRow>(
-    `INSERT INTO menus (household_id, week_start_date)
-     VALUES ($1, $2)
+    `INSERT INTO menus (household_id, week_start_date, meal_config_snapshot)
+     SELECT $1, $2, jsonb_build_object(
+       'mealsEnabled', household_settings.meals_enabled,
+       'mealStructure', household_settings.meal_structure,
+       'snapshotAt', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+     )
+     FROM household_settings
+     WHERE household_settings.household_id = $1
      ON CONFLICT (household_id, week_start_date) DO UPDATE SET household_id = EXCLUDED.household_id
      RETURNING *`,
     [householdId, weekStartDate],
   );
   const row = result.rows[0];
   if (row === undefined) {
-    throw new Error('createMenu: expected a returned row.');
+    throw new Error(
+      'createMenu: expected a returned row (no household_settings row for this household?).',
+    );
   }
   return mapMenuRow(row);
 };
