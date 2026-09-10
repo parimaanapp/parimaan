@@ -6,7 +6,13 @@ import { startTestDatabase, truncateAll } from '../testing/postgres.js';
 import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from './userRepository.js';
-import { insertDefaultSettings, insertHousehold, insertMembership } from './householdRepository.js';
+import {
+  insertDefaultSettings,
+  insertHousehold,
+  insertMembership,
+  updateSettingsPartial,
+} from './householdRepository.js';
+import { DEFAULT_MEALS_ENABLED, DEFAULT_MEAL_STRUCTURE } from '../domain/householdDefaults.js';
 import {
   createMenu,
   deleteUnmadeMenuItems,
@@ -174,6 +180,108 @@ describe('menuRepository', () => {
       const first = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
       const second = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-14'));
       expect(second.id).not.toBe(first.id);
+    });
+
+    // W14 S2 (E2E_MVP_PLAN.md §20.3 "S2 — Snapshot written at menu
+    // creation") RED tests — S1 already wires the INSERT-time computation
+    // (menuRepository.ts's own doc comment above `createMenu`); these are
+    // the dedicated tests S1 explicitly left for this slice.
+    it('writes a meal_config_snapshot matching the household settings at creation time, both halves present', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const customMealsEnabled = ['breakfast', 'lunch', 'dinner', 'snacks'];
+      const customMealStructure = {
+        lunch: { carb: 2, sabzi_dal: 3, accompaniment: 1 },
+        dinner: { carb: 1, sabzi_dal: 2, accompaniment: 1 },
+      };
+      await asUser(owner.id, (client) =>
+        updateSettingsPartial(client, householdId, {
+          mealsEnabled: customMealsEnabled,
+          mealStructure: customMealStructure,
+        }),
+      );
+
+      const beforeCreate = new Date();
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+      const afterCreate = new Date();
+
+      expect(menu.mealConfigSnapshot.mealsEnabled).toEqual(customMealsEnabled);
+      expect(menu.mealConfigSnapshot.mealStructure).toEqual(customMealStructure);
+      const snapshotAtDate = new Date(menu.mealConfigSnapshot.snapshotAt);
+      expect(Number.isNaN(snapshotAtDate.getTime())).toBe(false);
+      expect(snapshotAtDate.getTime()).toBeGreaterThanOrEqual(beforeCreate.getTime() - 5000);
+      expect(snapshotAtDate.getTime()).toBeLessThanOrEqual(afterCreate.getTime() + 5000);
+    });
+
+    it("editing the household's settings AFTER menu creation leaves the already-created menu's snapshot byte-identical", async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+      const originalSnapshot = menu.mealConfigSnapshot;
+
+      await asUser(owner.id, (client) =>
+        updateSettingsPartial(client, householdId, {
+          mealsEnabled: ['breakfast'],
+          mealStructure: { lunch: { carb: 99, sabzi_dal: 99, accompaniment: 99 } },
+        }),
+      );
+
+      const refetched = await asUser(owner.id, (client) => findMenuByWeek(client, householdId, '2026-09-07'));
+      expect(refetched?.mealConfigSnapshot).toEqual(originalSnapshot);
+      // Not just "still has both halves" — genuinely untouched by the edit
+      // that happened after creation (the week's central guarantee, D1).
+      expect(refetched?.mealConfigSnapshot.mealsEnabled).not.toEqual(['breakfast']);
+    });
+
+    it('a second createMenu call for the same (household, week) does NOT re-snapshot — regression test for "never updated after insert"', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const first = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+
+      // Change settings between the two calls so a re-snapshot (if it
+      // wrongly happened) would be observable.
+      await asUser(owner.id, (client) =>
+        updateSettingsPartial(client, householdId, { mealsEnabled: ['dinner'] }),
+      );
+
+      const second = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+
+      expect(second.id).toBe(first.id);
+      expect(second.mealConfigSnapshot).toEqual(first.mealConfigSnapshot);
+    });
+
+    it('a household with a malformed meal_structure document still produces a valid snapshot envelope', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      // "Malformed" per getMealSlotCap's own definition of the term: a
+      // non-object entry for a meal slot, which getMealSlotCap's defensive
+      // decode fails closed to a cap of 0 for at READ time. The snapshot
+      // envelope itself (mealsEnabled/mealStructure/snapshotAt all present,
+      // valid JSON) must still be produced — the decode staying defensive
+      // is S3's job at read time, not something this INSERT needs to fix.
+      const malformedMealStructure = { lunch: 'not-an-object', dinner: null };
+      await asUser(owner.id, (client) =>
+        updateSettingsPartial(client, householdId, { mealStructure: malformedMealStructure }),
+      );
+
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+
+      expect(menu.mealConfigSnapshot.mealsEnabled).toEqual(DEFAULT_MEALS_ENABLED);
+      expect(menu.mealConfigSnapshot.mealStructure).toEqual(malformedMealStructure);
+      expect(typeof menu.mealConfigSnapshot.snapshotAt).toBe('string');
+    });
+
+    it('defaults to the household defaults when settings have never been edited', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+
+      const menu = await asUser(owner.id, (client) => createMenu(client, householdId, '2026-09-07'));
+
+      expect(menu.mealConfigSnapshot.mealsEnabled).toEqual(DEFAULT_MEALS_ENABLED);
+      expect(menu.mealConfigSnapshot.mealStructure).toEqual(DEFAULT_MEAL_STRUCTURE);
     });
   });
 

@@ -3,23 +3,44 @@ import { toAwsDateString } from '../domain/pgDate.js';
 import type { RecipeRow } from './recipeRepository.js';
 import { findRecipesByIds } from './recipeRepository.js';
 
+/**
+ * `menus.meal_config_snapshot`'s decoded shape (W14 D1, E2E_MVP_PLAN.md
+ * §20.2.1) — `{"mealsEnabled": [...], "mealStructure": {...}, "snapshotAt":
+ * "<ISO timestamp>"}`, written once at `createMenu` time from the
+ * household's then-current `household_settings` and never updated after
+ * insert. This is `AWSJSON` end to end — no DB-level shape guarantee beyond
+ * "valid JSON" (same posture as `household_settings.meal_structure` itself,
+ * `getMealSlotCap`'s own comment) — so `mealStructure` here is typed as
+ * loosely as `SettingsRow.mealStructure` is, and any consumer that reads
+ * cap values out of it must go through `getMealSlotCap`'s defensive decode,
+ * never assume this shape.
+ */
+export interface MealConfigSnapshot {
+  mealsEnabled: readonly string[];
+  mealStructure: Record<string, unknown>;
+  snapshotAt: string;
+}
+
 export interface MenuRow {
   id: string;
   householdId: string;
   /** A plain calendar date — see `validation/menu.ts`'s own comment on why the wire type is `AWSDateTime` despite this. */
   weekStartDate: string;
+  mealConfigSnapshot: MealConfigSnapshot;
 }
 
 interface RawMenuRow {
   id: string;
   household_id: string;
   week_start_date: Date;
+  meal_config_snapshot: MealConfigSnapshot;
 }
 
 const mapMenuRow = (row: RawMenuRow): MenuRow => ({
   id: row.id,
   householdId: row.household_id,
   weekStartDate: toAwsDateString(row.week_start_date),
+  mealConfigSnapshot: row.meal_config_snapshot,
 });
 
 /**
@@ -40,17 +61,19 @@ const mapMenuRow = (row: RawMenuRow): MenuRow => ({
  * is `NOT NULL` with no default, so `INSERT`ing a new row requires a value —
  * computed here from `householdId`'s CURRENT `household_settings`, per D1/D3
  * (E2E_MVP_PLAN.md §20.2.1/§20.2.3): "creating a menu reads live
- * `household_settings` — that read IS the snapshot." Deliberately minimal:
- * this INSERT-time computation is the only piece of D1/D3 the migration's
- * own build depends on landing alongside it, so it lives here rather than
- * leaving `createMenu` broken until W14 S2. S2 (§20.3) is still the slice
- * that formalizes this properly — `Menu.mealConfigSnapshot` in the SDL, the
- * mapper, and its own dedicated RED tests (snapshot matches settings at
- * creation time, survives a later settings edit unchanged, no re-snapshot
- * on the get-or-create branch below). The `ON CONFLICT ... DO UPDATE SET
- * household_id = EXCLUDED.household_id` no-op branch already guarantees
- * "never updated after insert" for this column too, unmodified — it was
- * never in that `SET` clause and still isn't.
+ * `household_settings` — that read IS the snapshot." This is the ONLY write
+ * of this column anywhere in the codebase (W14 S2, §20.3) — formalized here
+ * with `MenuRow.mealConfigSnapshot` (above) now carrying the decoded value
+ * through to `Menu.mealConfigSnapshot: AWSJSON!` in the SDL (`mappers/menu.ts`).
+ * The `ON CONFLICT ... DO UPDATE SET household_id = EXCLUDED.household_id`
+ * no-op branch is what guarantees "never updated after insert" for this
+ * column: it was never in that `SET` clause, so a second `createMenu` call
+ * for the same `(household_id, week_start_date)` returns the original row's
+ * original snapshot untouched, even if `household_settings` has since
+ * changed — `menuRepository.test.ts`'s `createMenu` describe block asserts
+ * this directly (byte-identical snapshot after a later settings edit; no
+ * re-snapshot on the get-or-create branch), rather than leaving it as an
+ * inference from the SQL alone.
  *
  * The `SELECT ... FROM household_settings` join mirrors the migration's own
  * backfill query exactly (same `jsonb_build_object` shape, same
@@ -62,6 +85,15 @@ const mapMenuRow = (row: RawMenuRow): MenuRow => ({
  * `createHousehold`'s own transaction), the `SELECT` returns zero rows and
  * this throws below rather than silently defaulting, the same fail-closed
  * posture the migration's backfill guard uses.
+ *
+ * No defensive decoding happens at INSERT time — `jsonb_build_object` always
+ * produces a syntactically valid envelope (all three keys present) even
+ * when `household_settings.meal_structure` itself is a malformed/incomplete
+ * document (AWSJSON has no DB-level shape guarantee beyond "valid JSON",
+ * same posture `getMealSlotCap` already documents). The envelope is never
+ * invalid; only the *values inside* `mealStructure` can be malformed, and
+ * that is handled where it always has been — at read time, by
+ * `getMealSlotCap`'s fail-closed-to-zero decode (S3's job, not this one's).
  */
 export const createMenu = async (
   client: PoolClient,
