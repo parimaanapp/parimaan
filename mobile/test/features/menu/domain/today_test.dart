@@ -38,6 +38,7 @@ void main() {
             id: 'menu-1',
             householdId: 'household-1',
             weekStartDate: DateTime.utc(2026, 9, 7),
+            mealConfigSnapshot: '{}',
             items: <MenuItem>[
               for (int day = 0; day < 7; day++)
                 _item('item-$day', day, 'lunch'),
@@ -57,6 +58,7 @@ void main() {
         id: 'menu-1',
         householdId: 'household-1',
         weekStartDate: DateTime.utc(2026, 9, 7),
+        mealConfigSnapshot: '{}',
         items: <MenuItem>[
           _item('dinner-item', 0, 'dinner'),
           _item('breakfast-item', 0, 'breakfast'),
@@ -83,6 +85,7 @@ void main() {
         id: 'menu-1',
         householdId: 'household-1',
         weekStartDate: DateTime.utc(2026, 9, 7),
+        mealConfigSnapshot: '{}',
         items: const <MenuItem>[],
       );
 
@@ -101,6 +104,7 @@ void main() {
         id: 'menu-1',
         householdId: 'household-1',
         weekStartDate: DateTime.utc(2026, 9, 7),
+        mealConfigSnapshot: '{}',
         items: <MenuItem>[
           _item('lunch-first', 0, 'lunch'),
           _item('lunch-second', 0, 'lunch'),
@@ -125,6 +129,7 @@ void main() {
         id: 'menu-1',
         householdId: 'household-1',
         weekStartDate: DateTime.utc(2026, 9, 7),
+        mealConfigSnapshot: '{}',
         items: <MenuItem>[
           _item('unknown-item', 0, 'brunch'),
           _item('breakfast-item', 0, 'breakfast'),

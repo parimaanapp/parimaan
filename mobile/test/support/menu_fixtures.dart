@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/menu/domain/menu.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
@@ -65,13 +67,31 @@ final MenuItem testMenuItem = MenuItem(
   slotRole: RecipeRole.sabziDal,
 );
 
+/// The `Menu.mealConfigSnapshot` JSON envelope equivalent to [settings]
+/// (W14 S4, E2E_MVP_PLAN.md §20.2.4) — encodes exactly what
+/// `Menu.mealConfigSettings` needs (`mealsEnabled` + the `mealStructure`
+/// sub-document) so a test that builds its own [Menu] fixture can derive a
+/// snapshot from a [HouseholdSettings] it already has, rather than
+/// hand-writing an equivalent JSON string that could silently drift from
+/// what `mealConfigSettings` actually decodes.
+String mealConfigSnapshotJsonFor(HouseholdSettings settings) => jsonEncode(
+  <String, dynamic>{
+    'mealsEnabled': settings.mealsEnabled,
+    'mealStructure': jsonDecode(settings.mealStructureJson),
+  },
+);
+
 /// A domain [Menu] with no items — the expected first-visit state for a
-/// fresh week.
+/// fresh week. Its [Menu.mealConfigSnapshot] mirrors [testMenuHousehold]'s
+/// own settings (W14 S4) — the menu-feature tests that don't pass a
+/// different household to their pump helper get the same effective
+/// meal-structure behavior as before the snapshot existed.
 final Menu testEmptyMenu = Menu(
   id: 'menu-1',
   householdId: 'household-1',
   weekStartDate: DateTime.utc(2026, 9, 7),
   items: const <MenuItem>[],
+  mealConfigSnapshot: mealConfigSnapshotJsonFor(testMenuHousehold.settings),
 );
 
 /// A domain [Menu] with one item, for tests that need a non-empty week.
@@ -80,6 +100,7 @@ final Menu testMenuWithItems = Menu(
   householdId: 'household-1',
   weekStartDate: DateTime.utc(2026, 9, 7),
   items: <MenuItem>[testMenuItem],
+  mealConfigSnapshot: mealConfigSnapshotJsonFor(testMenuHousehold.settings),
 );
 
 /// The exact JSON AppSync returns for the shared `MenuRecipeFields`
@@ -143,11 +164,15 @@ Map<String, dynamic> menuWireNode({
   String householdId = 'household-1',
   String weekStartDate = '2026-09-07T00:00:00.000Z',
   List<Map<String, dynamic>>? items,
+  String? mealConfigSnapshot,
 }) => <String, dynamic>{
   '__typename': 'Menu',
   'id': id,
   'householdId': householdId,
   'weekStartDate': weekStartDate,
+  'mealConfigSnapshot':
+      mealConfigSnapshot ??
+      mealConfigSnapshotJsonFor(testMenuHousehold.settings),
   'items': items ?? <Map<String, dynamic>>[],
 };
 

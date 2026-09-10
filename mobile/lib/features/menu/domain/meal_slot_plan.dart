@@ -31,9 +31,17 @@ class PlannedSlot {
       'PlannedSlot(mealType: ${mealType.name}, slotRole: ${slotRole.name}, isFilled: $isFilled)';
 }
 
-/// Computes every slot instance for one day, honoring the household's own
-/// configuration (E2E_MVP_PLAN.md §15.3 S5 — the gate this function exists
-/// for: "Week-view honors meal structure config"):
+/// Computes every slot instance for one day, honoring [settings] — the
+/// household's own configuration (E2E_MVP_PLAN.md §15.3 S5 — the gate this
+/// function exists for: "Week-view honors meal structure config"). [settings]
+/// need not be a household's own LIVE settings: as of W14 S4
+/// (E2E_MVP_PLAN.md §20.2.4), `weekly_plan_screen.dart` hands this
+/// [Menu.mealConfigSettings] — a `HouseholdSettings`-shaped view over that
+/// week's own FROZEN `mealConfigSnapshot` — instead. This function stays
+/// deliberately oblivious to which one it got; its signature and logic are
+/// unchanged by that call-site switch, exactly so every test written
+/// against it (or against `weekly_plan_screen.dart`'s own grouping/rendering,
+/// pre-S4) keeps holding without modification:
 ///
 ///  - A meal type absent from `settings.mealsEnabled` contributes zero slots.
 ///  - `breakfast`/`snacks` contribute exactly ONE slot each, role-agnostic —

@@ -50,6 +50,7 @@ Menu _activityMenuWithItem(String householdId) => Menu(
   id: 'activity-menu-1',
   householdId: householdId,
   weekStartDate: DateTime.utc(2026, 9, 7),
+  mealConfigSnapshot: '{}',
   items: <MenuItem>[
     MenuItem(
       id: 'activity-menu-item-1',
@@ -80,6 +81,7 @@ Menu _emptyActivityMenu(String householdId) => Menu(
   id: 'activity-menu-1',
   householdId: householdId,
   weekStartDate: DateTime.utc(2026, 9, 7),
+  mealConfigSnapshot: '{}',
   items: const <MenuItem>[],
 );
 

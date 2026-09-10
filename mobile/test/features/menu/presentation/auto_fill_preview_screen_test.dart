@@ -417,6 +417,7 @@ void main() {
         id: 'menu-1',
         householdId: 'household-1',
         weekStartDate: DateTime.utc(2026, 9, 7),
+        mealConfigSnapshot: '{}',
         items: <MenuItem>[
           MenuItem(
             id: 'menu-item-made',

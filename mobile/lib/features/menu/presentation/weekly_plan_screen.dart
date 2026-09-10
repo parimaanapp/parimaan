@@ -120,12 +120,14 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
     final AsyncValue<Menu> menu = ref.watch(
       currentMenuControllerProvider(menuKey),
     );
-    // `HouseholdSettings` is already a field on `Household` — no separate
-    // settings-read controller needed; `CurrentHouseholdController` is the
-    // one source for it, same as `SettingsHubScreen`'s own read.
-    final AsyncValue<Household> household = ref.watch(
-      currentHouseholdControllerProvider(householdId),
-    );
+    // No `currentHouseholdControllerProvider` watch here (dropped, W14 S4,
+    // E2E_MVP_PLAN.md §20.2.4) — the meal config this screen renders now
+    // comes from the CURRENT menu's own frozen [Menu.mealConfigSettings]
+    // (below), not the household's live settings, and nothing else on this
+    // screen reads any other `Household` field: `householdId` (this
+    // widget's own constructor argument) is all every navigation/action
+    // here ever needed. Checked, not assumed — see this slice's own PR
+    // description for the audit.
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -168,24 +170,26 @@ class _WeeklyPlanForHousehold extends ConsumerWidget {
         ),
         Expanded(
           // A value wins over a spinner if one exists — `valueOrNull`, not
-          // `value` (SettingsHubScreen's own established shape) — both
-          // providers need a value before the grid can render at all.
-          child: switch ((menu.valueOrNull, household.valueOrNull)) {
-            (final Menu menuValue, final Household householdValue) => _WeekBody(
+          // `value` (SettingsHubScreen's own established shape).
+          child: switch (menu.valueOrNull) {
+            final Menu menuValue => _WeekBody(
               menu: menuValue,
-              settings: householdValue.settings,
+              // The snapshot-derived, `plannedSlotsForDay`-ready view over
+              // THIS week's own frozen meal config (W14 S4,
+              // E2E_MVP_PLAN.md §20.2.4) — not the household's live
+              // settings, which may have changed since this menu was
+              // created. `plannedSlotsForDay`'s own signature is unchanged:
+              // it still takes a `HouseholdSettings`-shaped argument, just
+              // sourced from a different place.
+              settings: menuValue.mealConfigSettings,
               householdId: householdId,
             ),
-            _ when menu.hasError || household.hasError => Center(
+            _ when menu.hasError => Center(
               key: WeeklyPlanScreen.errorKey,
               child: _LoadFailed(
-                error: menu.error ?? household.error,
-                onRetry: () {
-                  ref.invalidate(currentMenuControllerProvider(menuKey));
-                  ref.invalidate(
-                    currentHouseholdControllerProvider(householdId),
-                  );
-                },
+                error: menu.error,
+                onRetry: () =>
+                    ref.invalidate(currentMenuControllerProvider(menuKey)),
               ),
             ),
             _ => const Center(
