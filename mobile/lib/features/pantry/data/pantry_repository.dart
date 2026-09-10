@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
 import '../../../shared/graphql/client.dart';
+import '../../../shared/graphql/ferry_execute.dart';
 import '../../../shared/graphql/graphql_error_mapper.dart';
 import '../../../shared/graphql/operations/__generated__/add_pantry_item.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/add_pantry_item.req.gql.dart';
@@ -94,9 +95,10 @@ GAWSDateBuilder? _awsDateBuilder(String? value) =>
 ///
 /// The only file besides `pantry_mapper.dart` that touches generated
 /// GraphQL types — same boundary rule as `FerryHouseholdRepository`.
-class FerryPantryRepository implements PantryRepository {
+class FerryPantryRepository with FerryExecuteMixin implements PantryRepository {
   const FerryPantryRepository({required this.client});
 
+  @override
   final Client client;
 
   @override
@@ -119,7 +121,7 @@ class FerryPantryRepository implements PantryRepository {
         ..fetchPolicy = FetchPolicy.NoCache,
     );
 
-    final GPantryData data = await _execute(request);
+    final GPantryData data = await execute(request);
     return data.pantry.map(pantryItemFromGraphQL).toList(growable: false);
   }
 
@@ -141,7 +143,7 @@ class FerryPantryRepository implements PantryRepository {
           ..input.lowThreshold = draft.lowThreshold),
     );
 
-    final GAddPantryItemData data = await _execute(request);
+    final GAddPantryItemData data = await execute(request);
     return pantryItemFromGraphQL(data.addPantryItem);
   }
 
@@ -160,7 +162,7 @@ class FerryPantryRepository implements PantryRepository {
           ..input.lowThreshold = patch.lowThreshold),
     );
 
-    final GUpdatePantryItemData data = await _execute(request);
+    final GUpdatePantryItemData data = await execute(request);
     return pantryItemFromGraphQL(data.updatePantryItem);
   }
 
@@ -171,7 +173,7 @@ class FerryPantryRepository implements PantryRepository {
         ..vars = (GDeletePantryItemVarsBuilder()..id = id),
     );
 
-    final GDeletePantryItemData data = await _execute(request);
+    final GDeletePantryItemData data = await execute(request);
     return pantryItemFromGraphQL(data.deletePantryItem);
   }
 
@@ -194,35 +196,6 @@ class FerryPantryRepository implements PantryRepository {
         yield null;
       }
     }
-  }
-
-  /// Identical reduction to `FerryHouseholdRepository._execute` — see that
-  /// method's doc for why "first settled response", not `stream.first`.
-  Future<TData> _execute<TData, TVars>(
-    OperationRequest<TData, TVars> request,
-  ) async {
-    OperationResponse<TData, TVars>? settled;
-    await for (final OperationResponse<TData, TVars> response in client.request(
-      request,
-    )) {
-      if (response.data != null || response.hasErrors) {
-        settled = response;
-        break;
-      }
-    }
-
-    if (settled == null) {
-      throw const InternalError(genericErrorMessage);
-    }
-
-    final TData? data = settled.data;
-    if (settled.hasErrors || data == null) {
-      throw mapOperationFailure(
-        graphqlErrors: settled.graphqlErrors,
-        linkException: settled.linkException,
-      );
-    }
-    return data;
   }
 }
 
