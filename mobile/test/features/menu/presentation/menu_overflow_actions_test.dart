@@ -83,6 +83,7 @@ Menu _currentWeekMenu() => Menu(
   householdId: testMenuHousehold.id,
   weekStartDate: currentWeekStartDate(),
   items: const <MenuItem>[],
+  mealConfigSnapshot: mealConfigSnapshotJsonFor(testMenuHousehold.settings),
 );
 
 void main() {
