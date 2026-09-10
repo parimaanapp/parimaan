@@ -1,0 +1,16 @@
+#import "./menu_fields.graphql"
+
+# `Mutation.copyMenuDay` (W14 S8) — copies every `MenuItem` on `fromDay` of
+# `menuId`'s menu onto `toDay` of the SAME menu. Each source item is
+# re-validated against the target day's own config — one that doesn't fit
+# is skipped and counted in `skippedCount`, never silently dropped and
+# never aborting the whole copy.
+mutation CopyMenuDay($menuId: ID!, $fromDay: Int!, $toDay: Int!) {
+  copyMenuDay(menuId: $menuId, fromDay: $fromDay, toDay: $toDay) {
+    menu {
+      ...MenuFields
+    }
+    copiedCount
+    skippedCount
+  }
+}

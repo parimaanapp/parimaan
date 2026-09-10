@@ -848,6 +848,426 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiClearMenuDayDataSourceC8FA95A3": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "ClearMenuDayFn7E2482AF",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "ClearMenuDayDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiClearMenuDayDataSourceServiceRole4508489B",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiClearMenuDayDataSourceServiceRole4508489B": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiClearMenuDayDataSourceServiceRoleDefaultPolicyDE5C7076": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ClearMenuDayFn7E2482AF",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ClearMenuDayFn7E2482AF",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiClearMenuDayDataSourceServiceRoleDefaultPolicyDE5C7076",
+        "Roles": [
+          {
+            "Ref": "ApiClearMenuDayDataSourceServiceRole4508489B",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiClearMenuDayResolver55E94C6F": {
+      "DependsOn": [
+        "ApiClearMenuDayDataSourceC8FA95A3",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "ClearMenuDayDataSource",
+        "FieldName": "clearMenuDay",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiClearMenuWeekDataSourceC8684F9C": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "ClearMenuWeekFn79AB2644",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "ClearMenuWeekDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiClearMenuWeekDataSourceServiceRoleCF68E498",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiClearMenuWeekDataSourceServiceRoleCF68E498": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiClearMenuWeekDataSourceServiceRoleDefaultPolicyDE067092": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ClearMenuWeekFn79AB2644",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ClearMenuWeekFn79AB2644",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiClearMenuWeekDataSourceServiceRoleDefaultPolicyDE067092",
+        "Roles": [
+          {
+            "Ref": "ApiClearMenuWeekDataSourceServiceRoleCF68E498",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiClearMenuWeekResolver88D7F943": {
+      "DependsOn": [
+        "ApiClearMenuWeekDataSourceC8684F9C",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "ClearMenuWeekDataSource",
+        "FieldName": "clearMenuWeek",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiCopyMenuDayDataSource1B2854AE": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "CopyMenuDayFnA97B9952",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "CopyMenuDayDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiCopyMenuDayDataSourceServiceRoleDFDBD613",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiCopyMenuDayDataSourceServiceRoleDFDBD613": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiCopyMenuDayDataSourceServiceRoleDefaultPolicy553D9B32": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "CopyMenuDayFnA97B9952",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "CopyMenuDayFnA97B9952",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiCopyMenuDayDataSourceServiceRoleDefaultPolicy553D9B32",
+        "Roles": [
+          {
+            "Ref": "ApiCopyMenuDayDataSourceServiceRoleDFDBD613",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiCopyMenuDayResolver39CA9C39": {
+      "DependsOn": [
+        "ApiCopyMenuDayDataSource1B2854AE",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "CopyMenuDayDataSource",
+        "FieldName": "copyMenuDay",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiCopyMenuWeekDataSource1CBA6276": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "CopyMenuWeekFnFD89ADC2",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "CopyMenuWeekDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiCopyMenuWeekDataSourceServiceRole021BE0FD",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiCopyMenuWeekDataSourceServiceRole021BE0FD": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiCopyMenuWeekDataSourceServiceRoleDefaultPolicy49D31E0A": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "CopyMenuWeekFnFD89ADC2",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "CopyMenuWeekFnFD89ADC2",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiCopyMenuWeekDataSourceServiceRoleDefaultPolicy49D31E0A",
+        "Roles": [
+          {
+            "Ref": "ApiCopyMenuWeekDataSourceServiceRole021BE0FD",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiCopyMenuWeekResolverDF353AFF": {
+      "DependsOn": [
+        "ApiCopyMenuWeekDataSource1CBA6276",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "CopyMenuWeekDataSource",
+        "FieldName": "copyMenuWeek",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiCreateHouseholdDataSource5DFC7310": {
       "Properties": {
         "ApiId": {
@@ -4869,6 +5289,73 @@ type Mutation {
   \`addMenuItem\`/\`removeMenuItem\`/\`autoFillWeek\`.
   """
   markMade(menuItemId: ID!): MenuItem!
+
+  """
+  Deletes every \`MenuItem\` on \`dayOfWeek\` of \`menuId\`'s menu EXCEPT one
+  with \`madeAt\` set (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8) — the exact
+  "never delete a cooked item" invariant \`autoFillWeek\`'s \`overwrite: true\`
+  already locked, restated here rather than reinvented: a household's
+  cooking history is never silently erased by a planning action.
+  \`clearedCount\`/\`preservedCount\` report both halves honestly, matching
+  \`AutoFillResult\`'s own never-a-silent-partial-result posture. Requires
+  the caller to already be a member of the menu's household, denied
+  identically to a nonexistent \`menuId\` (matching \`addMenuItem\`'s own
+  pattern). \`dayOfWeek\` is \`Int!\` (0–6), matching \`MenuItem.dayOfWeek\`'s
+  own type — this codebase has no \`DayOfWeek\` enum anywhere else in the
+  schema, so this mutation stays consistent with \`MenuItemInput\`/
+  \`MenuItem\`/\`UnfilledSlot\` rather than introducing a new type this slice
+  alone would use.
+  """
+  clearMenuDay(menuId: ID!, dayOfWeek: Int!): ClearMenuResult!
+
+  """
+  \`clearMenuDay\` widened to every day of \`menuId\`'s menu in one call (W14
+  S8, E2E_MVP_PLAN.md §20.2.8, D8) — identical "never delete a cooked item"
+  invariant and identical honest counts, just across all seven days rather
+  than one. Requires the caller to already be a member of the menu's
+  household, denied identically to a nonexistent \`menuId\`.
+  """
+  clearMenuWeek(menuId: ID!): ClearMenuResult!
+
+  """
+  Copies every \`MenuItem\` on \`fromDay\` of \`menuId\`'s menu onto \`toDay\` of
+  the SAME menu (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8). Each source item is
+  re-validated against the TARGET day's own \`mealConfigSnapshot\` via the
+  IDENTICAL per-slot validation \`addMenuItem\` already runs (\`mealsEnabled\`,
+  cap, in-rotation status all re-checked at the target, never assumed from
+  the source) — a source item that doesn't fit the target (a cap conflict,
+  or a slot already occupied by a cooked item) is skipped and counted in
+  \`skippedCount\`, never silently dropped and never an error that aborts
+  the whole copy (the same best-effort-with-honest-reporting posture
+  \`bulkAddPantryItems\`/\`autoFillWeek\` already use). Never deletes or
+  overwrites anything — a copy only adds items, so an already-cooked
+  target slot is never touched, by construction. Requires the caller to
+  already be a member of the menu's household, denied identically to a
+  nonexistent \`menuId\`. \`fromDay\`/\`toDay\` are \`Int!\` (0–6), matching
+  \`clearMenuDay\`'s own reasoning for not introducing a \`DayOfWeek\` enum.
+  """
+  copyMenuDay(menuId: ID!, fromDay: Int!, toDay: Int!): CopyMenuResult!
+
+  """
+  Copies every day of \`fromMenuId\`'s menu onto the WEEK starting
+  \`toWeekStartDate\` (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8) — targets a week,
+  not a menu, because the target week commonly has no menu yet at all
+  (the common case: copying this week forward to next week). Get-or-
+  creates the target via the SAME \`createMenu\` path \`Mutation.createMenu\`
+  itself uses (idempotent, snapshotting LIVE \`household_settings\` at the
+  moment of THIS call if the target doesn't exist yet) before copying each
+  day via the identical per-item validation \`copyMenuDay\` uses. **The
+  target week always gets its OWN independent \`mealConfigSnapshot\` — never
+  a copy of the source week's** — the single most important invariant in
+  this mutation. Copying into an ALREADY-EXISTING target week follows the
+  identical cooked-item-never-touched rule as \`copyMenuDay\`, extended
+  across all seven days. Cross-household copy is impossible by
+  construction (out of scope, §20.2.8) — the target is always created
+  within the SOURCE menu's own household. Requires the caller to already
+  be a member of the source menu's household, denied identically to a
+  nonexistent \`fromMenuId\`.
+  """
+  copyMenuWeek(fromMenuId: ID!, toWeekStartDate: AWSDateTime!): CopyMenuResult!
 }
 
 type Subscription {
@@ -5417,6 +5904,37 @@ type AutoFillResult {
   menu: Menu!
   filledCount: Int!
   unfilledSlots: [UnfilledSlot!]!
+}
+
+"""
+Return shape shared by \`clearMenuDay\`/\`clearMenuWeek\` (W14 S8,
+E2E_MVP_PLAN.md §20.2.8, D8). \`clearedCount\`/\`preservedCount\` are always
+reported together — a household always sees both how much was cleared AND
+how much survived because it was cooked (\`madeAt\` set), never just one
+number, matching \`AutoFillResult\`'s own never-a-silent-partial-result
+posture.
+"""
+type ClearMenuResult {
+  clearedCount: Int!
+  preservedCount: Int!
+}
+
+"""
+Return shape shared by \`copyMenuDay\`/\`copyMenuWeek\` (W14 S8,
+E2E_MVP_PLAN.md §20.2.8, D8). \`menu\` is the TARGET menu post-copy — for
+\`copyMenuDay\` that's the same menu the caller passed in; for
+\`copyMenuWeek\` it's the (possibly freshly get-or-created) target week's
+own menu, carrying its OWN independent \`mealConfigSnapshot\`, never a copy
+of the source week's. \`skippedCount\` counts source items that didn't fit
+the target (a cap conflict, or a slot occupied by a cooked item) — a
+non-zero \`skippedCount\` is not an error, only an honestly-reported
+partial result, the same posture \`AutoFillResult\`/\`BulkAddPantryResult\`
+already use.
+"""
+type CopyMenuResult {
+  menu: Menu!
+  copiedCount: Int!
+  skippedCount: Int!
 }
 
 """
@@ -6555,6 +7073,542 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "BulkAddPantryItemsFnServiceRoleC935FC3B",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ClearMenuDayFn7E2482AF": {
+      "DependsOn": [
+        "ClearMenuDayFnServiceRoleDefaultPolicy3F663D70",
+        "ClearMenuDayFnServiceRole25103808",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "ClearMenuDayFnServiceRole25103808",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "ClearMenuDayFnServiceRole25103808": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ClearMenuDayFnServiceRoleDefaultPolicy3F663D70": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ClearMenuDayFnServiceRoleDefaultPolicy3F663D70",
+        "Roles": [
+          {
+            "Ref": "ClearMenuDayFnServiceRole25103808",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ClearMenuWeekFn79AB2644": {
+      "DependsOn": [
+        "ClearMenuWeekFnServiceRoleDefaultPolicy146C54EC",
+        "ClearMenuWeekFnServiceRole9F55337F",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "ClearMenuWeekFnServiceRole9F55337F",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "ClearMenuWeekFnServiceRole9F55337F": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ClearMenuWeekFnServiceRoleDefaultPolicy146C54EC": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ClearMenuWeekFnServiceRoleDefaultPolicy146C54EC",
+        "Roles": [
+          {
+            "Ref": "ClearMenuWeekFnServiceRole9F55337F",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CopyMenuDayFnA97B9952": {
+      "DependsOn": [
+        "CopyMenuDayFnServiceRoleDefaultPolicyA1A6FF79",
+        "CopyMenuDayFnServiceRole616767CB",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "CopyMenuDayFnServiceRole616767CB",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CopyMenuDayFnServiceRole616767CB": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CopyMenuDayFnServiceRoleDefaultPolicyA1A6FF79": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CopyMenuDayFnServiceRoleDefaultPolicyA1A6FF79",
+        "Roles": [
+          {
+            "Ref": "CopyMenuDayFnServiceRole616767CB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CopyMenuWeekFnFD89ADC2": {
+      "DependsOn": [
+        "CopyMenuWeekFnServiceRoleDefaultPolicy323798CD",
+        "CopyMenuWeekFnServiceRole480CC78E",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "CopyMenuWeekFnServiceRole480CC78E",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CopyMenuWeekFnServiceRole480CC78E": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CopyMenuWeekFnServiceRoleDefaultPolicy323798CD": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CopyMenuWeekFnServiceRoleDefaultPolicy323798CD",
+        "Roles": [
+          {
+            "Ref": "CopyMenuWeekFnServiceRole480CC78E",
           },
         ],
       },

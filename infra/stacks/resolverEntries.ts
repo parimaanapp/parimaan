@@ -256,6 +256,30 @@ export const DB_RESOLVERS: readonly DbResolverEntry[] = [
     fieldName: 'markMade',
   },
   {
+    id: 'ClearMenuDay',
+    entryFile: 'clearMenuDay.ts',
+    typeName: 'Mutation',
+    fieldName: 'clearMenuDay',
+  },
+  {
+    id: 'ClearMenuWeek',
+    entryFile: 'clearMenuWeek.ts',
+    typeName: 'Mutation',
+    fieldName: 'clearMenuWeek',
+  },
+  {
+    id: 'CopyMenuDay',
+    entryFile: 'copyMenuDay.ts',
+    typeName: 'Mutation',
+    fieldName: 'copyMenuDay',
+  },
+  {
+    id: 'CopyMenuWeek',
+    entryFile: 'copyMenuWeek.ts',
+    typeName: 'Mutation',
+    fieldName: 'copyMenuWeek',
+  },
+  {
     id: 'OnMenuChanged',
     entryFile: 'onMenuChanged.ts',
     typeName: 'Subscription',

@@ -216,6 +216,86 @@ class CurrentMenuController extends FamilyAsyncNotifier<Menu, MenuKey> {
     state = AsyncData<Menu>(result.menu);
     return result;
   }
+
+  /// Deletes every unmade item on [dayOfWeek] of the current menu, then
+  /// [refresh]es (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8) — an already-cooked
+  /// item (`madeAt` set) is never deleted, and the returned
+  /// [ClearMenuResult] reports both counts honestly so the caller can
+  /// surface a truthful summary even on a partial result.
+  ///
+  /// **Throws**, same contract as [addMenuItem] — including the
+  /// succeeded-but-refresh-failed case.
+  Future<ClearMenuResult> clearMenuDay(int dayOfWeek) async {
+    final Menu menu = await future;
+    final ClearMenuResult result = await _repository.clearMenuDay(
+      menu.id,
+      dayOfWeek,
+    );
+    await refresh();
+    if (state.hasError) {
+      // ignore: only_throw_errors
+      throw state.error!;
+    }
+    return result;
+  }
+
+  /// [clearMenuDay] widened to every day of the current menu in one call
+  /// (W14 S8). Same throws contract.
+  Future<ClearMenuResult> clearMenuWeek() async {
+    final Menu menu = await future;
+    final ClearMenuResult result = await _repository.clearMenuWeek(menu.id);
+    await refresh();
+    if (state.hasError) {
+      // ignore: only_throw_errors
+      throw state.error!;
+    }
+    return result;
+  }
+
+  /// Copies every item on [fromDay] of the current menu onto [toDay] of the
+  /// SAME menu (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8), updating `state`
+  /// directly from the response's own [CopyMenuResult.menu] — same
+  /// already-authoritative-response reasoning as [commitAutoFill], no
+  /// second round trip needed.
+  ///
+  /// **Throws** on failure, same contract as [addMenuItem].
+  Future<CopyMenuResult> copyMenuDay(int fromDay, int toDay) async {
+    final Menu menu = await future;
+    final CopyMenuResult result = await _repository.copyMenuDay(
+      menu.id,
+      fromDay,
+      toDay,
+    );
+    state = AsyncData<Menu>(result.menu);
+    return result;
+  }
+
+  /// Copies every day of the current menu onto the WEEK starting
+  /// [toWeekStartDate] (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8) —
+  /// get-or-creating that week's menu first if needed, with its OWN
+  /// independent config snapshot.
+  ///
+  /// Unlike [copyMenuDay], this does **not** touch THIS controller's own
+  /// `state` — `copyMenuWeek` never modifies the source week's menu, only
+  /// the target week's (a DIFFERENT `CurrentMenuController` family member).
+  /// Instead, the target week's own controller instance is invalidated so
+  /// a subsequent navigation to it re-fetches this fresh copy rather than
+  /// serving a stale cached menu (or none, if it didn't exist yet).
+  ///
+  /// **Throws** on failure, same contract as [addMenuItem].
+  Future<CopyMenuResult> copyMenuWeek(DateTime toWeekStartDate) async {
+    final Menu menu = await future;
+    final CopyMenuResult result = await _repository.copyMenuWeek(
+      menu.id,
+      toWeekStartDate,
+    );
+    ref.invalidate(
+      currentMenuControllerProvider(
+        menuKeyFor(arg.householdId, toWeekStartDate),
+      ),
+    );
+    return result;
+  }
 }
 
 final AsyncNotifierProviderFamily<CurrentMenuController, Menu, MenuKey>

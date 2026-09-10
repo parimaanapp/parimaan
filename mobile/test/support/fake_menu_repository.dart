@@ -21,6 +21,14 @@ class FakeMenuRepository implements MenuRepository {
     this.autoFillError,
     this.markMadeResult,
     this.markMadeError,
+    this.clearDayResult,
+    this.clearDayError,
+    this.clearWeekResult,
+    this.clearWeekError,
+    this.copyDayResult,
+    this.copyDayError,
+    this.copyWeekResult,
+    this.copyWeekError,
     this.delay,
   });
 
@@ -86,6 +94,32 @@ class FakeMenuRepository implements MenuRepository {
   MenuItem? markMadeResult;
   Object? markMadeError;
   final List<String> markMadeCalls = <String>[];
+
+  // ── clearMenuDay ───────────────────────────────────────────────────────
+
+  ClearMenuResult? clearDayResult;
+  Object? clearDayError;
+  final List<(String menuId, int dayOfWeek)> clearDayCalls = <(String, int)>[];
+
+  // ── clearMenuWeek ──────────────────────────────────────────────────────
+
+  ClearMenuResult? clearWeekResult;
+  Object? clearWeekError;
+  final List<String> clearWeekCalls = <String>[];
+
+  // ── copyMenuDay ────────────────────────────────────────────────────────
+
+  CopyMenuResult? copyDayResult;
+  Object? copyDayError;
+  final List<(String menuId, int fromDay, int toDay)> copyDayCalls =
+      <(String, int, int)>[];
+
+  // ── copyMenuWeek ───────────────────────────────────────────────────────
+
+  CopyMenuResult? copyWeekResult;
+  Object? copyWeekError;
+  final List<(String fromMenuId, DateTime toWeekStartDate)> copyWeekCalls =
+      <(String, DateTime)>[];
 
   @override
   Future<Menu?> fetchMenu(String householdId, DateTime weekStartDate) async {
@@ -176,6 +210,69 @@ class FakeMenuRepository implements MenuRepository {
     if (result == null) {
       throw StateError(
         'FakeMenuRepository.markMade: no markMadeResult configured.',
+      );
+    }
+    return result;
+  }
+
+  @override
+  Future<ClearMenuResult> clearMenuDay(String menuId, int dayOfWeek) async {
+    clearDayCalls.add((menuId, dayOfWeek));
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (clearDayError != null) throw clearDayError!;
+    final ClearMenuResult? result = clearDayResult;
+    if (result == null) {
+      throw StateError(
+        'FakeMenuRepository.clearMenuDay: no clearDayResult configured.',
+      );
+    }
+    return result;
+  }
+
+  @override
+  Future<ClearMenuResult> clearMenuWeek(String menuId) async {
+    clearWeekCalls.add(menuId);
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (clearWeekError != null) throw clearWeekError!;
+    final ClearMenuResult? result = clearWeekResult;
+    if (result == null) {
+      throw StateError(
+        'FakeMenuRepository.clearMenuWeek: no clearWeekResult configured.',
+      );
+    }
+    return result;
+  }
+
+  @override
+  Future<CopyMenuResult> copyMenuDay(
+    String menuId,
+    int fromDay,
+    int toDay,
+  ) async {
+    copyDayCalls.add((menuId, fromDay, toDay));
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (copyDayError != null) throw copyDayError!;
+    final CopyMenuResult? result = copyDayResult;
+    if (result == null) {
+      throw StateError(
+        'FakeMenuRepository.copyMenuDay: no copyDayResult configured.',
+      );
+    }
+    return result;
+  }
+
+  @override
+  Future<CopyMenuResult> copyMenuWeek(
+    String fromMenuId,
+    DateTime toWeekStartDate,
+  ) async {
+    copyWeekCalls.add((fromMenuId, toWeekStartDate));
+    if (delay != null) await Future<void>.delayed(delay!);
+    if (copyWeekError != null) throw copyWeekError!;
+    final CopyMenuResult? result = copyWeekResult;
+    if (result == null) {
+      throw StateError(
+        'FakeMenuRepository.copyMenuWeek: no copyWeekResult configured.',
       );
     }
     return result;

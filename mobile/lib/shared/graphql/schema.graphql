@@ -514,6 +514,73 @@ type Mutation {
   `addMenuItem`/`removeMenuItem`/`autoFillWeek`.
   """
   markMade(menuItemId: ID!): MenuItem!
+
+  """
+  Deletes every `MenuItem` on `dayOfWeek` of `menuId`'s menu EXCEPT one
+  with `madeAt` set (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8) — the exact
+  "never delete a cooked item" invariant `autoFillWeek`'s `overwrite: true`
+  already locked, restated here rather than reinvented: a household's
+  cooking history is never silently erased by a planning action.
+  `clearedCount`/`preservedCount` report both halves honestly, matching
+  `AutoFillResult`'s own never-a-silent-partial-result posture. Requires
+  the caller to already be a member of the menu's household, denied
+  identically to a nonexistent `menuId` (matching `addMenuItem`'s own
+  pattern). `dayOfWeek` is `Int!` (0–6), matching `MenuItem.dayOfWeek`'s
+  own type — this codebase has no `DayOfWeek` enum anywhere else in the
+  schema, so this mutation stays consistent with `MenuItemInput`/
+  `MenuItem`/`UnfilledSlot` rather than introducing a new type this slice
+  alone would use.
+  """
+  clearMenuDay(menuId: ID!, dayOfWeek: Int!): ClearMenuResult!
+
+  """
+  `clearMenuDay` widened to every day of `menuId`'s menu in one call (W14
+  S8, E2E_MVP_PLAN.md §20.2.8, D8) — identical "never delete a cooked item"
+  invariant and identical honest counts, just across all seven days rather
+  than one. Requires the caller to already be a member of the menu's
+  household, denied identically to a nonexistent `menuId`.
+  """
+  clearMenuWeek(menuId: ID!): ClearMenuResult!
+
+  """
+  Copies every `MenuItem` on `fromDay` of `menuId`'s menu onto `toDay` of
+  the SAME menu (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8). Each source item is
+  re-validated against the TARGET day's own `mealConfigSnapshot` via the
+  IDENTICAL per-slot validation `addMenuItem` already runs (`mealsEnabled`,
+  cap, in-rotation status all re-checked at the target, never assumed from
+  the source) — a source item that doesn't fit the target (a cap conflict,
+  or a slot already occupied by a cooked item) is skipped and counted in
+  `skippedCount`, never silently dropped and never an error that aborts
+  the whole copy (the same best-effort-with-honest-reporting posture
+  `bulkAddPantryItems`/`autoFillWeek` already use). Never deletes or
+  overwrites anything — a copy only adds items, so an already-cooked
+  target slot is never touched, by construction. Requires the caller to
+  already be a member of the menu's household, denied identically to a
+  nonexistent `menuId`. `fromDay`/`toDay` are `Int!` (0–6), matching
+  `clearMenuDay`'s own reasoning for not introducing a `DayOfWeek` enum.
+  """
+  copyMenuDay(menuId: ID!, fromDay: Int!, toDay: Int!): CopyMenuResult!
+
+  """
+  Copies every day of `fromMenuId`'s menu onto the WEEK starting
+  `toWeekStartDate` (W14 S8, E2E_MVP_PLAN.md §20.2.8, D8) — targets a week,
+  not a menu, because the target week commonly has no menu yet at all
+  (the common case: copying this week forward to next week). Get-or-
+  creates the target via the SAME `createMenu` path `Mutation.createMenu`
+  itself uses (idempotent, snapshotting LIVE `household_settings` at the
+  moment of THIS call if the target doesn't exist yet) before copying each
+  day via the identical per-item validation `copyMenuDay` uses. **The
+  target week always gets its OWN independent `mealConfigSnapshot` — never
+  a copy of the source week's** — the single most important invariant in
+  this mutation. Copying into an ALREADY-EXISTING target week follows the
+  identical cooked-item-never-touched rule as `copyMenuDay`, extended
+  across all seven days. Cross-household copy is impossible by
+  construction (out of scope, §20.2.8) — the target is always created
+  within the SOURCE menu's own household. Requires the caller to already
+  be a member of the source menu's household, denied identically to a
+  nonexistent `fromMenuId`.
+  """
+  copyMenuWeek(fromMenuId: ID!, toWeekStartDate: AWSDateTime!): CopyMenuResult!
 }
 
 type Subscription {
@@ -1062,6 +1129,37 @@ type AutoFillResult {
   menu: Menu!
   filledCount: Int!
   unfilledSlots: [UnfilledSlot!]!
+}
+
+"""
+Return shape shared by `clearMenuDay`/`clearMenuWeek` (W14 S8,
+E2E_MVP_PLAN.md §20.2.8, D8). `clearedCount`/`preservedCount` are always
+reported together — a household always sees both how much was cleared AND
+how much survived because it was cooked (`madeAt` set), never just one
+number, matching `AutoFillResult`'s own never-a-silent-partial-result
+posture.
+"""
+type ClearMenuResult {
+  clearedCount: Int!
+  preservedCount: Int!
+}
+
+"""
+Return shape shared by `copyMenuDay`/`copyMenuWeek` (W14 S8,
+E2E_MVP_PLAN.md §20.2.8, D8). `menu` is the TARGET menu post-copy — for
+`copyMenuDay` that's the same menu the caller passed in; for
+`copyMenuWeek` it's the (possibly freshly get-or-created) target week's
+own menu, carrying its OWN independent `mealConfigSnapshot`, never a copy
+of the source week's. `skippedCount` counts source items that didn't fit
+the target (a cap conflict, or a slot occupied by a cooked item) — a
+non-zero `skippedCount` is not an error, only an honestly-reported
+partial result, the same posture `AutoFillResult`/`BulkAddPantryResult`
+already use.
+"""
+type CopyMenuResult {
+  menu: Menu!
+  copiedCount: Int!
+  skippedCount: Int!
 }
 
 """
