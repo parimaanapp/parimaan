@@ -8,22 +8,25 @@ import '../../../shared/ui/typography.dart';
 
 /// Warns (never blocks) at the moment a recipe is picked that it matches
 /// one or more of the household's own allergen and/or skip-ingredient
-/// terms — PRD §7.1's allergen warning, and W10 D7's choice to mark rather
-/// than hide a skip-listed recipe in the picker specifically (unlike
-/// `autoFillWeek`, which hard-filters both; there is no human in that loop
-/// to see this warning). Returns `true` only if the caller proceeds
-/// anyway; `false` (including the barrier-dismiss case) means stay on the
-/// picker.
+/// terms, or doesn't carry one of the household's own dietary tags — PRD
+/// §7.1's allergen warning, and W10 D7/D8's choice to mark rather than
+/// hide a skip-listed or dietary-tag-mismatched recipe in the picker
+/// specifically (unlike `autoFillWeek`, which hard-filters all three;
+/// there is no human in that loop to see this warning). Returns `true`
+/// only if the caller proceeds anyway; `false` (including the
+/// barrier-dismiss case) means stay on the picker.
 Future<bool> showIngredientWarningDialog({
   required BuildContext context,
   required List<String> allergenMatches,
   required List<String> skipMatches,
+  List<String> dietaryTagMismatches = const <String>[],
 }) async {
   final bool? proceed = await showDialog<bool>(
     context: context,
     builder: (BuildContext context) => IngredientWarningDialog(
       allergenMatches: allergenMatches,
       skipMatches: skipMatches,
+      dietaryTagMismatches: dietaryTagMismatches,
     ),
   );
   return proceed ?? false;
@@ -34,10 +37,12 @@ class IngredientWarningDialog extends StatelessWidget {
     super.key,
     required this.allergenMatches,
     required this.skipMatches,
+    this.dietaryTagMismatches = const <String>[],
   });
 
   final List<String> allergenMatches;
   final List<String> skipMatches;
+  final List<String> dietaryTagMismatches;
 
   static const Key cancelButtonKey = Key('ingredient-warning-cancel');
   static const Key proceedButtonKey = Key('ingredient-warning-proceed');
@@ -69,6 +74,14 @@ class IngredientWarningDialog extends StatelessWidget {
               'Contains: ${skipMatches.join(', ')} — on your skip list.',
               style: AppTypography.label.copyWith(color: AppColors.inkMid),
             ),
+          if ((allergenMatches.isNotEmpty || skipMatches.isNotEmpty) &&
+              dietaryTagMismatches.isNotEmpty)
+            const SizedBox(height: AppSpacing.s1),
+          if (dietaryTagMismatches.isNotEmpty)
+            Text(
+              "Doesn't match: ${dietaryTagMismatches.map(_humanizeDietaryTag).join(', ')} — your household diet.",
+              style: AppTypography.label.copyWith(color: AppColors.inkMid),
+            ),
           const SizedBox(height: AppSpacing.s3),
           Row(
             children: <Widget>[
@@ -96,3 +109,16 @@ class IngredientWarningDialog extends StatelessWidget {
     ),
   );
 }
+
+/// `veg` → `Veg`, `gluten_free` → `Gluten Free` — the household's raw wire-value
+/// dietary tags (`HouseholdSettings.dietaryTags`) have no display-label enum
+/// wired up to this read-only picker flow, so this mirrors
+/// `confirm_join_screen.dart`'s own local `_humanize` rather than pulling in
+/// `DietaryTag` for one string.
+String _humanizeDietaryTag(String wireValue) => wireValue
+    .split('_')
+    .map(
+      (String word) =>
+          word.isEmpty ? word : word[0].toUpperCase() + word.substring(1),
+    )
+    .join(' ');

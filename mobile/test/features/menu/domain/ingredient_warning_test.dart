@@ -99,4 +99,42 @@ void main() {
       expect(matches, <String>['milk', 'peanut']);
     });
   });
+
+  group('mismatchedDietaryTags', () {
+    test('returns household tags the recipe does not carry', () {
+      final List<String> mismatches = mismatchedDietaryTags(
+        <String>['gluten_free'],
+        <String>['veg'],
+      );
+
+      expect(mismatches, <String>['veg']);
+    });
+
+    test('returns an empty list when the recipe carries every household tag', () {
+      final List<String> mismatches = mismatchedDietaryTags(
+        <String>['veg', 'gluten_free'],
+        <String>['veg'],
+      );
+
+      expect(mismatches, isEmpty);
+    });
+
+    test('an empty household dietaryTags list never mismatches', () {
+      final List<String> mismatches = mismatchedDietaryTags(
+        const <String>[],
+        const <String>[],
+      );
+
+      expect(mismatches, isEmpty);
+    });
+
+    test('preserves the household\'s own tag order for multiple mismatches', () {
+      final List<String> mismatches = mismatchedDietaryTags(
+        const <String>[],
+        <String>['veg', 'dairy_free'],
+      );
+
+      expect(mismatches, <String>['veg', 'dairy_free']);
+    });
+  });
 }

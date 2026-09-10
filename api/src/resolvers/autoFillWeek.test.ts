@@ -137,7 +137,7 @@ describe('autoFillWeek resolver (Mutation.autoFillWeek)', () => {
     client: PoolClient,
     householdId: string,
     createdBy: string,
-    overrides: { title?: string; role?: string; inRotation?: boolean } = {},
+    overrides: { title?: string; role?: string; inRotation?: boolean; dietaryTags?: string[] } = {},
   ): Promise<string> => {
     const recipe = await insertRecipe(client, {
       householdId,
@@ -150,7 +150,7 @@ describe('autoFillWeek resolver (Mutation.autoFillWeek)', () => {
       cookMin: null,
       cuisineTier1: null,
       cuisineTier2: null,
-      dietaryTags: [],
+      dietaryTags: overrides.dietaryTags ?? [],
       role: overrides.role ?? 'carb',
       inRotation: overrides.inRotation ?? true,
       steps: [],
@@ -324,6 +324,29 @@ describe('autoFillWeek resolver (Mutation.autoFillWeek)', () => {
     const result = await handler(
       buildEvent(menuId, false, [item(recipeId, 0, 'lunch', 'carb')], 'sub-afw-rotation'),
     );
+
+    expect(result.filledCount).toBe(0);
+    expect(result.unfilledSlots).toEqual([{ dayOfWeek: 0, mealSlot: 'lunch', slotRole: 'carb' }]);
+  });
+
+  it('never commits a recipe missing one of the household dietary tags, even if submitted (§16.2.4 D8)', async () => {
+    const owner = await createUser('sub-afw-dietary');
+    const householdId = await createHouseholdWithOwner(owner, 'AWD234');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    const recipeId = await withUserTransaction(
+      owner.id,
+      async (client) => {
+        const id = await addRecipe(client, householdId, owner.id, { dietaryTags: ['gluten_free'] });
+        await client.query(`UPDATE household_settings SET dietary_tags = '["veg"]'::jsonb WHERE household_id = $1`, [
+          householdId,
+        ]);
+        return id;
+      },
+      pool,
+    );
+
+    const handler = createAutoFillWeekHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, false, [item(recipeId, 0, 'lunch', 'carb')], 'sub-afw-dietary'));
 
     expect(result.filledCount).toBe(0);
     expect(result.unfilledSlots).toEqual([{ dayOfWeek: 0, mealSlot: 'lunch', slotRole: 'carb' }]);
