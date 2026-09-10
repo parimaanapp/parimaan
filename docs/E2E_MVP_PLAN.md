@@ -2393,7 +2393,7 @@ Two items deferred *into* W10 by earlier weeks, and therefore in scope now, not 
 - **The recipe picker filtered by slot role** (§12.1's out-of-scope list; §15.1 restates it). W9 S5 shipped a deliberate stand-in — `mobile/lib/features/menu/presentation/recipe_picker_stub_screen.dart`, routed at `AppRoutes.recipePickerStub`, reached from `weekly_plan_screen.dart`'s `_DaySection` `onTap`. W10 replaces it; the stub file and its route constant are deleted, not left orphaned.
 - **Allergen / skip-ingredient warnings at pick time** (§12.1: "(W9/W10)"; W9 shipped none). PRD §7.1 locks allergens as a *warning*; PRD §7.3 locks the skip-ingredients list as a hard filter in automated picks, per D7 below.
 
-**Explicitly out of scope for W10** (owned by later weeks, not oversights): shopping-list generation (W11); `markMade` / pantry deduction (W12 — `menu_items.made_at` already exists from W9's migration, which matters to D4); `onMenuChanged` — still not assigned a week (D9, flagged forward again, not resolved this week); copy day / copy week / clear day / clear week (PRD §6 lists them; §4 never schedules them — flagged, not absorbed); pagination for `Query.recipes` (§16.5.3, D12); the W6 R7 physical-device spike, still carried open at Phase 2 level.
+**Explicitly out of scope for W10** (owned by later weeks, not oversights): shopping-list generation (W11); `markMade` / pantry deduction (W12 — `menu_items.made_at` already exists from W9's migration, which matters to D4); `onMenuChanged` — still not assigned a week (D9, flagged forward again, not resolved this week); copy day / copy week / clear day / clear week (PRD §6 lists them; §4 didn't schedule them at the time this was written — **now scheduled, W14 S8, added 2026-09-10**); pagination for `Query.recipes` (§16.5.3, D12); the W6 R7 physical-device spike, still carried open at Phase 2 level.
 
 ### 16.2 Conflicts and gaps found in the locked docs, and the four decisions that resolve them
 
@@ -3454,7 +3454,7 @@ Per §4's newly-inserted W13 row: the **Welcome · what would you like to do fir
 | 11 | §15.5.1 | "The meal-structure-cap enforcement is the week's one genuinely novel piece, and it exists in two places that must agree" — the client `plannedSlotsForDay` and the server `getMealSlotCap`. W13 adds no third place; W14's snapshot changes *where the config is read from* in both, not how it is applied |
 | 12 | §14.2.11 / W8 S1 | `router.dart`'s `_redirect` was rewritten in W8 to choose `/home` vs `/first-run` from `meHouseholdsControllerProvider`, with an explicit three-state (resolving / none / some) shape. The welcome-screen decision is a fourth landing spot inside that same already-careful function — it must inherit its "still resolving is not the same as empty" discipline, not re-invent it (§19.2.2) |
 
-**Explicitly out of scope for W13** (owned elsewhere, not oversights): the config **snapshot** onto `menus` and every server read-path switch it implies (**W14**, §20 — W13 changes what a household can configure and how the grid displays it, and deliberately leaves the "when does a change take effect" question entirely to W14, so the two weeks do not both touch the same resolvers); the pantry curated-item picker and `bulkAddPantryItems` wiring (**W14**); the 50-recipe curated library that would give the welcome screen's "Add New Recipe" CTA something to land on (**W15/W16**, Q16 — named in the screen's own copy, §19.2.1); Sweet/Drink as planned slot types (**never in MVP**, Q18); a "reconcile items already placed above a newly-lowered cap" flow (`meal_slot_plan.dart`'s own doc already declares this out of scope for the read-only grid, and lowering a cap mid-week becomes structurally impossible for the *current* week once W14 lands anyway); copy/clear day-and-week (PRD §7.1, no week assigned, unchanged by this plan); any change to `onMenuChanged`'s coverage (§17.2.9's separate future slice, not reopened).
+**Explicitly out of scope for W13** (owned elsewhere, not oversights): the config **snapshot** onto `menus` and every server read-path switch it implies (**W14**, §20 — W13 changes what a household can configure and how the grid displays it, and deliberately leaves the "when does a change take effect" question entirely to W14, so the two weeks do not both touch the same resolvers); the pantry curated-item picker and `bulkAddPantryItems` wiring (**W14**); the 50-recipe curated library that would give the welcome screen's "Add New Recipe" CTA something to land on (**W15/W16**, Q16 — named in the screen's own copy, §19.2.1); Sweet/Drink as planned slot types (**never in MVP**, Q18); a "reconcile items already placed above a newly-lowered cap" flow (`meal_slot_plan.dart`'s own doc already declares this out of scope for the read-only grid, and lowering a cap mid-week becomes structurally impossible for the *current* week once W14 lands anyway); copy/clear day-and-week (PRD §7.1 — **scheduled W14 S8, added 2026-09-10**, after this section was written; W13 itself is unchanged by that amendment); any change to `onMenuChanged`'s coverage (§17.2.9's separate future slice, not reopened).
 
 ### 19.2 Design
 
@@ -3627,21 +3627,23 @@ W13 plans at nominal budget, which is unusual for this project and could read as
 
 ### 19.6 W13 exit criteria
 
-- [ ] Patching `meal_structure` with a Lunch-only document leaves Dinner's configured counts byte-identical, verified against Testcontainers **and** live dev Aurora (S1, S7)
-- [ ] A `mealsEnabled` patch still replaces the whole array and never concatenates — the asymmetry D4 locks is regression-tested, not assumed (S1, S7)
-- [ ] "Lunch structure" and "Dinner structure" are both reachable and editable from Settings; the create wizard's Lunch step is unchanged (S2)
-- [ ] "Meals to plan" is reachable from Settings and offers **all four** meal types; a household whose Snacks was cleared by the three-toggle wizard can turn it back on and it persists — the W5-era "Snacks UI unreachability" gap (§11.1) is closed (S3)
-- [ ] `meal_type.dart`'s doc comment no longer claims a Settings path that does not exist (S3)
-- [ ] `groupSlotsByMealInstance` derives nothing from `HouseholdSettings` — its signature takes no settings argument, and the cap rule gains no third client-side home (S4)
-- [ ] The Weekly plan renders four meal-instance headers per day in Breakfast → Lunch → Snacks → Dinner order, renders no header for a disabled meal, and preserves per-type sub-slot multiplicity under Lunch/Dinner (S4, S5)
-- [ ] Tapping an empty slot under any meal header still opens the picker with the correct `mealSlot` and `slotRole` (S5)
-- [ ] Nothing shipped this week names or implies Sweet or Drink as planned slot types (Q18, S4/S5)
-- [ ] A household with zero recipes, zero pantry items and zero planned menu items lands on `/welcome`; any one of the three at ≥1 lands on `/home`; all three arms asserted separately (S6)
-- [ ] While any activity source is still resolving, the user holds on splash and never flashes `/welcome`; an errored source is treated as unknown, not as empty (S6)
-- [ ] The signed-in-with-no-household → `/first-run` branch is unchanged (S6)
-- [ ] The welcome screen's "Add New Recipe" CTA copy, and this plan, both state that the curated library does not exist until W15/W16 (D1, S6)
-- [ ] Every nullable/new argument tested with an explicit `null` (§11.5.5's standing convention) — this week's exposure is `updateHouseholdSettings`' `mealStructure` (S1, S7)
-- [ ] §4's W13 row has actual hours and §19.7's locked decisions are audited against what shipped (S7)
+All closed — verified live against real dev Aurora and audited against what shipped in §19.8's S7 pass; nothing here was left checked by assumption.
+
+- [x] Patching `meal_structure` with a Lunch-only document leaves Dinner's configured counts byte-identical, verified against Testcontainers **and** live dev Aurora (S1, S7)
+- [x] A `mealsEnabled` patch still replaces the whole array and never concatenates — the asymmetry D4 locks is regression-tested, not assumed (S1, S7)
+- [x] "Lunch structure" and "Dinner structure" are both reachable and editable from Settings; the create wizard's Lunch step is unchanged (S2)
+- [x] "Meals to plan" is reachable from Settings and offers **all four** meal types; a household whose Snacks was cleared by the three-toggle wizard can turn it back on and it persists — the W5-era "Snacks UI unreachability" gap (§11.1) is closed (S3)
+- [x] `meal_type.dart`'s doc comment no longer claims a Settings path that does not exist (S3)
+- [x] `groupSlotsByMealInstance` derives nothing from `HouseholdSettings` — its signature takes no settings argument, and the cap rule gains no third client-side home (S4)
+- [x] The Weekly plan renders four meal-instance headers per day in Breakfast → Lunch → Snacks → Dinner order, renders no header for a disabled meal, and preserves per-type sub-slot multiplicity under Lunch/Dinner (S4, S5)
+- [x] Tapping an empty slot under any meal header still opens the picker with the correct `mealSlot` and `slotRole` (S5)
+- [x] Nothing shipped this week names or implies Sweet or Drink as planned slot types (Q18, S4/S5)
+- [x] A household with zero recipes, zero pantry items and zero planned menu items lands on `/welcome`; any one of the three at ≥1 lands on `/home`; all three arms asserted separately (S6)
+- [x] While any activity source is still resolving, the user holds on splash and never flashes `/welcome`; an errored source is treated as unknown, not as empty (S6)
+- [x] The signed-in-with-no-household → `/first-run` branch is unchanged (S6)
+- [x] The welcome screen's "Add New Recipe" CTA copy, and this plan, both state that the curated library does not exist until W15/W16 (D1, S6)
+- [x] Every nullable/new argument tested with an explicit `null` (§11.5.5's standing convention) — this week's exposure is `updateHouseholdSettings`' `mealStructure` (S1, S7)
+- [x] §4's W13 row has actual hours and §19.7's locked decisions are audited against what shipped (S7)
 
 ### 19.7 W13 locked decisions
 
@@ -3732,11 +3734,11 @@ Inferred from commit timestamps across the W13 PR sequence (`git log`, IST times
 
 ## 20. Week 14: Meal-config snapshot per menu + pantry curated item picker
 
-**Status:** LOCKED. Written 2026-09-07 alongside §19, against the same six founder answers (§10, Q16–Q21). This week carries the only genuinely new architecture in Phase 3b — a schema change plus a read-path switch across four call sites — and the only new client-side data module. **D-numbers are W14-local** (D1–D7).
+**Status:** LOCKED. Written 2026-09-07 alongside §19, against the same six founder answers (§10, Q16–Q21); **amended 2026-09-10** to add S8 (copy/clear day-week, PRD §7.1), scheduled into this week per the founder's own call when the W13 close-out audit surfaced it as the one PRD requirement with no assigned week anywhere in the 28-week plan. **D-numbers are W14-local** (D1–D8, D8 added in the same amendment).
 
 ### 20.1 What W14 is locked to deliver
 
-Per §4's newly-inserted W14 row: `menus.meal_config_snapshot` (migration + backfill); every generation/placement read path switched from live `findSettingsForHousehold` to the menu's own snapshot once a menu exists; a client-side curated per-category pantry item list with a multi-select picker and a unit-restricted quantity stepper; and the first mobile caller of `bulkAddPantryItems`. **No new wireframe screen** — the count stays at 43/50 (§4's screen-count amendment, §20.2.6). Gate, in §4's own words: "A settings edit mid-week never changes the week already in progress; ticking curated items writes them in one `bulkAddPantryItems` call."
+Per §4's newly-inserted W14 row: `menus.meal_config_snapshot` (migration + backfill); every generation/placement read path switched from live `findSettingsForHousehold` to the menu's own snapshot once a menu exists; a client-side curated per-category pantry item list with a multi-select picker and a unit-restricted quantity stepper; the first mobile caller of `bulkAddPantryItems`; and **copy day / copy week / clear day / clear week** (S8, PRD §7.1 — added in the 2026-09-10 amendment). **No new wireframe screen** — the count stays at 43/50 (§4's screen-count amendment, §20.2.6; S8 adds no screen either, §20.2.8). Gate, in §4's own words: "A settings edit mid-week never changes the week already in progress; ticking curated items writes them in one `bulkAddPantryItems` call" — S8's own gate, added with it: "clearing or copying a day/week never touches an item the household already cooked."
 
 **Forward-references this plan accounts for** (via `grep -n "W14" docs/E2E_MVP_PLAN.md` against the post-renumber doc, plus the four live read paths the feedback investigation named — every one addressed below):
 
@@ -3757,8 +3759,9 @@ Per §4's newly-inserted W14 row: `menus.meal_config_snapshot` (migration + back
 | 13 | §16.2.6 / §16.5.1 | `lockMenu`/`lockMenuSlot` ordering and "the cap rule now lives in three places" — the snapshot changes the *source* the rule reads in each place, and must not add a fourth place or reorder a lock |
 | 14 | §19.2.6 / W13 D6 | W13 deliberately left the client read path alone so this week can switch it in one expression |
 | 15 | §20 own | `Menu` gains one field in the SDL; no mutation's return type changes, so no `@aws_subscribe` list is affected |
+| 16 | `docs/PRD.md` §7.1 | *"Copy day, copy week, clear day, clear week"* — flagged twice earlier in this plan (§11.1, §19.1) as unscheduled; **added here as S8, 2026-09-10** (§20.2.8), the one PRD MVP requirement this plan otherwise had no week for |
 
-**Explicitly out of scope for W14** (owned elsewhere, not oversights): making `mealsEnabled`/`mealStructure` editable at all (**W13**, §19.2.3 — this week assumes that surface exists and snapshots whatever it writes); a UI that *shows* a household its current week is running on an older config (deliberately not built — §20.5.2 argues why a silent, correct behaviour beats a half-designed explanatory banner, and names it as the first thing to add if beta users are confused by it); reconciling menu items already placed above a cap that a later snapshot lowers (structurally unreachable for the current week once this ships, since the current week's caps can no longer change); `onPantryChanged` coverage for `bulkAddPantryItems` (**still W20's open item**, §11.2.1, inherited not fixed — §20.2.7); a server-side or database-backed curated item list (**never**, Q21); AI-suggested pantry items (photo pantry is W20); the 50-recipe curated library (**W15/W16**).
+**Explicitly out of scope for W14** (owned elsewhere, not oversights): making `mealsEnabled`/`mealStructure` editable at all (**W13**, §19.2.3 — this week assumes that surface exists and snapshots whatever it writes); a UI that *shows* a household its current week is running on an older config (deliberately not built — §20.5.2 argues why a silent, correct behaviour beats a half-designed explanatory banner, and names it as the first thing to add if beta users are confused by it); reconciling menu items already placed above a cap that a later snapshot lowers (structurally unreachable for the current week once this ships, since the current week's caps can no longer change); `onPantryChanged` coverage for `bulkAddPantryItems` (**still W20's open item**, §11.2.1, inherited not fixed — §20.2.7); a server-side or database-backed curated item list (**never**, Q21); AI-suggested pantry items (photo pantry is W20); the 50-recipe curated library (**W15/W16**); undo for any of the four new copy/clear mutations (**never locked for any menu mutation**, consistent with W9–W13, §20.2.8); cross-household copy (**structurally impossible** — `copyMenuWeek`/`copyMenuDay` only ever target a week within the calling household's own menus, §20.2.8).
 
 ### 20.2 Design
 
@@ -3844,6 +3847,40 @@ A category with no curated entries (including a free-text category a user typed 
 
 **The inherited limitation, named not fixed:** `bulkAddPantryItems` is deliberately absent from `onPantryChanged`'s `@aws_subscribe` list — §11.2.1 decision 2, because *"a list cannot fan out to a single `PantryItem` payload."* Consequence for W14, stated plainly: **another household member's pantry screen does not live-update after a multi-select add.** They see the new items on their next refetch — route entry, foreground, or any other `onPantryChanged` push triggered by a subsequent single-item add/update/delete. This is exactly the gap §11.2.1 recorded as a W20 open item (`onPantryBulkChanged`, or a refetch), and W14 **does not close it**: closing it means either a new subscription field or a return-type change, both of which are real slices that belong with the week that also has photo-pantry's bulk write to justify them. The mobile caller's own doc comment carries this sentence so the next reader does not rediscover it as a bug.
 
+#### 20.2.8 D8 — copy/clear day-week reuses `addMenuItem`'s own cap validation and `autoFillWeek`'s "never delete a cooked item" invariant; four small mutations, no new screen, no new architecture
+
+**Added 2026-09-10**, after §20.1–20.2.7 were written and locked — PRD §7.1 lists "copy day, copy week, clear day, clear week" as MVP scope, and a W13 close-out audit found it flagged twice in this plan (§11.1, §19.1) as *"no week assigned"* and never actually scheduled anywhere across 28 weeks. The founder's call: schedule it here, since W14 is the week already touching per-menu-item mutations and already has `bulkAddPantryItems`' "one call, honest partial-result reporting" pattern (D7) as a direct precedent for the batch semantics this needs. D1–D7 above are unchanged by this addition.
+
+**Locked: four mutations, all `menuId`-scoped, all reusing existing machinery rather than inventing new validation:**
+
+```graphql
+clearMenuDay(menuId: ID!, dayOfWeek: DayOfWeek!): ClearMenuResult!
+clearMenuWeek(menuId: ID!): ClearMenuResult!
+copyMenuDay(menuId: ID!, fromDay: DayOfWeek!, toDay: DayOfWeek!): CopyMenuResult!
+copyMenuWeek(fromMenuId: ID!, toWeekStartDate: AWSDateTime!): CopyMenuResult!
+
+type ClearMenuResult {
+  clearedCount: Int!
+  preservedCount: Int!   # items with madeAt set — never cleared, always reported
+}
+
+type CopyMenuResult {
+  menu: Menu!
+  copiedCount: Int!
+  skippedCount: Int!     # target slot already cooked, or doesn't fit the target's own snapshot
+}
+```
+
+**Clear never deletes a cooked item.** `clearMenuDay`/`clearMenuWeek` delete every `MenuItem` in scope EXCEPT one with `madeAt` set — the exact invariant `autoFillWeek`'s `overwrite: true` already locked (D4 in §16's design, restated not reinvented here) and the same reason: a household's cooking history is never silently erased by a planning action. `clearedCount`/`preservedCount` report both halves honestly, matching `AutoFillResult`'s own "never a silent partial result" posture.
+
+**Copy reuses `validateAddMenuItem` per item, unchanged.** `copyMenuDay` reads the source day's items and, for each, calls the identical validation `addMenuItem` already runs against the *target* day's own config — `mealsEnabled`, cap, in-rotation status all re-checked at the target, not assumed from the source. A source item that doesn't fit the target (a slot already cooked-and-therefore-untouchable, or a cap the target day's config no longer allows) is skipped and counted in `skippedCount`, never silently dropped and never an error that aborts the whole copy — the same best-effort-with-honest-reporting posture D7 already uses for `bulkAddPantryItems`, and D6 (§16.2.1) already used for `autoFillWeek`'s own item list.
+
+**`copyMenuWeek` targets a week, not a menu, and get-or-creates it exactly like `createMenu` already does.** Its second argument is `toWeekStartDate`, not a `toMenuId` — the target week's menu may not exist yet (the common case: copying this week forward to next week, which has no menu until this call). `copyMenuWeek` calls the same `createMenu`-path internally (idempotent, snapshots live settings at that moment per D1 — **the target week gets its own independent snapshot**, not a copy of the source week's) before copying each source day's items into it via the same per-item validation `copyMenuDay` uses. Copying **into an already-existing** target week (the less common case — re-copying, or copying sideways rather than forward) follows the identical rule: cooked items at the target are never touched, everything else is candidate for overwrite by a copied item landing in the same slot.
+
+**No new screen.** Every one of these four actions is a confirm-gated affordance on the already-shipped Weekly plan screen (a "Same as Monday" / "Clear day" / "Clear week" / "Copy to next week" action sheet or menu, exact placement decided at implementation time per this plan's standing "flagged judgment call" convention for UI without a wireframe — §19.2.5/§20.2.6 both already used this same posture). The confirm step lives entirely client-side, matching `removeMenuItem`'s and `autoFillWeek`'s existing precedent that the API performs the action once called; asking "are you sure" is the client's job, not an API-level flag.
+
+**Explicitly out of scope:** cross-household copy (copying only ever targets a week within the same household's own menus); undo (none of W9–W13's other menu mutations have one either — consistent, not a regression); a "which items got skipped" UI beyond the honest count (`skippedCount` is surfaced; enumerating *which* slots by name is a nice-to-have this plan does not lock, the same posture D6/D7 already took toward not over-building UI nobody has asked for yet, §20.5.2).
+
 ### 20.3 Slice breakdown
 
 #### S1 — `menus.meal_config_snapshot` migration + backfill
@@ -3900,16 +3937,26 @@ A category with no curated entries (including a free-text category a user typed 
 - **Agents:** `tdd-guide` → `flutter-reviewer` → `code-reviewer`.
 - **RED tests:** confirming the sheet issues **one** `bulkAddPantryItems` call carrying every ticked item, never N single `addPantryItem` calls (the direct statement of D7); each item carries the name from the curated list and the quantity/unit from its own stepper; a failure surfaces as a typed `AppError` and leaves the sheet's selections intact for retry (never a silent no-op, and never a half-applied UI state — the server side is already all-or-nothing); a selection larger than 50 is refused client-side with a visible message rather than truncated; the pantry list refreshes from the controller's own refetch after a successful commit (**not** from a push — D7's inherited gap, asserted so the absence is deliberate and tested rather than merely true).
 
+#### S8 — Copy/clear day-week (PRD §7.1, added 2026-09-10)
+
+- **Delivers:** `clearMenuDay`, `clearMenuWeek`, `copyMenuDay`, `copyMenuWeek` (D8, §20.2.8) — four mutations, each reusing `addMenuItem`'s existing per-slot validation and the "never delete a cooked item" invariant `autoFillWeek` already locked, rather than inventing new rules; `ClearMenuResult`/`CopyMenuResult` in the SDL, reporting honest counts (`clearedCount`/`preservedCount`, `copiedCount`/`skippedCount`) matching `AutoFillResult`'s own never-silent posture; client-side confirm-gated affordances on the existing Weekly plan screen, placement a flagged judgment call (no wireframe) per §19.2.5/§20.2.6's own precedent for this.
+- **Files:** `shared/schema.graphql`; `api/src/resolvers/clearMenuDay.ts`, `clearMenuWeek.ts`, `copyMenuDay.ts`, `copyMenuWeek.ts` (new); `api/src/repositories/menuRepository.ts` (the shared delete/copy queries the four resolvers call); `api/src/mappers/menu.ts`; `mobile/lib/features/menu/presentation/weekly_plan_screen.dart` (the four affordances + confirm dialogs); `mobile/lib/features/menu/data/menu_repository.dart` (or equivalent — the four new client calls); the menu `.graphql` operation files + codegen.
+- **Depends on:** S2 (`copyMenuWeek` targets a week and get-or-creates its menu via the same snapshot-writing path S2 ships) and S3 (`copyMenuDay`/`copyMenuWeek` reuse `addMenuItem`'s validation, which S3 repoints at the snapshot — building this against the pre-S3 live-settings version would mean rewriting it days later). Independent of S4/S5/S6 — no shared files.
+- **Size/Risk:** ~2.5 hrs / Medium — four small mutations sharing one validation path keeps the server side modest; the risk is entirely in getting the "never touch a cooked item" invariant right across all four, since that is the one behaviour a household would notice being wrong immediately (a vanished cooking record) and not notice being *right* at all (nothing to see when it works).
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `database-reviewer` → `security-reviewer` → `code-reviewer` → (mobile half) `flutter-reviewer` → `code-reviewer` → `doc-updater`.
+- **RED tests** (Testcontainers, end-to-end through the resolvers): `clearMenuDay` removes every item on the target day except one with `madeAt` set, and reports both counts correctly; `clearMenuWeek` does the same across all seven days in one call; `copyMenuDay` places the source day's items onto the target day, skipping (and counting) any source item that doesn't fit the target's own config or that would land on an already-cooked target slot — never overwriting a cooked item; `copyMenuWeek` against a **non-existent** target week creates that week's menu first (idempotent, snapshotting live settings at that moment — asserted to be the *target* week's snapshot, not a copy of the source week's, the direct regression test for D8 not silently reusing D1's guarantee incorrectly) and then copies every day; `copyMenuWeek` against an **existing** target week follows the same cooked-item-never-touched rule as `copyMenuDay`, extended across all seven days; a non-member is denied identically on all four mutations, matching `addMenuItem`/`removeMenuItem`'s own pattern; explicit `null` tested wherever a new argument is nullable (§11.5.5).
+- **RED tests** (mobile, widget-level): each of the four actions is reachable from the Weekly plan screen behind a confirm step; confirming issues exactly one mutation call, never per-item calls; a partial result (some items skipped) surfaces the honest count to the user rather than reporting unconditional success; cancelling the confirm step calls nothing.
+
 #### S7 — Real-AWS verification + weekly doc pass
 
-- **Delivers:** direct-Lambda-invoke verification against real dev Aurora, RUNBOOK.md §2 method, throwaway household deleted afterward and synthetic identities recorded: create a household → create a menu → **edit the household's meal config** → confirm the existing menu's snapshot is unchanged and that `addMenuItem`/`autoFillPreview` still behave against the old config, then create the *next* week's menu and confirm it picks up the new config; a `bulkAddPantryItems` call with a realistic multi-select payload, confirming canonicalisation and the single-transaction write; §4.2's weekly pass — actual-vs-planned hours into §4's W14 row, a decisions-versus-shipped audit of §20.7's table, and the Phase 3b close-out note; `doc-updater` sync of `SYSTEM_DESIGN.md` §7.1's `menus` DDL and §6.1's `Menu` type (both amended by this plan ahead of implementation — S7 confirms the shipped shape matches, and corrects the doc if it does not).
+- **Delivers:** direct-Lambda-invoke verification against real dev Aurora, RUNBOOK.md §2 method, throwaway household deleted afterward and synthetic identities recorded: create a household → create a menu → **edit the household's meal config** → confirm the existing menu's snapshot is unchanged and that `addMenuItem`/`autoFillPreview` still behave against the old config, then create the *next* week's menu and confirm it picks up the new config; a `bulkAddPantryItems` call with a realistic multi-select payload, confirming canonicalisation and the single-transaction write; **a `copyMenuWeek` call into a not-yet-existing next week, confirming it gets its own independent snapshot rather than inheriting the source week's, followed by a `clearMenuDay` against a day carrying one cooked item, confirming the cooked item survives** (S8, added 2026-09-10); §4.2's weekly pass — actual-vs-planned hours into §4's W14 row, a decisions-versus-shipped audit of §20.7's table, and the Phase 3b close-out note; `doc-updater` sync of `SYSTEM_DESIGN.md` §7.1's `menus` DDL and §6.1's `Menu` type (both amended by this plan ahead of implementation — S7 confirms the shipped shape matches, and corrects the doc if it does not).
 - **Files:** `docs/E2E_MVP_PLAN.md` (§4 row, a W14-result subsection); `docs/SYSTEM_DESIGN.md` (§7.1/§6.1 re-sync).
-- **Depends on:** all slices.
+- **Depends on:** all slices, including S8.
 - **Size/Risk:** ~1.5 hrs / Low-Medium, non-optional.
 - **Agents:** `doc-updater`.
-- **Verification checks:** the mid-week config edit provably does not move the in-progress week (the week's headline guarantee, verified live rather than only against Testcontainers, because it is the one behaviour a user would notice being wrong); the next week's menu picks the new config up; `bulkAddPantryItems` writes every item in one transaction with units/categories canonicalised; non-member denial unchanged on `createMenu`/`addMenuItem`/`bulkAddPantryItems`; explicit `null` on every new/nullable argument (§11.5.5's standing convention); **the absence of an `onPantryChanged` push after a bulk add is confirmed, not assumed** — named as expected behaviour per D7, so a future reader does not file it as a regression.
+- **Verification checks:** the mid-week config edit provably does not move the in-progress week (the week's headline guarantee, verified live rather than only against Testcontainers, because it is the one behaviour a user would notice being wrong); the next week's menu picks the new config up; `bulkAddPantryItems` writes every item in one transaction with units/categories canonicalised; non-member denial unchanged on `createMenu`/`addMenuItem`/`bulkAddPantryItems`; explicit `null` on every new/nullable argument (§11.5.5's standing convention); **the absence of an `onPantryChanged` push after a bulk add is confirmed, not assumed** — named as expected behaviour per D7, so a future reader does not file it as a regression; **a cooked (`madeAt`-set) item survives both `clearMenuDay` and `copyMenuWeek` into an existing target, live against real dev Aurora, not only Testcontainers** (S8, D8's one behaviour a household would immediately notice being wrong).
 
-**Planned total: ~11.0 hrs** against §4's nominal ~10. The overrun is concentrated in S3 (the read-path switch, the only High-risk slice in Phase 3b) and S5 (the largest UI slice). No infrastructure spike is scheduled; R3's AppSync soak remains open and blocked on the same Cognito-credential prerequisite named since §17.8, unchanged and not this week's job.
+**Planned total: ~13.5 hrs** against §4's nominal ~10, amended 2026-09-10 to add S8's ~2.5 hrs. The overrun beyond S8 is concentrated in S3 (the read-path switch, the only High-risk slice in Phase 3b) and S5 (the largest UI slice). No infrastructure spike is scheduled; R3's AppSync soak remains open and blocked on the same Cognito-credential prerequisite named since §17.8, unchanged and not this week's job.
 
 ### 20.4 Sequencing
 
@@ -3918,20 +3965,21 @@ S1 (menus.meal_config_snapshot migration + backfill)      S5 (curated list +
   │                                                            multi-select sheet
   ▼                                                            + quantity stepper)
 S2 (snapshot written at createMenu + SDL field)             │
-  │                                                          ▼
-  ▼                                                        S6 (bulkAddPantryItems
-S3 (server read paths switch: addMenuItem,                     wiring — first
-    autoFillWeek, autoFillPreview)                             mobile caller)
-  │                                                          │
-  ▼                                                          │
-S4 (mobile: Weekly plan reads the snapshot)                  │
-  └───────────────────────────┬─────────────────────────────┘
+  │                                        │                 ▼
+  ▼                                        │               S6 (bulkAddPantryItems
+S3 (server read paths switch: addMenuItem,  │                  wiring — first
+    autoFillWeek, autoFillPreview)          │                  mobile caller)
+  │                                        │                 │
+  ▼                                        ▼                 │
+S4 (mobile: Weekly plan reads the snapshot) S8 (copy/clear    │
+  │                                            day-week)      │
+  └───────────────────────────┬──────────────┴───────────────┘
                               ▼
                 S7 (real-AWS verification + doc pass +
                     Phase 3b close-out)
 ```
 
-The week is two independent chains that only meet at S7. S1→S2→S3→S4 is strictly serial — each depends on the previous one's column, field, or source-of-truth — and is the week's whole risk. S5→S6 shares no file with any of it and can run entirely in parallel, which is deliberate: if S3 turns out harder than estimated (§20.5.1), the pantry-picker half still lands, and the founder's most user-visible feedback item does not get held hostage by the least user-visible one. S4 lands after S3 rather than beside it so client and server are never merged into a state where one reads live settings and the other reads the snapshot.
+The week is now three chains that only meet at S7. S1→S2→S3→S4 is strictly serial — each depends on the previous one's column, field, or source-of-truth — and is the week's whole risk. S5→S6 shares no file with any of it and can run entirely in parallel, which is deliberate: if S3 turns out harder than estimated (§20.5.1), the pantry-picker half still lands, and the founder's most user-visible feedback item does not get held hostage by the least user-visible one. S4 lands after S3 rather than beside it so client and server are never merged into a state where one reads live settings and the other reads the snapshot. **S8 (added 2026-09-10) depends on S2 and S3** — it targets a week via the same snapshot-writing path S2 ships and reuses the validation S3 repoints at the snapshot — but shares no files with S4, S5 or S6, so it runs alongside S4 rather than behind it once S3 lands.
 
 ### 20.5 Risks
 
@@ -3969,8 +4017,11 @@ The mutation has been unpushed since W5 without consequence, because nothing cal
 - [ ] Free-text "Search the pantry" remains available and co-equal alongside the curated picker; a category with no curated entries falls through to free text with no dead end (S5)
 - [ ] Confirming the sheet issues exactly **one** `bulkAddPantryItems` call, with no server-side change to that mutation (S6)
 - [ ] The absence of an `onPantryChanged` push after a bulk add is asserted as expected behaviour and documented at the call site, not left to be rediscovered (D7, S6, S7)
-- [ ] No new wireframe screen was added — the count stands at 43/50 for W14 (§4's amendment, §20.2.6)
+- [ ] No new wireframe screen was added — the count stands at 43/50 for W14 (§4's amendment, §20.2.6, §20.2.8)
 - [ ] Every nullable/new argument tested with an explicit `null` (§11.5.5) — this week's exposure is `Menu.mealConfigSnapshot`'s decode path and `bulkAddPantryItems`' per-item optional fields (S2, S6, S7)
+- [ ] `clearMenuDay`/`clearMenuWeek` never remove an item with `madeAt` set, and report `clearedCount`/`preservedCount` honestly; `copyMenuDay`/`copyMenuWeek` never overwrite a cooked target slot and report `copiedCount`/`skippedCount` honestly (D8, S8)
+- [ ] `copyMenuWeek` into a not-yet-existing target week creates that week's menu with its **own** independent snapshot, not a copy of the source week's (D8, S8)
+- [ ] PRD §7.1's copy/clear day-week requirement, flagged twice earlier in this plan (§11.1, §19.1) as unscheduled, is closed — no PRD MVP requirement remains without an assigned week (S8)
 - [ ] §4's W14 row has actual hours; §20.7's decisions are audited against what shipped; Phase 3b is closed out against §3's own DoD list (S7)
 
 ### 20.7 W14 locked decisions
@@ -3984,7 +4035,8 @@ The mutation has been unpushed since W5 without consequence, because nothing cal
 | **D5** | What shape is the curated pantry list, and what is it allowed to be? | **A per-category `Map<String, List<String>>` of names only**, keyed by the existing `KNOWN_PANTRY_CATEGORIES`, hand-ordered most-likely-first, never alphabetised. Allowed to be incomplete, allowed to be wrong at first, and deliberately carries **no quantities or units** — those come from the user. Same "a guess, grown by edits, never a migration" doc as `pantryUnits.ts` (Q21). |
 | **D6** | Is the picker a new screen, and what units can the stepper offer? | **Not a new screen** — a multi-select sheet plus a quantity dialog on the existing pantry-add surfaces, the §11.2.7 precedent applied again (count stays 43/50). The stepper offers **exactly the ten `KNOWN_PANTRY_UNITS`**, read from the constant rather than re-listed. Free-text "Search the pantry" stays co-equal, not demoted — the same posture D10/§13.2.11 locked for URL-import vs paste. |
 | **D7** | How does the multi-select commit, and what does it inherit? | **One `bulkAddPantryItems` call**, with **zero server change** — the mutation, its 50-cap, its Zod validation and its single-transaction rollback have all existed since W5. It inherits §11.2.1's deliberate exclusion from `onPantryChanged`: **another member's pantry does not live-update after a bulk add.** Named at the call site, asserted in tests, and left open as W20's item — not fixed here. |
+| **D8** | How do copy/clear day-week work, and what do they reuse? **(added 2026-09-10)** | **Four `menuId`/week-scoped mutations** (`clearMenuDay`, `clearMenuWeek`, `copyMenuDay`, `copyMenuWeek`), reusing `addMenuItem`'s existing cap/eligibility validation per item and `autoFillWeek`'s already-locked "never delete a cooked item" invariant — no new validation rule invented. `copyMenuWeek` targets a week (not a menu) and get-or-creates it via the same `createMenu` path S2 ships, so the target week always gets its **own** independent snapshot (D1), never a copy of the source week's. Results report honest counts (`clearedCount`/`preservedCount`, `copiedCount`/`skippedCount`), matching `AutoFillResult`'s own never-silent posture. No new screen — four confirm-gated affordances on the existing Weekly plan screen, exact placement a flagged judgment call per §19.2.5/§20.2.6's own precedent. |
 
-**Decision density: 7 locked**, all by structural necessity or direct precedent; none reverses a drafting-pass recommendation, and none was put to the founder separately — Q17, Q18 and Q21 (§10) already settled the three questions that were genuinely product calls, and this table records only the shapes chosen to realise them. The one place this plan explicitly declines to decide is §20.5.2's "should the user be told the current week is running on an older config" — flagged as unbuilt-by-choice, with the trigger for revisiting it (beta confusion) named.
+**Decision density: 8 locked** (7 from the original 2026-09-07 draft, +1 from the 2026-09-10 amendment), all by structural necessity or direct precedent; none reverses a drafting-pass recommendation, and none was put to the founder separately — Q17, Q18 and Q21 (§10) already settled the three questions that were genuinely product calls, and this table records only the shapes chosen to realise them (D8 is the one exception: it *was* a direct founder call, made when the W13 close-out audit surfaced the PRD gap, but it decided only *which week*, not the mutation shape — D8's own shape follows this table's usual "reuse existing precedent" reasoning like every other row). The one place this plan explicitly declines to decide is §20.5.2's "should the user be told the current week is running on an older config" — flagged as unbuilt-by-choice, with the trigger for revisiting it (beta confusion) named.
 
-**Phase 3b closes with W14 S7.** Its DoD is §3's Phase 3b list, not this section's alone: the welcome screen and its activity threshold (W13 S6), meal-instance grouping (W13 S4/S5), `mealsEnabled` editable across all four types plus the Dinner-clobber fix (W13 S1–S3), the per-week config snapshot (W14 S1–S4), and the curated pantry picker on `bulkAddPantryItems` (W14 S5–S6). W15 then resumes the original plan exactly where it was interrupted — 30 North Indian recipes, unchanged in content and unchanged in order, two weeks later than v2.0 said (Q16).
+**Phase 3b closes with W14 S7.** Its DoD is §3's Phase 3b list, not this section's alone: the welcome screen and its activity threshold (W13 S6), meal-instance grouping (W13 S4/S5), `mealsEnabled` editable across all four types plus the Dinner-clobber fix (W13 S1–S3), the per-week config snapshot (W14 S1–S4), the curated pantry picker on `bulkAddPantryItems` (W14 S5–S6), and copy/clear day-week (W14 S8, added 2026-09-10 — not part of Phase 3b's original DoD list in §3, but closed out here since it landed in this week). W15 then resumes the original plan exactly where it was interrupted — 30 North Indian recipes, unchanged in content and unchanged in order, two weeks later than v2.0 said (Q16).
