@@ -1,10 +1,9 @@
 import 'package:ferry/ferry.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/errors/app_error.dart';
 import '../../../shared/graphql/__generated__/schema.schema.gql.dart';
 import '../../../shared/graphql/client.dart';
-import '../../../shared/graphql/graphql_error_mapper.dart';
+import '../../../shared/graphql/ferry_execute.dart';
 import '../../../shared/graphql/operations/__generated__/notification_preferences.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/notification_preferences.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/notification_preferences.var.gql.dart';
@@ -39,9 +38,11 @@ abstract interface class NotificationPreferencesRepository {
 
 /// Ferry-backed [NotificationPreferencesRepository].
 class FerryNotificationPreferencesRepository
+    with FerryExecuteMixin
     implements NotificationPreferencesRepository {
   const FerryNotificationPreferencesRepository({required this.client});
 
+  @override
   final Client client;
 
   @override
@@ -53,7 +54,7 @@ class FerryNotificationPreferencesRepository
         ..fetchPolicy = FetchPolicy.NoCache,
     );
 
-    final GNotificationPreferencesData data = await _execute(request);
+    final GNotificationPreferencesData data = await execute(request);
     return notificationPreferencesFromGraphQL(data.notificationPreferences);
   }
 
@@ -72,7 +73,7 @@ class FerryNotificationPreferencesRepository
                   ..input = _patchFor(field, value).toBuilder()),
         );
 
-    final GUpdateNotificationPreferencesData data = await _execute(request);
+    final GUpdateNotificationPreferencesData data = await execute(request);
     return notificationPreferencesFromGraphQL(
       data.updateNotificationPreferences,
     );
@@ -101,38 +102,6 @@ class FerryNotificationPreferencesRepository
         b.activity = value;
     }
   });
-
-  /// See `HouseholdRepository._execute`'s identical doc for why "settled" is
-  /// spelled out rather than using ferry's own `response.loading`.
-  Future<TData> _execute<TData, TVars>(
-    OperationRequest<TData, TVars> request,
-  ) async {
-    OperationResponse<TData, TVars>? settled;
-    await for (final OperationResponse<TData, TVars> response in client.request(
-      request,
-    )) {
-      if (response.data != null || response.hasErrors) {
-        settled = response;
-        break;
-      }
-    }
-
-    // The stream ended without ever settling. Not expected, but returning
-    // null or letting a `StateError` escape would both break the "throws
-    // only AppError" contract.
-    if (settled == null) {
-      throw const InternalError(genericErrorMessage);
-    }
-
-    final TData? data = settled.data;
-    if (settled.hasErrors || data == null) {
-      throw mapOperationFailure(
-        graphqlErrors: settled.graphqlErrors,
-        linkException: settled.linkException,
-      );
-    }
-    return data;
-  }
 }
 
 /// Injection point for [NotificationPreferencesRepository] — same
