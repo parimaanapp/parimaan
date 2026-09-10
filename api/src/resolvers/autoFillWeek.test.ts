@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import type { AppSyncResolverEvent } from 'aws-lambda';
@@ -7,13 +7,21 @@ import { startTestDatabase, truncateAll } from '../testing/postgres.js';
 import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from '../repositories/userRepository.js';
-import { insertDefaultSettings, insertHousehold, insertMembership } from '../repositories/householdRepository.js';
+import * as householdRepository from '../repositories/householdRepository.js';
+import {
+  insertDefaultSettings,
+  insertHousehold,
+  insertMembership,
+  updateSettingsPartial,
+} from '../repositories/householdRepository.js';
 import { createMenu as createMenuRepo } from '../repositories/menuRepository.js';
 import { insertRecipe } from '../repositories/recipeRepository.js';
 import type { UserRow } from '../repositories/userRepository.js';
 import { createAutoFillWeekHandler } from './autoFillWeek.js';
 import type { AutoFillWeekResolverDeps } from './autoFillWeek.js';
 import { createAddMenuItemHandler } from './addMenuItem.js';
+import { createAutoFillPreviewHandler } from './autoFillPreview.js';
+import type { AutoFillPreviewResolverDeps } from './autoFillPreview.js';
 import { ForbiddenError, UnauthorizedError, ValidationError } from '../errors.js';
 
 const DENIAL_MESSAGE = 'You are not a member of this household.';
@@ -499,5 +507,135 @@ describe('autoFillWeek resolver (Mutation.autoFillWeek)', () => {
       results[0]?.status === 'fulfilled' && (results[0].value as { filledCount: number }).filledCount === 1;
     const addMenuItemSucceeded = results[1]?.status === 'fulfilled';
     expect(autoFillSucceededWithFill !== addMenuItemSucceeded).toBe(true); // exclusive-or: exactly one path won
+  });
+
+  // ---------------------------------------------------------------------
+  // W14 S3 (E2E_MVP_PLAN.md §20.3) — commit-time cap re-validation reads
+  // the menu's own `meal_config_snapshot`, not live `household_settings`.
+  // ---------------------------------------------------------------------
+
+  it('W14 S3: commit-time re-validation still honors the OLD cap after a mid-week mealStructure edit — the menu\'s snapshot wins, not live settings', async () => {
+    const owner = await createUser('sub-afw-w14-lowercap');
+    const householdId = await createHouseholdWithOwner(owner, 'AWW134');
+    // Widen lunch/carb to 2 BEFORE the menu is created.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 2 } } }),
+      pool,
+    );
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    const recipeA = await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id, { title: 'A' }), pool);
+    const recipeB = await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id, { title: 'B' }), pool);
+
+    // Lower the LIVE cap back to 1 AFTER the menu already exists.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 1 } } }),
+      pool,
+    );
+
+    const handler = createAutoFillWeekHandler(baseDeps);
+    const result = await handler(
+      buildEvent(
+        menuId,
+        false,
+        [item(recipeA, 0, 'lunch', 'carb'), item(recipeB, 0, 'lunch', 'carb')],
+        'sub-afw-w14-lowercap',
+      ),
+    );
+
+    // Both fit — the menu's own snapshot still says cap 2, not the lowered live value of 1.
+    expect(result.filledCount).toBe(2);
+    expect(result.unfilledSlots).toEqual([]);
+  });
+
+  it("W14 S3: autoFillWeek's commit uses the SAME snapshot as the autoFillPreview call that produced its items — no preview/commit disagreement", async () => {
+    const owner = await createUser('sub-afw-w14-agree');
+    const householdId = await createHouseholdWithOwner(owner, 'AWW234');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id, { title: 'Rajma' }), pool);
+
+    const previewHandler = createAutoFillPreviewHandler({ getPool: async () => pool } satisfies AutoFillPreviewResolverDeps);
+    const preview = await previewHandler({
+      arguments: { menuId },
+      identity: {
+        sub: 'sub-afw-w14-agree',
+        issuer: 'https://cognito-idp.ap-south-1.amazonaws.com/fake-pool-id',
+        username: 'sub-afw-w14-agree',
+        claims: { email: 'sub-afw-w14-agree@example.test' },
+        sourceIp: ['127.0.0.1'],
+        defaultAuthStrategy: 'ALLOW',
+        groups: null,
+      } as unknown as AppSyncResolverEvent<{ menuId: unknown }>['identity'],
+      source: null,
+      request: { headers: {}, domainName: null },
+      info: {
+        selectionSetList: ['items', 'filledCount', 'unfilledSlots'],
+        selectionSetGraphQL: '{ items { recipeId dayOfWeek mealSlot slotRole } filledCount unfilledSlots { dayOfWeek } }',
+        parentTypeName: 'Query',
+        fieldName: 'autoFillPreview',
+        variables: {},
+      },
+      prev: null,
+      stash: {},
+    });
+    expect(preview.filledCount).toBeGreaterThan(0);
+
+    // Commit the EXACT items the preview proposed, with nothing changed in
+    // between — this must succeed in full, since both preview and commit
+    // read the identical (menu-frozen) snapshot.
+    const previewItems = preview.items.map((proposed) =>
+      item(proposed.recipeId, proposed.dayOfWeek, proposed.mealSlot, proposed.slotRole),
+    );
+
+    const handler = createAutoFillWeekHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, false, previewItems, 'sub-afw-w14-agree'));
+
+    expect(result.filledCount).toBe(preview.filledCount);
+    expect(result.unfilledSlots).toEqual([]);
+  });
+
+  it("W14 S3: autoFillWeek's own commit-time checks read the target menu's snapshot, not live settings (direct spy on the isolated fields)", async () => {
+    const owner = await createUser('sub-afw-w14-spy');
+    const householdId = await createHouseholdWithOwner(owner, 'AWW334');
+    // Widen lunch/carb to 2 BEFORE the menu is created; the menu's snapshot freezes at 2.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 2 } } }),
+      pool,
+    );
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    const recipeA = await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id, { title: 'A' }), pool);
+    const recipeB = await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id, { title: 'B' }), pool);
+
+    // Lower the LIVE cap back to 1 — if the resolver read THIS value for
+    // caps, `findSettingsForHousehold`'s own return would show it.
+    const spy = vi.spyOn(householdRepository, 'findSettingsForHousehold');
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 1 } } }),
+      pool,
+    );
+
+    const handler = createAutoFillWeekHandler(baseDeps);
+    const result = await handler(
+      buildEvent(
+        menuId,
+        false,
+        [item(recipeA, 0, 'lunch', 'carb'), item(recipeB, 0, 'lunch', 'carb')],
+        'sub-afw-w14-spy',
+      ),
+    );
+
+    // `findSettingsForHousehold` IS still called (autoFillWeek needs live
+    // `dietaryTags` — not part of the W14 D1 snapshot envelope), but its
+    // returned `mealStructure` (now capped at 1) must NOT be what the
+    // resolver's cap check used — proven by the fact both items committed,
+    // which is only possible if the snapshot's cap of 2 was used instead.
+    expect(spy).toHaveBeenCalled();
+    const liveReturn = await spy.mock.results[0]?.value;
+    expect(liveReturn?.mealStructure?.lunch?.carb).toBe(1); // confirms live settings really did disagree
+    expect(result.filledCount).toBe(2); // yet the resolver still honored the snapshot's cap of 2
+    spy.mockRestore();
   });
 });

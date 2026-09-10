@@ -12,6 +12,7 @@ import {
   insertMenuItem as insertMenuItemRepo,
   lockMenu,
 } from '../repositories/menuRepository.js';
+import type { MenuRow } from '../repositories/menuRepository.js';
 import { findRecipesByIds } from '../repositories/recipeRepository.js';
 import type { RecipeRow } from '../repositories/recipeRepository.js';
 import { findSettingsForHousehold } from '../repositories/householdRepository.js';
@@ -82,6 +83,38 @@ const tryCommitItem = async (
 
 const slotCountKey = (dayOfWeek: number, mealSlot: string, slotRole: string): string =>
   `${dayOfWeek}:${mealSlot}:${slotCountKeyRole(mealSlot, slotRole) ?? ''}`;
+
+/**
+ * W14 S3 (E2E_MVP_PLAN.md §20.2.3 D3): `mealsEnabled`/`mealStructure` come
+ * from `menu.mealConfigSnapshot` — already loaded by the caller's
+ * `findMenuById` call, so no extra round trip — rather than a live
+ * `findSettingsForHousehold` read. `findSettingsForHousehold` is still
+ * called here, but ONLY for `dietaryTags`: D1 deliberately did not fold
+ * dietary tags into the snapshot's envelope ("the snapshot carries exactly
+ * the three existing types under lunch/dinner; snapshotting a config shape
+ * is not an invitation to widen it"), and this resolver's own commit-time
+ * re-validation (`tryCommitItem`'s `recipeMatchesDietaryTags` check,
+ * `autoFillWeek.test.ts`'s "never commits a recipe missing one of the
+ * household dietary tags" test) depends on that staying a live read. Do NOT
+ * widen this to also source `mealsEnabled`/`mealStructure` from the live
+ * row — that would silently reintroduce the exact live-read bug this slice
+ * removes. Pulled out of the handler purely to keep it under this
+ * codebase's max-lines-per-function lint rule.
+ */
+const resolveCommitSettings = async (
+  client: PoolClient,
+  menu: MenuRow,
+): Promise<RotationHouseholdSettings> => {
+  const liveSettings = await findSettingsForHousehold(client, menu.householdId);
+  if (liveSettings === null) {
+    throw new Error(`autoFillWeek: household ${menu.householdId} has no settings row.`);
+  }
+  return {
+    mealsEnabled: menu.mealConfigSnapshot.mealsEnabled,
+    mealStructure: menu.mealConfigSnapshot.mealStructure,
+    dietaryTags: liveSettings.dietaryTags,
+  };
+};
 
 /** Seeds a fresh running-count map from `menuId`'s CURRENT occupancy (post-delete-if-`overwrite`) — the starting point `commitAllItems` mutates in place as it commits. */
 const seedRunningCounts = async (client: PoolClient, menuId: string): Promise<Map<string, number>> => {
@@ -174,10 +207,7 @@ export const createAutoFillWeekHandler =
 
         await lockMenu(client, menuId);
 
-        const settings = await findSettingsForHousehold(client, menu.householdId);
-        if (settings === null) {
-          throw new Error(`autoFillWeek: household ${menu.householdId} has no settings row.`);
-        }
+        const settings = await resolveCommitSettings(client, menu);
 
         if (overwrite) {
           await deleteUnmadeMenuItems(client, menuId);

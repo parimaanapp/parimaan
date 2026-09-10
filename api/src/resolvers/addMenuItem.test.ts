@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import type { AppSyncResolverEvent } from 'aws-lambda';
@@ -7,6 +7,7 @@ import { startTestDatabase, truncateAll } from '../testing/postgres.js';
 import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from '../repositories/userRepository.js';
+import * as householdRepository from '../repositories/householdRepository.js';
 import {
   insertDefaultSettings,
   insertHousehold,
@@ -404,11 +405,48 @@ describe('addMenuItem resolver (Mutation.addMenuItem)', () => {
     ).rejects.toThrow(NotFoundError);
   });
 
-  it('accepts an add once mealsEnabled is updated to include the slot', async () => {
+  it('accepts an add once mealsEnabled is updated to include the slot, for a menu created AFTER that update', async () => {
+    // W14 S3 (E2E_MVP_PLAN.md §20.2.3 D3): `addMenuItem` enforces
+    // `mealsEnabled` from the MENU's own frozen `meal_config_snapshot`, not
+    // live `household_settings` — so the settings update must happen
+    // BEFORE `createMenuFor` for this menu to pick it up. (Pre-W14-S3 this
+    // test updated settings AFTER menu creation and still expected the add
+    // to succeed, because addMenuItem read live settings at add-time; that
+    // is precisely the behaviour D1/D3 deliberately remove — see the new
+    // "a menu created BEFORE a mealsEnabled update stays on the OLD
+    // snapshot" test directly below for the regression coverage of the case
+    // this test used to (incorrectly, per the new contract) exercise.)
     const owner = await createUser('sub-ami-owner-enable');
     const householdId = await createHouseholdWithOwner(owner, 'AME234');
+
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealsEnabled: ['breakfast', 'lunch', 'snacks', 'dinner'] }),
+      pool,
+    );
+
     const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
 
+    const recipeId = await withUserTransaction(
+      owner.id,
+      (client) => addRecipe(client, householdId, owner.id, { title: 'Poha', role: 'snack' }),
+      pool,
+    );
+
+    const handler = createAddMenuItemHandler(baseDeps);
+    const result = await handler(
+      buildEvent(menuId, { recipeId, dayOfWeek: 0, mealSlot: 'snacks', slotRole: 'snack' }, 'sub-ami-owner-enable'),
+    );
+    expect(result.mealSlot).toBe('snacks');
+  });
+
+  it('a menu created BEFORE a mealsEnabled update stays on the OLD snapshot — the update does not retroactively unlock the slot (W14 S3 headline guarantee)', async () => {
+    const owner = await createUser('sub-ami-owner-frozen-enable');
+    const householdId = await createHouseholdWithOwner(owner, 'AMZ734');
+    // Menu created FIRST, while snacks is still disabled (DEFAULT_MEALS_ENABLED).
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+    // Settings updated AFTER the menu already exists — must NOT retroactively affect it.
     await withUserTransaction(
       owner.id,
       (client) => updateSettingsPartial(client, householdId, { mealsEnabled: ['breakfast', 'lunch', 'snacks', 'dinner'] }),
@@ -422,9 +460,125 @@ describe('addMenuItem resolver (Mutation.addMenuItem)', () => {
     );
 
     const handler = createAddMenuItemHandler(baseDeps);
-    const result = await handler(
-      buildEvent(menuId, { recipeId, dayOfWeek: 0, mealSlot: 'snacks', slotRole: 'snack' }, 'sub-ami-owner-enable'),
+    await expect(
+      handler(
+        buildEvent(menuId, { recipeId, dayOfWeek: 0, mealSlot: 'snacks', slotRole: 'snack' }, 'sub-ami-owner-frozen-enable'),
+      ),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  // ---------------------------------------------------------------------
+  // W14 S3 (E2E_MVP_PLAN.md §20.3) — server read path switches to the
+  // menu's own `meal_config_snapshot`. These are the slice's own RED tests,
+  // items 1/2/6 of the S3 RED list (item 3, the Dinner-disable case, mirrors
+  // items 1/2 exactly against `mealsEnabled` rather than `mealStructure`
+  // and is covered by the two tests immediately above this block).
+  // ---------------------------------------------------------------------
+
+  it('W14 S3: lowering mealStructure.lunch.carb from 2 to 1 mid-week still allows a SECOND carb in the already-created week, and rejects a third', async () => {
+    const owner = await createUser('sub-ami-w14-lowercap');
+    const householdId = await createHouseholdWithOwner(owner, 'AMW134');
+    // Widen lunch/carb to 2 BEFORE the menu is created, so the menu's
+    // snapshot freezes at cap 2.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 2 } } }),
+      pool,
     );
-    expect(result.mealSlot).toBe('snacks');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+    const handler = createAddMenuItemHandler(baseDeps);
+    const addOne = async (title: string) => {
+      const recipeId = await withUserTransaction(
+        owner.id,
+        (client) => addRecipe(client, householdId, owner.id, { title, role: 'carb' }),
+        pool,
+      );
+      return handler(
+        buildEvent(menuId, { recipeId, dayOfWeek: 1, mealSlot: 'lunch', slotRole: 'carb' }, 'sub-ami-w14-lowercap'),
+      );
+    };
+
+    // First carb placed while the snapshot still says cap 2.
+    await addOne('Rice');
+
+    // Now lower the LIVE cap back to 1 — must NOT affect this already-created menu.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 1 } } }),
+      pool,
+    );
+
+    // A second carb still fits — the menu's own snapshot still says cap 2.
+    await expect(addOne('Roti')).resolves.toBeDefined();
+
+    // A third does not — the snapshot's cap of 2 is now reached.
+    await expect(addOne('Paratha')).rejects.toThrow(ConflictError);
+  });
+
+  it('W14 S3: the FOLLOWING week\'s menu (created after the cap edit) caps at the NEW value — the other half of the snapshot guarantee', async () => {
+    const owner = await createUser('sub-ami-w14-nextweek');
+    const householdId = await createHouseholdWithOwner(owner, 'AMW234');
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 2 } } }),
+      pool,
+    );
+    // This week's menu freezes at cap 2.
+    await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+    // Lower the cap, THEN create next week's menu — it should freeze at the NEW value, 1.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 1 } } }),
+      pool,
+    );
+    const nextWeekMenuId = await createMenuFor(owner, householdId, '2026-09-14T00:00:00.000Z');
+
+    const handler = createAddMenuItemHandler(baseDeps);
+    const addOne = async (title: string) => {
+      const recipeId = await withUserTransaction(
+        owner.id,
+        (client) => addRecipe(client, householdId, owner.id, { title, role: 'carb' }),
+        pool,
+      );
+      return handler(
+        buildEvent(nextWeekMenuId, { recipeId, dayOfWeek: 1, mealSlot: 'lunch', slotRole: 'carb' }, 'sub-ami-w14-nextweek'),
+      );
+    };
+
+    await addOne('Rice');
+    // A second carb must be rejected — the NEXT week's own snapshot caps carb at 1.
+    await expect(addOne('Roti')).rejects.toThrow(ConflictError);
+  });
+
+  it('W14 S3: addMenuItem never calls findSettingsForHousehold — mealsEnabled/mealStructure come only from the menu\'s own snapshot', async () => {
+    const spy = vi.spyOn(householdRepository, 'findSettingsForHousehold');
+    try {
+      const owner = await createUser('sub-ami-w14-spy');
+      const householdId = await createHouseholdWithOwner(owner, 'AMW334');
+      const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+      const recipeId = await withUserTransaction(
+        owner.id,
+        (client) => addRecipe(client, householdId, owner.id, { title: 'Rajma', role: 'sabzi_dal' }),
+        pool,
+      );
+
+      // `createHouseholdWithOwner`/`createMenuFor` above call
+      // `insertDefaultSettings`/`createMenu` directly (not through this
+      // spy's import path in a way that matters here) — reset the count
+      // right before invoking the resolver under test so this assertion is
+      // scoped to addMenuItem's OWN call path, not setup.
+      spy.mockClear();
+
+      const handler = createAddMenuItemHandler(baseDeps);
+      await handler(
+        buildEvent(menuId, { recipeId, dayOfWeek: 1, mealSlot: 'lunch', slotRole: 'sabzi_dal' }, 'sub-ami-w14-spy'),
+      );
+
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
