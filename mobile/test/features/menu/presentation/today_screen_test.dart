@@ -137,6 +137,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: const <MenuItem>[],
         );
         final FakeMenuRepository repository = FakeMenuRepository(
@@ -163,6 +164,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[
             _item('dinner-item', 'dinner', RecipeRole.sabziDal, 'Dal'),
             _item('breakfast-item', 'breakfast', RecipeRole.breakfast, 'Poha'),
@@ -224,6 +226,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final FakeMenuRepository repository = FakeMenuRepository(
@@ -278,6 +281,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final FakeMenuRepository repository = FakeMenuRepository(
@@ -328,6 +332,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final FakeMenuRepository repository = FakeMenuRepository(
@@ -375,6 +380,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[breakfastItem, dinnerItem],
         );
         final FakeMenuRepository repository = FakeMenuRepository(
@@ -432,6 +438,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final MenuItem madeItem = MenuItem(
@@ -484,6 +491,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final FakeMenuRepository repository = FakeMenuRepository(
@@ -517,6 +525,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final FakeMenuRepository repository = FakeMenuRepository(
@@ -562,6 +571,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final MenuItem madeItem = MenuItem(
@@ -639,6 +649,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           // Deliberately inserted out of the breakfast→dinner display
           // order `todaysItems` sorts to, so a positional (index-based)
           // widget reconciliation bug would reassign state across a
@@ -697,6 +708,7 @@ void main() {
           id: 'menu-1',
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
+          mealConfigSnapshot: '{}',
           items: <MenuItem>[item],
         );
         final FakeMenuRepository repository = FakeMenuRepository(

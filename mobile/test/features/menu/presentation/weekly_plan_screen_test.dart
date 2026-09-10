@@ -82,13 +82,57 @@ final Household testMenuHouseholdWideLunch = Household(
   members: testMenuHousehold.members,
 );
 
+/// Rewrites [menu]'s own [Menu.mealConfigSnapshot] to match [settings] —
+/// used by [_pump] so a test that hands it a `household:` override (to
+/// control which meals/structure render, W13 S5's own precedent) still
+/// gets that SAME configuration honored now that the grid reads it from
+/// the menu's snapshot rather than the household's live settings (W14 S4,
+/// E2E_MVP_PLAN.md §20.2.4) — without every such test having to build its
+/// own snapshot-carrying [Menu] by hand.
+Menu _withSnapshotOf(Menu menu, HouseholdSettings settings) => Menu(
+  id: menu.id,
+  householdId: menu.householdId,
+  weekStartDate: menu.weekStartDate,
+  items: menu.items,
+  mealConfigSnapshot: mealConfigSnapshotJsonFor(settings),
+);
+
 Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required FakeMenuRepository menuRepository,
   Household? household,
   FakeRecipeRepository? recipeRepository,
+  // `false` only for W14 S4's own "menu snapshot wins over live settings"
+  // RED tests, which deliberately construct a `menuRepository` whose menu
+  // carries a snapshot that DISAGREES with `household`'s live settings —
+  // the whole point of those tests is that this sync must NOT happen for
+  // them. Every other caller wants the default: `household:` still steers
+  // rendering the way it did before the snapshot existed (W13 S5's own
+  // precedent), via this sync rather than by rebuilding every existing
+  // test's own `Menu` fixture by hand.
+  bool syncMenuSnapshotToHousehold = true,
 }) async {
   final Household resolvedHousehold = household ?? testMenuHousehold;
+  if (syncMenuSnapshotToHousehold) {
+    // The grid now reads meal config from the MENU's own snapshot, not the
+    // household's live settings (W14 S4) — so a test that passes a
+    // `household:` override to steer which meals/structure render needs
+    // that override reflected in the menu this repository hands back too,
+    // or the grid would silently keep using whatever snapshot the caller's
+    // fixture `Menu` already carried.
+    if (menuRepository.fetchResult != null) {
+      menuRepository.fetchResult = _withSnapshotOf(
+        menuRepository.fetchResult!,
+        resolvedHousehold.settings,
+      );
+    }
+    if (menuRepository.createResult != null) {
+      menuRepository.createResult = _withSnapshotOf(
+        menuRepository.createResult!,
+        resolvedHousehold.settings,
+      );
+    }
+  }
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
       householdRepositoryProvider.overrideWithValue(
@@ -229,6 +273,9 @@ void main() {
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
           items: <MenuItem>[testMenuItem],
+          mealConfigSnapshot: mealConfigSnapshotJsonFor(
+            testMenuHousehold.settings,
+          ),
         );
         final FakeMenuRepository repository = FakeMenuRepository(
           fetchResult: menuWithMondayItem,
@@ -477,6 +524,9 @@ void main() {
           householdId: 'household-1',
           weekStartDate: currentWeekStartDate(),
           items: <MenuItem>[testMenuItem],
+          mealConfigSnapshot: mealConfigSnapshotJsonFor(
+            testMenuHousehold.settings,
+          ),
         );
         final FakeMenuRepository repository = FakeMenuRepository(
           fetchResult: menuWithMondayItem,
@@ -549,6 +599,176 @@ void main() {
         expect(find.text('Drink'), findsNothing);
         expect(find.widgetWithText(MealInstanceHeader, 'Sweet'), findsNothing);
         expect(find.widgetWithText(MealInstanceHeader, 'Drink'), findsNothing);
+      },
+    );
+  });
+
+  group('WeeklyPlanScreen reads the menu\'s own config snapshot (W14 S4)', () {
+    testWidgets(
+      'the grid renders from the menu\'s snapshot, not from the household\'s live settings, when the two disagree',
+      (WidgetTester tester) async {
+        // Live settings: only breakfast. The menu's own snapshot: all four
+        // meals. If the grid were still reading `household.settings` (the
+        // pre-S4 behavior), only Breakfast would render — asserting Lunch/
+        // Snacks/Dinner headers here is the direct regression for "reads
+        // the snapshot, not the live household".
+        final HouseholdSettings liveSettingsBreakfastOnly = HouseholdSettings(
+          householdId: testMenuHousehold.settings.householdId,
+          mealsEnabled: const <String>['breakfast'],
+          mealStructureJson: testMenuHousehold.settings.mealStructureJson,
+          cuisineTier1: testMenuHousehold.settings.cuisineTier1,
+          cuisineTier2WeightsJson:
+              testMenuHousehold.settings.cuisineTier2WeightsJson,
+          dietaryTags: testMenuHousehold.settings.dietaryTags,
+          allergens: testMenuHousehold.settings.allergens,
+          skipIngredients: testMenuHousehold.settings.skipIngredients,
+        );
+        final Household householdWithMismatchedLiveSettings = Household(
+          id: testMenuHousehold.id,
+          name: testMenuHousehold.name,
+          inviteCode: testMenuHousehold.inviteCode,
+          primaryUserId: testMenuHousehold.primaryUserId,
+          subscriptionStatus: testMenuHousehold.subscriptionStatus,
+          settings: liveSettingsBreakfastOnly,
+          members: testMenuHousehold.members,
+        );
+        final Menu menuWithAllFourMealsSnapshot = Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: currentWeekStartDate(),
+          items: const <MenuItem>[],
+          mealConfigSnapshot: mealConfigSnapshotJsonFor(
+            testMenuHouseholdAllMeals.settings,
+          ),
+        );
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: menuWithAllFourMealsSnapshot,
+        );
+
+        await _pump(
+          tester,
+          menuRepository: repository,
+          household: householdWithMismatchedLiveSettings,
+          syncMenuSnapshotToHousehold: false,
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(MealInstanceHeader.headerKey(0, MealType.breakfast)),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(MealInstanceHeader.headerKey(0, MealType.lunch)),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(MealInstanceHeader.headerKey(0, MealType.dinner)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'a snapshot with Snacks disabled renders no Snacks header even when the live household settings enable it',
+      (WidgetTester tester) async {
+        // Live settings (testMenuHouseholdAllMeals): Snacks ENABLED.
+        // Snapshot (testMenuHousehold's, via the default menu fixture):
+        // Snacks DISABLED. The grid must follow the snapshot.
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+        );
+
+        await _pump(
+          tester,
+          menuRepository: repository,
+          household: testMenuHouseholdAllMeals,
+          syncMenuSnapshotToHousehold: false,
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
+          findsNothing,
+        );
+        expect(
+          find.widgetWithText(MealInstanceHeader, 'Snacks'),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'a snapshot with Snacks enabled renders a Snacks header even when the live household settings disable it',
+      (WidgetTester tester) async {
+        // Live settings (testMenuHousehold): Snacks DISABLED. Snapshot
+        // (testMenuHouseholdAllMeals's): Snacks ENABLED. The grid must
+        // follow the snapshot, the mirror image of the previous case.
+        final Menu menuWithSnacksInSnapshot = Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: currentWeekStartDate(),
+          items: const <MenuItem>[],
+          mealConfigSnapshot: mealConfigSnapshotJsonFor(
+            testMenuHouseholdAllMeals.settings,
+          ),
+        );
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: menuWithSnacksInSnapshot,
+        );
+
+        await _pump(
+          tester,
+          menuRepository: repository,
+          syncMenuSnapshotToHousehold: false,
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'a malformed snapshot degrades to zero slots rather than throwing',
+      (WidgetTester tester) async {
+        // Not valid JSON at all — `Menu.mealConfigSettings`' own defensive
+        // decode (mirroring `meal_slot_plan.dart`'s `_decodeMealStructure`
+        // fail-closed posture) must degrade to an empty `mealsEnabled`
+        // rather than let this propagate as an uncaught exception.
+        final Menu menuWithCorruptSnapshot = Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: currentWeekStartDate(),
+          items: const <MenuItem>[],
+          mealConfigSnapshot: 'not valid json{',
+        );
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: menuWithCorruptSnapshot,
+        );
+
+        await _pump(
+          tester,
+          menuRepository: repository,
+          syncMenuSnapshotToHousehold: false,
+        );
+        await tester.pumpAndSettle();
+
+        // No exception surfaced (pumpAndSettle above would have rethrown
+        // one), the screen itself loaded past its loading/error states, and
+        // zero slots/headers render for the one malformed day.
+        expect(find.byKey(WeeklyPlanScreen.errorKey), findsNothing);
+        expect(find.byType(MealSlotCard), findsNothing);
+        expect(find.byType(MealInstanceHeader), findsNothing);
+        expect(
+          find.text('No meals configured for this day.'),
+          findsWidgets,
+        );
       },
     );
   });

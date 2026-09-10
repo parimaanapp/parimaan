@@ -4,8 +4,11 @@
 /// `../data/menu_mapper.dart`.
 library;
 
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 
+import '../../household/domain/household.dart';
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/domain/recipe_role.dart';
 
@@ -22,6 +25,7 @@ class Menu {
     required this.householdId,
     required this.weekStartDate,
     required this.items,
+    required this.mealConfigSnapshot,
   });
 
   final String id;
@@ -29,12 +33,72 @@ class Menu {
   final DateTime weekStartDate;
   final List<MenuItem> items;
 
+  /// `AWSJSON` — the household's `mealsEnabled`/`mealStructure` frozen at
+  /// the moment this menu was created (W14 D1/D4, E2E_MVP_PLAN.md §20.2.1/
+  /// §20.2.4): `{"mealsEnabled": [...], "mealStructure": {...},
+  /// "snapshotAt": "ISO timestamp"}`. A raw JSON string, not yet decoded
+  /// — same "AWSJSON fields stay raw strings" posture `HouseholdSettings`'
+  /// own class doc locks, and for the same reason: decoding it here, before
+  /// anything needs its structure, would only move a parse failure earlier.
+  /// Use [mealConfigSettings] to get the decoded, `plannedSlotsForDay`-ready
+  /// view.
+  final String mealConfigSnapshot;
+
   /// Every item on [dayOfWeek] (0 = the week's first day), in `Menu.items`'
   /// own server-side order (day, meal slot, placement time) — see
   /// `menuRepository.ts`'s `findMenuItems` for that ordering.
   List<MenuItem> itemsForDay(int dayOfWeek) => items
       .where((MenuItem item) => item.dayOfWeek == dayOfWeek)
       .toList(growable: false);
+
+  /// A `HouseholdSettings`-shaped view over [mealConfigSnapshot] (W14 D4,
+  /// E2E_MVP_PLAN.md §20.2.4) — exists so `plannedSlotsForDay(settings,
+  /// items)`'s signature never has to change: the Weekly plan screen hands
+  /// it THIS instead of a household's live settings, and the function
+  /// itself stays oblivious to where its `settings` argument came from.
+  ///
+  /// Only [HouseholdSettings.mealsEnabled] and
+  /// [HouseholdSettings.mealStructureJson] carry real data —
+  /// `plannedSlotsForDay` never reads any of the other fields, so they are
+  /// filled with harmless empty values rather than invented.
+  ///
+  /// Decodes defensively, matching `meal_slot_plan.dart`'s own
+  /// `_decodeMealStructure` posture for `mealStructureJson`: a malformed or
+  /// missing snapshot (not valid JSON, not a JSON object, or a `mealsEnabled`
+  /// that isn't a list of strings) degrades to an empty `mealsEnabled` —
+  /// which alone makes `plannedSlotsForDay` emit zero slots for every meal
+  /// type, the same "fail closed" outcome that function's own doc already
+  /// locks — rather than throwing. `mealStructure`'s own sub-document, once
+  /// extracted, is handed to [MealStructureJson]'s decoder UNCHANGED
+  /// (re-encoded back to a JSON string) — this view does not duplicate that
+  /// decode logic, it only locates the sub-document within the envelope.
+  HouseholdSettings get mealConfigSettings {
+    final Object? decoded = _tryDecodeJson(mealConfigSnapshot);
+    final Map<String, dynamic> snapshot = decoded is Map<String, dynamic>
+        ? decoded
+        : const <String, dynamic>{};
+
+    final Object? rawMealsEnabled = snapshot['mealsEnabled'];
+    final List<String> mealsEnabled = rawMealsEnabled is List
+        ? rawMealsEnabled.whereType<String>().toList(growable: false)
+        : const <String>[];
+
+    final Object? rawMealStructure = snapshot['mealStructure'];
+    final String mealStructureJson = rawMealStructure is Map
+        ? jsonEncode(rawMealStructure)
+        : '{}';
+
+    return HouseholdSettings(
+      householdId: householdId,
+      mealsEnabled: mealsEnabled,
+      mealStructureJson: mealStructureJson,
+      cuisineTier1: const <String>[],
+      cuisineTier2WeightsJson: '{}',
+      dietaryTags: const <String>[],
+      allergens: const <String>[],
+      skipIngredients: const <String>[],
+    );
+  }
 
   @override
   String toString() => 'Menu(id: $id, weekStartDate: $weekStartDate)';
@@ -45,6 +109,19 @@ class Menu {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+/// Decodes `mealConfigSnapshot` defensively — same "invalid JSON degrades to
+/// null, never throws" posture as `meal_slot_plan.dart`'s own private
+/// `_tryDecode` for `mealStructureJson`; the two are not shared because
+/// each lives next to the one type that uses it and neither file exports
+/// its helper.
+Object? _tryDecodeJson(String json) {
+  try {
+    return jsonDecode(json);
+  } on FormatException {
+    return null;
+  }
 }
 
 /// One recipe placed into one slot of a [Menu]. [slotRole] is captured at

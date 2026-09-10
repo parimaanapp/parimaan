@@ -7,6 +7,11 @@ fragment MenuFields on Menu {
   id
   householdId
   weekStartDate
+  # The household's meal config frozen at menu-creation time (W14 D4,
+  # E2E_MVP_PLAN.md §20.2.4) — the source `weekly_plan_screen.dart` reads
+  # instead of the household's live settings, so every menu-returning
+  # operation must select it, not just `Query.menu`.
+  mealConfigSnapshot
   items {
     ...MenuItemFields
   }

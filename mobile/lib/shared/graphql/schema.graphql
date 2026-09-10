@@ -915,6 +915,19 @@ type Menu {
   id: ID!
   householdId: ID!
   weekStartDate: AWSDateTime!
+  """
+  The household's `mealsEnabled`/`mealStructure` frozen at the moment this
+  menu was created — `{"mealsEnabled": [...], "mealStructure": {...},
+  "snapshotAt": "<ISO timestamp>"}` (W14 D1, E2E_MVP_PLAN.md §20.2.1).
+  Written exactly once, at `createMenu` time, from the household's
+  then-current settings; there is no mutation that ever updates it
+  afterwards, so a later edit to the household's own settings (via
+  `updateHouseholdSettings`) never changes an already-created week's config
+  — the same "a menu is a snapshot of what was planned, not a live view"
+  posture `MenuItem.slotRole`'s doc above already locks, extended from one
+  column to the whole per-meal config (§15.5.2).
+  """
+  mealConfigSnapshot: AWSJSON!
   items: [MenuItem!]!
 }
 

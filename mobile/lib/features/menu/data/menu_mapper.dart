@@ -21,6 +21,7 @@ Menu menuFromGraphQL(GMenuFields data) => Menu(
   householdId: data.householdId,
   weekStartDate: data.weekStartDate,
   items: data.items.map(menuItemFromGraphQL).toList(growable: false),
+  mealConfigSnapshot: data.mealConfigSnapshot,
 );
 
 /// The `MenuItem` counterpart to [menuFromGraphQL] — also a fragment
