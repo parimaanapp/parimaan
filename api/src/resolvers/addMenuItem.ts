@@ -12,9 +12,9 @@ import {
   lockMenu,
   lockMenuSlot,
 } from '../repositories/menuRepository.js';
+import type { MenuRow } from '../repositories/menuRepository.js';
 import { findRecipeById } from '../repositories/recipeRepository.js';
 import type { RecipeRow } from '../repositories/recipeRepository.js';
-import { findSettingsForHousehold } from '../repositories/householdRepository.js';
 import { getMealSlotCap, isMealSlotEnabled, slotCountKeyRole } from '../domain/mealStructure.js';
 import type { GraphQLMenuItem } from '../mappers/menu.js';
 import { toGraphQLMenuItem } from '../mappers/menu.js';
@@ -29,6 +29,17 @@ import { withErrorHandling } from './withErrorHandling.js';
  * to keep it under this codebase's max-lines-per-function lint rule.
  * Returns the already-fetched `RecipeRow` so the caller doesn't re-fetch it
  * to build the response.
+ *
+ * W14 S3 (E2E_MVP_PLAN.md §20.2.3 D3): `mealsEnabled`/`mealStructure` come
+ * from `menu.mealConfigSnapshot` — the config frozen onto this menu at
+ * `createMenu` time (W14 S2) — rather than a live `findSettingsForHousehold`
+ * read. This is the entire point of the snapshot: a household that edits
+ * its meal config mid-week must not change what this already-created menu
+ * enforces. `findSettingsForHousehold` is no longer called anywhere in this
+ * file — `addMenuItem` needs nothing else from `household_settings` (unlike
+ * `autoFillWeek`/`autoFillPreview`, which still read live `dietaryTags` /
+ * `skipIngredients` / cuisine weights for candidate selection — fields D1
+ * deliberately did NOT fold into the snapshot's envelope).
  *
  * `lockMenu` runs first, then `lockMenuSlot`, both BEFORE
  * `countMenuItemsInSlot` — without them, two concurrent `addMenuItem`
@@ -45,26 +56,22 @@ import { withErrorHandling } from './withErrorHandling.js';
  * without matching lock ORDER across both code paths, a concurrent
  * `addMenuItem` and `autoFillWeek` commit could each hold one lock the
  * other wants and deadlock, rather than one simply waiting for the other.
+ * Lock ordering is byte-for-byte unchanged by W14 S3 — only the SOURCE of
+ * `mealsEnabled`/`mealStructure` moved, not when or in what order anything
+ * is acquired.
  */
 const validateAddMenuItem = async (
   client: PoolClient,
-  householdId: string,
-  menuId: string,
+  menu: MenuRow,
   input: MenuItemInput,
 ): Promise<RecipeRow> => {
-  await lockMenu(client, menuId);
+  await lockMenu(client, menu.id);
 
-  const [settings, recipe] = await Promise.all([
-    findSettingsForHousehold(client, householdId),
-    findRecipeById(client, input.recipeId),
-  ]);
-  if (settings === null) {
-    throw new Error(`addMenuItem: household ${householdId} has no settings row.`);
-  }
-  if (!isMealSlotEnabled(settings.mealsEnabled, input.mealSlot)) {
+  const recipe = await findRecipeById(client, input.recipeId);
+  if (!isMealSlotEnabled(menu.mealConfigSnapshot.mealsEnabled, input.mealSlot)) {
     throw new ConflictError('This meal is not enabled for this household.');
   }
-  if (recipe === null || recipe.householdId !== householdId) {
+  if (recipe === null || recipe.householdId !== menu.householdId) {
     throw new NotFoundError('Recipe not found.');
   }
 
@@ -72,10 +79,10 @@ const validateAddMenuItem = async (
   // of role — locked/counted with slotRole:null so any existing item in
   // that slot counts, not just one matching this role.
   const countBySlotRole = slotCountKeyRole(input.mealSlot, input.slotRole);
-  await lockMenuSlot(client, menuId, input.dayOfWeek, input.mealSlot, countBySlotRole);
+  await lockMenuSlot(client, menu.id, input.dayOfWeek, input.mealSlot, countBySlotRole);
 
-  const cap = getMealSlotCap(settings.mealStructure, input.mealSlot, input.slotRole);
-  const currentCount = await countMenuItemsInSlot(client, menuId, input.dayOfWeek, input.mealSlot, countBySlotRole);
+  const cap = getMealSlotCap(menu.mealConfigSnapshot.mealStructure, input.mealSlot, input.slotRole);
+  const currentCount = await countMenuItemsInSlot(client, menu.id, input.dayOfWeek, input.mealSlot, countBySlotRole);
   if (currentCount >= cap) {
     throw new ConflictError('This meal slot is full.');
   }
@@ -142,7 +149,7 @@ export const createAddMenuItemHandler =
         }
         await requireHouseholdMember(client, callerUser.id, menu.householdId);
 
-        const recipe = await validateAddMenuItem(client, menu.householdId, menuId, input);
+        const recipe = await validateAddMenuItem(client, menu, input);
 
         const inserted = await insertMenuItemRepo(client, {
           menuId,

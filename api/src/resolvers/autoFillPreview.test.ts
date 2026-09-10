@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import type { AppSyncResolverEvent } from 'aws-lambda';
@@ -7,7 +7,13 @@ import { startTestDatabase, truncateAll } from '../testing/postgres.js';
 import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from '../repositories/userRepository.js';
-import { insertDefaultSettings, insertHousehold, insertMembership } from '../repositories/householdRepository.js';
+import * as householdRepository from '../repositories/householdRepository.js';
+import {
+  insertDefaultSettings,
+  insertHousehold,
+  insertMembership,
+  updateSettingsPartial,
+} from '../repositories/householdRepository.js';
 import { createMenu as createMenuRepo } from '../repositories/menuRepository.js';
 import { insertRecipe } from '../repositories/recipeRepository.js';
 import type { UserRow } from '../repositories/userRepository.js';
@@ -207,12 +213,23 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
   });
 
   it('a household with every meal type disabled proposes an empty result cleanly, not an error', async () => {
+    // W14 S3 (E2E_MVP_PLAN.md §20.2.3 D3): `enumerateEmptySlots` reads
+    // `mealsEnabled` from the MENU's own frozen `meal_config_snapshot`, not
+    // live `household_settings` — so `meals_enabled` must be cleared BEFORE
+    // the menu is created for this menu's snapshot to reflect it.
+    // (Pre-W14-S3 this test cleared `meals_enabled` AFTER menu creation and
+    // still expected an empty proposal, because `autoFillPreview` read live
+    // settings at call-time; that is precisely the behaviour D1/D3
+    // deliberately remove — see the new "a menu created BEFORE
+    // meals_enabled is cleared keeps proposing against its OLD snapshot"
+    // test directly below for the regression coverage of the case this
+    // test used to (incorrectly, per the new contract) exercise.)
     const owner = await createUser('sub-afp-nomeals');
     const householdId = await createHouseholdWithOwner(owner, 'AFM234');
-    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
     await db.adminClient.query(`UPDATE household_settings SET meals_enabled = '[]'::jsonb WHERE household_id = $1`, [
       householdId,
     ]);
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
     await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id), pool);
 
     const handler = createAutoFillPreviewHandler(baseDeps);
@@ -221,6 +238,26 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
     expect(result.items).toEqual([]);
     expect(result.filledCount).toBe(0);
     expect(result.unfilledSlots).toEqual([]);
+  });
+
+  it('a menu created BEFORE meals_enabled is cleared keeps proposing against its OLD snapshot — the update does not retroactively empty it (W14 S3 headline guarantee)', async () => {
+    const owner = await createUser('sub-afp-nomeals-frozen');
+    const householdId = await createHouseholdWithOwner(owner, 'AFZ734');
+    // Menu created FIRST, while meals are still enabled (DEFAULT_MEALS_ENABLED).
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+    // Settings cleared AFTER the menu already exists — must NOT retroactively affect it.
+    await db.adminClient.query(`UPDATE household_settings SET meals_enabled = '[]'::jsonb WHERE household_id = $1`, [
+      householdId,
+    ]);
+    await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id), pool);
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-nomeals-frozen'));
+
+    // The snapshot still has the default meals enabled, so the preview
+    // still proposes for those slots — unaffected by the live clear.
+    expect(result.filledCount).toBeGreaterThan(0);
   });
 
   it('proposes a cuisineTier1-matching, higher-weighted recipe disproportionately more often than a non-matching one across many independent preview calls', async () => {
@@ -447,5 +484,87 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
       (item) => item.dayOfWeek === 0 && item.mealSlot === 'lunch' && item.slotRole === 'carb',
     );
     expect(day0LunchCarb).toHaveLength(0);
+  });
+
+  // ---------------------------------------------------------------------
+  // W14 S3 (E2E_MVP_PLAN.md §20.3) — `enumerateEmptySlots` counts against
+  // the menu's own `meal_config_snapshot`, not live `household_settings`.
+  // ---------------------------------------------------------------------
+
+  it('W14 S3: enumerateEmptySlots counts against the menu\'s OLD (frozen) cap after a mid-week mealStructure edit, not the new live one', async () => {
+    const owner = await createUser('sub-afp-w14-lowercap');
+    const householdId = await createHouseholdWithOwner(owner, 'AFW134');
+    // Widen lunch/carb to 2 BEFORE the menu is created — the snapshot freezes at 2.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 2 } } }),
+      pool,
+    );
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    // Exactly ONE in-rotation carb candidate, so `pickForSlots` can fill at
+    // most one of the two same-day carb slots (it never repeats a recipe
+    // within the same meal) — the second necessarily shows as unfilled,
+    // proving TWO slots were enumerated for that (day, lunch, carb) key.
+    await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id, { role: 'carb' }), pool);
+
+    // Lower the LIVE cap back to 1 AFTER the menu already exists.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 1 } } }),
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-w14-lowercap'));
+
+    const day0LunchCarbItems = result.items.filter(
+      (proposed) => proposed.dayOfWeek === 0 && proposed.mealSlot === 'lunch' && proposed.slotRole === 'carb',
+    );
+    const day0LunchCarbUnfilled = result.unfilledSlots.filter(
+      (slot) => slot.dayOfWeek === 0 && slot.mealSlot === 'lunch' && slot.slotRole === 'carb',
+    );
+    // 2 total (day 0, lunch, carb) slots were enumerated — the snapshot's
+    // cap of 2, not the live (now-lowered) cap of 1 — split across one
+    // filled item and one unfilled slot since only one candidate exists.
+    expect(day0LunchCarbItems.length + day0LunchCarbUnfilled.length).toBe(2);
+  });
+
+  it('W14 S3: autoFillPreview never calls findSettingsForHousehold for mealsEnabled/mealStructure — only the menu\'s own snapshot feeds enumerateEmptySlots', async () => {
+    const owner = await createUser('sub-afp-w14-spy');
+    const householdId = await createHouseholdWithOwner(owner, 'AFW234');
+    // Widen lunch/carb to 2 BEFORE the menu is created; snapshot freezes at 2.
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 2 } } }),
+      pool,
+    );
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(owner.id, (client) => addRecipe(client, householdId, owner.id, { role: 'carb' }), pool);
+
+    // Lower the LIVE cap — if `enumerateEmptySlots` read THIS, findSettingsForHousehold's return would show it.
+    const spy = vi.spyOn(householdRepository, 'findSettingsForHousehold');
+    await withUserTransaction(
+      owner.id,
+      (client) => updateSettingsPartial(client, householdId, { mealStructure: { lunch: { carb: 1 } } }),
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-w14-spy'));
+
+    // `findSettingsForHousehold` IS still called (autoFillPreview needs
+    // live `skipIngredients`/`dietaryTags`/cuisine weights for candidate
+    // scoring — not part of the W14 D1 snapshot envelope), but its
+    // returned `mealStructure` (now capped at 1) is NOT what fed
+    // `enumerateEmptySlots` — proven by the (day 0, lunch, carb) count
+    // still reflecting the snapshot's cap of 2, not the live value of 1.
+    expect(spy).toHaveBeenCalled();
+    const liveReturn = await spy.mock.results[0]?.value;
+    expect(liveReturn?.mealStructure?.lunch?.carb).toBe(1); // confirms live settings really did disagree
+    const day0LunchCarbTotal =
+      result.items.filter((proposed) => proposed.dayOfWeek === 0 && proposed.mealSlot === 'lunch' && proposed.slotRole === 'carb').length +
+      result.unfilledSlots.filter((slot) => slot.dayOfWeek === 0 && slot.mealSlot === 'lunch' && slot.slotRole === 'carb').length;
+    expect(day0LunchCarbTotal).toBe(2); // the snapshot's cap, not the live one
+    spy.mockRestore();
   });
 });

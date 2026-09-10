@@ -153,6 +153,17 @@ export const createAutoFillPreviewHandler =
         }
         await requireHouseholdMember(client, callerUser.id, menu.householdId);
 
+        // W14 S3 (E2E_MVP_PLAN.md §20.2.3 D3): `enumerateEmptySlots` reads
+        // `mealsEnabled`/`mealStructure` from `menu.mealConfigSnapshot` —
+        // already loaded by `findMenuById` above, no extra query — rather
+        // than live `household_settings`. `findSettingsForHousehold` is
+        // still called here, but ONLY for `skipIngredients`/`dietaryTags`/
+        // `cuisineTier1`/`cuisineTier2Weights`, which feed candidate
+        // selection (`loadScoredCandidatesByRole`) and were deliberately
+        // NOT folded into the snapshot's envelope by D1 (it carries exactly
+        // `mealsEnabled`/`mealStructure`/`snapshotAt`). Do not source
+        // `mealsEnabled`/`mealStructure` from this live read — that is the
+        // exact bug this slice removes.
         const settings = await findSettingsForHousehold(client, menu.householdId);
         if (settings === null) {
           throw new Error(`autoFillPreview: household ${menu.householdId} has no settings row.`);
@@ -160,7 +171,7 @@ export const createAutoFillPreviewHandler =
 
         const existingItems = await findMenuItems(client, menuId);
         const emptySlots: EmptySlot[] = enumerateEmptySlots(
-          { mealsEnabled: settings.mealsEnabled, mealStructure: settings.mealStructure },
+          { mealsEnabled: menu.mealConfigSnapshot.mealsEnabled, mealStructure: menu.mealConfigSnapshot.mealStructure },
           existingItems,
         );
 
