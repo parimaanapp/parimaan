@@ -32,7 +32,24 @@ const MEAL_TYPES = ['breakfast', 'lunch', 'snacks', 'dinner'] as const;
 export interface RotationHouseholdSettings {
   mealsEnabled: readonly string[];
   mealStructure: Record<string, unknown>;
+  dietaryTags: readonly string[];
 }
+
+/**
+ * §16.2.4 D8 — a recipe is a valid auto-fill candidate only if it carries
+ * EVERY dietary tag the household has configured (a `veg` household never
+ * gets a non-`veg` recipe auto-filled); a household with no `dietaryTags`
+ * configured excludes nothing. The server's own hard filter
+ * (`findInRotationRecipesForAutoFill`'s `dietary_tags @> ...` clause) is
+ * the authoritative check at candidate-generation time — this is the same
+ * rule, re-applied at `autoFillWeek`'s commit time against a submitted
+ * item's own recipe, mirroring how `tryCommitItem` re-checks `inRotation`
+ * rather than trusting the proposal.
+ */
+export const recipeMatchesDietaryTags = (
+  recipeDietaryTags: readonly string[],
+  householdDietaryTags: readonly string[],
+): boolean => householdDietaryTags.every((tag) => recipeDietaryTags.includes(tag));
 
 export interface ExistingMenuItemSlot {
   dayOfWeek: number;
@@ -62,7 +79,7 @@ export interface EmptySlot {
  * SLOTS STILL OPEN, not the household's full configured capacity.
  */
 export const enumerateEmptySlots = (
-  settings: RotationHouseholdSettings,
+  settings: Pick<RotationHouseholdSettings, 'mealsEnabled' | 'mealStructure'>,
   existingItems: readonly ExistingMenuItemSlot[],
 ): EmptySlot[] => {
   const slots: EmptySlot[] = [];

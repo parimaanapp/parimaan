@@ -30,3 +30,22 @@ List<String> matchedIngredientWarningTerms(
   }
   return matches;
 }
+
+/// Which of [householdDietaryTags] the recipe DOESN'T carry — the
+/// client-side mirror of the server's dietary-tag hard filter
+/// (`findInRotationRecipesForAutoFill`'s `dietary_tags @>` clause, W10
+/// §16.2.4 D8), used at PICK TIME to mark (never hide, never block) a
+/// recipe the household's own diet doesn't match. Same asymmetry as D7:
+/// `autoFillWeek` hard-excludes automatically, since there's no human in
+/// that loop to see a warning; the picker only ever marks. A household with
+/// no `dietaryTags` configured always returns an empty list — nothing to
+/// warn about.
+///
+/// Returns the ORIGINAL household tag strings (not the recipe's), in
+/// [householdDietaryTags]' own order.
+List<String> mismatchedDietaryTags(
+  List<String> recipeDietaryTags,
+  List<String> householdDietaryTags,
+) => householdDietaryTags
+    .where((String tag) => !recipeDietaryTags.contains(tag))
+    .toList(growable: false);

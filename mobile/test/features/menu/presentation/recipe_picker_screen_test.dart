@@ -102,13 +102,24 @@ Future<ProviderContainer> _pump(
   return container;
 }
 
-Recipe _recipe(String id, String title, {bool isFavorite = false, bool inRotation = true}) => Recipe(
+// `dietaryTags` defaults to `testMenuHousehold.settings.dietaryTags`
+// (`['veg']`, `menu_fixtures.dart`) rather than `[]` — otherwise every test
+// using this helper against the default household would trip the W10 D8
+// dietary-tag-mismatch warning dialog it isn't testing for, silently
+// blocking the very `addMenuItem` call several of these tests assert on.
+Recipe _recipe(
+  String id,
+  String title, {
+  bool isFavorite = false,
+  bool inRotation = true,
+  List<String> dietaryTags = const <String>['veg'],
+}) => Recipe(
   id: id,
   householdId: 'household-1',
   sourceType: RecipeSource.user,
   title: title,
   servings: 4,
-  dietaryTags: const <String>[],
+  dietaryTags: dietaryTags,
   role: RecipeRole.sabziDal,
   inRotation: inRotation,
   isFavorite: isFavorite,
@@ -581,6 +592,81 @@ void main() {
       expect(find.byType(IngredientWarningDialog), findsOneWidget);
       expect(find.textContaining('peanut'), findsWidgets);
       expect(find.textContaining('cilantro'), findsWidgets);
+
+      await tester.tap(find.byKey(IngredientWarningDialog.proceedButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(menuRepository.addCalls, hasLength(1));
+      expect(menuRepository.addCalls.single.$2.recipeId, 'recipe-1');
+    });
+
+    testWidgets('a dietary-tag mismatch warns (marker, not a hidden recipe) and still allows proceeding', (
+      WidgetTester tester,
+    ) async {
+      final Household vegHousehold = Household(
+        id: 'household-1',
+        name: testMenuHousehold.name,
+        inviteCode: testMenuHousehold.inviteCode,
+        primaryUserId: testMenuHousehold.primaryUserId,
+        subscriptionStatus: testMenuHousehold.subscriptionStatus,
+        settings: HouseholdSettings(
+          householdId: 'household-1',
+          mealsEnabled: testMenuHousehold.settings.mealsEnabled,
+          mealStructureJson: testMenuHousehold.settings.mealStructureJson,
+          cuisineTier1: testMenuHousehold.settings.cuisineTier1,
+          cuisineTier2WeightsJson: testMenuHousehold.settings.cuisineTier2WeightsJson,
+          dietaryTags: const <String>['veg'],
+          allergens: const <String>[],
+          skipIngredients: const <String>[],
+        ),
+        members: testMenuHousehold.members,
+      );
+
+      final Recipe nonVegRecipe = Recipe(
+        id: 'recipe-1',
+        householdId: 'household-1',
+        sourceType: RecipeSource.user,
+        title: 'Chicken Curry',
+        servings: 4,
+        dietaryTags: const <String>['gluten_free'],
+        role: RecipeRole.sabziDal,
+        inRotation: true,
+        isFavorite: false,
+        ingredients: const <RecipeIngredient>[],
+        steps: const <String>[],
+        createdAt: DateTime.utc(2026, 9, 1),
+        updatedAt: DateTime.utc(2026, 9, 1),
+      );
+
+      final FakeRecipeRepository recipeRepository = FakeRecipeRepository(
+        result: <Recipe>[nonVegRecipe],
+        detailResult: nonVegRecipe,
+      );
+      final FakeMenuRepository menuRepository = FakeMenuRepository(
+        fetchResult: Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: currentWeekStartDate(),
+          items: const <MenuItem>[],
+        ),
+        addResult: testMenuItem,
+      );
+      await _pump(
+        tester,
+        recipeRepository: recipeRepository,
+        menuRepository: menuRepository,
+        household: vegHousehold,
+      );
+      await tester.pumpAndSettle();
+
+      // The recipe still appears in the list — never hidden.
+      expect(find.text('Chicken Curry'), findsOneWidget);
+
+      await tester.tap(find.text('Chicken Curry'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(IngredientWarningDialog), findsOneWidget);
+      expect(find.textContaining('Veg'), findsWidgets);
 
       await tester.tap(find.byKey(IngredientWarningDialog.proceedButtonKey));
       await tester.pumpAndSettle();

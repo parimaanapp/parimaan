@@ -16,6 +16,7 @@ import { findRecipesByIds } from '../repositories/recipeRepository.js';
 import type { RecipeRow } from '../repositories/recipeRepository.js';
 import { findSettingsForHousehold } from '../repositories/householdRepository.js';
 import { getMealSlotCap, isMealSlotEnabled, slotCountKeyRole } from '../domain/mealStructure.js';
+import { recipeMatchesDietaryTags } from '../domain/rotationSelection.js';
 import type { RotationHouseholdSettings } from '../domain/rotationSelection.js';
 import { toGraphQLMenu } from '../mappers/menu.js';
 import type { GraphQLAutoFillResult, GraphQLUnfilledSlot } from '../mappers/menu.js';
@@ -32,13 +33,13 @@ export const productionDeps: AutoFillWeekResolverDeps = { getPool };
 
 /**
  * Commits one submitted item if it still passes every live check —
- * household ownership, `mealsEnabled`, in-rotation, and cap, all
- * re-verified against the CURRENT database state rather than trusted from
- * whatever `autoFillPreview` proposed (time passed; another device could
- * have acted in between). `runningCounts` is mutated in place by the
- * caller's loop, not here — this function only reads it, so the caller
- * controls exactly when a successful insert's own slot becomes "occupied"
- * for the next item in the same batch.
+ * household ownership, `mealsEnabled`, in-rotation, dietary-tag match
+ * (§16.2.4 D8), and cap, all re-verified against the CURRENT database
+ * state rather than trusted from whatever `autoFillPreview` proposed (time
+ * passed; another device could have acted in between). `runningCounts` is
+ * mutated in place by the caller's loop, not here — this function only
+ * reads it, so the caller controls exactly when a successful insert's own
+ * slot becomes "occupied" for the next item in the same batch.
  */
 const tryCommitItem = async (
   client: PoolClient,
@@ -54,6 +55,10 @@ const tryCommitItem = async (
   }
   const recipe = recipesById.get(item.recipeId);
   if (recipe === undefined || recipe.householdId !== householdId || !recipe.inRotation) {
+    return { committed: false };
+  }
+
+  if (!recipeMatchesDietaryTags(recipe.dietaryTags, settings.dietaryTags)) {
     return { committed: false };
   }
 

@@ -101,13 +101,20 @@ class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
         ingredients,
         widget.household.settings.skipIngredients,
       );
+      final List<String> dietaryTagMismatches = mismatchedDietaryTags(
+        detail.dietaryTags,
+        widget.household.settings.dietaryTags,
+      );
 
-      if (allergenMatches.isNotEmpty || skipMatches.isNotEmpty) {
+      if (allergenMatches.isNotEmpty ||
+          skipMatches.isNotEmpty ||
+          dietaryTagMismatches.isNotEmpty) {
         if (!context.mounted) return;
         final bool proceed = await showIngredientWarningDialog(
           context: context,
           allergenMatches: allergenMatches,
           skipMatches: skipMatches,
+          dietaryTagMismatches: dietaryTagMismatches,
         );
         if (!proceed) return;
       }

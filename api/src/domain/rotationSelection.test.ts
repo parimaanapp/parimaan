@@ -11,12 +11,14 @@ import {
   computeUnfilledSlots,
   enumerateEmptySlots,
   pickForSlots,
+  recipeMatchesDietaryTags,
   scoreCandidate,
 } from './rotationSelection.js';
 
 const DEFAULT_SETTINGS: RotationHouseholdSettings = {
   mealsEnabled: DEFAULT_MEALS_ENABLED,
   mealStructure: DEFAULT_MEAL_STRUCTURE as unknown as Record<string, unknown>,
+  dietaryTags: [],
 };
 
 describe('enumerateEmptySlots', () => {
@@ -283,5 +285,24 @@ describe('computeUnfilledSlots', () => {
   it('an empty slots list with picks (should not happen, but must not throw or go negative) yields []', () => {
     const picks = [{ ...slot(0, 'lunch', 'carb'), recipeId: 'r1' }];
     expect(computeUnfilledSlots([], picks)).toEqual([]);
+  });
+});
+
+describe('recipeMatchesDietaryTags', () => {
+  it('matches when the recipe carries every household tag', () => {
+    expect(recipeMatchesDietaryTags(['veg', 'gluten_free'], ['veg'])).toBe(true);
+  });
+
+  it('does not match when the recipe is missing one household tag', () => {
+    expect(recipeMatchesDietaryTags(['gluten_free'], ['veg'])).toBe(false);
+  });
+
+  it('does not match a recipe with no tags at all against a non-empty household requirement', () => {
+    expect(recipeMatchesDietaryTags([], ['veg'])).toBe(false);
+  });
+
+  it('an empty household dietaryTags list always matches, regardless of the recipe', () => {
+    expect(recipeMatchesDietaryTags([], [])).toBe(true);
+    expect(recipeMatchesDietaryTags(['veg'], [])).toBe(true);
   });
 });
