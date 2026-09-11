@@ -152,9 +152,50 @@ describe('NetworkStack', () => {
     });
   });
 
-  it('declares exactly 4 VPC endpoints in total', () => {
+  it('creates a Lambda interface VPC endpoint, scoped to the isolated subnet only (W17 §23.5 fix — generateShoppingList/regenerateShoppingList timeout on staplesNoteFn invoke)', () => {
+    // `generateShoppingList`/`regenerateShoppingList` stay in `isolated`
+    // (needsInternetEgress: false) but fire an async `lambda:InvokeFunction`
+    // control-plane call to `staplesNoteFn` after their own transaction
+    // commits (api-stack.ts's `staplesNoteInvoker`). `isolated` has no
+    // route to the internet and, until this endpoint, no VPC endpoint for
+    // the Lambda service either — the call hangs with no error, and the
+    // whole function eventually dies at its own 45s timeout. This endpoint
+    // lets any isolated-subnet Lambda reach the Lambda control-plane API
+    // over AWS PrivateLink, mirroring exactly how Bedrock/Secrets Manager
+    // are already scoped to `isolated` only above.
     const template = synth('dev');
-    template.resourceCountIs('AWS::EC2::VPCEndpoint', 4);
+    template.hasResourceProperties('AWS::EC2::VPCEndpoint', {
+      ServiceName: Match.objectLike({
+        'Fn::Join': Match.arrayWith([
+          Match.arrayWith([Match.stringLikeRegexp('lambda$')]),
+        ]),
+      }),
+      VpcEndpointType: 'Interface',
+    });
+  });
+
+  it('scopes the Lambda interface VPC endpoint to the isolated subnets only, not private-egress or public', () => {
+    const template = synth('dev');
+    const lambdaEndpoints = template.findResources('AWS::EC2::VPCEndpoint', {
+      Properties: {
+        ServiceName: Match.objectLike({
+          'Fn::Join': Match.arrayWith([
+            Match.arrayWith([Match.stringLikeRegexp('lambda$')]),
+          ]),
+        }),
+        VpcEndpointType: 'Interface',
+      },
+    });
+    expect(Object.keys(lambdaEndpoints)).toHaveLength(1);
+    const endpoint = Object.values(lambdaEndpoints)[0] as { Properties: { SubnetIds: unknown[] } };
+    // Exactly 2 subnet ids (one per AZ) — the isolated group, same
+    // cardinality as the Bedrock/Secrets Manager endpoints' own scoping.
+    expect(endpoint.Properties.SubnetIds).toHaveLength(2);
+  });
+
+  it('declares exactly 5 VPC endpoints in total', () => {
+    const template = synth('dev');
+    template.resourceCountIs('AWS::EC2::VPCEndpoint', 5);
   });
 
   it('does not embed an account id or region literal in the synthesized template', () => {

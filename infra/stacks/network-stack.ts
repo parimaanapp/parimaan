@@ -23,8 +23,8 @@ export interface NetworkStackProps extends cdk.StackProps {
  *   `vpcSubnets` in `api-stack.ts`) live here, with zero internet route.
  *   This is deliberate defense-in-depth for the database and is UNCHANGED
  *   by this week's work — covered by the Gateway/Interface VPC endpoints
- *   below for S3/DynamoDB/Bedrock/Secrets Manager traffic, no NAT Gateway
- *   needed for anything that only ever talks to AWS services.
+ *   below for S3/DynamoDB/Bedrock/Secrets Manager/Lambda traffic, no NAT
+ *   Gateway needed for anything that only ever talks to AWS services.
  * - `private-egress` (`PRIVATE_WITH_EGRESS`) — new. Through W16, every
  *   Lambda needed either DB access (the `isolated` group above) or public
  *   internet access (W7's non-VPC AI Lambdas, no VPC membership at all) —
@@ -103,6 +103,24 @@ export class NetworkStack extends cdk.Stack {
     });
     this.vpc.addInterfaceEndpoint('SecretsManager', {
       service: InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      subnets: isolatedSubnets,
+    });
+    // W17 §23.5 fix — `generateShoppingList`/`regenerateShoppingList` stay
+    // in `isolated` (needsInternetEgress: false, unchanged) but fire an
+    // async `lambda:InvokeFunction` control-plane call to `staplesNoteFn`
+    // after their own transaction commits
+    // (`api/src/aiInvoke/staplesNoteInvoker.ts`). `isolated` has no route
+    // to the internet and, until this endpoint, no VPC endpoint for the
+    // Lambda service either, so that outbound call had nowhere to go: it
+    // hung silently (no error, no timeout signal) until the calling
+    // function died at its own 45s timeout — confirmed live against real
+    // dev. This endpoint lets every isolated-subnet Lambda reach the Lambda
+    // control-plane API over AWS PrivateLink (never the public internet),
+    // scoped to `isolated` only, exactly mirroring Bedrock/Secrets Manager
+    // above — the isolated subnet's "zero internet route" property stays
+    // completely intact.
+    this.vpc.addInterfaceEndpoint('Lambda', {
+      service: InterfaceVpcEndpointAwsService.LAMBDA,
       subnets: isolatedSubnets,
     });
   }
