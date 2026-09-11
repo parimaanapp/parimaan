@@ -37,6 +37,19 @@ export interface DbResolverEntry {
    * packaging-gap writeup.
    */
   readonly needsCuratedRecipes?: boolean;
+  /**
+   * W17 S1 (`E2E_MVP_PLAN.md` §23.2.1 D1, §23.3 S1) — true places this
+   * Lambda in `network-stack.ts`'s new `private-egress`
+   * (`PRIVATE_WITH_EGRESS`) subnet group instead of the default `isolated`
+   * (`PRIVATE_ISOLATED`) one, for a Lambda that needs both real Aurora
+   * access AND real internet egress in the same execution (no AWS
+   * PrivateLink exists for a third-party API like Gemini's). No
+   * `DB_RESOLVERS` entry sets this yet — the mechanism ships in S1, its
+   * first real consumer (`staplesNoteFn`) in a later slice (S3). See
+   * `dbResolver.ts`'s `resolveDbResolverVpcSubnets` for the actual
+   * placement logic.
+   */
+  readonly needsInternetEgress?: boolean;
 }
 
 /**
