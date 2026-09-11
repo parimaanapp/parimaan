@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.migrations.json",
     "lint": "eslint . -c ../eslint.config.mjs --max-warnings=0",
     "test": "vitest run --passWithNoTests",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "validate:recipes": "vitest run scripts/validateCuratedRecipes.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.933.0",
