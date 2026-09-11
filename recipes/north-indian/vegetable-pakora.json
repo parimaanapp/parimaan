@@ -1,0 +1,35 @@
+{
+  "title": "Vegetable Pakora",
+  "description": "Mixed vegetables dipped in a spiced gram-flour batter and deep-fried until crisp — the classic rainy-day teatime snack.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Besan (Gram Flour)", "quantity": 1.5, "unit": "cup", "category": "dry_goods" },
+    { "name": "Rice Flour", "quantity": 2, "unit": "tbsp", "category": "grain", "notes": "for extra crispness, optional" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "thinly sliced" },
+    { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "thinly sliced" },
+    { "name": "Spinach", "quantity": 1, "unit": "cup", "category": "produce", "notes": "roughly chopped, or substitute another leafy green" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "grated" },
+    { "name": "Carom Seeds (Ajwain)", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "other", "notes": "approximate, added gradually" },
+    { "name": "Oil", "quantity": 3, "unit": "cup", "category": "oil", "notes": "for deep frying" }
+  ],
+  "steps": [
+    "In a large bowl, combine the besan, rice flour, carom seeds, red chilli powder, turmeric and salt.",
+    "Add the sliced onion, potato, chopped spinach, green chillies and ginger to the dry mixture, and toss well so the vegetables are coated.",
+    "Add water a little at a time, mixing until you get a thick batter that clings to the vegetables — it should not be pourable like a pancake batter.",
+    "Heat oil in a deep pan or kadhai over medium heat. Test the temperature by dropping in a small bit of batter — it should rise steadily without browning too fast.",
+    "Drop spoonfuls of the vegetable-batter mixture into the hot oil, a few at a time, and fry for 4-5 minutes, turning occasionally, until deep golden and crisp.",
+    "Remove with a slotted spoon and drain on a paper towel. Repeat with the remaining batter.",
+    "Serve hot with mint or tamarind chutney."
+  ]
+}
