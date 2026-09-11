@@ -4280,3 +4280,115 @@ Inferred from commit timestamps across the W15 PR sequence (`git log`, IST times
 **Rough total actual (S1 through S4, excluding S5's own unbound window): ~3.2 hr against those four slices' own planned ~8.0 hr** — under, in the same direction as every week since W12 (§18.8's ~4.5–5 actual against ~13.5 planned; W13's ~5.5–6 against ~10.0; W14's ~5.4–6 against ~13.5). The gap here is proportionally the widest of the three content/feature weeks so far, plausibly because per-recipe authoring at Claude-drafting speed genuinely takes less wall-clock time than the code-review/TDD loop the hour estimates in §21.3 were originally sized against (the same estimating tension §21.3 S2 itself names: "content-authoring time is genuinely hard to estimate against this plan's usual code-slice hour estimates"). **This is a best-effort commit-timestamp approximation, not stopwatch/calendar-tracked time, stated honestly per this document's own §11.5.5 standing convention** rather than backfilled with invented precision.
 
 **W15 closes here: 30/30 North Indian recipes checked in, all founder-approved (per-batch, per check 2), all schema-valid (per check 1), role/dietary distribution matching D4 exactly. Per WS-9's own split (Q16), the remaining 20 South Indian recipes and the curated-seeder Lambda that writes any of these 50 into a new household are W16's job, unchanged.**
+
+---
+
+## 22. Week 16: Library complete — 20 South Indian recipes + curated seeder Lambda
+
+**Status:** LOCKED. Written 2026-09-11, immediately after W15 closed (§21.5). Unlike W15, this week is genuinely two different shapes stitched together: a content half (20 more recipes, identical process to W15) and a real code half (the seeder Lambda, the first W15/W16-era slice that touches a live transaction other agents' work already depends on). **D-numbers are W16-local** (D1–D6).
+
+### 22.1 What W16 is locked to deliver
+
+Per §4's W16 row and WS-9 (§2): **20 South Indian recipes**, authored the identical way W15's 30 were (§21.2.3 D3's review-gate, unchanged); **a curated-seeder Lambda step inside `createHousehold`'s existing transaction** that copies all 50 curated recipes (30 north + 20 south) into every newly created household, per Q8's already-locked "copy rows on `createHousehold`" decision; and a live verification that a freshly created household actually receives all 50. Gate, in WS-9's own words: **"50 recipes checked into repo, seeded on every new household, spot-checked against real cooking by founder"** — W15 delivered the first half of "checked into repo" and its own spot-check; W16 delivers the second half of "checked into repo" (the remaining 20) plus the entirety of "seeded on every new household," which W15 explicitly deferred.
+
+**No new wireframe screen, no schema change to `Recipe`/`RecipeInput`/`Menu`** — the count stays at 43/50. The one schema-adjacent fact already locked and simply being exercised here: `RecipeSourceAttribution`'s own doc (`shared/schema.graphql:876-886`) already restricts client-supplied `sourceType` to `url`/`freeform_ai` and names `curated` as a value **"only the server itself ever sets"** for exactly this seeder — nothing new to add, a promise this week keeps.
+
+**Explicitly out of scope for W16** (owned elsewhere, not oversights): any change to `createRecipe`'s own resolver or validation (the seeder calls the same repository functions `createRecipe` already uses — `insertRecipe`/`insertRecipeIngredient` — it does not add a second, parallel recipe-creation code path); a UI affordance to re-seed or reset a household's curated recipes after creation (never planned — Q8 locks copy-once, and a household's copy is theirs to edit/delete like any other recipe from that point on); the 50-recipe curated library growing beyond 50 (post-MVP, not this plan's job); anything about `bulkAddPantryItems`'s still-open `onPantryChanged` gap (W14 S6's own named, unrelated open item, not reopened here).
+
+### 22.2 Design
+
+#### 22.2.1 D1 — the South Indian recipes reuse W15's exact file shape and validation tooling, generalized from one hardcoded directory to two
+
+**Locked:** `recipes/south-indian/<slug>.json`, identical `RecipeInput`-shaped literal mirror as `recipes/north-indian/`'s files (§21.2.1 D1, unchanged — no new design needed here, only a new directory). **`api/scripts/validateCuratedRecipes.ts` needs one small generalization**: its current directory-cuisine check (`NORTH_INDIAN_DIR_SEGMENT`, hardcoded to require `cuisineTier1: "north_indian"` for anything under `recipes/north-indian/`) only knows about one directory. This week adds the mirror rule for `recipes/south-indian/` → `cuisineTier1: "south_indian"`, generalized as a small table of `{ dirSegment, requiredCuisineTier1 }` pairs rather than a second hardcoded `if`, so a hypothetical third cuisine directory (never planned, but the shape should not fight it) would be one table row, not a third copy-pasted branch — the identical "don't let a rule live in N places" reasoning this plan has named since §16.5.1.
+
+#### 22.2.2 D2 — the seeder runs inside `createHousehold`'s existing transaction, as a fourth step after settings, and never as a second async path
+
+Read `api/src/resolvers/createHousehold.ts` in full before touching it (its own doc comment already states the exact ordering reason: household → membership → settings, "in that order, because `household_settings`'s RLS policy requires the membership row to already exist"). **Locked: curated-recipe seeding is a fifth step, inserted after `insertDefaultSettings`, inside the same `withUserTransaction` scope** — recipes' own RLS policy is household-membership-scoped exactly like settings', so it inherits the identical "membership must exist first" ordering constraint, and putting it in the same transaction means a household is **never observable in a partially-seeded state**: either the whole transaction commits (household + membership + settings + all 50 recipes with their ingredients) or none of it does, matching this codebase's standing all-or-nothing transaction discipline for every other multi-row mutation (`autoFillWeek`'s commit, `bulkAddPantryItems`'s single transaction).
+
+**Rejected: seeding as a separate, post-commit async step** (a second Lambda invoked after `createHousehold` returns, or an EventBridge-triggered follow-up). This would create exactly the "new household exists but has 0 recipes for some window" race this plan's own standing posture (§11.2.1's `onPantryChanged` gap, §20.5.2's snapshot-staleness gap) already treats as a real, nameable risk class whenever it's chosen deliberately — here it is not necessary at all, since 50 small JSON-sourced inserts comfortably fit inside one Lambda invocation's timeout, so there is no performance reason to split it and only a correctness reason not to.
+
+#### 22.2.3 D3 — every seeded recipe's `created_by` is the household's own creator; no sentinel system user
+
+§11.2.9's own forward-flag (recorded when W6's `createRecipe` first needed a `created_by` FK) named the gap directly: *"Curated-library seeding... needs every copied row to satisfy the `created_by` FK. There is no system user... W16 will have to use the household creator's id or add a sentinel user row."* **Locked: the household creator's id** (`callerUser.id`, already resolved and in scope inside `createCreateHouseholdHandler` before the transaction even opens) — not a sentinel row. Reasons: a sentinel `users` row would need its own `INSERT ... ON CONFLICT DO NOTHING` bootstrap somewhere, its own RLS carve-out (every other RLS policy in this schema assumes `created_by`/`added_by` is a real, authenticated caller), and would show up in a future "who created this" UI as a name that isn't the household's own primary member — a confusing, unnecessary surface for a value nobody asked to see. Using the creator's own id costs nothing new and reads correctly everywhere `created_by` is already surfaced.
+
+#### 22.2.4 D4 — seeded recipes are marked `sourceType: curated`, never `user`, and every seeded row's `inRotation` defaults exactly like a normal create
+
+`RecipeSourceAttribution`'s own doc already reserves `curated` for this exact seeder (§13.2.4's own W7 design, quoted in §22.1 above) — this week is the first caller to actually set it. **Locked:** the seeder calls `insertRecipe` with `sourceType: 'curated'` explicitly (never left to default to `'user'`, which is what an omitted/absent value would resolve to per `createRecipe`'s own existing default) and `sourceUrl: null` (curated recipes carry no source URL — they are Claude-drafted-then-founder-reviewed content, not imported from anywhere, and `RecipeSourceAttribution`'s own doc requires `sourceUrl` only when `sourceType: url`). `inRotation` is **not** special-cased for seeded rows — it takes `insertRecipe`'s own existing default (`true`), the identical value a household's own manually created recipes get, because a curated recipe not yet toggled out of rotation by anyone is exactly the state a brand-new household should start in (Q8's whole point: seeded recipes behave like any other recipe from the moment they land).
+
+#### 22.2.5 D5 — role/dietary-tag distribution for the 20 South Indian recipes follows the same proportional shape W15 used, scaled down
+
+W15's D4 (§21.2.4) locked 6 carb / 12 sabzi_dal / 6 accompaniment / 4 breakfast / 2 snack for 30 recipes — a 1 : 2 : 1 : 0.67 : 0.33 ratio against `DEFAULT_MEAL_STRUCTURE`'s own appetite shape. **Locked, scaled to 20:** roughly **4 carb / 8 sabzi_dal / 4 accompaniment / 3 breakfast / 1 snack**, the same ratio applied to two-thirds the count, rounded to whole dishes. PRD §7.1's named spread for the *whole* 50-recipe library ("carbs, sabzis, dals, chicken, egg, salads/raitas/kozhambu variants") applies to this half specifically via kozhambu — the South Indian lentil-vegetable stew family PRD names explicitly and W15 correctly left out (it is not a North Indian dish) — kozhambu variants belong in this week's `sabzi_dal` allocation. Dietary tags assigned per-dish honestly, unchanged posture from D4's own rule.
+
+#### 22.2.6 D6 — this week gets a real-AWS verification pass; W15's D5 exemption does not carry over
+
+W15 explicitly declined a real-AWS S7 (§21.2.5 D5) because it shipped no server-side change. **W16 ships a server-side change** — the seeder step inside `createHousehold`'s transaction — so the standard "S7 verifies live" posture applies unmodified. **Locked:** S6 (this week's S7-equivalent, numbered to follow the content batches — see §22.3) creates a throwaway household via a real `createHousehold` invoke against dev Aurora/AppSync, confirms it receives **exactly 50** recipes (30 `north_indian` + 20 `south_indian`), confirms every seeded row's `sourceType` is `curated` and `created_by` is the throwaway household's own creator, confirms the household's own membership/settings rows exist correctly (the pre-existing three-step transaction, unregressed), and deletes the throwaway household afterward — the identical throwaway-household discipline every prior week's S7 has used.
+
+### 22.3 Slice breakdown
+
+#### S1 — Generalize validation tooling for `recipes/south-indian/` + directory scaffold
+
+- **Delivers:** the `{ dirSegment, requiredCuisineTier1 }` table generalization in `api/scripts/validateCuratedRecipes.ts` (D1); `recipes/south-indian/.gitkeep` (new, until S3 adds real files); a proposed 20-dish list (names + role + rough dietary tags per D5's distribution) presented to the founder for confirmation before any recipe content is drafted — identical process to W15 S1.
+- **Files:** `api/scripts/validateCuratedRecipes.ts`; `api/scripts/validateCuratedRecipes.test.ts` (add a South Indian equivalent of every North Indian directory-rule test); `recipes/south-indian/.gitkeep` (new).
+- **Depends on:** nothing — starts immediately.
+- **Size/Risk:** ~1.0 hr / Low — a small, mechanical generalization of already-working, already-tested code.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `code-reviewer` for the tooling half. The dish-list proposal is not agent work, same posture as W15 S1.
+- **RED tests:** every existing North Indian directory-rule test still passes unmodified (the generalization must not regress the working rule); a new file under `recipes/south-indian/` with `cuisineTier1: "north_indian"` is rejected; a new file under `recipes/south-indian/` with `cuisineTier1: "south_indian"` is accepted; the full-corpus test still passes vacuously against the real `recipes/south-indian/` directory with zero files present today (only `.gitkeep`).
+
+#### S2/S3 — South Indian recipe batches (10 + 10, review-gated)
+
+- **Delivers:** the 20 confirmed dishes, two batches of 10, identical process to W15 S2-S4 (each batch presented to the founder; nothing checked in without an explicit per-batch approval, D3 unchanged from §21.2.3).
+- **Files:** `recipes/south-indian/<slug>.json` × 20 (new, across two PRs).
+- **Depends on:** S1 (dish list confirmed, validator generalized).
+- **Size/Risk:** ~2.0 hrs / Low-Medium each — sized like W15's later batches (S3/S4) rather than its first (S2), since the format and review rhythm are already established from W15, not being learned for the first time.
+- **Agents:** none in the code-review sense, same posture as W15's content slices.
+- **Exit check:** each batch's files validate against S1's generalized script; each batch carries an explicit founder approval.
+
+#### S4 — Curated-seeder Lambda step inside `createHousehold`
+
+- **Delivers:** the fifth transaction step (D2) in `api/src/resolvers/createHousehold.ts` — after `insertDefaultSettings`, read all 50 curated recipe JSON files (bundled with the Lambda at build time, not fetched at runtime — same "no new I/O dependency" reasoning `curated_pantry_items.dart` already established client-side, applied here server-side) and call `insertRecipe`/`insertRecipeIngredient` once per recipe/ingredient with `householdId` the new household's id, `createdBy` the creator's id (D3), `sourceType: 'curated'` (D4). An injectable deps seam for the recipe-list source (mirroring `CreateHouseholdResolverDeps`'s existing `insertDefaultSettings` override pattern) so tests can inject a small fixture set instead of genuinely inserting 50 rows per test case.
+- **Files:** `api/src/resolvers/createHousehold.ts`; `api/src/repositories/recipeRepository.ts` (only if a small "insert many" helper is genuinely warranted — read the existing `insertRecipe`/`insertRecipeIngredient` signatures first; do not add a bulk-insert abstraction if a plain loop over the existing per-recipe functions is just as clear, matching this codebase's own "no premature abstraction" convention); a new module reading/parsing the curated JSON at Lambda cold-start (e.g. `api/src/curatedRecipes.ts`), read once and cached module-level (not re-read per invocation — the same "read once, reuse" posture this codebase already applies to other cold-start-loaded config).
+- **Depends on:** S2/S3 for the real content to seed with in tests/verification (though the code itself can be written and unit-tested against a small fixture set before all 20 South Indian files exist — the RED tests below use fixtures, not the real 50-file corpus, so this slice does not strictly block on content completion, only S6's live verification does).
+- **Size/Risk:** ~3.0 hrs / **High** — the highest-risk slice of this week and arguably of Phase 3c so far: it modifies a transaction three other weeks' worth of already-shipped, already-tested behavior (household creation itself) depends on, and a bug here either breaks every new household's creation outright or silently seeds the wrong data.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `database-reviewer` (mandatory — this touches a multi-row transactional insert) → `security-reviewer` (mandatory — verify no path lets a client influence which recipes get seeded or whose id `created_by` receives) → `code-reviewer`.
+- **RED tests** (Testcontainers, end-to-end through the resolver, using a small injected fixture recipe set — 2-3 fixture recipes, not the real 50):
+  1. A newly created household receives every fixture recipe, each with `householdId` the new household's id.
+  2. Every seeded recipe's `createdBy` is the calling user's own id (not a sentinel, not null).
+  3. Every seeded recipe's `sourceType` is exactly `'curated'`.
+  4. Every seeded recipe's ingredients are correctly inserted and linked to the right recipe (not cross-linked between recipes if the fixture set has more than one).
+  5. `createHousehold`'s **existing** behavior — invite-code retry, membership row, default settings — passes every pre-existing test in `createHousehold.test.ts` **unmodified** (the same "every existing test must pass with zero assertion edits" discipline W14 S3 already established for its own highest-risk slice).
+  6. A failure mid-seeding (inject a failure via the deps seam, e.g. the fixture-recipe-list function throwing) rolls back the **entire** transaction — no household, no membership, no settings, no partial recipes survive (direct proof of D2's "never partially seeded" guarantee).
+  7. Calling `createHousehold` twice for the same user (a second household) seeds a **second, independent** copy of the recipes — not a shared reference, not skipped as "already seeded" (Q8's "copy rows," not "copy once globally," re-asserted as a test).
+  8. Non-member/unauthenticated denial on `createHousehold` is unchanged (a quick regression, since this slice touches the resolver at all).
+
+#### S5 — Wire the real 50-file corpus into the seeder + full-corpus fixture parity check
+
+- **Delivers:** the curated-JSON-reading module (S4) pointed at the real `recipes/north-indian/` + `recipes/south-indian/` directories instead of S4's test fixtures; a test confirming the module successfully parses and type-checks all 50 real files at load time (a direct regression catch for "a recipe file that validates against `validateCuratedRecipes.ts` but fails a *stricter* runtime assumption the seeder module makes" — e.g. if the seeder module needs something `validateCuratedRecipes.ts` doesn't check).
+- **Files:** the curated-JSON-reading module from S4 (path/glob updated from fixtures to the real directories).
+- **Depends on:** S2, S3 (all 50 real recipe files must exist), S4 (the seeder module to point at them).
+- **Size/Risk:** ~0.5 hr / Low — mostly a path change plus one new integration-shaped test.
+- **Agents:** `tdd-guide` → `code-reviewer`.
+- **RED tests:** the module successfully loads and parses all 50 real files without throwing; the count is exactly 50 (30 + 20); a household created against the real corpus (not fixtures) receives all 50 recipes in a Testcontainers test.
+
+#### S6 — Real-AWS verification + weekly doc pass
+
+- **Delivers:** live verification per D6 (§22.2.6) — a throwaway household created via a real `createHousehold` invoke against dev Aurora/AppSync receives exactly 50 recipes (30 north + 20 south), every seeded row's `sourceType`/`createdBy` correct, the pre-existing membership/settings creation unregressed; §4.2's weekly pass — actual-vs-planned hours into §4's W16 row, a decisions-versus-shipped audit of §22.4's locked-decisions table; `doc-updater` re-sync of `docs/SYSTEM_DESIGN.md` if its own `createHousehold`/seeding description (if any exists) has gone stale.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 row, a W16-result subsection); `docs/SYSTEM_DESIGN.md` (only if stale).
+- **Depends on:** all slices.
+- **Size/Risk:** ~1.0 hr / Low-Medium, non-optional.
+- **Agents:** `doc-updater`.
+- **Verification checks:** a live-created household receives exactly 50 recipes, no more, no fewer; the 30/20 north/south split is exact; `sourceType: curated` on all 50; `createdBy` matches the creating user; a second live-created household (same user, different name) receives its own independent 50 rows, not a shared reference (D2/Q8's guarantee, verified live not only via Testcontainers); non-member denial on `createHousehold` unchanged.
+
+**Planned total: ~9.0 hrs.** The content half (S1-S3) is proportionally similar to W15's own pace; the risk and most of the hours concentrate in S4, this week's one genuinely new architectural surface.
+
+### 22.4 Locked decisions
+
+| # | Question | Decision |
+|---|---|---|
+| **D1** | How do South Indian recipes reuse W15's tooling? | **Identical file shape**, new `recipes/south-indian/` directory; the validator's single-directory hardcoded rule becomes a small `{dirSegment, cuisineTier1}` table rather than a second copy-pasted branch. |
+| **D2** | Where does seeding happen relative to `createHousehold`'s transaction? | **Inside it, as a fifth step after settings** — never a separate post-commit path. A household is never observable partially-seeded; the whole transaction commits or none of it does. |
+| **D3** | Whose id does a seeded recipe's `created_by` carry? | **The household creator's own id** — not a sentinel system user, closing the gap §11.2.9 flagged forward from W6. |
+| **D4** | What `sourceType`/`inRotation` do seeded recipes get? | **`sourceType: 'curated'`** (explicitly set, the value `RecipeSourceAttribution`'s own doc already reserved for this seeder since W7); **`inRotation` takes `insertRecipe`'s normal default** (`true`) — no special-casing. |
+| **D5** | What role/dietary-tag spread do the 20 South Indian recipes cover? | **Roughly 4 carb / 8 sabzi_dal / 4 accompaniment / 3 breakfast / 1 snack** — W15's D4 ratio scaled to two-thirds the count. Kozhambu variants (PRD §7.1's own named South Indian category) fall under `sabzi_dal`. |
+| **D6** | Does this week get a real-AWS verification pass? | **Yes** — W15's D5 exemption was specific to shipping no server change; this week ships one (the seeder), so the standard live-S7 posture applies unmodified. |
+
+**Decision density: 6 locked** — smaller than a typical server-side week (W13's 6, W14's 8) despite S4 being this week's highest-risk slice, because five of the six decisions were already substantially pre-shaped by earlier weeks' own forward-flags (§11.2.9's `created_by` gap, §13.2.4's `sourceType: curated` reservation, Q8's copy-on-create) rather than being decided fresh here — this week mostly *executes* prior commitments rather than making new product calls.
