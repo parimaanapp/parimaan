@@ -21,6 +21,7 @@ const validRecipe = {
 };
 
 const northIndianPath = join('recipes', 'north-indian', 'dal-tadka.json');
+const southIndianPath = join('recipes', 'south-indian', 'sambar.json');
 
 describe('validateCuratedRecipe', () => {
   it('accepts a minimal, well-formed fixture file', () => {
@@ -58,6 +59,27 @@ describe('validateCuratedRecipe', () => {
   it('accepts a non-"north_indian" cuisineTier1 for a file outside recipes/north-indian/', () => {
     const otherPath = join('recipes', 'south-indian', 'sambar.json');
     const result = validateCuratedRecipe(otherPath, { ...validRecipe, cuisineTier1: 'south_indian' });
+    expect(result.success).toBe(true);
+  });
+
+  // W16 §22.2.1 D1 — the south-indian mirror of the north-indian
+  // directory-rule tests above, proving the generalized
+  // `{ dirSegment, requiredCuisineTier1 }` table enforces the rule
+  // symmetrically for both directories, not just the original one.
+  it('rejects a cuisineTier1 other than "south_indian" for a file under recipes/south-indian/', () => {
+    const result = validateCuratedRecipe(southIndianPath, {
+      ...validRecipe,
+      cuisineTier1: 'north_indian',
+    });
+    expect(result.success).toBe(false);
+    expect(result.errors.join(' ')).toContain('south_indian');
+  });
+
+  it('accepts cuisineTier1 "south_indian" for a file under recipes/south-indian/', () => {
+    const result = validateCuratedRecipe(southIndianPath, {
+      ...validRecipe,
+      cuisineTier1: 'south_indian',
+    });
     expect(result.success).toBe(true);
   });
 
