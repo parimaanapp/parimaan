@@ -8,14 +8,14 @@ import {
 } from 'aws-cdk-lib/aws-appsync';
 import type { IUserPool, UserPool } from 'aws-cdk-lib/aws-cognito';
 import type { ISecurityGroup, IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
-import { SubnetType } from 'aws-cdk-lib/aws-ec2';
-import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Secret as SecretsManagerSecret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import type { Construct } from 'constructs';
+import { createDbResolverFunction } from './dbResolver';
 import { createNonVpcResolverFunction } from './nonVpcResolver';
 import { AI_RESOLVERS, DB_RESOLVERS, NET_RESOLVERS } from './resolverEntries';
 
@@ -258,11 +258,13 @@ export class ApiStack extends cdk.Stack {
     const dbDeps = { vpc, dbCluster, appRoleSecret, lambdaSecurityGroup };
 
     for (const entry of DB_RESOLVERS) {
-      const fn = this.createDbResolverFunction(
+      const fn = createDbResolverFunction(
+        this,
         `${entry.id}Fn`,
         entry.entryFile,
         dbDeps,
         entry.needsCuratedRecipes === true,
+        entry.needsInternetEgress === true,
       );
 
       // Only the rate-limited resolvers get the cache table, and only the one
@@ -326,116 +328,12 @@ export class ApiStack extends cdk.Stack {
     dataSource.createResolver(`${name}Resolver`, { typeName, fieldName });
   }
 
-  /**
-   * Shared config for every database-backed resolver Lambda in
-   * `DB_RESOLVERS`: VPC subnet placement, the shared
-   * `lambdaSecurityGroup`, and env vars for
-   * connecting to Aurora as `parimaan_app` (never the cluster's admin
-   * secret — these Lambdas only ever get read access to `appRoleSecret`).
-   */
-  private createDbResolverFunction(
-    id: string,
-    entryFile: string,
-    deps: {
-      vpc: IVpc;
-      dbCluster: DatabaseCluster;
-      appRoleSecret: Secret;
-      lambdaSecurityGroup: ISecurityGroup;
-    },
-    needsCuratedRecipes = false,
-  ): NodejsFunction {
-    const { vpc, dbCluster, appRoleSecret, lambdaSecurityGroup } = deps;
-
-    // W16 S5 — the curated-recipe corpus (`recipes/north-indian/` +
-    // `recipes/south-indian/`, repo root) is bundled with the Lambda at
-    // build time, not fetched at runtime (locked design — the same
-    // "no new I/O dependency" reasoning `curated_pantry_items.dart` already
-    // established client-side, applied here server-side). Before this
-    // packaging fix, `api/src/curatedRecipes.ts` had a real reader but
-    // NOTHING actually shipped `recipes/` alongside the bundled Lambda code:
-    // `NodejsFunction`'s esbuild bundling only follows the JS/TS module
-    // graph, and a `readdirSync`/`readFileSync` call against a relative
-    // filesystem path is invisible to it — plain data, not an import. Left
-    // unfixed, `getCuratedRecipesFromCorpus` would throw
-    // "could not locate the curated recipes directory" on every real
-    // `createHousehold` invocation in a deployed Lambda, despite every
-    // local/Testcontainers test passing (those run from the actual repo
-    // checkout, where `recipes/` genuinely sits two directories up from
-    // `api/src/curatedRecipes.ts` — see that file's own
-    // `resolveCuratedRecipesDir` doc). `commandHooks.afterBundling` copies
-    // the directory into the same asset output directory esbuild's bundle
-    // file lands in, matching `resolveCuratedRecipesDir`'s first (bundled)
-    // candidate path — a plain `cp -r`, not a new packaging mechanism, only
-    // applied to the one Lambda that actually reads this data
-    // (`needsCuratedRecipes`), not every `DB_RESOLVERS` entry.
-    const curatedRecipesBundling = needsCuratedRecipes
-      ? {
-          commandHooks: {
-            beforeBundling: (): string[] => [],
-            afterBundling: (inputDir: string, outputDir: string): string[] => [
-              `cp -r "${join(inputDir, 'recipes')}" "${join(outputDir, 'recipes')}"`,
-            ],
-            beforeInstall: (): string[] => [],
-          },
-        }
-      : {};
-
-    const fn = new NodejsFunction(this, id, {
-      entry: join(__dirname, `../../api/src/resolvers/${entryFile}`),
-      runtime: Runtime.NODEJS_24_X,
-      handler: 'handler',
-      vpc,
-      vpcSubnets: { subnetType: SubnetType.PRIVATE_ISOLATED },
-      securityGroups: [lambdaSecurityGroup],
-      // Aurora Serverless v2's auto-pause resume can take up to ~30s (the
-      // mobile app's own copy — `NameHouseholdScreen.coldStartHint` — tells
-      // the user exactly that), and connecting is only the first part of an
-      // invocation that then still has to run the actual query/transaction.
-      // A 30s function timeout left no headroom at all for that: a genuine
-      // first-request-after-pause reliably timed out at the *connection*
-      // step alone (`pool.ts`'s `connectionTimeoutMillis`, previously 5s —
-      // shorter still), well before the function timeout ever mattered.
-      // Caught only by a real cold Aurora invocation — nothing synth-time or
-      // unit-tested exercises actual connection latency. 45s leaves roughly
-      // 10-15s for the query itself after the worst-case 30s resume.
-      timeout: cdk.Duration.seconds(45),
-      memorySize: 512,
-      tracing: Tracing.ACTIVE,
-      // No `reservedConcurrentExecutions` here (yet). There is no RDS Proxy
-      // in front of Aurora (locked decision, `SYSTEM_DESIGN.md` §7.1/
-      // `E2E_MVP_PLAN.md` §10 Q1), so every concurrent Lambda invocation is
-      // its own Postgres connection, and a per-function reservation is the
-      // intended long-term guard against a burst opening more connections
-      // than Aurora can hold. It is left unset right now because this AWS
-      // account currently has a fresh-account Lambda concurrency quota of
-      // only 10 *total*, and AWS rejects any reservation that would leave
-      // fewer than 10 unreserved — so even one reserved execution on one
-      // function fails deployment outright today. The account's own
-      // 10-execution ceiling already bounds simultaneous Aurora connections
-      // far more tightly than a reservation would have, so nothing is
-      // actually unprotected in the meantime — this is a today's-account-
-      // limits accommodation, not a safety rollback. Add
-      // `reservedConcurrentExecutions: 5` (or similar, weighed against
-      // `data-stack.ts`'s `AuroraConnectionsAlarm` threshold) back once a
-      // quota increase is requested and granted.
-      environment: {
-        APP_ROLE_SECRET_ARN: appRoleSecret.secretArn,
-        DB_HOST: dbCluster.clusterEndpoint.hostname,
-        DB_PORT: dbCluster.clusterEndpoint.port.toString(),
-        DB_NAME: 'parimaan',
-      },
-      // See `data-stack.ts`'s identical `esbuildArgs` comment — trims
-      // esbuild's own CLI logging, a documented aggravating factor in a
-      // CI-only Vitest worker-IPC-heartbeat flake. This is the largest
-      // single contributor: every `DB_RESOLVERS` entry is built through
-      // this one factory. `...curatedRecipesBundling` (W16 S5) adds the
-      // `commandHooks` copy step above ONLY for the one entry that set
-      // `needsCuratedRecipes` — an empty object for every other resolver,
-      // so this spread is a no-op for them.
-      bundling: { esbuildArgs: { '--log-level': 'error' }, ...curatedRecipesBundling },
-    });
-
-    appRoleSecret.grantRead(fn);
-    return fn;
-  }
+  // `createDbResolverFunction` (VPC-attached resolver Lambda factory,
+  // including the `needsInternetEgress` subnet opt-in — W17 §23.2.1 D1) now
+  // lives in `dbResolver.ts`, the same "standalone function, not a private
+  // method" extraction `createNonVpcResolverFunction` already established
+  // in `nonVpcResolver.ts` — so both resolver-factory shapes are directly
+  // unit-testable against a throwaway stack, with no production
+  // `DB_RESOLVERS`/`AI_RESOLVERS`/`NET_RESOLVERS` entry needing to exist
+  // first.
 }
