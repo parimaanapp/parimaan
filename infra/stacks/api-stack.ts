@@ -258,7 +258,12 @@ export class ApiStack extends cdk.Stack {
     const dbDeps = { vpc, dbCluster, appRoleSecret, lambdaSecurityGroup };
 
     for (const entry of DB_RESOLVERS) {
-      const fn = this.createDbResolverFunction(`${entry.id}Fn`, entry.entryFile, dbDeps);
+      const fn = this.createDbResolverFunction(
+        `${entry.id}Fn`,
+        entry.entryFile,
+        dbDeps,
+        entry.needsCuratedRecipes === true,
+      );
 
       // Only the rate-limited resolvers get the cache table, and only the one
       // DynamoDB action their limiter actually calls (a single atomic
@@ -337,8 +342,43 @@ export class ApiStack extends cdk.Stack {
       appRoleSecret: Secret;
       lambdaSecurityGroup: ISecurityGroup;
     },
+    needsCuratedRecipes = false,
   ): NodejsFunction {
     const { vpc, dbCluster, appRoleSecret, lambdaSecurityGroup } = deps;
+
+    // W16 S5 — the curated-recipe corpus (`recipes/north-indian/` +
+    // `recipes/south-indian/`, repo root) is bundled with the Lambda at
+    // build time, not fetched at runtime (locked design — the same
+    // "no new I/O dependency" reasoning `curated_pantry_items.dart` already
+    // established client-side, applied here server-side). Before this
+    // packaging fix, `api/src/curatedRecipes.ts` had a real reader but
+    // NOTHING actually shipped `recipes/` alongside the bundled Lambda code:
+    // `NodejsFunction`'s esbuild bundling only follows the JS/TS module
+    // graph, and a `readdirSync`/`readFileSync` call against a relative
+    // filesystem path is invisible to it — plain data, not an import. Left
+    // unfixed, `getCuratedRecipesFromCorpus` would throw
+    // "could not locate the curated recipes directory" on every real
+    // `createHousehold` invocation in a deployed Lambda, despite every
+    // local/Testcontainers test passing (those run from the actual repo
+    // checkout, where `recipes/` genuinely sits two directories up from
+    // `api/src/curatedRecipes.ts` — see that file's own
+    // `resolveCuratedRecipesDir` doc). `commandHooks.afterBundling` copies
+    // the directory into the same asset output directory esbuild's bundle
+    // file lands in, matching `resolveCuratedRecipesDir`'s first (bundled)
+    // candidate path — a plain `cp -r`, not a new packaging mechanism, only
+    // applied to the one Lambda that actually reads this data
+    // (`needsCuratedRecipes`), not every `DB_RESOLVERS` entry.
+    const curatedRecipesBundling = needsCuratedRecipes
+      ? {
+          commandHooks: {
+            beforeBundling: (): string[] => [],
+            afterBundling: (inputDir: string, outputDir: string): string[] => [
+              `cp -r "${join(inputDir, 'recipes')}" "${join(outputDir, 'recipes')}"`,
+            ],
+            beforeInstall: (): string[] => [],
+          },
+        }
+      : {};
 
     const fn = new NodejsFunction(this, id, {
       entry: join(__dirname, `../../api/src/resolvers/${entryFile}`),
@@ -388,8 +428,11 @@ export class ApiStack extends cdk.Stack {
       // esbuild's own CLI logging, a documented aggravating factor in a
       // CI-only Vitest worker-IPC-heartbeat flake. This is the largest
       // single contributor: every `DB_RESOLVERS` entry is built through
-      // this one factory.
-      bundling: { esbuildArgs: { '--log-level': 'error' } },
+      // this one factory. `...curatedRecipesBundling` (W16 S5) adds the
+      // `commandHooks` copy step above ONLY for the one entry that set
+      // `needsCuratedRecipes` — an empty object for every other resolver,
+      // so this spread is a no-op for them.
+      bundling: { esbuildArgs: { '--log-level': 'error' }, ...curatedRecipesBundling },
     });
 
     appRoleSecret.grantRead(fn);

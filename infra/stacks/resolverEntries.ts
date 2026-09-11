@@ -25,6 +25,18 @@ export interface DbResolverEntry {
    * co-members). Every other resolver must have no DynamoDB access at all.
    */
   readonly needsCacheTable?: boolean;
+  /**
+   * W16 S5 — true ONLY for `CreateHousehold`. `NodejsFunction`'s esbuild
+   * bundling flattens this Lambda's entire dependency graph into one output
+   * file; the repo-root `recipes/` directory `api/src/curatedRecipes.ts`
+   * reads at cold-start is plain data, not a module in that graph, so
+   * esbuild never picks it up on its own. When true,
+   * `createDbResolverFunction` (`api-stack.ts`) adds a
+   * `bundling.commandHooks.afterBundling` step that copies `recipes/` next
+   * to the bundled output — see that method's own comment for the full
+   * packaging-gap writeup.
+   */
+  readonly needsCuratedRecipes?: boolean;
 }
 
 /**
@@ -42,6 +54,7 @@ export const DB_RESOLVERS: readonly DbResolverEntry[] = [
     entryFile: 'createHousehold.ts',
     typeName: 'Mutation',
     fieldName: 'createHousehold',
+    needsCuratedRecipes: true,
   },
   {
     id: 'UserHouseholds',
