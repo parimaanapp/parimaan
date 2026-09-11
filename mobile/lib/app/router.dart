@@ -34,10 +34,13 @@ import '../features/menu/presentation/weekly_plan_screen.dart';
 import '../features/menu/state/current_menu_controller.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
 import '../features/onboarding/presentation/welcome_choose_path_screen.dart';
+import '../features/pantry/domain/curated_pantry_selection.dart';
 import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
+import '../features/pantry/presentation/pantry_error_copy.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
+import '../features/pantry/state/pantry_form_controller.dart';
 import '../features/recipes/domain/ai_recipe_draft.dart';
 import '../features/recipes/domain/recipe.dart';
 import '../features/recipes/domain/recipe_role.dart';
@@ -749,6 +752,38 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
           return AddMethodScreen(
             onManual: () =>
                 context.push(AppRoutes.pantryManualAdd(householdId)),
+            // W14 S6 (E2E_MVP_PLAN.md §20.2.7/§20.3): the curated
+            // multi-select sheet's confirm becomes one
+            // `bulkAddPantryItems` call here — see
+            // `PantryFormController.bulkAdd`'s own doc for the "one call,
+            // never N", client-side 50-item cap, and inherited
+            // `onPantryChanged` no-push gap this wiring relies on.
+            onCuratedItemsSelected:
+                (List<CuratedPantrySelection> selections) async {
+                  final PantryFormController controller = ref.read(
+                    pantryFormControllerProvider.notifier,
+                  );
+                  final bool ok = await controller.bulkAdd(
+                    householdId,
+                    selections,
+                  );
+                  if (!context.mounted) {
+                    return;
+                  }
+                  if (ok) {
+                    Navigator.of(context).pop();
+                    return;
+                  }
+                  final AsyncValue<void> formState = ref.read(
+                    pantryFormControllerProvider,
+                  );
+                  final String message =
+                      pantryErrorMessage(formState.error) ??
+                      genericErrorMessage;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(message)));
+                },
           );
         },
       ),

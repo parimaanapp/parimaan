@@ -9,6 +9,9 @@ import '../../../shared/graphql/graphql_error_mapper.dart';
 import '../../../shared/graphql/operations/__generated__/add_pantry_item.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/add_pantry_item.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/add_pantry_item.var.gql.dart';
+import '../../../shared/graphql/operations/__generated__/bulk_add_pantry_items.data.gql.dart';
+import '../../../shared/graphql/operations/__generated__/bulk_add_pantry_items.req.gql.dart';
+import '../../../shared/graphql/operations/__generated__/bulk_add_pantry_items.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_pantry_item.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_pantry_item.req.gql.dart';
 import '../../../shared/graphql/operations/__generated__/delete_pantry_item.var.gql.dart';
@@ -50,6 +53,36 @@ abstract interface class PantryRepository {
   /// verified caller.
   Future<PantryItem> addPantryItem(String householdId, PantryItemDraft draft);
 
+  /// Adds every draft in [items] to [householdId]'s pantry in one
+  /// transaction — `Mutation.bulkAddPantryItems`
+  /// (E2E_MVP_PLAN.md §20.2.7 D7, §20.3 S6), first exercised by the curated
+  /// multi-select sheet's confirm (`curated_items_sheet.dart`). Mirrors
+  /// [addPantryItem]'s shape exactly except for taking a list: same
+  /// membership requirement, same "`addedBy` is never sent" rule, same
+  /// [AppError] contract.
+  ///
+  /// The mutation is capped at 50 items server-side
+  /// (`api/src/validation/bulkAddPantryItems.ts`) and wrapped in a single
+  /// `withUserTransaction`, so a failure on item *k* rolls back items
+  /// `0..k-1` — there is no partial-success result to reason about here.
+  /// [PantryFormController.bulkAdd] additionally enforces that same 50-item
+  /// cap **client-side**, honestly (a visible message, never a silent
+  /// truncation of [items]), before this method is ever reached.
+  ///
+  /// **Deliberately absent from `onPantryChanged`'s `@aws_subscribe` list**
+  /// (§11.2.1 decision 2 — "a list-shaped payload can't fan out to that
+  /// subscription's single-`PantryItem` shape"). Another household member's
+  /// pantry screen does **not** live-update after this call; they see the
+  /// new items on their next refetch (route entry, foreground, or any other
+  /// `onPantryChanged` push triggered by a later single-item add/update/
+  /// delete). This is a known, accepted gap (E2E_MVP_PLAN.md §20.2.7), not
+  /// a bug to fix here — it is W20's open item to eventually close, not
+  /// this slice's.
+  Future<List<PantryItem>> bulkAddPantryItems(
+    String householdId,
+    List<PantryItemDraft> items,
+  );
+
   /// Applies [patch] to the item [id] and returns the whole updated row.
   ///
   /// Takes no `householdId` — a nonexistent [id] and a real [id] in another
@@ -90,6 +123,23 @@ abstract interface class PantryRepository {
 /// `GAWSDate`.
 GAWSDateBuilder? _awsDateBuilder(String? value) =>
     value == null ? null : GAWSDate(value).toBuilder();
+
+/// [PantryItemDraft] → `PantryItemInput` — the same field-by-field mapping
+/// [FerryPantryRepository.addPantryItem] builds inline on
+/// `GAddPantryItemVarsBuilder.input`, factored out here so
+/// [FerryPantryRepository.bulkAddPantryItems] can build one per [items]
+/// entry without duplicating it.
+GPantryItemInput _pantryItemInputFromDraft(PantryItemDraft draft) =>
+    GPantryItemInput(
+      (GPantryItemInputBuilder b) => b
+        ..name = draft.name
+        ..quantity = draft.quantity
+        ..unit = draft.unit
+        ..category = draft.category
+        ..isStaple = draft.isStaple
+        ..expiryDate = _awsDateBuilder(draft.expiryDate)
+        ..lowThreshold = draft.lowThreshold,
+    );
 
 /// Ferry-backed [PantryRepository].
 ///
@@ -145,6 +195,24 @@ class FerryPantryRepository with FerryExecuteMixin implements PantryRepository {
 
     final GAddPantryItemData data = await execute(request);
     return pantryItemFromGraphQL(data.addPantryItem);
+  }
+
+  @override
+  Future<List<PantryItem>> bulkAddPantryItems(
+    String householdId,
+    List<PantryItemDraft> items,
+  ) async {
+    final GBulkAddPantryItemsReq request = GBulkAddPantryItemsReq(
+      (GBulkAddPantryItemsReqBuilder b) => b
+        ..vars = (GBulkAddPantryItemsVarsBuilder()
+          ..householdId = householdId
+          ..items.addAll(items.map(_pantryItemInputFromDraft))),
+    );
+
+    final GBulkAddPantryItemsData data = await execute(request);
+    return data.bulkAddPantryItems
+        .map(pantryItemFromGraphQL)
+        .toList(growable: false);
   }
 
   @override

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +12,10 @@ import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/menu/presentation/today_screen.dart';
 import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
+import 'package:mobile/features/pantry/data/pantry_repository.dart';
+import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
+import 'package:mobile/features/pantry/presentation/curated_items_sheet.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
 import 'package:mobile/features/recipes/presentation/ai_failure_screen.dart';
@@ -26,6 +31,7 @@ import 'package:mobile/shared/ui/theme.dart';
 
 import '../support/fake_auth_repository.dart';
 import '../support/fake_household_repository.dart';
+import '../support/fake_pantry_repository.dart';
 import '../support/household_activity_overrides.dart';
 import '../support/household_fixtures.dart';
 import '../support/household_route_harness.dart'
@@ -494,6 +500,149 @@ void main() {
           AppRoutes.pantryAddChooseMethod('household-1'),
         );
         expect(find.byType(AddMethodScreen), findsOneWidget);
+      },
+    );
+
+    group(
+      '/home/pantry/add — curated multi-select commit (W14 S6, D7)',
+      () {
+        Future<FakePantryRepository> bulkAddSubject(
+          WidgetTester tester, {
+          Object? bulkAddError,
+        }) async {
+          final FakePantryRepository repository = FakePantryRepository(
+            // `/home/pantry` is now a real resolved page underneath (see
+            // the `households:` override below) rather than an indefinite
+            // spinner, so its own `fetchPantry` needs an answer too — an
+            // unset `result` would make `FakePantryRepository` throw.
+            // A non-empty list, not `<PantryItem>[]`: `PantryListScreen`'s
+            // empty state (`PEmptyState`) overflows at this harness's
+            // default test-viewport size — a pre-existing layout issue,
+            // unrelated to this slice, that a populated list simply avoids
+            // exercising here.
+            result: <PantryItem>[
+              PantryItem(
+                id: 'existing-item',
+                householdId: 'household-1',
+                name: 'Rice',
+                quantity: 5,
+                unit: 'kg',
+                isStaple: true,
+                addedBy: 'user-1',
+                addedAt: DateTime.utc(2026, 9, 1),
+                updatedAt: DateTime.utc(2026, 9, 1),
+              ),
+            ],
+            bulkAddResult: bulkAddError == null
+                ? <PantryItem>[
+                    PantryItem(
+                      id: 'item-1',
+                      householdId: 'household-1',
+                      name: 'Toor Dal',
+                      quantity: 1,
+                      unit: 'kg',
+                      isStaple: false,
+                      addedBy: 'user-1',
+                      addedAt: DateTime.utc(2026, 9, 10),
+                      updatedAt: DateTime.utc(2026, 9, 10),
+                    ),
+                  ]
+                : null,
+            bulkAddError: bulkAddError,
+          );
+          // `households: [testHousehold]`, not the empty default — needed
+          // so `/home/pantry` (pushed under `/home/pantry/add` below)
+          // resolves `activeHouseholdProvider` and stops showing its own
+          // indefinite `CircularProgressIndicator`. An unresolved spinner
+          // underneath never settles, and `pumpAndSettle()` below would
+          // hang forever waiting on it even though the add screen itself
+          // has already rendered.
+          final GoRouter router = await _pumpRouter(
+            tester,
+            session: testSignedInSession,
+            households: <Household>[testHousehold],
+            activityOverrides: <Override>[
+              pantryRepositoryProvider.overrideWithValue(repository),
+            ],
+          );
+
+          // `router.push`, not `router.go` — the real caller
+          // (`pantry_list_screen.dart`) reaches this screen with
+          // `context.push`, leaving `/home/pantry` underneath it on the
+          // stack. A bare `router.go` here would make this screen the
+          // *only* page, and the success path's `Navigator.pop()` would
+          // then have nothing left to pop.
+          router.go(AppRoutes.pantry);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          // Not `await`ed: `GoRouter.push`'s returned `Future` only
+          // completes when the pushed page is later *popped* — awaiting
+          // it here would deadlock the test against its own later pop.
+          unawaited(router.push(AppRoutes.pantryAddChooseMethod('household-1')));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(AddMethodScreen.curatedButtonKey));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(CuratedItemsSheet.categoryChipKey('dal')));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(CuratedItemsSheet.itemCheckboxKey('Toor Dal')));
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.byKey(CuratedItemsSheet.quantityFieldKey('Toor Dal')),
+            '1',
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.byKey(CuratedItemsSheet.unitChipKey('Toor Dal', 'kg')),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(CuratedItemsSheet.confirmButtonKey));
+          await tester.pumpAndSettle();
+
+          return repository;
+        }
+
+        testWidgets(
+          'confirming the sheet issues exactly one bulkAddPantryItems call',
+          (WidgetTester tester) async {
+            final FakePantryRepository repository = await bulkAddSubject(
+              tester,
+            );
+
+            expect(repository.bulkAddCalls, hasLength(1));
+            expect(repository.bulkAddCalls.single.householdId, 'household-1');
+            expect(repository.bulkAddCalls.single.items, hasLength(1));
+            expect(repository.bulkAddCalls.single.items.single.name, 'Toor Dal');
+            expect(repository.bulkAddCalls.single.items.single.quantity, 1);
+            expect(repository.bulkAddCalls.single.items.single.unit, 'kg');
+            expect(repository.addCalls, isEmpty);
+          },
+        );
+
+        testWidgets(
+          'a successful commit pops back off /home/pantry/add',
+          (WidgetTester tester) async {
+            await bulkAddSubject(tester);
+
+            expect(find.byType(AddMethodScreen), findsNothing);
+          },
+        );
+
+        testWidgets(
+          'a failed commit surfaces a visible message and stays on the screen',
+          (WidgetTester tester) async {
+            final FakePantryRepository repository = await bulkAddSubject(
+              tester,
+              bulkAddError: const NotFoundError('Household not found.'),
+            );
+
+            expect(repository.bulkAddCalls, hasLength(1));
+            expect(find.byType(AddMethodScreen), findsOneWidget);
+            expect(find.text('Household not found.'), findsOneWidget);
+          },
+        );
       },
     );
 
