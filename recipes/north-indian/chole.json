@@ -1,0 +1,35 @@
+{
+  "title": "Chole (Chana Masala)",
+  "description": "Chickpeas cooked in a tangy, spiced onion-tomato gravy — a North Indian favourite, classically served with Bhature or steamed rice.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 40,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Kabuli Chana (Chole)", "quantity": 1, "unit": "cup", "category": "dal", "notes": "soaked overnight" },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
+    { "name": "Tea Bag", "quantity": 1, "unit": "piece", "category": "dry_goods", "notes": "optional, for colour, tied in a muslin cloth" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Onion", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger-Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "produce" },
+    { "name": "Tomato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "pureed" },
+    { "name": "Chole Masala", "quantity": 2, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Amchur (Dry Mango Powder)", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "optional, for extra tang" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "slit" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Drain the soaked chickpeas and add to a pressure cooker with the water and the tea bag (if using). Cook for 6-7 whistles, until completely soft. Discard the tea bag.",
+    "Heat oil in a pan over medium heat and sauté the onions until deep golden brown, about 10 minutes.",
+    "Add the ginger-garlic paste and cook for a minute, then add the tomato puree and cook until the oil separates, about 8-10 minutes.",
+    "Add the chole masala, red chilli powder, turmeric and salt, and cook for 2 minutes until fragrant.",
+    "Add the cooked chickpeas along with their cooking liquid and the slit green chillies. Simmer, partially covered, for 15-20 minutes, mashing a few chickpeas to thicken the gravy.",
+    "Stir in the amchur if using. Adjust salt and consistency, then garnish with coriander leaves before serving."
+  ]
+}

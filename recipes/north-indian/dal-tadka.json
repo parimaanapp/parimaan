@@ -1,0 +1,32 @@
+{
+  "title": "Dal Tadka",
+  "description": "Yellow lentils simmered until soft, finished with a sizzling tempering of ghee, cumin, garlic and dried red chilli. The everyday weeknight dal.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 35,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Toor Dal", "quantity": 1, "unit": "cup", "category": "dal" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy" },
+    { "name": "Cumin seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Garlic", "quantity": 4, "unit": "piece", "category": "produce", "notes": "cloves, finely chopped" },
+    { "name": "Dried Red Chilli", "quantity": 2, "unit": "piece", "category": "spice" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Rinse the toor dal a couple of times, then add it to a pressure cooker with the turmeric, water and half the salt. Pressure cook for 4-5 whistles, until soft and mushy.",
+    "Once the pressure releases, whisk the dal lightly to loosen it to a pourable consistency, adding a little hot water if it's too thick.",
+    "For the tempering, heat ghee in a small pan over medium heat. Add cumin seeds and let them sizzle, then add the garlic and dried red chillies, frying until the garlic turns light golden.",
+    "Add the onion and cook until soft and lightly browned, then add the tomato and cook until it breaks down, about 4-5 minutes. Stir in the red chilli powder and remaining salt.",
+    "Pour this tempering over the cooked dal and simmer together for 5 minutes so the flavours combine. Garnish with coriander leaves before serving."
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "title": "Vegetable Samosa",
+  "description": "Crisp, deep-fried pastry parcels filled with spiced mashed potato and peas — the classic teatime snack.",
+  "servings": 6,
+  "prepMin": 40,
+  "cookMin": 30,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Refined Flour", "quantity": 2, "unit": "cup", "category": "grain" },
+    { "name": "Oil", "quantity": 4, "unit": "tbsp", "category": "oil", "notes": "2 tbsp for the dough, rest for frying" },
+    { "name": "Carom Seeds (Ajwain)", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "other", "notes": "approximate, for the dough" },
+    { "name": "Potato", "quantity": 4, "unit": "piece", "category": "produce", "notes": "boiled and mashed" },
+    { "name": "Green Peas", "quantity": 0.5, "unit": "cup", "category": "frozen" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Ginger", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "grated" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Powder", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Amchur (Dry Mango Powder)", "quantity": 0.5, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Mix the flour, 2 tbsp oil, carom seeds and salt. Add water gradually and knead into a firm, smooth dough. Cover and rest for 20-30 minutes.",
+    "For the filling, heat a little oil in a pan and add cumin seeds. Once they sizzle, add the ginger and green chillies, and sauté briefly.",
+    "Add the green peas and cook for 2-3 minutes, then add the mashed potato, coriander powder, red chilli powder, garam masala, amchur and salt to taste. Mix well and let it cool.",
+    "Divide the dough into 6 balls. Roll each into an oval, cut in half to make two semicircles per ball.",
+    "Shape each semicircle into a cone, sealing the straight edge with a little water. Fill with 2 tablespoons of the potato mixture, then seal the top edge to close the samosa.",
+    "Heat oil in a deep pan to medium-low (a piece of dough should rise slowly, not sizzle immediately). Fry the samosas in batches for 12-15 minutes, turning occasionally, until deep golden and crisp.",
+    "Drain on a paper towel and serve hot with mint or tamarind chutney."
+  ]
+}
