@@ -171,6 +171,100 @@ exports[`NetworkStack > matches the known-good synthesized template snapshot (de
       },
       "Type": "AWS::EC2::InternetGateway",
     },
+    "VpcLambdaB0E2DCFD": {
+      "Properties": {
+        "PrivateDnsEnabled": true,
+        "SecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "VpcLambdaSecurityGroupD75B015A",
+              "GroupId",
+            ],
+          },
+        ],
+        "ServiceName": {
+          "Fn::Join": [
+            "",
+            [
+              "com.amazonaws.",
+              {
+                "Ref": "AWS::Region",
+              },
+              ".lambda",
+            ],
+          ],
+        },
+        "SubnetIds": [
+          {
+            "Ref": "VpcisolatedSubnet1SubnetE62B1B9B",
+          },
+          {
+            "Ref": "VpcisolatedSubnet2Subnet39217055",
+          },
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Parimaan-dev-Network/Vpc",
+          },
+        ],
+        "VpcEndpointType": "Interface",
+        "VpcId": {
+          "Ref": "Vpc8378EB38",
+        },
+      },
+      "Type": "AWS::EC2::VPCEndpoint",
+    },
+    "VpcLambdaSecurityGroupD75B015A": {
+      "Properties": {
+        "GroupDescription": "Parimaan-dev-Network/Vpc/Lambda/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": {
+              "Fn::GetAtt": [
+                "Vpc8378EB38",
+                "CidrBlock",
+              ],
+            },
+            "Description": {
+              "Fn::Join": [
+                "",
+                [
+                  "from ",
+                  {
+                    "Fn::GetAtt": [
+                      "Vpc8378EB38",
+                      "CidrBlock",
+                    ],
+                  },
+                  ":443",
+                ],
+              ],
+            },
+            "FromPort": 443,
+            "IpProtocol": "tcp",
+            "ToPort": 443,
+          },
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Parimaan-dev-Network/Vpc",
+          },
+        ],
+        "VpcId": {
+          "Ref": "Vpc8378EB38",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
     "VpcS3A5408339": {
       "Properties": {
         "RouteTableIds": [
