@@ -261,6 +261,20 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
   });
 
   it('proposes a cuisineTier1-matching, higher-weighted recipe disproportionately more often than a non-matching one across many independent preview calls', async () => {
+    // biased-coin math, not a magic threshold: `scoreCandidate`
+    // (rotationSelection.ts) puts a tier1-matching, never-planned candidate
+    // at weight 2.0 against a non-matching candidate's 1.0 — a true
+    // per-trial match probability of p = 2/3 (neither recipe has ever been
+    // planned in this test, so the D1 recency multiplier never applies;
+    // each trial's menu is a fresh, distinct week, so trials are
+    // independent Bernoulli(p) draws). With trials = 200, matchingCount ~
+    // Binomial(200, 2/3): mean 133.3, sd 6.67. The false-failure
+    // probability of this assertion — i.e. the chance a correctly-weighted
+    // implementation still produces matchingCount <= 110 by pure sampling
+    // variance — is P(X <= 110) ~= Phi((110.5 - 133.3) / 6.67) ~= 3e-4,
+    // roughly 1-in-3000, versus the old trials = 30 / threshold 0.55
+    // combination's ~9% false-failure rate (which is what flaked in CI).
+
     const owner = await createUser('sub-afp-bias');
     const householdId = await createHouseholdWithOwner(owner, 'AFB234');
     await db.adminClient.query(
@@ -284,7 +298,7 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
 
     const handler = createAutoFillPreviewHandler(baseDeps);
     let matchingCount = 0;
-    const trials = 30;
+    const trials = 200;
     for (let i = 0; i < trials; i += 1) {
       // A distinct week per trial (one Query.autoFillPreview call per menu
       // is deliberately unseeded — D11 — so reusing the same menu would
@@ -304,12 +318,11 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
       }
     }
 
-    // Base weight 1.0 vs. tier-1-matched weight 2.0 (a 2:1 ratio) should
-    // land well north of a 50/50 split across enough trials — a genuine
-    // proof the cuisine-bias wiring (household settings -> scoreCandidate)
-    // actually affects the distribution, not just a code trace.
+    // See the false-failure-rate computation in the comment at the top of
+    // this test — 0.55 here is chosen jointly with trials = 200, not in
+    // isolation.
     expect(matchingCount).toBeGreaterThan(trials * 0.55);
-  });
+  }, 60_000);
 
   it('a zero-recipe household proposes nothing, and every empty slot is reported as unfilled — never an error', async () => {
     const owner = await createUser('sub-afp-empty');
