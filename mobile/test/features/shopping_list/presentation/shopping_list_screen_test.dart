@@ -342,4 +342,52 @@ void main() {
       },
     );
   });
+
+  // W17 S4 RED test #4 (E2E_MVP_PLAN.md §23.3 S4, D5 §23.2.5): "the Shopping
+  // List screen renders the staples-note text when `aiStaplesNote` is
+  // non-null in the fixture data, and renders nothing (no empty box, no
+  // placeholder) when it's null."
+  group('ShoppingListScreen — AI staples note (W17 S4, D5)', () {
+    testWidgets('renders the note text when aiStaplesNote is non-null', (
+      WidgetTester tester,
+    ) async {
+      final ShoppingList withNote = ShoppingList(
+        id: 'shopping-list-1',
+        householdId: 'household-1',
+        generatedFromMenuId: _menuId,
+        createdAt: DateTime.utc(2026, 9, 1),
+        closedAt: null,
+        aiStaplesNote: 'You might want to check: Kitchen King Masala, jeera, hing.',
+        items: <ShoppingListItem>[testShoppingListItem],
+      );
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: withNote,
+      );
+
+      await _pump(tester, repository: repository);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ShoppingListScreen.staplesNoteKey), findsOneWidget);
+      expect(
+        find.text(
+          'You might want to check: Kitchen King Masala, jeera, hing.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'renders nothing — no widget at all — when aiStaplesNote is null',
+      (WidgetTester tester) async {
+        // testShoppingList's own fixture already carries aiStaplesNote: null.
+        final FakeShoppingListRepository repository =
+            FakeShoppingListRepository(generateResult: testShoppingList);
+
+        await _pump(tester, repository: repository);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(ShoppingListScreen.staplesNoteKey), findsNothing);
+      },
+    );
+  });
 }
