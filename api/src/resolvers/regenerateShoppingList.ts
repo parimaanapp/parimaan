@@ -25,12 +25,16 @@ import { computeFreshShoppingListItems, createFreshShoppingList } from './shoppi
 import { regenerateShoppingListArgsSchema } from '../validation/shoppingList.js';
 import { ForbiddenError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { invokeStaplesNoteFn } from '../aiInvoke/staplesNoteInvoker.js';
+import type { StaplesNoteInvokePayload } from '../aiInvoke/staplesNoteInvoker.js';
 
 export interface RegenerateShoppingListResolverDeps {
   getPool: () => Promise<Pool>;
+  /** Same injectable seam as `GenerateShoppingListResolverDeps`'s identical field — see that file's own doc. */
+  invokeStaplesNoteFn?: (payload: StaplesNoteInvokePayload) => Promise<void>;
 }
 
-export const productionDeps: RegenerateShoppingListResolverDeps = { getPool };
+export const productionDeps: RegenerateShoppingListResolverDeps = { getPool, invokeStaplesNoteFn };
 
 /**
  * `confirmed: false`'s branch (D8, E2E_MVP_PLAN.md §17.2.8) — computes
@@ -98,7 +102,7 @@ export const createRegenerateShoppingListHandler =
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
 
-    return withUserTransaction(
+    const result = await withUserTransaction(
       callerUser.id,
       async (client) => {
         const menu = await findMenuById(client, menuId);
@@ -122,12 +126,13 @@ export const createRegenerateShoppingListHandler =
         const existingList = await findShoppingListByMenu(client, menuId);
 
         if (!confirmed) {
-          return buildPreview(client, menu, existingList);
+          const preview = await buildPreview(client, menu, existingList);
+          return { list: preview, wrote: false };
         }
 
         if (existingList === null) {
           const { list, items } = await createFreshShoppingList(client, menu);
-          return toGraphQLShoppingList(list, items);
+          return { list: toGraphQLShoppingList(list, items), wrote: true };
         }
 
         const freshAutoItems = await computeFreshShoppingListItems(client, menu);
@@ -135,10 +140,23 @@ export const createRegenerateShoppingListHandler =
         const preservedItems = currentItems.filter(isPreservedShoppingListItem);
         const dedupedFreshItems = excludeItemsAlreadyPreserved(freshAutoItems, preservedItems);
         const mergedItems = await mergeRegenerateShoppingList(client, existingList.id, dedupedFreshItems);
-        return toGraphQLShoppingList(existingList, mergedItems);
+        return { list: toGraphQLShoppingList(existingList, mergedItems), wrote: true };
       },
       pool,
     );
+
+    // W17 S3 (D2) — same post-commit-only ordering as `generateShoppingList`'s
+    // identical comment. Fired ONLY on a `wrote: true` result — the
+    // `confirmed: false` preview branch never writes anything (D8), so
+    // there is nothing for `staplesNoteFn` to usefully re-read yet; firing
+    // an invoke for a preview call would waste a rate-limit token and a
+    // cache write on a plan that was never actually saved.
+    if (result.wrote) {
+      const invoke = deps.invokeStaplesNoteFn ?? invokeStaplesNoteFn;
+      await invoke({ listId: result.list.id, householdId: result.list.householdId });
+    }
+
+    return result.list;
   };
 
 // See `createHousehold.ts`'s identical comment: wraps only the exported

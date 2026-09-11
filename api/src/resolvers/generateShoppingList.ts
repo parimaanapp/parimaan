@@ -13,12 +13,22 @@ import { createFreshShoppingList } from './shoppingListGenerationPipeline.js';
 import { generateShoppingListArgsSchema } from '../validation/shoppingList.js';
 import { ConflictError, ForbiddenError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { invokeStaplesNoteFn } from '../aiInvoke/staplesNoteInvoker.js';
+import type { StaplesNoteInvokePayload } from '../aiInvoke/staplesNoteInvoker.js';
 
 export interface GenerateShoppingListResolverDeps {
   getPool: () => Promise<Pool>;
+  /**
+   * Injectable seam over `invokeStaplesNoteFn` (W17 S3, D2) — defaults to
+   * the real, best-effort-swallowing async Lambda invoke. Tests inject a
+   * spy so this resolver's own tests can assert the invoke fires (or
+   * doesn't) without a real AWS Lambda call — `aiInvoke/staplesNoteInvoker.test.ts`
+   * covers the real implementation's own send/swallow behavior independently.
+   */
+  invokeStaplesNoteFn?: (payload: StaplesNoteInvokePayload) => Promise<void>;
 }
 
-export const productionDeps: GenerateShoppingListResolverDeps = { getPool };
+export const productionDeps: GenerateShoppingListResolverDeps = { getPool, invokeStaplesNoteFn };
 
 /**
  * Direct-Lambda resolver for `Mutation.generateShoppingList` (W11 S2,
@@ -57,7 +67,7 @@ export const createGenerateShoppingListHandler =
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
 
-    return withUserTransaction(
+    const result = await withUserTransaction(
       callerUser.id,
       async (client) => {
         const menu = await findMenuById(client, menuId);
@@ -91,6 +101,24 @@ export const createGenerateShoppingListHandler =
       },
       pool,
     );
+
+    // W17 S3 (D2, `E2E_MVP_PLAN.md` §23.2.2) — fired only AFTER
+    // `withUserTransaction` above has resolved, i.e. only after a real
+    // COMMIT. Never moved inside that callback: `InvocationType: 'Event'`
+    // only guarantees the invoke is queued, not that `staplesNoteFn` won't
+    // run before this transaction's own COMMIT lands, which — fired any
+    // earlier — could let it read a state a concurrent rollback might still
+    // undo. AWAITED here (not fire-and-forget) purely so the dispatching
+    // `InvokeCommand` call itself actually leaves this execution environment
+    // before Lambda freezes it post-response — `invokeStaplesNoteFn` itself
+    // swallows every failure internally (never throws), so awaiting it adds
+    // no latency risk to this resolver's own success/error path and never
+    // changes its synchronous return value (`aiStaplesNote` stays `null`
+    // here, per `mappers/shoppingList.ts`'s own hardcoding).
+    const invoke = deps.invokeStaplesNoteFn ?? invokeStaplesNoteFn;
+    await invoke({ listId: result.id, householdId: result.householdId });
+
+    return result;
   };
 
 // See `createHousehold.ts`'s identical comment: wraps only the exported
