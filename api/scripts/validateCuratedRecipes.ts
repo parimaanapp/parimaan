@@ -1,38 +1,26 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { z } from 'zod';
-import { recipeInputSchema } from '../src/validation/createRecipe.js';
-import { recipeIngredientInputSchema } from '../src/validation/recipeShared.js';
+import type { z } from 'zod';
+import { curatedRecipeInputSchema } from '../src/validation/curatedRecipe.js';
 
 /**
  * W15 §21.2.2 D2 — a validation script, not a hand-maintained JSON Schema
  * file, checks every curated recipe JSON before it's considered checked in.
- * `curatedRecipeInputSchema` below REUSES `recipeInputSchema`
- * (`api/src/validation/createRecipe.ts`) — the exact same schema
- * `Mutation.createRecipe` validates its own `RecipeInput` argument against
- * — rather than re-declaring `RecipeRole`/`CuisineTier1`/`DietaryTag` as new
- * string literal unions here. That's the whole point of D2's design: a
- * future schema change that adds/renames an enum value is caught by a
- * TypeScript error in this file (an unrecognised value flowing out of
- * `RECIPE_ROLE_VALUES` etc.), not silently allowed to drift, because this
- * script has no enum values of its own to fall out of sync.
- *
- * The only thing this file adds on top of `recipeInputSchema` is
- * curated-content-specific strictness `RecipeInput` deliberately doesn't
- * enforce (`recipeShared.ts`'s own comment: a live-authored recipe with no
- * ingredients/steps yet is a valid in-progress state) — a *checked-in*
- * curated recipe must have at least one ingredient and one non-empty step.
+ * `curatedRecipeInputSchema` (W16 S5: moved to
+ * `api/src/validation/curatedRecipe.ts` so `api/src/curatedRecipes.ts`'s
+ * runtime seeder reader can import the SAME schema instead of a second,
+ * scripts-only copy — see that file's own doc comment for the full
+ * reasoning) REUSES `recipeInputSchema` (`api/src/validation/createRecipe.ts`)
+ * — the exact same schema `Mutation.createRecipe` validates its own
+ * `RecipeInput` argument against — rather than re-declaring
+ * `RecipeRole`/`CuisineTier1`/`DietaryTag` as new string literal unions
+ * here. That's the whole point of D2's design: a future schema change that
+ * adds/renames an enum value is caught by a TypeScript error (an
+ * unrecognised value flowing out of `RECIPE_ROLE_VALUES` etc.), not
+ * silently allowed to drift, because neither this script nor
+ * `curatedRecipe.ts` has enum values of its own to fall out of sync.
  */
-const curatedRecipeInputSchema = recipeInputSchema.extend({
-  ingredients: z
-    .array(recipeIngredientInputSchema)
-    .min(1, 'ingredients must contain at least one item'),
-  steps: z
-    .array(z.string().trim().min(1, 'each step must not be empty'))
-    .min(1, 'steps must contain at least one item'),
-});
-
 export type CuratedRecipeInput = z.infer<typeof curatedRecipeInputSchema>;
 
 /**

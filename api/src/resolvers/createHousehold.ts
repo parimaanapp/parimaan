@@ -21,7 +21,7 @@ import { toGraphQLHousehold, toGraphQLMembership } from '../mappers/household.js
 import type { GraphQLHousehold } from '../mappers/household.js';
 import { toGraphQLUser } from '../mappers/user.js';
 import { createHouseholdArgsSchema } from '../validation/createHousehold.js';
-import { getCuratedRecipesNotYetWired } from '../curatedRecipes.js';
+import { getCuratedRecipesFromCorpus, getCuratedRecipesNotYetWired } from '../curatedRecipes.js';
 import type { CuratedRecipeInput, GetCuratedRecipesFn } from '../curatedRecipes.js';
 import { ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
@@ -53,14 +53,21 @@ export interface CreateHouseholdResolverDeps {
   getCuratedRecipes?: GetCuratedRecipesFn;
 }
 
-// `getCuratedRecipes` is deliberately omitted here (rather than pointed at
-// a real corpus reader) — S5 wires the production default; until then, the
-// handler's own `deps.getCuratedRecipes ?? getCuratedRecipesNotYetWired`
-// fallback (below) is an empty list, so `createHousehold`'s four
-// pre-existing steps behave identically to before this slice — see
-// `curatedRecipes.ts`'s own doc for why an empty default (not a throw) is
-// the deliberate choice here.
-export const productionDeps: CreateHouseholdResolverDeps = { getPool };
+// W16 S5: `getCuratedRecipes` now points at the real corpus reader
+// (`getCuratedRecipesFromCorpus`, `curatedRecipes.ts`) — reads/parses every
+// curated recipe JSON file from `recipes/north-indian/` +
+// `recipes/south-indian/` at first call, validated against the shared Zod
+// schema, cached module-level thereafter. The handler's own
+// `deps.getCuratedRecipes ?? getCuratedRecipesNotYetWired` fallback below
+// stays in place as a safe default for any caller that constructs
+// `CreateHouseholdResolverDeps` without this field at all (never exercised
+// by `productionDeps` itself now that it sets the field explicitly) — see
+// `curatedRecipes.ts`'s own doc for why an empty-list default (not a
+// throw) is the deliberate choice for that fallback.
+export const productionDeps: CreateHouseholdResolverDeps = {
+  getPool,
+  getCuratedRecipes: getCuratedRecipesFromCorpus,
+};
 
 /**
  * Builds the fifth transaction step's `insertRecipe` input for one curated
