@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import type { AppSyncResolverEvent } from 'aws-lambda';
@@ -444,5 +444,65 @@ describe('regenerateShoppingList resolver (Mutation.regenerateShoppingList)', ()
     expect(preservedManual).toBeDefined();
     expect(preservedManual?.name).toBe('paper towels');
     expect(preservedManual?.sourceRecipeId).toBeNull();
+  });
+
+  // W17 S3 (D2, E2E_MVP_PLAN.md §23.2.2) — the async staplesNoteFn invoke.
+  describe('staplesNoteFn async invoke (W17 S3, D2)', () => {
+    it('fires exactly one async invoke with { listId, householdId } after confirmed:true with no prior list', async () => {
+      const owner = await createUser('sub-rsl-invoke-fresh');
+      const householdId = await createHouseholdWithOwner(owner, 'RSL007');
+      const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+      const invokeStaplesNoteFn = vi.fn().mockResolvedValue(undefined);
+      const handler = createRegenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn });
+
+      const result = await handler(buildEvent(menuId, true, 'sub-rsl-invoke-fresh'));
+
+      expect(invokeStaplesNoteFn).toHaveBeenCalledTimes(1);
+      expect(invokeStaplesNoteFn).toHaveBeenCalledWith({ listId: result.id, householdId });
+    });
+
+    it('fires exactly one async invoke after confirmed:true merges into an EXISTING list', async () => {
+      const owner = await createUser('sub-rsl-invoke-merge');
+      const householdId = await createHouseholdWithOwner(owner, 'RSL008');
+      const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+      const generateHandler = createGenerateShoppingListHandler({ getPool: async () => pool });
+      const generated = await generateHandler(generateEvent(menuId, 'sub-rsl-invoke-merge'));
+
+      const invokeStaplesNoteFn = vi.fn().mockResolvedValue(undefined);
+      const handler = createRegenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn });
+
+      await handler(buildEvent(menuId, true, 'sub-rsl-invoke-merge'));
+
+      expect(invokeStaplesNoteFn).toHaveBeenCalledTimes(1);
+      expect(invokeStaplesNoteFn).toHaveBeenCalledWith({ listId: generated.id, householdId });
+    });
+
+    it('fires ZERO invokes for a confirmed:false preview — nothing was written', async () => {
+      const owner = await createUser('sub-rsl-invoke-preview');
+      const householdId = await createHouseholdWithOwner(owner, 'RSL009');
+      const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+      const invokeStaplesNoteFn = vi.fn().mockResolvedValue(undefined);
+      const handler = createRegenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn });
+
+      await handler(buildEvent(menuId, false, 'sub-rsl-invoke-preview'));
+
+      expect(invokeStaplesNoteFn).not.toHaveBeenCalled();
+    });
+
+    it('fires ZERO invokes when the transaction fails (denied caller)', async () => {
+      const owner = await createUser('sub-rsl-invoke-denied-owner');
+      const householdId = await createHouseholdWithOwner(owner, 'RSL010');
+      const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+      await createUser('sub-rsl-invoke-denied-stranger');
+
+      const invokeStaplesNoteFn = vi.fn().mockResolvedValue(undefined);
+      const handler = createRegenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn });
+
+      await expect(handler(buildEvent(menuId, true, 'sub-rsl-invoke-denied-stranger'))).rejects.toThrow(ForbiddenError);
+      expect(invokeStaplesNoteFn).not.toHaveBeenCalled();
+    });
   });
 });

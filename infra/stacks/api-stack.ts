@@ -6,6 +6,8 @@ import {
   FieldLogLevel,
   GraphqlApi,
 } from 'aws-cdk-lib/aws-appsync';
+import { Alarm, ComparisonOperator, TreatMissingData } from 'aws-cdk-lib/aws-cloudwatch';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import type { IUserPool, UserPool } from 'aws-cdk-lib/aws-cognito';
 import type { ISecurityGroup, IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
@@ -14,6 +16,7 @@ import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Secret as SecretsManagerSecret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
+import type { Topic } from 'aws-cdk-lib/aws-sns';
 import type { Construct } from 'constructs';
 import { createDbResolverFunction } from './dbResolver';
 import { createNonVpcResolverFunction } from './nonVpcResolver';
@@ -58,6 +61,16 @@ export interface ApiStackProps extends cdk.StackProps {
    * stale (still said "the two") since the non-VPC pair was added.
    */
   readonly cacheTable: Table;
+  /**
+   * DataStack's shared alerts SNS topic (W17 S3, `E2E_MVP_PLAN.md` §23.2.2)
+   * — `staplesNoteFn`'s own error-rate `Alarm` publishes here, the same
+   * `AuroraCpuAlarm`/`AuroraConnectionsAlarm` action `data-stack.ts`'s own
+   * `createAuroraAlarms` already uses. Deliberately no DLQ for this Lambda
+   * (D2's own explicit call) — this alarm plus Lambda's built-in two-attempt
+   * automatic retry is the locked level of observability for a best-effort
+   * feature.
+   */
+  readonly alertsTopic: Topic;
 }
 
 /**
@@ -257,6 +270,8 @@ export class ApiStack extends cdk.Stack {
     const vpc = props.vpc as IVpc;
     const dbDeps = { vpc, dbCluster, appRoleSecret, lambdaSecurityGroup };
 
+    const staplesNoteFn = this.createStaplesNoteFn(props, dbDeps);
+
     for (const entry of DB_RESOLVERS) {
       const fn = createDbResolverFunction(
         this,
@@ -279,8 +294,75 @@ export class ApiStack extends cdk.Stack {
         cacheTable.grant(fn, 'dynamodb:UpdateItem');
       }
 
+      // W17 S3 (D2/D7, `E2E_MVP_PLAN.md` §23.2.2) — only these two
+      // resolvers ever fire the post-commit async invoke
+      // (`api/src/aiInvoke/staplesNoteInvoker.ts`), so only they get the
+      // function name env var and the narrow `lambda:InvokeFunction` grant
+      // — `grantInvoke` scopes the IAM policy to THIS specific Lambda's own
+      // ARN, never a wildcard, matching this stack's `needsCacheTable`/
+      // `needsGeminiSecret` "grant exactly what this one Lambda calls"
+      // convention.
+      if (entry.id === 'GenerateShoppingList' || entry.id === 'RegenerateShoppingList') {
+        fn.addEnvironment('STAPLES_NOTE_FN_NAME', staplesNoteFn.functionName);
+        staplesNoteFn.grantInvoke(fn);
+      }
+
       this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);
     }
+  }
+
+  /**
+   * `staplesNoteFn` (W17 S3, `E2E_MVP_PLAN.md` §23.2.2/§23.2.6/§23.2.7) —
+   * built via the SAME `createDbResolverFunction` factory every VPC-attached
+   * resolver uses (`needsInternetEgress: true`, S1's own opt-in mechanism,
+   * its first real consumer), but deliberately NEVER passed to
+   * `wireResolver`: this Lambda is invoked directly by
+   * `generateShoppingList`/`regenerateShoppingList`, never by AppSync, so it
+   * has no `typeName`/`fieldName` and no `AI_RESOLVERS`/`DB_RESOLVERS` entry
+   * — see `resolvers/staplesNoteFn.ts`'s own doc for why it still lives
+   * under `resolvers/` despite not being an AppSync resolver.
+   *
+   * Needs both the cache table (D6's `recipeSetHash`-keyed cache, D7's rate
+   * limiter — `GetItem`/`PutItem` for the cache read/write, `UpdateItem` for
+   * the limiter's atomic increment) AND the Gemini secret (D4, reusing the
+   * exact same `parimaan/gemini-api-key` reference `createAiAndNetResolvers`
+   * imports — a second `fromSecretNameV2` call here does not create a
+   * second secret, only a second CDK reference to the same one).
+   */
+  private createStaplesNoteFn(
+    props: ApiStackProps,
+    dbDeps: { vpc: IVpc; dbCluster: DatabaseCluster; appRoleSecret: Secret; lambdaSecurityGroup: ISecurityGroup },
+  ): NodejsFunction {
+    const { cacheTable, alertsTopic } = props;
+
+    const fn = createDbResolverFunction(this, 'StaplesNoteFn', 'staplesNoteFn.ts', dbDeps, false, true);
+
+    fn.addEnvironment('CACHE_TABLE_NAME', cacheTable.tableName);
+    cacheTable.grant(fn, 'dynamodb:UpdateItem', 'dynamodb:GetItem', 'dynamodb:PutItem');
+
+    const geminiApiKeySecret = SecretsManagerSecret.fromSecretNameV2(
+      this,
+      'StaplesNoteGeminiApiKeySecret',
+      'parimaan/gemini-api-key',
+    );
+    fn.addEnvironment('GEMINI_API_KEY_SECRET_ARN', geminiApiKeySecret.secretArn);
+    geminiApiKeySecret.grantRead(fn);
+
+    // Deliberately no DLQ (D2's own explicit call) — this alarm plus
+    // Lambda's built-in two-attempt automatic retry is the locked level of
+    // observability for this best-effort feature. Threshold/period are a
+    // deliberately loose "something is persistently wrong," not a tight SLO
+    // — a single transient Gemini blip must never page anyone.
+    new Alarm(this, 'StaplesNoteFnErrorAlarm', {
+      alarmDescription: 'staplesNoteFn sustained error rate — best-effort AI feature, no DLQ (W17 D2, parimaan-dev/prod)',
+      metric: fn.metricErrors({ period: cdk.Duration.minutes(15) }),
+      threshold: 5,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(new SnsAction(alertsTopic));
+
+    return fn;
   }
 
   /**

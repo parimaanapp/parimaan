@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import type { AppSyncResolverEvent } from 'aws-lambda';
@@ -394,5 +394,54 @@ describe('generateShoppingList resolver (Mutation.generateShoppingList)', () => 
     await handler(buildEvent(menuId, 'sub-gsl-conflict'));
 
     await expect(handler(buildEvent(menuId, 'sub-gsl-conflict'))).rejects.toThrow(ConflictError);
+  });
+
+  // W17 S3 (D2, E2E_MVP_PLAN.md §23.2.2) — the async staplesNoteFn invoke.
+  describe('staplesNoteFn async invoke (W17 S3, D2)', () => {
+    it('fires exactly one async invoke with { listId, householdId } after a successful generation', async () => {
+      const owner = await createUser('sub-gsl-invoke-ok');
+      const householdId = await createHouseholdWithOwner(owner, 'GSL009');
+      const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+      const invokeStaplesNoteFn = vi.fn().mockResolvedValue(undefined);
+      const handler = createGenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn });
+
+      const result = await handler(buildEvent(menuId, 'sub-gsl-invoke-ok'));
+
+      expect(invokeStaplesNoteFn).toHaveBeenCalledTimes(1);
+      expect(invokeStaplesNoteFn).toHaveBeenCalledWith({ listId: result.id, householdId });
+    });
+
+    it('fires zero invokes when the transaction fails/rolls back', async () => {
+      await createUser('sub-gsl-invoke-fail');
+      const invokeStaplesNoteFn = vi.fn().mockResolvedValue(undefined);
+      const handler = createGenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn });
+
+      // A nonexistent menuId rolls back before ever reaching the write —
+      // same ForbiddenError-denial path as the "never an existence oracle"
+      // test above.
+      await expect(handler(buildEvent(randomUUID(), 'sub-gsl-invoke-fail'))).rejects.toThrow(ForbiddenError);
+      expect(invokeStaplesNoteFn).not.toHaveBeenCalled();
+    });
+
+    it('fires zero invokes when a second call conflicts (no write happens)', async () => {
+      const owner = await createUser('sub-gsl-invoke-conflict');
+      const householdId = await createHouseholdWithOwner(owner, 'GSL010');
+      const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+
+      const firstInvoke = vi.fn().mockResolvedValue(undefined);
+      await createGenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn: firstInvoke })(
+        buildEvent(menuId, 'sub-gsl-invoke-conflict'),
+      );
+      expect(firstInvoke).toHaveBeenCalledTimes(1);
+
+      const secondInvoke = vi.fn().mockResolvedValue(undefined);
+      await expect(
+        createGenerateShoppingListHandler({ ...baseDeps, invokeStaplesNoteFn: secondInvoke })(
+          buildEvent(menuId, 'sub-gsl-invoke-conflict'),
+        ),
+      ).rejects.toThrow(ConflictError);
+      expect(secondInvoke).not.toHaveBeenCalled();
+    });
   });
 });

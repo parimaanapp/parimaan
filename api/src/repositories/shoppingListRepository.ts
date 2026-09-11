@@ -343,6 +343,30 @@ export const markItemPurchased = async (
 };
 
 /**
+ * `staplesNoteFn`'s own write (W17 S3, `E2E_MVP_PLAN.md` §23.2.2/§23.2.6) —
+ * writes the AI-generated staples note (or `null`, per D3's own "an empty
+ * model output writes `null`" rule) onto `shoppingListId`'s `ai_staples_note`
+ * column. `null`-not-throw on a nonexistent id, mirroring every other
+ * best-effort lookup in this file — by the time `staplesNoteFn` runs, the
+ * list it was told about could plausibly have been deleted (or never
+ * existed, on a misbehaving caller), and there is no synchronous caller
+ * left to surface an error to either way (D2's own "no synchronous caller
+ * left" framing).
+ */
+export const updateAiStaplesNote = async (
+  client: PoolClient,
+  shoppingListId: string,
+  note: string | null,
+): Promise<ShoppingListRow | null> => {
+  const result = await client.query<RawShoppingListRow>(
+    `UPDATE shopping_lists SET ai_staples_note = $2 WHERE id = $1 RETURNING *`,
+    [shoppingListId, note],
+  );
+  const row = result.rows[0];
+  return row === undefined ? null : mapShoppingListRow(row);
+};
+
+/**
  * D8's own preserve/replace predicate (§17.2.8), as a pure function so the
  * resolver's `confirmed: false` preview path (which never runs the DELETE
  * below) and this repository's actual DELETE predicate can never drift

@@ -24,15 +24,29 @@ const buildFakeUserPool = (app: cdk.App, envName: 'dev' | 'prod'): UserPool => {
   });
 };
 
-/** Same fake-VPC shape as data-stack.test.ts's own fixture — kept in sync deliberately. */
+/**
+ * Same fake-VPC shape as data-stack.test.ts's own fixture — kept in sync
+ * deliberately. Mirrors `network-stack.ts`'s real `subnetConfiguration`
+ * (W17 S1, D1): both the `isolated` (`PRIVATE_ISOLATED`) group every
+ * pre-W17 `DB_RESOLVERS` entry still uses AND the `private-egress`
+ * (`PRIVATE_WITH_EGRESS`) group `staplesNoteFn` (W17 S3) is this stack's
+ * first real consumer of — without the second group, `ApiStack`'s own
+ * synth fails outright the moment it tries to place `staplesNoteFn`
+ * ("There are no 'Private' subnet groups in this VPC"), the same gap
+ * `dbResolver.test.ts`'s own fake-VPC fixture already closed for S1.
+ */
 const buildFakeVpc = (app: cdk.App, envName: 'dev' | 'prod'): Vpc => {
   const vpcStack = new cdk.Stack(app, `Parimaan-${envName}-FakeNetwork`);
   return new Vpc(vpcStack, 'Vpc', {
     maxAzs: 2,
-    natGateways: 0,
+    // W17 S1 (D1) — 1, not 0: a `PRIVATE_WITH_EGRESS` subnet group needs a
+    // real NAT Gateway route to synthesize at all, matching
+    // `dbResolver.test.ts`'s own identical fixture.
+    natGateways: 1,
     subnetConfiguration: [
       { name: 'public', subnetType: SubnetType.PUBLIC, cidrMask: 24 },
       { name: 'isolated', subnetType: SubnetType.PRIVATE_ISOLATED, cidrMask: 24 },
+      { name: 'private-egress', subnetType: SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 24 },
     ],
   });
 };
@@ -67,6 +81,7 @@ describe('ApiStack', () => {
       appRoleSecret: data.appRoleSecret,
       lambdaSecurityGroup: data.lambdaSecurityGroup,
       cacheTable: data.cacheTable,
+      alertsTopic: data.alertsTopic,
     });
   };
 
@@ -151,6 +166,7 @@ describe('ApiStack', () => {
       appRoleSecret: data.appRoleSecret,
       lambdaSecurityGroup: data.lambdaSecurityGroup,
       cacheTable: data.cacheTable,
+      alertsTopic: data.alertsTopic,
     });
     const template = Template.fromStack(stack);
 
@@ -346,9 +362,9 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 48 resolver Lambda functions (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek)', () => {
+  it('declares exactly 49 Lambda functions: the 48 resolvers (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek) plus staplesNoteFn (W17 S3 — the one Lambda in this stack invoked only by another Lambda, never by AppSync, so it never appears in the resolver/data-source counts below)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(48);
+    expect(ourFunctions(template)).toHaveLength(49);
   });
 
   it('declares the health, parseFreeformRecipe, and importRecipeFromUrl Lambdas outside the VPC, on the Node.js 24 runtime', () => {
@@ -368,10 +384,10 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares 45 VPC-attached resolver Lambdas (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences, menu, createMenu, addMenuItem, removeMenuItem, autoFillPreview, autoFillWeek, generateShoppingList, regenerateShoppingList, haveIt, markMade, onMenuChanged, onMembershipRevoked, markPurchased, onShoppingListChanged, clearMenuDay, clearMenuWeek, copyMenuDay, copyMenuWeek), on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 46 VPC-attached Lambdas: the 45 resolvers (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences, menu, createMenu, addMenuItem, removeMenuItem, autoFillPreview, autoFillWeek, generateShoppingList, regenerateShoppingList, haveIt, markMade, onMenuChanged, onMembershipRevoked, markPurchased, onShoppingListChanged, clearMenuDay, clearMenuWeek, copyMenuDay, copyMenuWeek) plus staplesNoteFn (W17 S3 — VPC-attached via the same factory, in the new private-egress subnet group, D1/D2), all on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(45);
+    expect(vpcFunctions).toHaveLength(46);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -386,20 +402,20 @@ describe('ApiStack', () => {
   // 30s leaves a genuine cold start no time to ever succeed. Caught only by
   // a real cold Aurora invocation; this test exists so the margin can't
   // silently shrink back to nothing.
-  it('gives every VPC-attached resolver Lambda enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
+  it('gives every VPC-attached Lambda (resolvers + staplesNoteFn) enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(45);
+    expect(vpcFunctions).toHaveLength(46);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
     }
   });
 
-  it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached resolver Lambda — never the cluster admin secret', () => {
+  it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached Lambda (resolvers + staplesNoteFn) — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(45);
+    expect(vpcFunctions).toHaveLength(46);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -427,7 +443,7 @@ describe('ApiStack', () => {
     }
   });
 
-  it('sets CACHE_TABLE_NAME only on the two rate-limited VPC-attached Lambdas (joinHousehold, rotateInviteCode), never on the other VPC-attached resolvers', () => {
+  it('sets CACHE_TABLE_NAME on the two rate-limited VPC-attached resolvers (joinHousehold, rotateInviteCode) plus staplesNoteFn (its own cache + rate-limit reads/writes, W17 S3), never on any other VPC-attached Lambda', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
     const withCacheTableEnv = vpcFunctions.filter(([, fn]) => {
@@ -435,10 +451,11 @@ describe('ApiStack', () => {
         .Properties.Environment.Variables;
       return env['CACHE_TABLE_NAME'] !== undefined;
     });
-    expect(withCacheTableEnv).toHaveLength(2);
+    expect(withCacheTableEnv).toHaveLength(3);
     const logicalIds = withCacheTableEnv.map(([logicalId]) => logicalId).sort();
     expect(logicalIds[0]).toMatch(/^JoinHouseholdFn/);
     expect(logicalIds[1]).toMatch(/^RotateInviteCodeFn/);
+    expect(logicalIds[2]).toMatch(/^StaplesNoteFn/);
   });
 
   it('sets CACHE_TABLE_NAME on the non-VPC parseFreeformRecipe and importRecipeFromUrl Lambdas too (their own \'freeformParse\'/\'urlImport\' rate limits, W7 S3/S5) — separate from the two VPC-attached ones above', () => {
@@ -476,25 +493,96 @@ describe('ApiStack', () => {
       }).map((statement) => ({ statement, roleRefs }));
     });
 
-  it('grants dynamodb:UpdateItem on the cache table to exactly the four rate-limited Lambdas — no other action, never Resource: "*"', () => {
+  it('grants dynamodb:UpdateItem-only on the cache table to exactly the four rate-limited Lambdas, plus a wider (but still narrow, non-"*") Get/Put/Update grant to staplesNoteFn for its own cache reads/writes (W17 S3) — no other action, never Resource: "*"', () => {
     // Four, not three, as of W7 S5: `ImportRecipeFromUrlFn` joins
     // `JoinHouseholdFn`/`RotateInviteCodeFn`/`ParseFreeformRecipeFn` — its
     // own `'urlImport'` rate limit (§13.2.9 D8), the identical
     // `createAiAndNetResolvers`-owned `needsCacheTable` grant shape
-    // `ParseFreeformRecipeFn` already uses.
+    // `ParseFreeformRecipeFn` already uses. `StaplesNoteFnFn` (W17 S3) is a
+    // fifth, deliberately DIFFERENT statement — it both checks/increments
+    // the `'staplesNote'` rate limit (`UpdateItem`, same as the other four)
+    // AND reads/writes its own `recipeSetHash`-keyed cache entries
+    // (`GetItem`/`PutItem`, D6) — so it is asserted separately rather than
+    // folded into the four `UpdateItem`-only entries above.
     const template = synth('dev');
     const entries = ddbPolicyStatements(template);
-    expect(entries).toHaveLength(4);
-    for (const { statement } of entries) {
+    expect(entries).toHaveLength(5);
+
+    const staplesNoteEntries = entries.filter((entry) => entry.roleRefs.some((ref) => ref.startsWith('StaplesNoteFn')));
+    expect(staplesNoteEntries).toHaveLength(1);
+    const updateOnlyEntries = entries.filter((entry) => entry !== staplesNoteEntries[0]);
+    expect(updateOnlyEntries).toHaveLength(4);
+
+    for (const { statement } of updateOnlyEntries) {
       const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
       expect(actions).toEqual(['dynamodb:UpdateItem']);
       expect(statement.Resource).not.toBe('*');
     }
+
+    const staplesNoteStatement = staplesNoteEntries[0]!.statement;
+    const staplesNoteActions = Array.isArray(staplesNoteStatement.Action)
+      ? staplesNoteStatement.Action
+      : [staplesNoteStatement.Action];
+    expect([...staplesNoteActions].sort()).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem']);
+    expect(staplesNoteStatement.Resource).not.toBe('*');
+
     const grantedRoles = entries.flatMap((entry) => entry.roleRefs).join(' ');
     expect(grantedRoles).toMatch(/JoinHouseholdFnServiceRole/);
     expect(grantedRoles).toMatch(/RotateInviteCodeFnServiceRole/);
     expect(grantedRoles).toMatch(/ParseFreeformRecipeFnServiceRole/);
     expect(grantedRoles).toMatch(/ImportRecipeFromUrlFnServiceRole/);
+    expect(grantedRoles).toMatch(/StaplesNoteFnServiceRole/);
+  });
+
+  // W17 S3 (D2, E2E_MVP_PLAN.md §23.2.2) — the first Lambda-to-Lambda async
+  // invoke in this codebase. `CDK.grantInvoke` scopes the IAM statement to
+  // THIS specific Lambda's own ARN (a `Fn::GetAtt ...Arn`/`Ref`-backed
+  // resource, never `Resource: "*"`), so this is asserted directly rather
+  // than trusted from the `grantInvoke` call site alone.
+  it('grants generateShoppingList and regenerateShoppingList lambda:InvokeFunction scoped to staplesNoteFn\'s own ARN specifically — never a wildcard, and sets STAPLES_NOTE_FN_NAME on both', () => {
+    const template = synth('dev');
+    const policies = template.findResources('AWS::IAM::Policy');
+    const invokeStatementsByRole = Object.values(policies).flatMap((policy) => {
+      const typed = policy as {
+        Properties: {
+          PolicyDocument: { Statement: Array<{ Action: string | string[]; Resource: unknown }> };
+          Roles?: Array<{ Ref?: string }>;
+        };
+      };
+      const roleRefs = (typed.Properties.Roles ?? []).map((role) => role.Ref).filter((ref): ref is string => ref !== undefined);
+      return typed.Properties.PolicyDocument.Statement.filter((statement) => {
+        const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+        return actions.includes('lambda:InvokeFunction');
+      }).map((statement) => ({ statement, roleRefs }));
+    });
+
+    const callerRoles = ['GenerateShoppingListFnServiceRole', 'RegenerateShoppingListFnServiceRole'];
+    for (const rolePrefix of callerRoles) {
+      const entry = invokeStatementsByRole.find((e) => e.roleRefs.some((ref) => ref.startsWith(rolePrefix)));
+      expect(entry).toBeDefined();
+      // Never a bare "*" — a real Ref/Fn::GetAtt (or an array containing
+      // one) naming staplesNoteFn's own Lambda resource specifically.
+      expect(entry!.statement.Resource).not.toBe('*');
+      const resourceJson = JSON.stringify(entry!.statement.Resource);
+      expect(resourceJson).toMatch(/StaplesNoteFn/);
+    }
+
+    const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
+    for (const prefix of ['GenerateShoppingListFn', 'RegenerateShoppingListFn']) {
+      const [, fn] = vpcFunctions.find(([logicalId]) => logicalId.startsWith(prefix))!;
+      const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
+        .Properties.Environment.Variables;
+      expect(env['STAPLES_NOTE_FN_NAME']).toBeDefined();
+    }
+
+    // No OTHER resolver Lambda gets this env var or this permission — only
+    // the two callers of the async invoke.
+    const withStaplesNoteEnv = vpcFunctions.filter(([, fn]) => {
+      const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
+        .Properties.Environment.Variables;
+      return env['STAPLES_NOTE_FN_NAME'] !== undefined;
+    });
+    expect(withStaplesNoteEnv).toHaveLength(2);
   });
 
   it('grants leaveHousehold and deleteHousehold NO DynamoDB access at all — no statement mentions either role', () => {
