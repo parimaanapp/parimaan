@@ -4123,3 +4123,104 @@ Inferred from commit timestamps across the W14 PR sequence (`git log`, IST times
 | S7 — real-AWS verification + doc pass | 1.5 hr | (this PR) | Not cleanly boundable by a single commit-to-commit delta — spans the live-verification driver script (7 checks against a throwaway household, including the two headline invariants), the deploy's own `continue-update-rollback` recovery, the §20.7/Phase 3b audits, and this write-up |
 
 **Rough total actual (S1 through S8, excluding S6/S7's own unbound windows): ~5.4 hr against those seven slices' own planned ~10.5 hr** — under, in the same direction as every week since W12 (§18.8's ~4.5–5 actual against ~13.5 planned; W13's ~5.5–6 against ~10.0). Including S6 and S7 in the denominator against the plan's full ~13.5 hr total without a matching numerator for either would materially understate the real total, so this figure deliberately excludes both rather than silently padding the actual side with a zero; **this is a best-effort commit-timestamp approximation, not stopwatch/calendar-tracked time, stated honestly per this document's own §11.5.5 standing convention** rather than backfilled with invented precision.
+
+---
+
+## 21. Week 15: Curated library authoring — 30 North Indian recipes
+
+**Status:** LOCKED. Written 2026-09-11, immediately after Phase 3b closed (W14 S7, §20.8). This is the first genuinely content-shaped week in this plan — no schema change, no new resolver, no mobile UI — and its slice breakdown, review gate and agent list all follow from that difference rather than from W13/W14's server/client pattern. **D-numbers are W15-local** (D1–D5).
+
+### 21.1 What W15 is locked to deliver
+
+Per §4's W15 row and WS-9 (§2): **30 North Indian recipes, authored as JSON, checked into the repo**, each carrying every field `Recipe`/`RecipeIngredient` require (`shared/schema.graphql:914–953`) so W16's seeder Lambda (§4's W16 row) can insert them verbatim via `createRecipe`'s own shape with no field left to invent at seed time. **No new wireframe screen, no schema change, no resolver** — the count stays at 43/50. Gate, in WS-9's own words: **"50 recipes checked into repo, seeded on every new household, spot-checked against real cooking by founder"** — W15 delivers the first 30 and the spot-check gate for them; the seed mechanism and the remaining 20 are W16's job (§4's W16 row, unchanged).
+
+**Explicitly out of scope for W15** (owned elsewhere, not oversights): the 20 South Indian recipes and the curated-seeder Lambda that actually writes any of these 50 into a new household (**W16**, per WS-9's own two-week split, Q16); Sweet/Drink as planned slot types (**never in MVP**, Q18 — `RecipeRole.sweet`/`RecipeRole.drink` exist in the schema for a recipe's own categorisation, per `RecipeRole`'s own doc comment, but neither role is assigned to any of these 30, matching Q18's standing scope line exactly); any change to `createRecipe`, `RecipeInput`, or the recipe domain model (all already shipped since W6 — this week is a pure consumer of that shape, not a modifier of it).
+
+### 21.2 Design
+
+#### 21.2.1 D1 — one JSON file per recipe, shaped as a direct, literal mirror of `RecipeInput`
+
+**Locked:** `recipes/north-indian/<slug>.json`, one file per recipe, `<slug>` a lowercase-hyphenated form of the title (`dal-tadka.json`, `aloo-paratha.json`). Each file's top-level keys are **exactly** `RecipeInput`'s own fields (`shared/schema.graphql:1155–1177`) — `title`, `description`, `servings`, `prepMin`, `cookMin`, `cuisineTier1`, `cuisineTier2`, `dietaryTags`, `role`, `ingredients` (an array of `RecipeIngredientInput`-shaped objects: `name`/`quantity`/`unit`/`category`/`notes`/`isStaple`), `steps`. No wrapper object, no extra metadata field, no `id` (assigned at seed time by `createRecipe`, W16). This is deliberate literalism, not a shortcut: a file that is already `RecipeInput`-shaped means W16's seeder reads and passes it through with **zero transformation**, the same "the source of truth is already the wire shape" reasoning `HouseholdSettingsPatch`'s own factories already use for a different type. `cuisineTier1` is always `"north_indian"` for every file in this directory — carried explicitly per file rather than inferred from the directory path, so a file is self-describing if it's ever moved or read in isolation.
+
+**`inRotation` is deliberately absent from the file.** `RecipeInput.inRotation` is optional and defaults server-side (`createRecipe`'s own existing default, unchanged) — a curated recipe entering a household's rotation is a runtime decision belonging to that household's own future toggle, not a property of the recipe's own authored content, and encoding a default into 30 files would be the same class of "guessed default that outlives its context" this plan has declined to do everywhere else (`curated_pantry_items.dart`'s explicit "no quantities" rule, D5 of §20.2.5, is the closest precedent).
+
+#### 21.2.2 D2 — a validation script, not a JSON Schema file, checks every recipe before it's considered checked in
+
+**Locked:** `api/scripts/validateCuratedRecipes.ts` (new), run via `pnpm --filter @parimaan/api validate:recipes` (new script), reading every `*.json` under `recipes/**` and checking, per file: every required `RecipeInput` field is present and correctly typed; `role` is a member of `RecipeRole`; `cuisineTier1` is a member of `CuisineTier1` and, for everything under `recipes/north-indian/`, is specifically `"north_indian"`; every `dietaryTags` entry is a member of `DietaryTag`; every ingredient has a non-empty `name`; `steps` is a non-empty array of non-empty strings. **Rejected: a formal JSON Schema (`.schema.json`) file.** This codebase already has exactly one source of truth for this shape — `shared/schema.graphql`'s `RecipeInput` — and a second, hand-maintained JSON Schema mirroring it would be the identical drift risk §16.5.1 already named for the meal-structure cap rule, applied to a new type. The validation script imports its checks directly against the GraphQL-derived enums (`CuisineTier1`, `DietaryTag`, `RecipeRole` — already generated TypeScript types from `api/src/`'s existing codegen, not re-declared), so a future schema change that adds or renames an enum value is caught by a type error in this script before it is ever caught by a bad recipe file.
+
+Run as part of the API's own `pnpm test` (a Vitest test file, `api/scripts/validateCuratedRecipes.test.ts`, that globs `recipes/**/*.json` and asserts each one validates) rather than a standalone CLI-only script nobody runs — the established "a check that isn't wired into the test suite doesn't get run" posture this codebase has held since W1.
+
+#### 21.2.3 D3 — content is Claude-drafted from well-known, standard dishes, explicitly marked as a first draft, and ships only after the founder's own review
+
+**Locked, a direct founder call (2026-09-11):** WS-9's own DoD line — *"spot-checked against real cooking by founder"* — already anticipated that authorship and review are separate steps; this plan makes explicit what that separation means for W15. Every recipe is first drafted by Claude from standard, widely-published versions of well-known North Indian dishes (not invented, not sourced from any single copyrighted work verbatim) and is **not** considered shipped — not merged, not counted toward the 30 — until the founder has reviewed it. This is the opposite posture from every other slice in this plan: a code slice merges on green CI with the agent chain (`tdd-guide` → reviewer → `code-reviewer`) as the quality gate; a recipe file has no such objective gate for whether the dish is any good, only for whether the JSON is well-formed (D2). The review gate is therefore **human, per-batch, and blocking** — recipes are drafted and presented in batches (§21.3 S2–S4), not all 30 at once, so a systemic issue (a wrong assumption about serving size, a role miscategorisation, a dish the founder doesn't want in the library at all) surfaces and gets corrected before the remaining batches repeat it.
+
+**The dish list itself is locked before any recipe is drafted** (§21.3 S1's own gate) — the founder confirms which 30 dishes, not just each dish's content, avoiding wasted authoring work on a recipe that was never wanted in the first place.
+
+#### 21.2.4 D4 — role and dietary-tag distribution follows PRD §7.1's own named spread, not an even split
+
+PRD §7.1 names the spread this library must cover: *"carbs, sabzis, dals, chicken, egg, salads/raitas/kozhambu variants, and a mix of everyday and weekend dishes."* Kozhambu is a South Indian category (W16's job); **W15's 30 map onto `RecipeRole`'s five in-scope values** (`breakfast`, `carb`, `sabzi_dal`, `accompaniment`, `snack` — `sweet`/`drink` excluded per Q18, D1 above) roughly matching each meal's own configured cap shape from `DEFAULT_MEAL_STRUCTURE` (`{carb: 1, sabzi_dal: 2, accompaniment: 1}` — twice as many `sabzi_dal` as `carb`/`accompaniment` is the household's own default *appetite* for that role, and the library's spread should not fight it). **Locked distribution, proposed in §21.3 S1's dish-list proposal and confirmed alongside it:** roughly 6 `carb`, 12 `sabzi_dal` (covering sabzi/dal/chicken/egg per PRD's own named spread — `sabzi_dal` is one `RecipeRole` value covering all of "the vegetable-or-protein-or-lentil dish that isn't the carb," not four separate roles), 6 `accompaniment` (raitas/salads/simple sides), 4 `breakfast`, 2 `snack`. **Dietary tags** are assigned per-dish honestly (a paneer dish is `veg`, a chicken dish carries no `veg` tag, `dairy_free`/`gluten_free`/`jain`/`vegan`/`eggetarian` applied only where genuinely true of the dish as written) — never defaulted or bulk-applied, the same "no invented data" posture `curated_pantry_items.dart` already set.
+
+#### 21.2.5 D5 — no real-AWS verification this week; S7's job shrinks to a schema-conformance and doc-only pass
+
+Every prior week's S7 has verified a server-side behavioural change live because every prior week shipped one. **W15 ships none** — no migration, no resolver, no mobile code. The exit gate for "does this actually work" is D2's validation script (already run as part of `pnpm test`, already CI-enforced) plus the founder's own per-batch review (D3) — a real-AWS pass would be verifying a `createRecipe` call this week does not make. **S7 is retained** (per this plan's own standing "S7 is never optional" convention) but its scope for W15 specifically is: confirm all 30 files validate cleanly as one full-corpus run (not just per-batch), confirm the founder's review sign-off is recorded for all 30 (not implicitly assumed from silence), and do the usual §4.2 weekly doc pass. No AWS credentials, no dev stack interaction, no throwaway household.
+
+### 21.3 Slice breakdown
+
+#### S1 — Dish-list proposal + JSON schema tooling (schema validation, no content yet)
+
+- **Delivers:** the validation script + test (D2); the `recipes/north-indian/` directory scaffold; a proposed 30-dish list (names + role + rough dietary tags per D4's distribution) presented to the founder for confirmation **before any recipe content is drafted**. This slice's own exit gate is the founder's sign-off on the dish list, not a merge.
+- **Files:** `api/scripts/validateCuratedRecipes.ts` (new); `api/scripts/validateCuratedRecipes.test.ts` (new); `recipes/north-indian/.gitkeep` (new, until S2 adds real files); `api/package.json` (new `validate:recipes` script).
+- **Depends on:** nothing — starts immediately.
+- **Size/Risk:** ~1.5 hrs / Low — the tooling is small; the risk is entirely in getting the dish list right before authoring time is spent on it.
+- **Agents:** `tdd-guide` → `typescript-reviewer` → `code-reviewer` for the tooling half. The dish-list proposal itself is not agent work — drafted directly, against PRD §7.1's named spread and D4's role distribution, for the founder to confirm.
+- **RED tests:** the validator rejects a file missing a required field; rejects an unrecognised `role`/`cuisineTier1`/`dietaryTags` value; rejects an empty `ingredients` or `steps` array; rejects a `cuisineTier1` other than `north_indian` for a file under `recipes/north-indian/`; accepts a minimal well-formed file; the full-corpus test globs `recipes/**/*.json` and passes vacuously with zero files present (so this slice's own tests are green before S2 adds any content, and turn red only if a later slice adds a malformed file — never red for having zero recipes yet).
+
+#### S2 — First batch: 10 recipes drafted, reviewed, revised, checked in
+
+- **Delivers:** the first 10 of the confirmed dish list, each as a `RecipeInput`-shaped JSON file (D1), covering a proportional slice of D4's role distribution rather than 10 of the same role. Presented to the founder in one batch; each recipe in the batch is either approved as-is, approved-with-edits, or sent back for a redraft — nothing in this batch is "checked in" until it has an explicit founder approval, recorded in this slice's own PR description per-recipe (not a single blanket "batch approved").
+- **Files:** `recipes/north-indian/<slug>.json` × 10 (new).
+- **Depends on:** S1 (the dish list must be confirmed first).
+- **Size/Risk:** ~2.5 hrs / Medium — content-authoring time is genuinely hard to estimate against this plan's usual code-slice hour estimates; sized against "10 recipes plus one review round-trip."
+- **Agents:** none in the code-review sense — `code-reviewer`'s equivalent here is the founder's own review (D3). The validation script (S1) runs against this batch as its mechanical gate.
+- **Exit check:** all 10 files validate against S1's script; all 10 carry an explicit founder approval.
+
+#### S3 — Second batch: 10 more recipes
+
+- **Delivers:** the next 10 of the confirmed dish list, same process as S2. Any systemic correction the founder gave during S2's review (a serving-size convention, a phrasing style, a tag they want dropped) is applied here from the start rather than repeated as a second round of the same fix.
+- **Files:** `recipes/north-indian/<slug>.json` × 10 (new).
+- **Depends on:** S2 (both for the dish list's already-confirmed remainder and for any style correction S2's review surfaced).
+- **Size/Risk:** ~2.0 hrs / Low-Medium — expected faster than S2 once the format and any style corrections are settled.
+- **Agents:** same posture as S2.
+- **Exit check:** same as S2, for this batch's 10.
+
+#### S4 — Third batch: final 10 recipes, completing the 30
+
+- **Delivers:** the last 10 of the confirmed dish list.
+- **Files:** `recipes/north-indian/<slug>.json` × 10 (new).
+- **Depends on:** S3.
+- **Size/Risk:** ~2.0 hrs / Low.
+- **Agents:** same posture as S2/S3.
+- **Exit check:** same as S2/S3, for this batch's 10 — and, once this slice lands, all 30 files exist and the full-corpus validation test (S1) has 30 real files to check rather than zero.
+
+#### S5 — Full-corpus validation + weekly doc pass (this week's S7, per §21.2.5 D5)
+
+- **Delivers:** one run of the full-corpus validation test against all 30 files (not per-batch); a written confirmation that all 30 carry a recorded founder approval (cross-referencing S2/S3/S4's own PR descriptions, not re-asking); §4.2's weekly pass — actual-vs-planned hours into §4's W15 row, a decisions-versus-shipped audit of §21.4's locked-decisions table.
+- **Files:** `docs/E2E_MVP_PLAN.md` (§4 row, a W15-result subsection).
+- **Depends on:** S2, S3, S4 (all 30 recipes).
+- **Size/Risk:** ~0.5 hr / Low, non-optional (per this plan's standing "S7 is never optional" convention, §21.2.5).
+- **Agents:** `doc-updater`.
+- **Verification checks:** `pnpm --filter @parimaan/api validate:recipes` (or the equivalent `pnpm test` run covering it) passes clean against all 30 files; the role/dietary-tag distribution roughly matches D4's proposed spread (a sanity count, not a hard requirement — the founder's own dish choices during S1 take precedence over the proposed spread if they diverge); no file carries `sweet`/`drink` as its role (Q18 regression check); every file under `recipes/north-indian/` has `cuisineTier1: "north_indian"`.
+
+**Planned total: ~8.5 hrs** — the least code-shaped week in this plan, and the first whose planned-hours estimate is dominated by content-authoring time rather than implementation time. No infrastructure spike, no migration, no real-AWS pass (§21.2.5 D5).
+
+### 21.4 Locked decisions
+
+| # | Question | Decision |
+|---|---|---|
+| **D1** | What shape does one recipe's file take? | **One JSON file per recipe**, `recipes/north-indian/<slug>.json`, a literal field-for-field mirror of `RecipeInput` — no wrapper, no `id`, no `inRotation` (server-defaulted at seed time, W16). `cuisineTier1` is explicit per file. |
+| **D2** | How is content validated before check-in? | **A Vitest-driven validation script** (`api/scripts/validateCuratedRecipes.ts`) checking every required field and every enum membership against the GraphQL-generated types directly — no second, hand-maintained JSON Schema file, avoiding the drift class §16.5.1 already named for a different type. |
+| **D3** | Who authors the content, and what gates it shipping? | **Claude drafts from standard, well-known published dishes**, explicitly marked as a first draft; **the founder's own per-batch review is the shipping gate**, not CI — matching WS-9's own "spot-checked against real cooking by founder" DoD line. |
+| **D4** | What role/dietary-tag spread do the 30 recipes cover? | **Roughly 6 carb / 12 sabzi_dal / 6 accompaniment / 4 breakfast / 2 snack**, following `DEFAULT_MEAL_STRUCTURE`'s own appetite shape and PRD §7.1's named dish spread; dietary tags assigned per-dish honestly, never bulk-applied. |
+| **D5** | Does this week get a real-AWS verification pass? | **No** — nothing server-side ships. S7's scope shrinks to full-corpus schema validation plus confirming every recipe's founder sign-off is recorded, still non-optional per this plan's standing convention. |
+
+**Decision density: 5 locked**, the smallest of any week so far — proportional to how much less this week decides architecturally versus how much it produces as content. D3 is the one decision that reshapes this week's whole slice structure (batches gated by human review rather than CI), and is named as such rather than forced into the W13/W14-style "slice merges on green CI" template it does not fit.
