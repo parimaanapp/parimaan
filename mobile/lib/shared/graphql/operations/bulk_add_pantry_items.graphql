@@ -1,0 +1,11 @@
+#import "./pantry_item_fields.graphql"
+
+# `Mutation.bulkAddPantryItems` — adds many pantry items to a household in
+# one transaction (E2E_MVP_PLAN.md §20.2.7 D7, §20.3 S6). Shipped
+# server-side since W5; this operation is its first mobile caller.
+# `addedBy` is never a client argument, same as `AddPantryItem`.
+mutation BulkAddPantryItems($householdId: ID!, $items: [PantryItemInput!]!) {
+  bulkAddPantryItems(householdId: $householdId, items: $items) {
+    ...PantryItemFields
+  }
+}

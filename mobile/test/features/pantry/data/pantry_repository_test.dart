@@ -166,6 +166,80 @@ void main() {
     });
   });
 
+  group('FerryPantryRepository.bulkAddPantryItems', () {
+    const List<PantryItemDraft> items = <PantryItemDraft>[
+      PantryItemDraft(name: 'Toor Dal', quantity: 2, unit: 'kg'),
+      PantryItemDraft(name: 'Moong Dal', quantity: 1, unit: 'kg'),
+    ];
+
+    test(
+      'sends the BulkAddPantryItems operation with householdId and one items array',
+      () async {
+        final subject = _subject(
+          (Request _) => <String, dynamic>{'data': bulkAddPantryItemsWireData()},
+        );
+
+        await subject.repository.bulkAddPantryItems('household-1', items);
+
+        expect(subject.link.requests, hasLength(1));
+        final Request sent = subject.link.requests.single;
+        expect(sent.operation.operationName, 'BulkAddPantryItems');
+        expect(sent.variables['householdId'], 'household-1');
+        final List<dynamic> sentItems = sent.variables['items'] as List<dynamic>;
+        expect(sentItems, hasLength(2));
+        expect(
+          (sentItems[0] as Map<String, dynamic>)['name'],
+          'Toor Dal',
+        );
+        expect(
+          (sentItems[0] as Map<String, dynamic>)['quantity'],
+          2,
+        );
+        expect(
+          (sentItems[0] as Map<String, dynamic>)['unit'],
+          'kg',
+        );
+        expect(
+          (sentItems[1] as Map<String, dynamic>)['name'],
+          'Moong Dal',
+        );
+      },
+    );
+
+    test('maps the wire payload to a list of domain PantryItems', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': bulkAddPantryItemsWireData(
+            items: <Map<String, dynamic>>[
+              pantryItemWireNode(id: 'item-1', name: 'Toor Dal'),
+              pantryItemWireNode(id: 'item-2', name: 'Moong Dal'),
+            ],
+          ),
+        },
+      );
+
+      final result = await subject.repository.bulkAddPantryItems(
+        'household-1',
+        items,
+      );
+
+      expect(result, hasLength(2));
+      expect(result[0].id, 'item-1');
+      expect(result[1].id, 'item-2');
+    });
+
+    test('a VALIDATION failure (e.g. the server-side 50-item cap) maps to ValidationError', () async {
+      final subject = _subject(
+        (Request _) => _errorBody('VALIDATION', 'items must have 50 or fewer entries'),
+      );
+
+      await expectLater(
+        subject.repository.bulkAddPantryItems('household-1', items),
+        throwsA(isA<ValidationError>()),
+      );
+    });
+  });
+
   group('FerryPantryRepository.updatePantryItem', () {
     const PantryItemPatch patch = PantryItemPatch(quantity: 5);
 

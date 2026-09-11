@@ -17,6 +17,8 @@ class FakePantryRepository implements PantryRepository {
     this.delay,
     this.addResult,
     this.addError,
+    this.bulkAddResult,
+    this.bulkAddError,
     this.updateResult,
     this.updateError,
     this.deleteResult,
@@ -42,6 +44,13 @@ class FakePantryRepository implements PantryRepository {
   Object? addError;
   final List<({String householdId, PantryItemDraft draft})> addCalls =
       <({String householdId, PantryItemDraft draft})>[];
+
+  // ── bulkAddPantryItems ─────────────────────────────────────────────────
+
+  List<PantryItem>? bulkAddResult;
+  Object? bulkAddError;
+  final List<({String householdId, List<PantryItemDraft> items})>
+  bulkAddCalls = <({String householdId, List<PantryItemDraft> items})>[];
 
   // ── updatePantryItem ───────────────────────────────────────────────────
 
@@ -103,6 +112,19 @@ class FakePantryRepository implements PantryRepository {
   Future<PantryItem> addPantryItem(String householdId, PantryItemDraft draft) {
     addCalls.add((householdId: householdId, draft: draft));
     return _answer<PantryItem>(addError, addResult, 'addResult');
+  }
+
+  @override
+  Future<List<PantryItem>> bulkAddPantryItems(
+    String householdId,
+    List<PantryItemDraft> items,
+  ) {
+    bulkAddCalls.add((householdId: householdId, items: items));
+    return _answer<List<PantryItem>>(
+      bulkAddError,
+      bulkAddResult,
+      'bulkAddResult',
+    );
   }
 
   @override
