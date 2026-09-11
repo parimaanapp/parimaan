@@ -1,0 +1,34 @@
+{
+  "title": "Vatha Kuzhambu",
+  "description": "A tangy, spicy tamarind gravy built on sun-dried vegetables and sambar powder — a bold, intensely flavoured Tamil kuzhambu that keeps well for days.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 30,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Tamarind", "quantity": 1, "unit": "piece", "category": "condiment", "notes": "a large lemon-sized ball, soaked and pulp extracted" },
+    { "name": "Water", "quantity": 2, "unit": "cup", "category": "other" },
+    { "name": "Sambar Powder", "quantity": 2, "unit": "tsp", "category": "spice" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Jaggery", "quantity": 1, "unit": "tsp", "category": "dry_goods", "notes": "to balance the tang" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Oil", "quantity": 3, "unit": "tbsp", "category": "oil", "notes": "sesame oil traditionally" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Fenugreek Seeds", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Dried Red Chilli", "quantity": 3, "unit": "piece", "category": "spice" },
+    { "name": "Garlic", "quantity": 6, "unit": "piece", "category": "produce", "notes": "cloves, whole and lightly crushed" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Asafoetida (Hing)", "quantity": 0.25, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Mix the tamarind pulp with the water, sambar powder, turmeric, jaggery and salt in a bowl, and set aside.",
+    "Heat oil in a heavy-bottomed pan over medium heat. Add mustard seeds and fenugreek seeds, letting them splutter.",
+    "Add the dried red chillies, crushed garlic, curry leaves and asafoetida, and sauté for 1-2 minutes until the garlic is fragrant.",
+    "Pour in the tamarind mixture and bring to a boil, then reduce heat and simmer for 15-20 minutes, stirring occasionally, until the gravy thickens and the raw tamarind smell is completely gone.",
+    "The oil should start to separate slightly at the edges when it's done. Taste and adjust salt or jaggery as needed.",
+    "Serve with steamed rice — this kuzhambu tastes even better the next day, once the flavours have had time to settle."
+  ]
+}

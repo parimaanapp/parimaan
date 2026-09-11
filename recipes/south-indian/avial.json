@@ -1,0 +1,35 @@
+{
+  "title": "Avial",
+  "description": "A medley of mixed vegetables simmered and folded into a coconut-yogurt paste, finished with coconut oil and curry leaves — a Kerala classic, mild and hearty.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Carrot", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into batons" },
+    { "name": "Green Beans", "quantity": 1, "unit": "cup", "category": "produce", "notes": "cut into 2-inch pieces" },
+    { "name": "Raw Banana", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into batons, or substitute with potato" },
+    { "name": "Drumstick", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into 2-inch pieces" },
+    { "name": "Pumpkin", "quantity": 1, "unit": "cup", "category": "produce", "notes": "cut into batons" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "other" },
+    { "name": "Fresh Coconut", "quantity": 1, "unit": "cup", "category": "produce", "notes": "grated" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Green Chilli", "quantity": 3, "unit": "piece", "category": "produce" },
+    { "name": "Curd", "quantity": 0.5, "unit": "cup", "category": "dairy" },
+    { "name": "Coconut Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" }
+  ],
+  "steps": [
+    "In a pot, combine the carrot, beans, raw banana, drumstick and pumpkin with the turmeric, salt and water. Cook covered over medium heat for 10-12 minutes until the vegetables are just tender, not mushy.",
+    "Meanwhile, grind the grated coconut, cumin seeds and green chillies together to a coarse paste, adding a splash of water if needed.",
+    "Once the vegetables are cooked and most of the water has evaporated, stir in the coconut paste and mix well.",
+    "Simmer for 3-4 minutes, then turn off the heat and stir in the curd, mixing gently so it doesn't split.",
+    "Drizzle over the coconut oil and scatter the curry leaves on top without stirring further — avial is traditionally finished this way, with the raw coconut oil's aroma left intact.",
+    "Serve warm with steamed rice."
+  ]
+}

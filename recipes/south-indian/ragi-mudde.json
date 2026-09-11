@@ -1,0 +1,24 @@
+{
+  "title": "Ragi Mudde",
+  "description": "Finger-millet flour cooked and kneaded into a smooth, dense ball — a Karnataka staple, eaten by breaking off small pieces and dipping into a curry.",
+  "servings": 4,
+  "prepMin": 5,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Ragi Flour (Finger Millet Flour)", "quantity": 1.5, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true }
+  ],
+  "steps": [
+    "Bring two-thirds of the water to a boil in a heavy-bottomed pot with the salt.",
+    "Mix the ragi flour with the remaining cold water to form a smooth, lump-free slurry.",
+    "Reduce the boiling water to a simmer and pour in the ragi slurry, stirring continuously to prevent lumps.",
+    "Cook, stirring constantly, for 8-10 minutes until the mixture thickens into a dense, glossy mass that pulls away from the sides of the pot.",
+    "Wet a wooden spoon or your hands (curd or water helps prevent sticking) and quickly shape the hot mixture into smooth, round balls while it's still warm.",
+    "Serve hot, breaking off small pieces to dip into sambar or a spicy curry."
+  ]
+}

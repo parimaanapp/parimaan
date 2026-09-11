@@ -1,0 +1,36 @@
+{
+  "title": "Upma",
+  "description": "Dry-roasted semolina cooked with tempered mustard seeds, curry leaves and vegetables — a quick, savoury breakfast staple across South India.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Sooji (Semolina/Rava)", "quantity": 1, "unit": "cup", "category": "dry_goods" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Urad Dal (split)", "quantity": 1, "unit": "tsp", "category": "dal" },
+    { "name": "Chana Dal", "quantity": 1, "unit": "tsp", "category": "dal" },
+    { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger", "quantity": 1, "unit": "tsp", "category": "produce", "notes": "grated" },
+    { "name": "Green Peas", "quantity": 0.25, "unit": "cup", "category": "frozen", "notes": "optional" },
+    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Dry roast the sooji in a pan over medium heat, stirring continuously, for 4-5 minutes until lightly golden and fragrant. Set aside.",
+    "In the same pan, heat oil. Add mustard seeds and let them splutter, then add the urad dal, chana dal and dried red chilli, frying until the dals turn golden.",
+    "Add the curry leaves, onion, green chillies and ginger, and sauté until the onion is translucent.",
+    "Add the green peas if using and cook for 2 minutes.",
+    "Add the water and salt, and bring to a boil.",
+    "Reduce the heat to low and slowly pour in the roasted sooji, stirring continuously to prevent lumps.",
+    "Cover and cook on low heat for 3-4 minutes, stirring once, until the water is fully absorbed and the upma is soft and fluffy. Garnish with coriander leaves before serving."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "title": "Beans Poriyal",
+  "description": "French beans stir-fried with mustard seeds, curry leaves and fresh grated coconut — a dry, everyday South Indian side dish, simple and quick.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Green Beans", "quantity": 3, "unit": "cup", "category": "produce", "notes": "finely chopped" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Urad Dal (split)", "quantity": 1, "unit": "tsp", "category": "dal" },
+    { "name": "Dried Red Chilli", "quantity": 2, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 2, "unit": "tbsp", "category": "other" },
+    { "name": "Fresh Coconut", "quantity": 0.5, "unit": "cup", "category": "produce", "notes": "grated" }
+  ],
+  "steps": [
+    "Heat oil in a pan over medium heat. Add mustard seeds and let them splutter, then add the urad dal and dried red chillies, frying until the dal turns golden.",
+    "Add the curry leaves and green chilli, and sauté for 30 seconds.",
+    "Add the chopped beans, turmeric and salt, and toss well to coat.",
+    "Add the water, cover, and cook on medium-low heat for 8-10 minutes, stirring occasionally, until the beans are tender but still have a slight bite.",
+    "Uncover, mix in the grated coconut, and cook for 2 more minutes until any remaining moisture evaporates. Serve warm as a side with rice and sambar."
+  ]
+}

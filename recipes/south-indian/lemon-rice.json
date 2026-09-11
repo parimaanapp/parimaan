@@ -1,0 +1,35 @@
+{
+  "title": "Lemon Rice",
+  "description": "Cooked rice tossed with a tangy mustard-and-peanut tempering and fresh lemon juice — a bright, quick lunchbox favourite.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Rice (sonamasuri)", "quantity": 1.5, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other", "notes": "for cooking the rice" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Chana Dal", "quantity": 1, "unit": "tbsp", "category": "dal" },
+    { "name": "Urad Dal (split)", "quantity": 1, "unit": "tbsp", "category": "dal" },
+    { "name": "Peanuts", "quantity": 3, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Dried Red Chilli", "quantity": 2, "unit": "piece", "category": "spice" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "slit" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Lemon", "quantity": 2, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Cook the rice with water until just done, with grains staying separate rather than mushy. Spread it out on a plate to cool and stop it clumping.",
+    "Heat oil in a pan over medium heat. Add mustard seeds and let them splutter, then add the chana dal, urad dal and peanuts, frying until golden.",
+    "Add the dried red chillies, green chillies and curry leaves, and let them sizzle for 30 seconds.",
+    "Stir in the turmeric powder, then add the cooled rice and salt, tossing gently to combine without breaking the grains.",
+    "Turn off the heat and stir in the lemon juice — adding it off the heat keeps the tang from turning bitter.",
+    "Garnish with coriander leaves and serve at room temperature."
+  ]
+}

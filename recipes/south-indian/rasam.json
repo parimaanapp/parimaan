@@ -1,0 +1,35 @@
+{
+  "title": "Rasam",
+  "description": "A thin, peppery tamarind-and-tomato broth tempered with mustard seeds and curry leaves — light, tangy, and often the last course of a South Indian meal, eaten with rice.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Toor Dal", "quantity": 0.25, "unit": "cup", "category": "dal" },
+    { "name": "Water", "quantity": 4, "unit": "cup", "category": "other" },
+    { "name": "Tamarind", "quantity": 1, "unit": "piece", "category": "condiment", "notes": "a small lemon-sized ball, soaked and pulp extracted" },
+    { "name": "Tomato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Rasam Powder", "quantity": 2, "unit": "tsp", "category": "spice" },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Black Pepper", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "crushed" },
+    { "name": "Ghee", "quantity": 1, "unit": "tbsp", "category": "dairy" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Asafoetida (Hing)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Pressure cook the toor dal with 1 cup of the water for 3-4 whistles until soft. Mash and set aside.",
+    "In a pot, combine the tamarind pulp, chopped tomatoes, remaining water, rasam powder, turmeric and salt. Simmer for 10-12 minutes until the tomatoes soften and the raw tamarind smell fades.",
+    "Add the mashed dal and crushed black pepper, and simmer for another 5 minutes — do not let it come to a rolling boil once the dal is added, or the rasam can turn frothy and lose its light texture.",
+    "For the tempering, heat ghee in a small pan. Add mustard seeds and cumin seeds, letting them splutter, then add the dried red chilli, curry leaves and asafoetida.",
+    "Pour the tempering over the rasam and garnish with coriander leaves. Serve hot with steamed rice."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "title": "Coconut Chutney",
+  "description": "A smooth, mildly spiced chutney ground from fresh coconut and roasted gram, tempered with mustard seeds and curry leaves — the standard side for idli and dosa.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Fresh Coconut", "quantity": 1, "unit": "cup", "category": "produce", "notes": "grated" },
+    { "name": "Roasted Chana Dal", "quantity": 2, "unit": "tbsp", "category": "dal" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
+    { "name": "Ginger", "quantity": 0.5, "unit": "tsp", "category": "produce", "notes": "chopped" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "other", "notes": "approximate, for blending" },
+    { "name": "Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Urad Dal (split)", "quantity": 0.5, "unit": "tsp", "category": "dal" },
+    { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" }
+  ],
+  "steps": [
+    "In a blender, combine the grated coconut, roasted chana dal, green chillies, ginger and salt.",
+    "Add water a little at a time and blend to a smooth, thick chutney — it should be pourable but not watery.",
+    "For the tempering, heat oil in a small pan. Add mustard seeds and let them splutter, then add the urad dal, frying until golden.",
+    "Add the dried red chilli and curry leaves, letting them sizzle for 20-30 seconds.",
+    "Pour the tempering over the chutney and mix in lightly. Serve fresh alongside idli, dosa or vada."
+  ]
+}

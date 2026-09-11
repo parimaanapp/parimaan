@@ -1,0 +1,36 @@
+{
+  "title": "Sambar",
+  "description": "A lentil-and-vegetable stew simmered with tamarind and sambar powder — the everyday South Indian accompaniment to idli, dosa and rice.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 40,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Toor Dal", "quantity": 0.75, "unit": "cup", "category": "dal" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
+    { "name": "Tamarind", "quantity": 1, "unit": "piece", "category": "condiment", "notes": "a lemon-sized ball, soaked and pulp extracted" },
+    { "name": "Drumstick", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into 2-inch pieces, or substitute with pumpkin/carrot" },
+    { "name": "Onion (Shallots)", "quantity": 8, "unit": "piece", "category": "produce", "notes": "or 1 regular onion, chopped" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Sambar Powder", "quantity": 2, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Asafoetida (Hing)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Pressure cook the toor dal with turmeric and water for 4-5 whistles, until soft. Mash lightly and set aside.",
+    "In a pot, simmer the tamarind pulp with the drumstick, shallots and tomato for 10-12 minutes until the vegetables are nearly tender.",
+    "Add the sambar powder and salt, and simmer for another 5 minutes.",
+    "Add the cooked dal and enough water to reach the desired consistency. Simmer for 10 minutes so the flavours combine.",
+    "For the tempering, heat oil in a small pan. Add mustard seeds and let them splutter, then add the dried red chilli, curry leaves and asafoetida, letting them sizzle for 20-30 seconds.",
+    "Pour the tempering over the sambar and garnish with coriander leaves. Serve hot with idli, dosa or rice."
+  ]
+}

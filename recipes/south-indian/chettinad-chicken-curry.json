@@ -1,0 +1,41 @@
+{
+  "title": "Chettinad Chicken Curry",
+  "description": "A fiery, deeply aromatic chicken curry from the Chettinad region of Tamil Nadu, built on a freshly ground roasted-spice masala with coconut, star anise and curry leaves.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 40,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["gluten_free", "dairy_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Chicken", "quantity": 750, "unit": "g", "category": "meat", "notes": "bone-in, curry cut" },
+    { "name": "Dried Red Chilli", "quantity": 6, "unit": "piece", "category": "spice" },
+    { "name": "Coriander Seeds", "quantity": 2, "unit": "tbsp", "category": "spice" },
+    { "name": "Fennel Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Black Peppercorns", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Star Anise", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Cinnamon Stick", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Fresh Coconut", "quantity": 0.5, "unit": "cup", "category": "produce", "notes": "grated" },
+    { "name": "Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
+    { "name": "Onion", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Curry Leaves", "quantity": 2, "unit": "bunch", "category": "produce" },
+    { "name": "Ginger Garlic Paste", "quantity": 2, "unit": "tbsp", "category": "condiment" },
+    { "name": "Tomato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 1, "unit": "cup", "category": "other" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Dry roast the dried red chillies, coriander seeds, fennel seeds, peppercorns, cumin seeds, star anise and cinnamon in a pan over low heat for 2-3 minutes until fragrant. Cool, then grind with the grated coconut and a splash of water to a smooth masala paste.",
+    "Heat oil in a heavy pot over medium heat. Add the onions and curry leaves, and sauté until the onions turn golden brown.",
+    "Add the ginger garlic paste and cook for 1-2 minutes until the raw smell disappears.",
+    "Add the chopped tomatoes and turmeric, and cook until the tomatoes break down and the oil begins to separate.",
+    "Add the ground masala paste and cook for 4-5 minutes, stirring frequently, until the raw spice smell is gone and the oil separates again.",
+    "Add the chicken pieces and salt, and coat well in the masala. Cook for 5 minutes.",
+    "Add the water, bring to a boil, then reduce heat, cover and simmer for 20-25 minutes until the chicken is cooked through and the gravy has thickened.",
+    "Garnish with coriander leaves and serve hot with steamed rice or dosa."
+  ]
+}

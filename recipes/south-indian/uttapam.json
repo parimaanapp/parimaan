@@ -1,0 +1,32 @@
+{
+  "title": "Uttapam",
+  "description": "A thick, savoury pancake made from the same fermented rice-lentil batter as dosa, topped with chopped onion, tomato and chilli and cooked until golden.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Rice", "quantity": 2, "unit": "cup", "category": "grain", "notes": "idli rice or parboiled rice" },
+    { "name": "Urad Dal (split)", "quantity": 0.5, "unit": "cup", "category": "dal" },
+    { "name": "Fenugreek Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "other", "notes": "approximate, for soaking and grinding" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Oil", "quantity": 4, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "Soak the rice separately from the urad dal and fenugreek seeds for at least 4 hours, or overnight.",
+    "Drain and grind the urad dal and fenugreek with a little water to a light, fluffy batter. Separately grind the rice with water to a slightly coarse batter.",
+    "Combine both batters, add salt, and mix well. Cover and ferment in a warm place for 8-12 hours, or until visibly bubbly and doubled in volume.",
+    "Mix the chopped onion, tomato, green chillies and coriander leaves together in a small bowl.",
+    "Heat a griddle over medium heat and lightly grease it with oil. Pour a ladleful of batter and spread gently into a thick round, thicker than a dosa.",
+    "Sprinkle a generous spoonful of the onion-tomato mixture over the top and press very lightly so it sticks to the batter.",
+    "Drizzle oil around the edges and cook for 3-4 minutes until the base is golden brown, then flip and cook the topped side for another 2-3 minutes. Serve hot with coconut chutney and sambar."
+  ]
+}

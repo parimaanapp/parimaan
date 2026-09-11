@@ -1,0 +1,29 @@
+{
+  "title": "Cucumber Pachadi",
+  "description": "A cooling yogurt-based salad of grated cucumber folded with a light coconut-mustard tempering — a refreshing counterpoint to a spicy South Indian meal.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 5,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Cucumber", "quantity": 2, "unit": "piece", "category": "produce", "notes": "grated, excess water squeezed out" },
+    { "name": "Curd", "quantity": 1, "unit": "cup", "category": "dairy", "notes": "whisked" },
+    { "name": "Fresh Coconut", "quantity": 0.25, "unit": "cup", "category": "produce", "notes": "grated" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Oil", "quantity": 1, "unit": "tsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "sprig", "category": "produce" },
+    { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" }
+  ],
+  "steps": [
+    "Grind the grated coconut, green chilli and cumin seeds with a splash of water into a smooth paste.",
+    "In a bowl, combine the whisked curd, grated cucumber, coconut paste and salt. Mix well.",
+    "For the tempering, heat oil in a small pan. Add mustard seeds and let them splutter, then add the curry leaves and dried red chilli, letting them sizzle for a few seconds.",
+    "Pour the tempering over the pachadi and mix gently. Chill briefly before serving alongside rice and curry."
+  ]
+}
