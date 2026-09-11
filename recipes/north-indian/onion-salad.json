@@ -1,0 +1,25 @@
+{
+  "title": "Onion Salad (Laccha Pyaz)",
+  "description": "Thinly sliced onion rings tossed with lemon juice, chaat masala and a touch of chilli powder — the classic side at any kebab or dhaba meal.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Onion", "quantity": 3, "unit": "piece", "category": "produce", "notes": "large, sliced into thin rings" },
+    { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Chaat Masala", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Soak the sliced onion rings in cold water for 10 minutes to mellow their sharpness, then drain well.",
+    "Transfer to a serving bowl and squeeze over the lemon juice.",
+    "Sprinkle with chaat masala, red chilli powder and salt.",
+    "Toss well and garnish with coriander leaves. Serve immediately for the best crunch."
+  ]
+}

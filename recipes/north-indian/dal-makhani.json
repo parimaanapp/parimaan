@@ -1,0 +1,33 @@
+{
+  "title": "Dal Makhani",
+  "description": "Whole black lentils and kidney beans, slow-simmered with butter and cream until rich and velvety — a weekend, restaurant-style dal.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 60,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Urad Dal (whole)", "quantity": 0.75, "unit": "cup", "category": "dal", "notes": "soaked overnight" },
+    { "name": "Red Rajma (kidney bean)", "quantity": 0.25, "unit": "cup", "category": "dal", "notes": "soaked overnight" },
+    { "name": "Water", "quantity": 4, "unit": "cup", "category": "other" },
+    { "name": "Butter", "quantity": 3, "unit": "tbsp", "category": "dairy" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Ginger-Garlic Paste", "quantity": 1.5, "unit": "tbsp", "category": "produce" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 3, "unit": "piece", "category": "produce", "notes": "pureed" },
+    { "name": "Red Chilli Powder", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Fresh Cream", "quantity": 0.25, "unit": "cup", "category": "dairy" },
+    { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true }
+  ],
+  "steps": [
+    "Drain the soaked urad dal and rajma, and pressure cook together with the water for 8-10 whistles, until both are completely soft. Whisk lightly to break some of the lentils and thicken the mixture.",
+    "In a separate pan, heat butter over medium heat. Add cumin seeds and let them sizzle, then add the ginger-garlic paste and onion, and sauté until the onion is golden.",
+    "Add the tomato puree and cook until the oil separates, about 8-10 minutes. Stir in the red chilli powder and salt.",
+    "Add the cooked dal and rajma along with their cooking liquid. Simmer on low heat, stirring occasionally, for 30-40 minutes — the longer it simmers, the creamier it gets. Add water if it thickens too much.",
+    "Stir in the cream and garam masala, and simmer for another 5 minutes.",
+    "Finish with a small knob of butter on top before serving with rice or naan."
+  ]
+}
