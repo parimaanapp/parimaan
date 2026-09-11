@@ -1,0 +1,26 @@
+{
+  "title": "Boondi Raita",
+  "description": "Whisked yogurt studded with crisp gram-flour boondi and a light tempering of roasted cumin — a cooling side for a spicy meal.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Curd", "quantity": 2, "unit": "cup", "category": "dairy" },
+    { "name": "Boondi", "quantity": 0.5, "unit": "cup", "category": "dry_goods", "notes": "plain, unsweetened" },
+    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "or regular salt to taste" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Soak the boondi in warm water for 5 minutes to soften slightly, then drain and gently squeeze out the excess water.",
+    "Whisk the curd in a bowl until smooth, adding a splash of water if it's very thick.",
+    "Add the roasted cumin powder, red chilli powder and salt to the curd, and mix well.",
+    "Stir in the softened boondi just before serving so it stays slightly crisp.",
+    "Garnish with a light dusting of red chilli powder and coriander leaves. Chill for 15 minutes before serving if time allows."
+  ]
+}

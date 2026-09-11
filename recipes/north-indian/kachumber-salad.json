@@ -1,0 +1,27 @@
+{
+  "title": "Kachumber Salad",
+  "description": "A crunchy, no-cook salad of finely diced cucumber, tomato and onion, dressed simply with lemon and salt — the everyday table side.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Cucumber", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely diced" },
+    { "name": "Tomato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely diced" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely diced" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, optional" },
+    { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Roasted Cumin Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "notes": "optional" }
+  ],
+  "steps": [
+    "Combine the diced cucumber, tomato and onion in a mixing bowl.",
+    "Add the green chilli and coriander leaves.",
+    "Squeeze the lemon juice over the vegetables and season with salt and roasted cumin powder if using.",
+    "Toss everything together just before serving so the vegetables stay crisp and don't release too much water."
+  ]
+}

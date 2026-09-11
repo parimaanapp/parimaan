@@ -1,0 +1,34 @@
+{
+  "title": "Poha",
+  "description": "Flattened rice tossed with tempered mustard seeds, curry leaves, potato and peanuts — a light, quick breakfast ready in under 20 minutes.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "malwa",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Poha (Flattened Rice)", "quantity": 2, "unit": "cup", "category": "dry_goods" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce", "notes": "a small sprig" },
+    { "name": "Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "small, diced" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Sugar", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "notes": "optional" },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Rinse the poha in a colander under running water for a few seconds until soft, then drain well and set aside — do not soak.",
+    "Heat oil in a pan over medium heat. Add mustard seeds and let them splutter, then add curry leaves and peanuts, frying until the peanuts turn golden.",
+    "Add the onion and diced potato, and cook until the potato is tender and the onion is translucent, about 6-8 minutes.",
+    "Add the green chillies and turmeric powder, and stir for a minute.",
+    "Add the drained poha, salt and sugar if using. Toss gently to combine, cover, and cook on low heat for 2-3 minutes so the poha steams through.",
+    "Turn off the heat, squeeze over the lemon juice and garnish with coriander leaves before serving."
+  ]
+}

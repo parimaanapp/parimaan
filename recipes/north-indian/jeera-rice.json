@@ -1,0 +1,29 @@
+{
+  "title": "Jeera Rice",
+  "description": "Basmati rice tempered with cumin seeds and whole spices — a simple, fragrant side that pairs with almost any dal or curry.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Basmati Rice", "quantity": 1.5, "unit": "cup", "category": "grain" },
+    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy", "notes": "or oil, for a vegan version" },
+    { "name": "Cumin Seeds", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Bay Leaf", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Cinnamon Stick", "quantity": 1, "unit": "piece", "category": "spice", "notes": "1-inch piece" },
+    { "name": "Green Cardamom", "quantity": 2, "unit": "piece", "category": "spice" },
+    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Rinse the basmati rice under cold water until it runs mostly clear, then soak for 15-20 minutes and drain.",
+    "Heat the ghee in a heavy-bottomed pot over medium heat. Add the cumin seeds, bay leaf, cinnamon and cardamom, and let them sizzle for 30-40 seconds until fragrant.",
+    "Add the drained rice and stir gently for 1-2 minutes to coat it in the tempered ghee.",
+    "Add the water and salt, bring to a boil, then cover and reduce heat to low. Simmer for 12-15 minutes without lifting the lid.",
+    "Turn off the heat and let the rice rest, covered, for 5 minutes. Fluff gently with a fork and garnish with coriander leaves before serving."
+  ]
+}

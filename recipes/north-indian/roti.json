@@ -1,0 +1,24 @@
+{
+  "title": "Roti (Chapati)",
+  "description": "Everyday whole-wheat flatbread, cooked on a tawa and puffed over an open flame. The default carb at almost every North Indian meal.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Whole Wheat Flour (Aata)", "quantity": 2, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "other", "notes": "warm, added gradually" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Ghee", "quantity": 1, "unit": "tsp", "category": "dairy", "notes": "optional, for brushing" }
+  ],
+  "steps": [
+    "In a large bowl, mix the flour and salt. Add water gradually, kneading until you get a soft, smooth dough. Cover and rest for 15-20 minutes.",
+    "Divide the dough into 8 equal balls. Roll each ball in dry flour and roll out into a thin, even circle, about 6 inches across.",
+    "Heat a tawa (flat griddle) on medium-high heat. Place the rolled roti on it and cook for about 20-30 seconds until small bubbles appear, then flip.",
+    "Cook the second side for another 30 seconds, then use tongs to lift the roti directly onto an open flame (or press with a cloth on the tawa) until it puffs up.",
+    "Remove and brush lightly with ghee if using. Stack in a covered container to keep warm and soft. Repeat with the remaining dough."
+  ]
+}

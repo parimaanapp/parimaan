@@ -1,0 +1,34 @@
+{
+  "title": "Rajma",
+  "description": "Red kidney beans simmered in a thick onion-tomato gravy, the classic weekend pairing for steamed rice — a Punjabi household staple.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 40,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Red Rajma (kidney bean)", "quantity": 1, "unit": "cup", "category": "dal", "notes": "soaked overnight" },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Onion", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger-Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "produce" },
+    { "name": "Tomato", "quantity": 3, "unit": "piece", "category": "produce", "notes": "pureed" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Red Chilli Powder", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Powder", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Garam Masala", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Drain the soaked rajma and add to a pressure cooker with the water. Cook for 5-6 whistles, until the beans are completely soft and can be mashed easily between two fingers.",
+    "Meanwhile, heat oil in a pan over medium heat. Add cumin seeds and let them sizzle, then add the onions and sauté until golden brown, about 8-10 minutes.",
+    "Add the ginger-garlic paste and cook for a minute until the raw smell fades, then add the tomato puree and cook until the oil separates from the masala, 8-10 minutes.",
+    "Stir in the turmeric, red chilli powder, coriander powder and salt, and cook for another 2 minutes.",
+    "Add the cooked rajma along with its cooking liquid. Simmer, partially covered, for 15-20 minutes, mashing a few beans against the side of the pan to thicken the gravy.",
+    "Stir in the garam masala and simmer for another 5 minutes. Garnish with coriander leaves and serve hot with steamed rice."
+  ]
+}
