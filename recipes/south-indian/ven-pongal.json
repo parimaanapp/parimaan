@@ -1,0 +1,31 @@
+{
+  "title": "Ven Pongal",
+  "description": "A comforting, savoury porridge of rice and moong dal cooked soft together, tempered with ghee, cumin, pepper and cashews — a classic South Indian breakfast.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Rice", "quantity": 0.5, "unit": "cup", "category": "grain" },
+    { "name": "Moong Dal (split, yellow)", "quantity": 0.5, "unit": "cup", "category": "dal" },
+    { "name": "Water", "quantity": 4, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Ghee", "quantity": 3, "unit": "tbsp", "category": "dairy" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Black Peppercorns", "quantity": 1, "unit": "tsp", "category": "spice", "notes": "coarsely crushed" },
+    { "name": "Ginger", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "finely chopped" },
+    { "name": "Cashews", "quantity": 12, "unit": "piece", "category": "nuts" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Asafoetida (Hing)", "quantity": 0.25, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Dry roast the rice and moong dal together in a pan over low heat for 2-3 minutes until lightly fragrant, then wash and drain.",
+    "Pressure cook the rice and dal with the water and salt for 4-5 whistles until very soft and mushy — Pongal should be looser and softer than plain cooked rice.",
+    "Meanwhile, heat ghee in a small pan over medium heat. Add the cumin seeds and crushed pepper, letting them sizzle.",
+    "Add the chopped ginger, cashews, curry leaves and asafoetida, and fry until the cashews turn golden.",
+    "Pour the tempering over the cooked rice-dal mixture and stir well, mashing lightly to combine. Adjust consistency with a splash of hot water if it's too thick. Serve hot with coconut chutney and sambar."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "title": "Medu Vada",
+  "description": "Deep-fried, crisp-on-the-outside and fluffy-inside urad dal fritters, shaped into rings — a beloved South Indian snack, often served with sambar and chutney.",
+  "servings": 4,
+  "prepMin": 240,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Urad Dal (whole)", "quantity": 1.5, "unit": "cup", "category": "dal" },
+    { "name": "Water", "quantity": 0.25, "unit": "cup", "category": "other", "notes": "approximate, for grinding" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "finely chopped" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce", "notes": "finely chopped" },
+    { "name": "Black Peppercorns", "quantity": 1, "unit": "tsp", "category": "spice", "notes": "lightly crushed" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, optional" },
+    { "name": "Oil", "quantity": 4, "unit": "cup", "category": "oil", "notes": "for deep frying" }
+  ],
+  "steps": [
+    "Soak the urad dal in water for 3-4 hours, then drain thoroughly.",
+    "Grind the soaked dal with very little water into a thick, smooth, fluffy batter — it should hold its shape and not be runny. Whip the batter with your hand for a minute to incorporate air.",
+    "Fold in the salt, green chillies, ginger, curry leaves, crushed pepper and onion if using.",
+    "Heat oil in a deep pan to medium-hot. Wet your palm, take a small ball of batter, flatten it slightly and poke a hole in the centre with your thumb to form a ring.",
+    "Gently slide the vada into the hot oil. Fry in batches, turning occasionally, for 4-5 minutes until deep golden brown and crisp on the outside.",
+    "Drain on paper towels and serve hot with coconut chutney and sambar."
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "title": "Dosa",
+  "description": "Thin, crisp fermented rice-and-lentil crepe cooked on a hot griddle — the everyday South Indian carb, served plain or with a filling.",
+  "servings": 4,
+  "prepMin": 720,
+  "cookMin": 30,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Rice (dosa/idli variety)", "quantity": 3, "unit": "cup", "category": "grain" },
+    { "name": "Urad Dal (whole)", "quantity": 1, "unit": "cup", "category": "dal" },
+    { "name": "Fenugreek Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 2, "unit": "cup", "category": "other", "notes": "approximate, for soaking and grinding" },
+    { "name": "Oil", "quantity": 3, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "Soak the rice separately from the urad dal and fenugreek seeds, both in enough water to cover, for 4-6 hours.",
+    "Drain and grind the urad dal and fenugreek together to a smooth, fluffy batter, adding water as needed. Grind the rice separately to a slightly coarser paste.",
+    "Combine both batters, add salt, and mix well. The consistency should be like a thick pancake batter.",
+    "Cover and let the batter ferment in a warm place for 8-12 hours, or overnight, until it has visibly risen and turned slightly airy.",
+    "Heat a flat griddle over medium-high heat. Pour a ladleful of batter in the centre and spread outward in a circular motion to form a thin, even circle.",
+    "Drizzle a little oil around the edges and cook until the base turns golden and crisp, 2-3 minutes. Flip if a softer dosa is preferred, or fold and serve as is for a crisp one.",
+    "Repeat with the remaining batter, serving each dosa hot with chutney and sambar."
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "title": "Kadala Curry",
+  "description": "Black chickpeas simmered in a roasted coconut-and-spice gravy — a hearty Kerala breakfast side, classically paired with puttu or appam.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 35,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Black Chickpeas (Kala Chana)", "quantity": 1.5, "unit": "cup", "category": "dal", "notes": "soaked overnight" },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Fresh Coconut", "quantity": 0.5, "unit": "cup", "category": "produce", "notes": "grated" },
+    { "name": "Coriander Seeds", "quantity": 1, "unit": "tbsp", "category": "spice" },
+    { "name": "Dried Red Chilli", "quantity": 3, "unit": "piece", "category": "spice" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "roughly chopped" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "coconut oil traditionally" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Ginger Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "condiment" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Pressure cook the soaked black chickpeas with the water and 1 tsp of the salt for 5-6 whistles until soft. Set aside, reserving the cooking liquid.",
+    "Dry roast the grated coconut, coriander seeds and dried red chillies in a pan over low heat until the coconut turns golden brown and fragrant. Cool slightly, then grind with the roughly chopped onion and a splash of water into a smooth paste.",
+    "Heat oil in a pan over medium heat. Add mustard seeds and let them splutter, then add the curry leaves.",
+    "Add the ginger garlic paste and cook for 1 minute, then add the chopped tomato and turmeric, cooking until the tomato softens.",
+    "Add the ground coconut-onion paste and cook for 5-6 minutes, stirring often, until the raw smell is gone and the mixture darkens slightly.",
+    "Add the cooked chickpeas along with their reserved cooking liquid, the remaining salt and garam masala. Simmer for 10-12 minutes, mashing a few chickpeas against the side of the pan to thicken the gravy.",
+    "Serve hot with puttu, appam or idiyappam."
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "title": "Curd Rice",
+  "description": "Cooked rice mashed into whisked curd and tempered with mustard seeds and curry leaves — a cooling, easy-to-digest dish that closes out a South Indian meal.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Rice (sonamasuri)", "quantity": 1, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "other", "notes": "for cooking the rice" },
+    { "name": "Curd", "quantity": 2, "unit": "cup", "category": "dairy" },
+    { "name": "Milk", "quantity": 0.5, "unit": "cup", "category": "dairy", "notes": "optional, for a smoother texture" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Urad Dal (split)", "quantity": 1, "unit": "tsp", "category": "dal" },
+    { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce", "notes": "a small sprig" },
+    { "name": "Ginger", "quantity": 1, "unit": "tsp", "category": "produce", "notes": "grated, optional" },
+    { "name": "Pomegranate Seeds", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "optional, for garnish" }
+  ],
+  "steps": [
+    "Cook the rice with water until fully soft, slightly overcooked compared to usual — this makes it easier to mash into the curd.",
+    "While the rice is still warm, mash it lightly with a spoon, then mix in the curd, milk (if using) and salt until well combined.",
+    "Heat oil in a small pan for tempering. Add mustard seeds and let them splutter, then add the urad dal and fry until golden.",
+    "Add the dried red chilli, curry leaves and grated ginger, and let them sizzle for 20-30 seconds.",
+    "Pour the tempering over the curd rice and mix well.",
+    "Garnish with pomegranate seeds if using. Serve at room temperature, or chilled."
+  ]
+}

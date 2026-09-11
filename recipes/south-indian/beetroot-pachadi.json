@@ -1,0 +1,31 @@
+{
+  "title": "Beetroot Pachadi",
+  "description": "Grated beetroot cooked lightly and folded into a coconut-yogurt base — a vividly coloured, mildly sweet Kerala side dish.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Beetroot", "quantity": 2, "unit": "piece", "category": "produce", "notes": "peeled and grated" },
+    { "name": "Water", "quantity": 0.25, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Fresh Coconut", "quantity": 0.5, "unit": "cup", "category": "produce", "notes": "grated" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Curd", "quantity": 0.75, "unit": "cup", "category": "dairy", "notes": "whisked" },
+    { "name": "Coconut Oil", "quantity": 1, "unit": "tsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "sprig", "category": "produce" },
+    { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" }
+  ],
+  "steps": [
+    "In a pan, cook the grated beetroot with the water and salt over medium heat, covered, for 10-12 minutes until soft. Let any excess water evaporate, then set aside to cool slightly.",
+    "Grind the grated coconut, green chillies and cumin seeds with a splash of water into a smooth paste.",
+    "Mix the cooked beetroot with the coconut paste and whisked curd until well combined.",
+    "For the tempering, heat coconut oil in a small pan. Add mustard seeds and let them splutter, then add curry leaves and dried red chilli, letting them sizzle briefly.",
+    "Pour the tempering over the pachadi and mix gently. Serve at room temperature or chilled, alongside rice and curry."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "title": "Kerala Fish Curry (Meen Curry)",
+  "description": "A tangy, fiery red fish curry from Kerala, simmered in coconut oil with kudampuli (gambooge) for its signature souring, and finished with curry leaves.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": ["gluten_free", "dairy_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Fish", "quantity": 500, "unit": "g", "category": "meat", "notes": "firm white fish (kingfish or pomfret), cut into steaks" },
+    { "name": "Kudampuli (Gambooge)", "quantity": 3, "unit": "piece", "category": "condiment", "notes": "soaked in warm water for 15 minutes" },
+    { "name": "Coconut Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Fenugreek Seeds", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Shallots", "quantity": 8, "unit": "piece", "category": "produce", "notes": "sliced" },
+    { "name": "Ginger", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "julienned" },
+    { "name": "Garlic", "quantity": 6, "unit": "piece", "category": "produce", "notes": "cloves, sliced" },
+    { "name": "Green Chilli", "quantity": 3, "unit": "piece", "category": "produce", "notes": "slit" },
+    { "name": "Kashmiri Red Chilli Powder", "quantity": 2, "unit": "tbsp", "category": "spice" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 1.5, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Curry Leaves", "quantity": 2, "unit": "bunch", "category": "produce" }
+  ],
+  "steps": [
+    "Heat coconut oil in a clay pot or heavy pan over medium heat. Add mustard seeds and fenugreek seeds, letting them splutter.",
+    "Add the shallots, ginger, garlic and green chillies, and sauté until the shallots turn soft and translucent.",
+    "Lower the heat and add the Kashmiri chilli powder and turmeric, stirring quickly for 20-30 seconds to avoid burning the spices.",
+    "Add the water, the soaked kudampuli with its soaking liquid, and salt. Bring to a boil and simmer for 8-10 minutes to let the souring agent infuse the gravy.",
+    "Gently slide in the fish pieces, making sure they're mostly submerged. Cover and simmer on low heat for 10-12 minutes without stirring vigorously, so the fish stays intact.",
+    "Scatter the curry leaves on top, give the pot a gentle swirl, and simmer for another 2 minutes. Let the curry rest for a few minutes before serving — it tastes best a little while after cooking, with steamed rice."
+  ]
+}

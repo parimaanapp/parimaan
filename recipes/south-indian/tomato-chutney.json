@@ -1,0 +1,33 @@
+{
+  "title": "Tomato Chutney",
+  "description": "A tangy, slightly sweet chutney of tomatoes and onions cooked down with a touch of chana dal for body, tempered with mustard seeds and curry leaves.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "andhra",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Chana Dal", "quantity": 1, "unit": "tbsp", "category": "dal" },
+    { "name": "Urad Dal (split)", "quantity": 1, "unit": "tsp", "category": "dal" },
+    { "name": "Dried Red Chilli", "quantity": 3, "unit": "piece", "category": "spice" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Ginger", "quantity": 1, "unit": "tsp", "category": "produce", "notes": "chopped" },
+    { "name": "Tomato", "quantity": 4, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Tamarind", "quantity": 1, "unit": "tsp", "category": "condiment", "notes": "paste, or a small soaked piece" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce" }
+  ],
+  "steps": [
+    "Heat 1 tbsp of the oil in a pan over medium heat. Add the chana dal, urad dal and dried red chillies, frying until golden.",
+    "Add the chopped onion and ginger, and sauté until the onion softens.",
+    "Add the chopped tomatoes, turmeric and salt, and cook for 8-10 minutes until the tomatoes fully break down and turn pulpy.",
+    "Stir in the tamarind paste and cook for 2 more minutes. Let the mixture cool slightly, then blend to a coarse chutney.",
+    "For the tempering, heat the remaining oil in a small pan, add mustard seeds and let them splutter, then add curry leaves.",
+    "Pour the tempering over the chutney and mix well. Serve with idli, dosa or as a side with rice."
+  ]
+}

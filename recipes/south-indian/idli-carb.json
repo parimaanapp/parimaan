@@ -1,0 +1,28 @@
+{
+  "title": "Idli",
+  "description": "Soft, steamed fermented rice-and-lentil cakes — a light, easily digestible staple, traditionally the anchor of a South Indian meal or breakfast.",
+  "servings": 4,
+  "prepMin": 720,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Rice (dosa/idli variety)", "quantity": 3, "unit": "cup", "category": "grain" },
+    { "name": "Urad Dal (whole)", "quantity": 1, "unit": "cup", "category": "dal" },
+    { "name": "Fenugreek Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 2, "unit": "cup", "category": "other", "notes": "approximate, for soaking and grinding" },
+    { "name": "Oil", "quantity": 1, "unit": "tsp", "category": "oil", "notes": "for greasing the idli plates" }
+  ],
+  "steps": [
+    "Soak the rice separately from the urad dal and fenugreek seeds, both in enough water to cover, for 4-6 hours.",
+    "Drain and grind the urad dal and fenugreek together to a smooth, fluffy batter, adding water as needed. Grind the rice separately to a slightly coarser paste.",
+    "Combine both batters, add salt, and mix well. The consistency should be thick but pourable.",
+    "Cover and let the batter ferment in a warm place for 8-12 hours, or overnight, until it has visibly risen.",
+    "Grease the idli plates lightly with oil and pour the fermented batter into each mould, filling about three-quarters full.",
+    "Steam in an idli steamer or a pressure cooker (without the weight/whistle) for 12-15 minutes, until a toothpick inserted comes out clean.",
+    "Let the idlis rest for a couple of minutes before unmoulding. Serve hot with chutney and sambar."
+  ]
+}
