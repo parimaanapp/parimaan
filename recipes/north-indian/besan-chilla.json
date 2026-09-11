@@ -1,0 +1,32 @@
+{
+  "title": "Besan Chilla",
+  "description": "A savoury, protein-rich gram-flour pancake spiced with onion, chilli and coriander — a quick vegetarian breakfast, ready in under 20 minutes.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Besan (Gram Flour)", "quantity": 1, "unit": "cup", "category": "dry_goods" },
+    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "other", "notes": "approximate, for the batter" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Carom Seeds (Ajwain)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "In a bowl, whisk the besan with water gradually to form a smooth, lump-free batter of medium-thin, pourable consistency.",
+    "Stir in the onion, tomato, green chilli, coriander leaves, turmeric, red chilli powder, carom seeds and salt. Mix well.",
+    "Heat a lightly oiled non-stick tawa or griddle over medium heat. Pour a ladleful of batter and spread into a thin circle, about 6 inches across.",
+    "Drizzle a little oil around the edges and cook for 2-3 minutes until the base turns golden and the top looks set.",
+    "Flip carefully and cook the other side for another 2 minutes until golden.",
+    "Repeat with the remaining batter. Serve hot with green chutney or tomato ketchup."
+  ]
+}

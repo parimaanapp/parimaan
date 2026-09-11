@@ -1,0 +1,28 @@
+{
+  "title": "Jeera Aloo",
+  "description": "Boiled potato cubes pan-fried with cumin seeds until lightly crisp at the edges — a quick dry side that goes with almost any dal or curry.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "jain"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Potato", "quantity": 4, "unit": "piece", "category": "produce", "notes": "boiled, peeled, and cut into cubes" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Cumin Seeds", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Amchur (Dry Mango Powder)", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Heat oil in a wide pan over medium heat. Add the cumin seeds and let them sizzle and turn a shade darker, about 30 seconds.",
+    "Add the boiled potato cubes and toss gently to coat in the oil, taking care not to break them up.",
+    "Sprinkle in the turmeric, red chilli powder and salt, and toss to coat evenly.",
+    "Cook, stirring occasionally, for 10-12 minutes until the potatoes develop a light golden crust on some edges.",
+    "Sprinkle over the amchur, toss once more, and garnish with coriander leaves before serving."
+  ]
+}

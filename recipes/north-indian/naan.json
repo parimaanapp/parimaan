@@ -1,0 +1,31 @@
+{
+  "title": "Naan",
+  "description": "Soft, pillowy leavened flatbread traditionally cooked in a tandoor — this stovetop version gets a similar char using a hot cast-iron tawa.",
+  "servings": 4,
+  "prepMin": 120,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Refined Flour", "quantity": 2.5, "unit": "cup", "category": "grain" },
+    { "name": "Curd", "quantity": 0.25, "unit": "cup", "category": "dairy" },
+    { "name": "Sugar", "quantity": 1, "unit": "tsp", "category": "dry_goods" },
+    { "name": "Instant Yeast", "quantity": 1, "unit": "tsp", "category": "dry_goods" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "other", "notes": "lukewarm, approximate" },
+    { "name": "Butter", "quantity": 2, "unit": "tbsp", "category": "dairy", "notes": "for brushing" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, optional garnish" }
+  ],
+  "steps": [
+    "Dissolve the sugar and yeast in the lukewarm water and let it sit for 5-10 minutes until frothy.",
+    "In a large bowl, mix the flour and salt. Add the curd, oil and the yeast mixture, and knead into a soft, slightly sticky dough for 8-10 minutes.",
+    "Cover the dough and let it rise in a warm place for 1.5-2 hours, until roughly doubled in size.",
+    "Punch down the dough and divide into 6-8 equal balls. Roll each into an oval or teardrop shape, about a quarter-inch thick.",
+    "Heat a heavy tawa over high heat. Wet one side of the rolled naan lightly with water and press the wet side onto the hot tawa — it should stick.",
+    "Cover with a lid and cook until bubbles form and the base is lightly charred, 1-2 minutes. Then hold the tawa upside down directly over a flame for a few seconds to char the top, or finish under a hot grill.",
+    "Brush with butter and garnish with coriander leaves if using. Repeat with the remaining dough, serving each naan hot."
+  ]
+}

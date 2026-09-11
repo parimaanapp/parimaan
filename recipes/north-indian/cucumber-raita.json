@@ -1,0 +1,25 @@
+{
+  "title": "Cucumber Raita",
+  "description": "Cool, refreshing grated cucumber folded into whisked yogurt with roasted cumin — the simplest cooling side for a spicy thali.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Curd", "quantity": 2, "unit": "cup", "category": "dairy" },
+    { "name": "Cucumber", "quantity": 1, "unit": "piece", "category": "produce", "notes": "grated, excess water squeezed out" },
+    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "or regular salt to taste" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, optional" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Whisk the curd in a bowl until smooth.",
+    "Add the grated cucumber, roasted cumin powder, black salt and green chilli if using.",
+    "Mix everything together well.",
+    "Garnish with coriander leaves and a light dusting of roasted cumin powder. Chill for 15-20 minutes before serving if time allows."
+  ]
+}

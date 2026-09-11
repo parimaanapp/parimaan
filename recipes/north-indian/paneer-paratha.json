@@ -1,0 +1,33 @@
+{
+  "title": "Paneer Paratha",
+  "description": "Whole-wheat flatbread stuffed with a spiced crumbled-paneer filling and pan-fried until crisp and golden — a filling, weekend breakfast bread.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Whole Wheat Flour (Aata)", "quantity": 2, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "other", "notes": "approximate, for the dough" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Paneer (block)", "quantity": 200, "unit": "g", "category": "dairy", "notes": "crumbled" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Amchur (Dry Mango Powder)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Ghee", "quantity": 3, "unit": "tbsp", "category": "dairy", "notes": "for pan-frying" }
+  ],
+  "steps": [
+    "Knead the flour, water and salt into a soft dough, cover and rest for 15-20 minutes.",
+    "In a bowl, mix the crumbled paneer with the onion, green chilli, coriander leaves, cumin powder, red chilli powder and amchur. Season with a little salt and mix well.",
+    "Divide the dough into 8 balls and the paneer filling into 8 portions. Roll a dough ball into a small disc, place a portion of filling in the centre, and gather the edges to seal, forming a stuffed ball.",
+    "Gently flatten and roll out the stuffed ball into a paratha about 6 inches across, being careful not to let the filling spill out.",
+    "Heat a tawa over medium heat. Cook the paratha for about a minute, then flip and drizzle a little ghee on top.",
+    "Flip again and drizzle ghee on the other side, pressing gently with a spatula until both sides are golden brown and crisp, 3-4 minutes total.",
+    "Repeat with the remaining dough and filling. Serve hot with curd or pickle."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "title": "Butter Chicken",
+  "description": "Tandoor-grilled chicken simmered in a rich, buttery tomato-cashew gravy — a restaurant classic that's easier to make at home than it looks.",
+  "servings": 4,
+  "prepMin": 30,
+  "cookMin": 45,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Chicken Thighs (boneless)", "quantity": 600, "unit": "g", "category": "frozen", "notes": "or fresh, cut into pieces" },
+    { "name": "Curd", "quantity": 0.5, "unit": "cup", "category": "dairy" },
+    { "name": "Ginger-Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "produce" },
+    { "name": "Red Chilli Powder", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Garam Masala", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Butter", "quantity": 3, "unit": "tbsp", "category": "dairy" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "roughly chopped" },
+    { "name": "Tomato", "quantity": 4, "unit": "piece", "category": "produce", "notes": "roughly chopped" },
+    { "name": "Cashews", "quantity": 10, "unit": "piece", "category": "dry_goods" },
+    { "name": "Kashmiri Chilli Powder", "quantity": 1, "unit": "tsp", "category": "spice", "notes": "for colour, mild heat" },
+    { "name": "Fresh Cream", "quantity": 0.25, "unit": "cup", "category": "dairy" },
+    { "name": "Kasuri Methi", "quantity": 1, "unit": "tsp", "category": "spice", "notes": "dried fenugreek leaves, crushed between palms" }
+  ],
+  "steps": [
+    "Marinate the chicken in curd, half the ginger-garlic paste, red chilli powder, half the garam masala and 1 tsp salt for at least 30 minutes, or overnight in the fridge.",
+    "Heat 1 tbsp butter in a pan and sear the marinated chicken pieces over high heat until browned on the outside (they don't need to be cooked through yet). Set aside.",
+    "In the same pan, add the remaining butter, onion, tomatoes, cashews and remaining ginger-garlic paste. Cook covered on medium heat for 15-20 minutes until the tomatoes are completely soft.",
+    "Let the mixture cool slightly, then blend to a smooth puree. Pass through a sieve for an extra-smooth gravy if desired.",
+    "Return the puree to the pan, add the Kashmiri chilli powder and remaining salt, and simmer for 5 minutes.",
+    "Add the seared chicken back in and simmer for 10-15 minutes until the chicken is cooked through and the gravy has thickened.",
+    "Stir in the cream, remaining garam masala and crushed kasuri methi. Simmer for another 2-3 minutes and serve hot."
+  ]
+}
