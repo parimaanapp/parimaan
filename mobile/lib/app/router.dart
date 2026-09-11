@@ -53,10 +53,12 @@ import '../features/recipes/presentation/recipe_method_screen.dart';
 import '../features/recipes/presentation/recipes_library_screen.dart';
 import '../features/recipes/presentation/url_import_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
+import '../features/shopping_list/domain/shopping_list_item.dart';
 import '../features/shopping_list/presentation/list_generated_prompt_screen.dart';
 import '../features/shopping_list/presentation/list_preview_screen.dart';
 import '../features/shopping_list/presentation/notification_permission_prompt_screen.dart';
 import '../features/shopping_list/presentation/shopping_list_screen.dart';
+import '../features/shopping_list/presentation/shopping_list_share_image_screen.dart';
 import '../shared/errors/app_error.dart';
 import 'membership_revocation_guard.dart';
 
@@ -298,6 +300,19 @@ abstract final class AppRoutes {
 
   /// Wireframe "Shopping List" (37-38/49) — the persistent, live view.
   static const String shoppingList = '/home/shopping-list';
+
+  /// Wireframe "Share image preview" (44/50, W17 S4, E2E_MVP_PLAN.md
+  /// §23.2.8/§23.3 S4) — reached from [shoppingList]'s own Share
+  /// affordance, pushed (not `go`'d — this is a one-shot detour off the
+  /// persistent list view, not a new destination in its own right).
+  /// `extra` carries the already-loaded `ShoppingList` domain object
+  /// directly — same "no sensible URL encoding, no deep-link need"
+  /// reasoning as every other `extra`-carried payload in this file; unlike
+  /// [shoppingList] (which re-derives its list from `menuId` via
+  /// `CurrentShoppingListController`), there is no second fetch to avoid
+  /// duplicating here, since the caller already has the full object in
+  /// hand.
+  static const String shoppingListShareImage = '/home/shopping-list/share';
 
   static const String _pantryAddChooseMethodPattern = '/home/pantry/add';
   static String pantryAddChooseMethod(String householdId) =>
@@ -744,6 +759,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.shoppingList,
         builder: (BuildContext context, GoRouterState state) =>
             ShoppingListScreen(menuId: state.extra as String),
+      ),
+      GoRoute(
+        path: AppRoutes.shoppingListShareImage,
+        builder: (BuildContext context, GoRouterState state) =>
+            ShoppingListShareImageScreen(list: state.extra! as ShoppingList),
       ),
       GoRoute(
         path: AppRoutes._pantryAddChooseMethodPattern,

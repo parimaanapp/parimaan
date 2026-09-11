@@ -79,6 +79,15 @@ dependencies:
   drift_flutter: ^0.3.1
   sqlite3_flutter_libs: ^0.6.0
   path_provider: ^2.1.6
+  # W17 S4 (E2E_MVP_PLAN.md §23.2.8 D8) — drives the native share sheet for
+  # the categorized shopping-list PNG. Confirmed absent before this slice
+  # (research pass named in D8's own doc); `path_provider` above is the
+  # existing dependency this flow reuses for a temp file to hand it.
+  share_plus: ^13.3.0
+  # W17 S4 — the raw `PUT` of the rendered PNG to the `exportShoppingListImage`
+  # presigned S3 URL (D8). Deliberately NOT routed through the Ferry GraphQL
+  # client — this is a plain HTTP call to S3, not a GraphQL operation.
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

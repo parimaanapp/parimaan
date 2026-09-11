@@ -69,6 +69,8 @@ class ShoppingListScreen extends ConsumerStatefulWidget {
   static const Key conflictRegenerateButtonKey = Key(
     'shopping-list-conflict-regenerate',
   );
+  static const Key shareButtonKey = Key('shopping-list-share');
+  static const Key staplesNoteKey = Key('shopping-list-staples-note');
 
   @override
   ConsumerState<ShoppingListScreen> createState() => _ShoppingListScreenState();
@@ -218,6 +220,16 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     }
   }
 
+  /// Pushes the "Share image preview" screen (W17 S4, wireframe 44/50) with
+  /// the ALREADY-loaded [current] list — no second fetch, same reasoning
+  /// [AppRoutes.shoppingListShareImage]'s own doc gives. A `GoRoute` push
+  /// (`context.push`), not `context.go`: this is a one-shot detour off the
+  /// persistent list view, matching every other flat pushed route in this
+  /// feature (`AppRoutes`'s own "Sequencing" comment).
+  void _onSharePressed(ShoppingList current) {
+    context.push(AppRoutes.shoppingListShareImage, extra: current);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<ShoppingList> list = ref.watch(
@@ -237,14 +249,26 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
               backSemanticLabel: 'Back to weekly plan',
               trailing: loaded == null
                   ? null
-                  : PIconButton(
-                      key: ShoppingListScreen.regenerateButtonKey,
-                      icon: Icons.refresh,
-                      semanticLabel: 'Regenerate shopping list',
-                      isLoading: _isRegenerating,
-                      onPressed: _isBusy
-                          ? null
-                          : () => _onRegeneratePressed(loaded),
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        PIconButton(
+                          key: ShoppingListScreen.shareButtonKey,
+                          icon: Icons.ios_share,
+                          semanticLabel: 'Share shopping list as image',
+                          onPressed: () => _onSharePressed(loaded),
+                        ),
+                        const SizedBox(width: AppSpacing.s2),
+                        PIconButton(
+                          key: ShoppingListScreen.regenerateButtonKey,
+                          icon: Icons.refresh,
+                          semanticLabel: 'Regenerate shopping list',
+                          isLoading: _isRegenerating,
+                          onPressed: _isBusy
+                              ? null
+                              : () => _onRegeneratePressed(loaded),
+                        ),
+                      ],
                     ),
             ),
             Expanded(
@@ -301,6 +325,43 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
 
 class _Loaded extends StatelessWidget {
   const _Loaded({required this.list, required this.menuId});
+
+  final ShoppingList list;
+  final String menuId;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? staplesNote = list.aiStaplesNote;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        // D5 (E2E_MVP_PLAN.md §23.2.5): no live push for this note — it's
+        // whatever was present on the LAST fetch this screen's `state`
+        // holds. `null` renders literally nothing here: no empty box, no
+        // placeholder, no loading spinner — there is nothing to "wait" for
+        // from this screen's perspective (that section's own doc).
+        if (staplesNote != null)
+          Padding(
+            key: ShoppingListScreen.staplesNoteKey,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s3,
+              AppSpacing.s3,
+              AppSpacing.s3,
+              0,
+            ),
+            child: Text(
+              staplesNote,
+              style: AppTypography.body.copyWith(color: AppColors.inkSoft),
+            ),
+          ),
+        Expanded(child: _Checklist(list: list, menuId: menuId)),
+      ],
+    );
+  }
+}
+
+class _Checklist extends StatelessWidget {
+  const _Checklist({required this.list, required this.menuId});
 
   final ShoppingList list;
   final String menuId;
