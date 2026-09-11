@@ -69,6 +69,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 3.2.7
         version: 3.2.7(vitest@3.2.7(@types/node@20.19.43)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
       testcontainers:
         specifier: ^11.14.0
         version: 11.14.0

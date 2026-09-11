@@ -123,9 +123,25 @@ function findJsonFiles(dir: string): string[] {
  * unbundled-local shapes without an environment variable or a build-time
  * path substitution — see `infra/stacks/api-stack.ts`'s own comment on
  * the `afterBundling` copy step for the packaging half of this design.
+ *
+ * `moduleDir` itself has to handle a THIRD shape distinction discovered by
+ * W16 S6's live-AWS verification: `NodejsFunction` bundles this module to
+ * CommonJS (esbuild's default output format for a Lambda-targeted build),
+ * and esbuild's CJS output does NOT populate `import.meta.url` with a real
+ * value (it stubs `import.meta` to `{}`) — so `fileURLToPath(new
+ * URL('.', import.meta.url))` throws `Invalid URL` in the actual deployed
+ * Lambda, even though it works fine under Vitest/tsx, which always run
+ * this file as genuine ESM. Node's CJS wrapper, by contrast, always
+ * provides an accurate `__dirname` — so `__dirname` is checked first (the
+ * bundled-Lambda shape) and `import.meta.url` is the ESM fallback (the
+ * local dev/test shape). `typeof __dirname !== 'undefined'` is safe to
+ * evaluate in both a CJS and an ESM context (an unresolved `typeof` never
+ * throws), so this single expression works unmodified in either bundled
+ * output.
  */
 function resolveCuratedRecipesDir(): string {
-  const moduleDir = fileURLToPath(new URL('.', import.meta.url));
+  const moduleDir =
+    typeof __dirname !== 'undefined' ? __dirname : fileURLToPath(new URL('.', import.meta.url));
   const candidates = [join(moduleDir, 'recipes'), join(moduleDir, '..', '..', 'recipes')];
 
   for (const candidate of candidates) {
