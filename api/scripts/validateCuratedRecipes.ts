@@ -36,14 +36,48 @@ const curatedRecipeInputSchema = recipeInputSchema.extend({
 export type CuratedRecipeInput = z.infer<typeof curatedRecipeInputSchema>;
 
 /**
- * Repo-root-relative directory whose files must carry
- * `cuisineTier1: "north_indian"` (§21.2.1 D1). No leading separator — a
- * `filePath` passed in by a caller (test fixtures included) may be
+ * A directory-cuisine rule: any file physically located under
+ * `recipesDirSegment` must carry `cuisineTier1: requiredCuisineTier1`
+ * specifically, not merely any valid `CuisineTier1` member (§21.2.1 D1 —
+ * "carried explicitly per file rather than inferred from the directory
+ * path, so a file is self-describing if it's ever moved or read in
+ * isolation").
+ */
+interface CuisineDirRule {
+  readonly dirSegment: string;
+  readonly requiredCuisineTier1: string;
+}
+
+/**
+ * W16 §22.2.1 D1 — a small table of `{ dirSegment, requiredCuisineTier1 }`
+ * pairs, one row per curated-recipe directory, rather than a hardcoded
+ * per-directory `if` branch. Adding a hypothetical third cuisine directory
+ * is one new row here, not a third copy-pasted branch in
+ * `checkCuisineDirRule` below. No leading separator on each `dirSegment` —
+ * a `filePath` passed in by a caller (test fixtures included) may be
  * relative (`recipes/north-indian/dal-tadka.json`) or absolute
  * (`/.../recipes/north-indian/dal-tadka.json`); matching the bare
- * `recipes${sep}north-indian${sep}` segment catches both.
+ * `recipes${sep}<dir>${sep}` segment catches both.
  */
-const NORTH_INDIAN_DIR_SEGMENT = `recipes${sep}north-indian${sep}`;
+const CUISINE_DIR_RULES: readonly CuisineDirRule[] = [
+  { dirSegment: `recipes${sep}north-indian${sep}`, requiredCuisineTier1: 'north_indian' },
+  { dirSegment: `recipes${sep}south-indian${sep}`, requiredCuisineTier1: 'south_indian' },
+];
+
+/**
+ * Finds the directory-cuisine rule (if any) that applies to `filePath`, and
+ * checks the already-schema-validated `cuisineTier1` against it. Returns
+ * `null` when the rule is satisfied (or no rule applies to this path).
+ */
+function checkCuisineDirRule(filePath: string, cuisineTier1: string | null | undefined): string | null {
+  const rule = CUISINE_DIR_RULES.find(({ dirSegment }) => filePath.includes(dirSegment));
+  if (!rule || cuisineTier1 === rule.requiredCuisineTier1) {
+    return null;
+  }
+  return `cuisineTier1: must be "${rule.requiredCuisineTier1}" for files under ${rule.dirSegment.split(sep).join('/')} (got ${JSON.stringify(
+    cuisineTier1 ?? null,
+  )})`;
+}
 
 export interface RecipeFileValidationResult {
   readonly filePath: string;
@@ -53,13 +87,13 @@ export interface RecipeFileValidationResult {
 
 /**
  * Validates one already-parsed recipe JSON payload against
- * `curatedRecipeInputSchema`, plus the one directory-based rule the shared
- * schema has no way to express on its own: a file physically located under
- * `recipes/north-indian/` must carry `cuisineTier1: "north_indian"`
- * specifically, not merely any valid `CuisineTier1` member (§21.2.1 D1 —
- * "carried explicitly per file rather than inferred from the directory
- * path, so a file is self-describing if it's ever moved or read in
- * isolation").
+ * `curatedRecipeInputSchema`, plus the directory-based rules the shared
+ * schema has no way to express on its own — see `CUISINE_DIR_RULES` — each
+ * of which requires a file physically located under a given curated-recipe
+ * directory to carry the matching `cuisineTier1` value specifically, not
+ * merely any valid `CuisineTier1` member (§21.2.1 D1 — "carried explicitly
+ * per file rather than inferred from the directory path, so a file is
+ * self-describing if it's ever moved or read in isolation").
  */
 export function validateCuratedRecipe(filePath: string, data: unknown): RecipeFileValidationResult {
   const parsed = curatedRecipeInputSchema.safeParse(data);
@@ -71,17 +105,9 @@ export function validateCuratedRecipe(filePath: string, data: unknown): RecipeFi
     };
   }
 
-  const isUnderNorthIndian = filePath.includes(NORTH_INDIAN_DIR_SEGMENT);
-  if (isUnderNorthIndian && parsed.data.cuisineTier1 !== 'north_indian') {
-    return {
-      filePath,
-      success: false,
-      errors: [
-        `cuisineTier1: must be "north_indian" for files under recipes/north-indian/ (got ${JSON.stringify(
-          parsed.data.cuisineTier1 ?? null,
-        )})`,
-      ],
-    };
+  const dirRuleError = checkCuisineDirRule(filePath, parsed.data.cuisineTier1);
+  if (dirRuleError) {
+    return { filePath, success: false, errors: [dirRuleError] };
   }
 
   return { filePath, success: true, errors: [] };
