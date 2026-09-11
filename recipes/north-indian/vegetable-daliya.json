@@ -1,0 +1,33 @@
+{
+  "title": "Vegetable Daliya",
+  "description": "Broken wheat cooked with mixed vegetables into a light, savoury porridge — a wholesome, easy-to-digest breakfast.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "vegan"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Daliya (Broken Wheat)", "quantity": 1, "unit": "cup", "category": "grain" },
+    { "name": "Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Carrot", "quantity": 1, "unit": "piece", "category": "produce", "notes": "diced" },
+    { "name": "Green Peas", "quantity": 0.25, "unit": "cup", "category": "frozen" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Dry roast the broken wheat in a pan over medium heat for 3-4 minutes until lightly fragrant, then set aside.",
+    "In a pressure cooker, heat oil and add mustard and cumin seeds. Once they sizzle, add the onion and sauté until translucent.",
+    "Add the carrot, peas and tomato, and cook for 2-3 minutes.",
+    "Add the roasted daliya, turmeric and salt, and stir to combine.",
+    "Add the water, close the lid, and pressure cook for 3-4 whistles until the daliya and vegetables are soft.",
+    "Let the pressure release naturally, then give it a gentle stir — it will thicken slightly as it cools. Garnish with coriander leaves before serving."
+  ]
+}

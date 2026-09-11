@@ -1,0 +1,34 @@
+{
+  "title": "Aloo Paratha",
+  "description": "Whole-wheat flatbread stuffed with spiced mashed potato and pan-fried with ghee — a hearty breakfast bread, usually served with curd and pickle.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg"],
+  "role": "carb",
+  "ingredients": [
+    { "name": "Whole Wheat Flour (Aata)", "quantity": 2, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "other", "notes": "approximate, for the dough" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Potato", "quantity": 3, "unit": "piece", "category": "produce", "notes": "boiled and mashed" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, optional" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger", "quantity": 1, "unit": "tsp", "category": "produce", "notes": "grated" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Amchur (Dry Mango Powder)", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Ghee", "quantity": 3, "unit": "tbsp", "category": "dairy", "notes": "for pan-frying" }
+  ],
+  "steps": [
+    "Knead the flour, water and salt into a soft dough, cover and rest for 15-20 minutes.",
+    "Mix the mashed potato with the onion, green chilli, ginger, coriander leaves, cumin powder, amchur, red chilli powder and salt to taste.",
+    "Divide the dough into 8 balls and the potato filling into 8 portions. Roll a dough ball into a small disc, place a portion of filling in the centre, and gather the edges to seal.",
+    "Gently flatten and roll out the stuffed ball into a paratha about 6 inches across, dusting with flour as needed and taking care not to let the filling spill out.",
+    "Heat a tawa over medium heat. Cook the paratha for about a minute, then flip and drizzle a little ghee on top.",
+    "Flip again and drizzle ghee on the other side, pressing gently with a spatula until both sides are golden brown and crisp, 3-4 minutes total.",
+    "Repeat with the remaining dough and filling. Serve hot with curd, pickle, or butter."
+  ]
+}

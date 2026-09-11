@@ -1,0 +1,28 @@
+{
+  "title": "Mint-Coriander Chutney",
+  "description": "A bright, tangy green chutney blended from fresh mint and coriander with a little lemon and green chilli — the standard dip for samosas and pakoras.",
+  "servings": 6,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "jain"],
+  "role": "accompaniment",
+  "ingredients": [
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "bunch", "category": "produce" },
+    { "name": "Mint Leaves", "quantity": 0.5, "unit": "bunch", "category": "produce" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
+    { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Roasted Chana Dal", "quantity": 2, "unit": "tbsp", "category": "dal", "notes": "for body and a thicker texture" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Sugar", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "notes": "optional, to balance the tang" },
+    { "name": "Water", "quantity": 3, "unit": "tbsp", "category": "other", "notes": "approximate, for blending" }
+  ],
+  "steps": [
+    "Wash the coriander and mint leaves thoroughly and roughly chop.",
+    "Add the coriander, mint, green chillies, lemon juice, roasted chana dal, salt and sugar (if using) to a blender.",
+    "Blend, adding water a tablespoon at a time, until you get a smooth, thick, spoonable chutney.",
+    "Taste and adjust salt or lemon juice as needed. Transfer to a serving bowl.",
+    "Store any extra in an airtight container in the fridge for up to 3-4 days."
+  ]
+}

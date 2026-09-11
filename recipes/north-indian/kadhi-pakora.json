@@ -1,0 +1,35 @@
+{
+  "title": "Kadhi Pakora",
+  "description": "A tangy yogurt-and-gram-flour curry studded with crisp gram-flour dumplings — a comforting Punjabi classic served over rice.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 40,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Curd", "quantity": 1.5, "unit": "cup", "category": "dairy", "notes": "slightly sour" },
+    { "name": "Besan (Gram Flour)", "quantity": 0.5, "unit": "cup", "category": "dry_goods", "notes": "for the kadhi" },
+    { "name": "Water", "quantity": 4, "unit": "cup", "category": "other", "notes": "for the kadhi" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Besan (Gram Flour)", "quantity": 0.5, "unit": "cup", "category": "dry_goods", "notes": "for the pakoras" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, for the pakoras" },
+    { "name": "Oil", "quantity": 2, "unit": "cup", "category": "oil", "notes": "for deep frying" },
+    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy", "notes": "for tempering" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Dried Red Chilli", "quantity": 2, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce", "notes": "a small sprig" },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true }
+  ],
+  "steps": [
+    "For the pakoras, mix the second portion of besan with the chopped onion, a pinch of salt and a splash of water into a thick batter. Heat oil and deep-fry spoonfuls until golden and crisp, about 4-5 minutes. Drain and set aside.",
+    "For the kadhi, whisk the curd, first portion of besan, turmeric and salt with the water until completely smooth and lump-free.",
+    "Pour into a pot and bring to a gentle boil, stirring continuously to prevent the besan from settling and the curd from splitting. Once boiling, reduce heat and simmer for 20-25 minutes, stirring occasionally, until the kadhi thickens slightly.",
+    "Add the fried pakoras to the simmering kadhi and cook for another 5 minutes so they soften slightly and absorb the flavour.",
+    "For the tempering, heat ghee in a small pan. Add mustard seeds, cumin seeds, dried red chillies and curry leaves, letting them sizzle for 30 seconds. Stir in the red chilli powder off the heat.",
+    "Pour the tempering over the kadhi just before serving. Serve hot with steamed rice."
+  ]
+}

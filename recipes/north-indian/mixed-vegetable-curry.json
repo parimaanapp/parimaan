@@ -1,0 +1,38 @@
+{
+  "title": "Mixed Vegetable Curry",
+  "description": "A medley of seasonal vegetables simmered in a lightly spiced onion-tomato gravy — a flexible everyday curry that adapts to whatever's in the fridge.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 30,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "role": "sabzi_dal",
+  "ingredients": [
+    { "name": "Carrot", "quantity": 1, "unit": "piece", "category": "produce", "notes": "diced" },
+    { "name": "Green Beans", "quantity": 1, "unit": "cup", "category": "produce", "notes": "chopped" },
+    { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "diced" },
+    { "name": "Cauliflower", "quantity": 1, "unit": "cup", "category": "produce", "notes": "small florets" },
+    { "name": "Green Peas", "quantity": 0.5, "unit": "cup", "category": "frozen" },
+    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger-Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "produce" },
+    { "name": "Tomato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "pureed" },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Red Chilli Powder", "quantity": 0.75, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Coriander Powder", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 1, "unit": "cup", "category": "other" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
+  ],
+  "steps": [
+    "Heat oil in a pot over medium heat. Add cumin seeds and let them sizzle, then add the onion and sauté until golden.",
+    "Add the ginger-garlic paste and cook for a minute, then add the tomato puree and cook until the oil separates, about 6-8 minutes.",
+    "Stir in the turmeric, red chilli powder, coriander powder and salt, and cook for 2 minutes.",
+    "Add the carrot, beans, potato and cauliflower, and mix well to coat in the masala.",
+    "Add the water, bring to a boil, then cover and simmer for 15-18 minutes, stirring occasionally, until the vegetables are tender.",
+    "Add the green peas and garam masala, and simmer for another 3-4 minutes. Garnish with coriander leaves before serving."
+  ]
+}
