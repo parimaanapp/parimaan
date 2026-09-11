@@ -9,6 +9,52 @@ import { findMembershipsForUser, insertDefaultSettings, insertHousehold, insertM
 import { createCreateHouseholdHandler } from './createHousehold.js';
 import { UnauthorizedError, ValidationError } from '../errors.js';
 import type { RandomIntFn } from '../domain/inviteCode.js';
+import type { CuratedRecipeInput } from '../curatedRecipes.js';
+
+/**
+ * Small fixture set (2-3 recipes) for the W16 S4 curated-seeder RED tests
+ * — NOT the real 50-file corpus (that's S5's job, per E2E_MVP_PLAN.md
+ * §22.3 S4's own "the RED tests below use fixtures" note). Two recipes is
+ * enough to prove ingredients aren't cross-linked between recipes (RED
+ * test 4).
+ */
+const FIXTURE_RECIPES: CuratedRecipeInput[] = [
+  {
+    title: 'Fixture Dal Tadka',
+    description: 'A simple fixture recipe for seeder tests.',
+    servings: 4,
+    prepMin: 10,
+    cookMin: 20,
+    cuisineTier1: 'north_indian',
+    cuisineTier2: null,
+    dietaryTags: ['veg'],
+    role: 'sabzi_dal',
+    inRotation: true,
+    ingredients: [
+      { name: 'Toor dal', quantity: 1, unit: 'cup', category: 'pantry', notes: null, isStaple: true },
+      { name: 'Turmeric', quantity: 1, unit: 'tsp', category: 'spice', notes: null, isStaple: true },
+    ],
+    steps: ['Boil the dal.', 'Add turmeric and simmer.'],
+  },
+  {
+    title: 'Fixture Jeera Rice',
+    description: 'Another simple fixture recipe.',
+    servings: 4,
+    prepMin: 5,
+    cookMin: 15,
+    cuisineTier1: 'north_indian',
+    cuisineTier2: null,
+    dietaryTags: ['veg', 'vegan'],
+    role: 'carb',
+    inRotation: true,
+    ingredients: [
+      { name: 'Basmati rice', quantity: 2, unit: 'cup', category: 'pantry', notes: null, isStaple: true },
+      { name: 'Cumin seeds', quantity: 1, unit: 'tsp', category: 'spice', notes: null, isStaple: true },
+      { name: 'Ghee', quantity: 1, unit: 'tbsp', category: 'dairy', notes: null, isStaple: true },
+    ],
+    steps: ['Wash the rice.', 'Temper cumin in ghee.', 'Cook rice with the tempering.'],
+  },
+];
 
 const buildEvent = (
   name: unknown,
@@ -275,5 +321,184 @@ describe('createHousehold resolver', () => {
       pool,
     );
     expect(membershipsB).toEqual([]);
+  });
+
+  // W16 §22.3 S4 — curated-seeder Lambda step inside `createHousehold`'s
+  // existing transaction. Every test above this point must keep passing
+  // UNMODIFIED (see the top-level file comment's "zero assertion edits"
+  // discipline) — these new tests exercise ONLY the new fifth step.
+  describe('curated-recipe seeding (W16 S4)', () => {
+    const findRecipesForHousehold = async (householdId: string) => {
+      const result = await db.adminClient.query(
+        `SELECT * FROM recipes WHERE household_id = $1 ORDER BY title`,
+        [householdId],
+      );
+      return result.rows;
+    };
+
+    const findIngredientsForRecipe = async (recipeId: string) => {
+      const result = await db.adminClient.query(
+        `SELECT * FROM recipe_ingredients WHERE recipe_id = $1 ORDER BY sort_order`,
+        [recipeId],
+      );
+      return result.rows;
+    };
+
+    it('seeds every fixture recipe onto the newly created household', async () => {
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => FIXTURE_RECIPES,
+      });
+      const result = await handler(buildEvent('Seeded House', 'sub-seed-1'));
+
+      const recipes = await findRecipesForHousehold(result.id);
+      expect(recipes).toHaveLength(FIXTURE_RECIPES.length);
+      expect(recipes.map((r) => r.title).sort()).toEqual(
+        FIXTURE_RECIPES.map((r) => r.title).sort(),
+      );
+      for (const recipe of recipes) {
+        expect(recipe.household_id).toBe(result.id);
+      }
+    });
+
+    it("sets every seeded recipe's created_by to the calling user's own id", async () => {
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => FIXTURE_RECIPES,
+      });
+      const result = await handler(buildEvent('Seeded House 2', 'sub-seed-2'));
+
+      const userRow = await db.adminClient.query('SELECT id FROM users WHERE cognito_sub = $1', [
+        'sub-seed-2',
+      ]);
+      const callerUserId = userRow.rows[0].id;
+      expect(callerUserId).toBeTruthy();
+
+      const recipes = await findRecipesForHousehold(result.id);
+      expect(recipes.length).toBeGreaterThan(0);
+      for (const recipe of recipes) {
+        expect(recipe.created_by).toBe(callerUserId);
+        expect(recipe.created_by).not.toBeNull();
+      }
+    });
+
+    it("sets every seeded recipe's sourceType to exactly 'curated'", async () => {
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => FIXTURE_RECIPES,
+      });
+      const result = await handler(buildEvent('Seeded House 3', 'sub-seed-3'));
+
+      const recipes = await findRecipesForHousehold(result.id);
+      expect(recipes.length).toBeGreaterThan(0);
+      for (const recipe of recipes) {
+        expect(recipe.source_type).toBe('curated');
+        expect(recipe.source_url).toBeNull();
+      }
+    });
+
+    it('inserts ingredients correctly linked to the right recipe, never cross-linked', async () => {
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => FIXTURE_RECIPES,
+      });
+      const result = await handler(buildEvent('Seeded House 4', 'sub-seed-4'));
+
+      const recipes = await findRecipesForHousehold(result.id);
+      expect(recipes).toHaveLength(FIXTURE_RECIPES.length);
+
+      for (const fixture of FIXTURE_RECIPES) {
+        const dbRecipe = recipes.find((r) => r.title === fixture.title);
+        expect(dbRecipe).toBeDefined();
+        const ingredients = await findIngredientsForRecipe(dbRecipe.id);
+        expect(ingredients).toHaveLength(fixture.ingredients.length);
+        expect(ingredients.map((i) => i.name)).toEqual(fixture.ingredients.map((i) => i.name));
+        for (const ingredient of ingredients) {
+          expect(ingredient.recipe_id).toBe(dbRecipe.id);
+        }
+      }
+    });
+
+    it('rolls back the ENTIRE transaction when seeding fails mid-way (fixture-list throws)', async () => {
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => {
+          throw new Error('Forced curated-recipe-list failure for this test.');
+        },
+      });
+
+      await expect(handler(buildEvent('Failed Seed House', 'sub-seed-fail-1'))).rejects.toThrow();
+      expect(await countRows('households')).toBe(0);
+      expect(await countRows('household_memberships')).toBe(0);
+      expect(await countRows('household_settings')).toBe(0);
+      expect(await countRows('recipes')).toBe(0);
+      expect(await countRows('recipe_ingredients')).toBe(0);
+    });
+
+    it('rolls back the ENTIRE transaction when one fixture recipe fails to insert mid-batch', async () => {
+      // Force the failure through a fixture list whose second entry has a
+      // `role` the DB's own CHECK constraint rejects — the seeder path
+      // calls `insertRecipe` directly (unvalidated by `createRecipe`'s own
+      // Zod schema, same as how a real curated JSON file is trusted
+      // content, not client input), so the failure surfaces at INSERT
+      // time, after the first fixture recipe has already been inserted in
+      // this same transaction — the direct proof of D2's "never partially
+      // seeded" guarantee.
+      const recipesWithBadSecondEntry: CuratedRecipeInput[] = [
+        FIXTURE_RECIPES[0]!,
+        {
+          ...FIXTURE_RECIPES[1]!,
+          role: 'not_a_real_role' as CuratedRecipeInput['role'],
+        },
+      ];
+
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => recipesWithBadSecondEntry,
+      });
+
+      await expect(handler(buildEvent('Failed Seed House 2', 'sub-seed-fail-2'))).rejects.toThrow();
+      expect(await countRows('households')).toBe(0);
+      expect(await countRows('household_memberships')).toBe(0);
+      expect(await countRows('household_settings')).toBe(0);
+      expect(await countRows('recipes')).toBe(0);
+      expect(await countRows('recipe_ingredients')).toBe(0);
+    });
+
+    it('seeds a SECOND, INDEPENDENT copy of the fixture recipes for a second household by the same user', async () => {
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => FIXTURE_RECIPES,
+      });
+
+      const resultA = await handler(buildEvent('First House', 'sub-seed-twice'));
+      const resultB = await handler(buildEvent('Second House', 'sub-seed-twice'));
+
+      expect(resultA.id).not.toBe(resultB.id);
+
+      const recipesA = await findRecipesForHousehold(resultA.id);
+      const recipesB = await findRecipesForHousehold(resultB.id);
+
+      expect(recipesA).toHaveLength(FIXTURE_RECIPES.length);
+      expect(recipesB).toHaveLength(FIXTURE_RECIPES.length);
+
+      const idsA = new Set(recipesA.map((r) => r.id));
+      const idsB = new Set(recipesB.map((r) => r.id));
+      for (const id of idsB) {
+        expect(idsA.has(id)).toBe(false);
+      }
+
+      expect(recipesA.map((r) => r.title).sort()).toEqual(recipesB.map((r) => r.title).sort());
+    });
+
+    it('leaves non-member/unauthenticated denial on createHousehold unchanged (regression check)', async () => {
+      const handler = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => FIXTURE_RECIPES,
+      });
+      await expect(handler(buildEvent('Denied House', null))).rejects.toThrow(UnauthorizedError);
+      expect(await countRows('households')).toBe(0);
+      expect(await countRows('recipes')).toBe(0);
+    });
   });
 });
