@@ -2,6 +2,7 @@ import * as amplify from '@aws-cdk/aws-amplify-alpha';
 import * as cdk from 'aws-cdk-lib';
 import type { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { Secret as SecretsManagerSecret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Construct } from 'constructs';
 
 export interface FrontendStackProps extends cdk.StackProps {
@@ -108,19 +109,26 @@ export class FrontendStack extends cdk.Stack {
     // above). Absent in normal dev iteration until a human completes the
     // one-time manual PAT-creation step documented there; the app still
     // deploys without it, just with no linked repository.
-    const githubTokenSecretName = this.node.tryGetContext('githubTokenSecretName') as
-      | string
-      | undefined;
-    const githubOwner = this.node.tryGetContext('githubOwner') as string | undefined;
-    const githubRepo = this.node.tryGetContext('githubRepo') as string | undefined;
-    const sourceCodeProvider =
-      githubTokenSecretName && githubOwner && githubRepo
-        ? new amplify.GitHubSourceCodeProvider({
-            owner: githubOwner,
-            repository: githubRepo,
-            oauthToken: cdk.SecretValue.secretsManager(githubTokenSecretName),
-          })
-        : undefined;
+    const sourceCodeProvider = this.resolveGitHubSourceCodeProvider();
+
+    // NextAuth's own JWT session strategy needs a stable signing/encryption
+    // secret (`NEXTAUTH_SECRET`) — without one, NextAuth falls back to an
+    // ephemeral auto-generated value in development only; in a real
+    // multi-instance Amplify Hosting SSR deployment this would mean every
+    // instance signs with a different secret and sessions break
+    // unpredictably across requests. A real gap S3 flagged explicitly
+    // ("No NEXTAUTH_SECRET is wired... needed for real deploy time") and
+    // left for follow-up rather than inventing — closed here, same
+    // Secrets-Manager-ARN-as-env-var pattern as `webClientCredentialsSecret`
+    // above, except this secret holds a single plain random string, not a
+    // JSON object — CDK's `Secret` construct with no `generateSecretString`
+    // override already generates exactly that (a plain random string
+    // `SecretString`, not a JSON envelope), so no `secretStringTemplate`/
+    // `generateStringKey` pair is needed here.
+    const nextAuthSecret = new SecretsManagerSecret(this, 'NextAuthSecret', {
+      secretName: `parimaan/nextauth-secret-${envName}`,
+      description: "NextAuth's JWT session signing/encryption secret for the web dashboard.",
+    });
 
     this.app = new amplify.App(this, 'App', {
       appName: `parimaan-${envName}-web`,
@@ -142,16 +150,18 @@ export class FrontendStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: userPool.userPoolId,
         COGNITO_WEB_CLIENT_ID: webClient.userPoolClientId,
         WEB_CLIENT_CREDENTIALS_SECRET_ARN: webClientCredentialsSecret.secretArn,
+        NEXTAUTH_SECRET_ARN: nextAuthSecret.secretArn,
       },
     });
 
     // Grants the app's compute role (auto-created for Platform.WEB_COMPUTE
-    // per `AppProps.computeRole`'s own doc comment) read access to the
-    // secret whose ARN was just passed above — the exact
+    // per `AppProps.computeRole`'s own doc comment) read access to both
+    // secrets whose ARNs were just passed above — the exact
     // `geminiApiKeySecret.grantRead(fn)` pattern `api-stack.ts` already
     // uses, applied to `App` (which implements `iam.IGrantable` via
     // `grantPrincipal`) instead of a Lambda.
     webClientCredentialsSecret.grantRead(this.app);
+    nextAuthSecret.grantRead(this.app);
 
     this.branch = this.app.addBranch('Branch', {
       branchName,
@@ -175,6 +185,29 @@ export class FrontendStack extends cdk.Stack {
       value: this.app.defaultDomain,
       description: 'Amplify Hosting default (amplifyapp.com) domain, before DNS for the custom domain is confirmed.',
       exportName: `Parimaan-${envName}-FrontendDefaultDomain`,
+    });
+  }
+
+  /**
+   * Finding #1 (class doc comment above): a GitHub PAT-based source-control
+   * connection, present only once a human has completed the one-time
+   * manual PAT-creation step and supplied its CDK context values. Extracted
+   * from the constructor purely to stay under this repo's
+   * `max-lines-per-function` lint rule — no behavior change from inlining.
+   */
+  private resolveGitHubSourceCodeProvider(): amplify.GitHubSourceCodeProvider | undefined {
+    const githubTokenSecretName = this.node.tryGetContext('githubTokenSecretName') as string | undefined;
+    const githubOwner = this.node.tryGetContext('githubOwner') as string | undefined;
+    const githubRepo = this.node.tryGetContext('githubRepo') as string | undefined;
+
+    if (!githubTokenSecretName || !githubOwner || !githubRepo) {
+      return undefined;
+    }
+
+    return new amplify.GitHubSourceCodeProvider({
+      owner: githubOwner,
+      repository: githubRepo,
+      oauthToken: cdk.SecretValue.secretsManager(githubTokenSecretName),
     });
   }
 }
