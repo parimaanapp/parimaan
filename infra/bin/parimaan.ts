@@ -3,6 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import { ApiStack } from '../stacks/api-stack';
 import { AuthStack } from '../stacks/auth-stack';
 import { DataStack } from '../stacks/data-stack';
+import { FrontendStack } from '../stacks/frontend-stack';
 import { NetworkStack } from '../stacks/network-stack';
 
 const app = new cdk.App();
@@ -60,7 +61,7 @@ const auth = new AuthStack(app, `Parimaan-${envName}-Auth`, {
   description: `Parimaan ${envName} — Cognito user pool, Google IdP, app clients.`,
 });
 
-new ApiStack(app, `Parimaan-${envName}-Api`, {
+const api = new ApiStack(app, `Parimaan-${envName}-Api`, {
   env,
   envName,
   userPool: auth.userPool,
@@ -72,6 +73,20 @@ new ApiStack(app, `Parimaan-${envName}-Api`, {
   exportsBucket: data.exportsBucket,
   alertsTopic: data.alertsTopic,
   description: `Parimaan ${envName} — AppSync GraphQL API + Lambda resolvers.`,
+});
+
+// W18 S1 (D1/D6) — Amplify Hosting for the Next.js web dashboard. Takes
+// AuthStack's web client + its new credentials secret, and ApiStack's
+// already-public GraphQL endpoint, as cross-stack props — the same pattern
+// ApiStack itself uses for NetworkStack/DataStack's resources above.
+new FrontendStack(app, `Parimaan-${envName}-Frontend`, {
+  env,
+  envName,
+  userPool: auth.userPool,
+  webClient: auth.webClient,
+  webClientCredentialsSecret: auth.webClientCredentialsSecret,
+  graphqlUrl: api.api.graphqlUrl,
+  description: `Parimaan ${envName} — Amplify Hosting for the Next.js web dashboard.`,
 });
 
 cdk.Tags.of(app).add('Project', 'Parimaan');
