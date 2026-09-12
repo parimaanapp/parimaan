@@ -1163,9 +1163,11 @@ Table: parimaan-cache-{env}
 
 Usage patterns:
   "aiCache#cookFromPantry#{householdId}#{pantryHash}" | "{}"      # 30-min TTL
-  "aiCache#staplesNote#{listId}"                     | "{...}"    # 24-hr TTL
+  "aiCache#staplesNote#{recipeSetHash}"               | "{...}"    # 24-hr TTL
   "rateLimit#user#{userId}#{yyyy-mm-dd}"             | count      # 24-hr TTL
 ```
+
+`staplesNote`'s key is `{recipeSetHash}` (a content hash of the planned recipe set), not `{listId}` as originally sketched here — a real gap found and deviated from during W17 (`E2E_MVP_PLAN.md` §23.4 D6): a raw `listId` key would serve a stale note for up to 24 hours after a `regenerateShoppingList` call changed the planned recipes, since a regenerate reuses the same list id. As shipped, `api/src/domain/recipeSetHash.ts` computes the hash from the menu's current `menu_items` (recipe id + `servingsOverride` pairs); `api/src/aiCache/staplesNoteCache.ts` reads/writes the DynamoDB row keyed by it.
 
 Single table, on-demand billing, sub-cent monthly.
 
@@ -1277,7 +1279,7 @@ Cross-region adds ~150–250ms latency. Data egress is inside AWS (cheap). Only 
 - `temperature: 0.2` for structured outputs (recipe parse, photo pantry).
 - `temperature: 0.6` for creative outputs (cook-from-pantry).
 - Cache `cook-from-pantry` per (household, pantryHash) for 30 minutes.
-- Cache `staplesNote` per shopping list forever (invalidate on list edit).
+- Cache `staplesNote` for 24 hours, keyed by a content hash of the planned recipe set (`recipeSetHash`), not per shopping list / forever as originally sketched here — see §7.3's own note and `E2E_MVP_PLAN.md` §23.4 D6 for why a `listId`-keyed cache was a real bug (a regenerate reuses the same list id, so it would have served a stale note across a real menu change).
 - Never cache photo pantry (unique inputs).
 
 ---
@@ -1498,7 +1500,9 @@ parimaan/
 
 > **Amended 2026-08-14** (W1, during `NetworkStack` code review): the original text below listed RDS Proxy under `network-stack`, which both disagreed with §16's month-by-month plan (RDS Proxy lands in Month 2 as part of `api-stack`) and is now superseded by `E2E_MVP_PLAN.md` §10 Q1 (locked) — RDS Proxy is no longer a guaranteed component at all. Q1's decision is "direct Postgres connections first; add RDS Proxy only if the W3/W11 connection-load spikes show failures." RDS Proxy, if it ends up built, belongs conceptually next to the Aurora cluster it proxies (`data-stack`), not `network-stack` — a VPC/subnet/endpoint stack has no natural reason to own a database connection pooler. `network-stack` as actually implemented in W1 has 4 VPC endpoints (S3, DynamoDB — gateway; Bedrock, Secrets Manager — interface), not the "Bedrock + S3" pair originally written here.
 
-- **network-stack:** VPC (2 AZs), subnets, VPC endpoints for S3, DynamoDB, Bedrock, and Secrets Manager.
+> **Amended 2026-09-11/12** (W17 S1 + a same-week follow-up fix, `NetworkStack`): two changes on top of the W1 baseline above. (1) **S1** added a second private subnet group, `private-egress` (`PRIVATE_WITH_EGRESS`), alongside (not replacing) the original `isolated` group, plus a single-AZ NAT Gateway — the first Lambda needing both real Aurora access and real internet egress in one execution (`staplesNoteFn`, calling Gemini) opts into this group via `createDbResolverFunction`'s `needsInternetEgress` flag; every other DB-resolver Lambda stays on the zero-internet-route `isolated` default. Founder-approved recurring ~$32-35/mo cost, immaterial against active AWS Activate credits (`E2E_MVP_PLAN.md` §23.4 D1). (2) A same-week follow-up fix (found by S5's own live-verification pass, fixed in a dedicated PR immediately after) added a fifth VPC endpoint — a Lambda service interface endpoint, scoped to `isolated` only — after live verification found `generateShoppingList`/`regenerateShoppingList` (correctly left in `isolated`, since neither needs general internet access) had no network path at all to fire their new post-commit `lambda:InvokeFunction` call against `staplesNoteFn`: no NAT/egress route, and no interface endpoint for the `lambda` service existed yet. The SDK's connect attempt hung rather than failing fast, timing out the whole resolver at its 45s function timeout — confirmed live (`Sandbox.Timedout`, no shopping list written) before the fix, confirmed fixed live after it (824ms, full end-to-end success including `staplesNoteFn`'s own downstream Gemini call/cache write) — see `E2E_MVP_PLAN.md` §23.5 for the bug trace. `network-stack` as of W17 has **5** VPC endpoints (S3, DynamoDB — gateway; Bedrock, Secrets Manager, Lambda — interface), not the 4 the W1 amendment above describes.
+
+- **network-stack:** VPC (2 AZs), subnets, VPC endpoints for S3, DynamoDB, Bedrock, Secrets Manager, and Lambda (W17 follow-up fix) — plus (W17 S1) a second `private-egress` private subnet group and a single-AZ NAT Gateway, alongside the original `isolated` group.
 - **auth-stack:** Cognito user pool, Google IdP config, app clients.
 - **data-stack:** Aurora Serverless v2 cluster (auto-pause ON), S3 buckets, DynamoDB cache table, **RDS Proxy (conditional — only if the Q1 spike shows direct-connection failures; see `E2E_MVP_PLAN.md` §10 Q1)**. No customer-managed KMS key is created — Aurora and S3 use their AWS-managed default keys and DynamoDB its AWS-owned default, per §13.1's interpretation (amended below); the "KMS keys" bullet originally here is removed as it implied a resource this stack doesn't actually provision.
 
