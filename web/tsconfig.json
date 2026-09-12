@@ -10,6 +10,6 @@
     "plugins": [{ "name": "next" }],
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "app/**/*.ts", "app/**/*.tsx", "components/**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "app/**/*.ts", "app/**/*.tsx", "components/**/*.tsx", "vitest.setup.ts", ".next/types/**/*.ts"],
   "exclude": ["node_modules", ".next"]
 }
