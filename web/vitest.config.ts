@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@/components': path.resolve(here, 'components'),
       '@': path.resolve(here, 'src'),
       // `server-only`'s package.json `exports` map resolves to a throwing
       // `index.js` under every condition except `react-server` (the
