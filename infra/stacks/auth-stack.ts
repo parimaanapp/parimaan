@@ -7,7 +7,17 @@ import {
   UserPoolIdentityProviderGoogle,
 } from 'aws-cdk-lib/aws-cognito';
 import type { UserPoolClient } from 'aws-cdk-lib/aws-cognito';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Construct } from 'constructs';
+
+/**
+ * Name of the Secrets Manager secret holding the confidential web client's
+ * id and generated secret (W18 S1, D1). Named consistently with the existing
+ * `parimaan/gemini-api-key`/`parimaan/google-oauth-secret` convention.
+ * Exported so `frontend-stack.ts` (and its tests) reference the same literal
+ * rather than re-deriving it.
+ */
+export const WEB_CLIENT_CREDENTIALS_SECRET_NAME = 'parimaan/web-client-credentials';
 
 // Every flag explicitly `false` — NOT an empty object, NOT omitted. Verified
 // empirically: omitting `authFlows` lets AWS default to ALLOW_USER_SRP_AUTH
@@ -67,6 +77,13 @@ export class AuthStack extends cdk.Stack {
   public readonly userPool: UserPool;
   public readonly mobileClient: UserPoolClient;
   public readonly webClient: UserPoolClient;
+  /**
+   * Secrets Manager secret holding the web client's id/secret (W18 S1, D1).
+   * `frontend-stack.ts` grants its Amplify app's compute role read access to
+   * this ARN and passes the ARN (never the value) as a runtime env var —
+   * the exact `geminiClient.ts`-shaped "fetch once at cold start" pattern.
+   */
+  public readonly webClientCredentialsSecret: Secret;
 
   constructor(scope: Construct, id: string, props: AuthStackProps) {
     super(scope, id, props);
@@ -116,6 +133,40 @@ export class AuthStack extends cdk.Stack {
     });
 
     this.exportMobileConfig(envName, domain.baseUrl());
+    this.webClientCredentialsSecret = this.createWebClientCredentialsSecret();
+  }
+
+  /**
+   * Writes the web client's id/secret into a new Secrets Manager secret
+   * (W18 S1, D1) so `frontend-stack.ts`'s NextAuth server-side config can
+   * fetch it at cold start, mirroring `geminiClient.ts`'s proven
+   * fetch-and-memoize pattern rather than learning Amplify Hosting's newer,
+   * less-exercised compute-role + runtime `DescribeUserPoolClient` path.
+   *
+   * `secretObjectValue` is CDK's construct for exactly this "some values are
+   * plain, one is a generated secret" shape: `clientId` is wrapped in
+   * `SecretValue.unsafePlainText` (rendered as a literal in the template —
+   * fine, since the id is already public, same reasoning as
+   * `AuthStackProps.googleClientId`'s own doc comment), while `clientSecret`
+   * is `webClient.userPoolClientSecret` — a `SecretValue` CDK backs with a
+   * singleton custom resource that calls Cognito's `DescribeUserPoolClient`
+   * at deploy time and returns a dynamic (`Fn::GetAtt`-shaped) reference.
+   * Nothing about this is assumed: `frontend-stack.test.ts`'s own
+   * regression test scans the full synthesized template for a plain-string
+   * `SecretString`/`GenerateSecretString` on this resource and fails if one
+   * is ever found — the exact "did someone 'fix' this by reading the secret
+   * into a plain CDK string" regression the plan calls out.
+   */
+  private createWebClientCredentialsSecret(): Secret {
+    return new Secret(this, 'WebClientCredentialsSecret', {
+      secretName: WEB_CLIENT_CREDENTIALS_SECRET_NAME,
+      description:
+        "Confidential Cognito web app client's id and generated secret, consumed by the Next.js dashboard's NextAuth config at cold start.",
+      secretObjectValue: {
+        clientId: cdk.SecretValue.unsafePlainText(this.webClient.userPoolClientId),
+        clientSecret: this.webClient.userPoolClientSecret,
+      },
+    });
   }
 
   /**

@@ -382,4 +382,85 @@ describe('AuthStack', () => {
   it('matches the known-good synthesized template snapshot (dev)', () => {
     expect(synth('dev').toJSON()).toMatchSnapshot();
   });
+
+  // W18 S1 (D1) — the new Secrets Manager secret for the web client's
+  // id/secret, and the mandatory regression test proving the secret VALUE
+  // never lands in the template as a literal, human-readable string.
+  describe('web client credentials secret (W18 S1, D1)', () => {
+    it('declares exactly one Secrets Manager secret named parimaan/web-client-credentials', () => {
+      const template = synth('dev');
+      template.resourceCountIs('AWS::SecretsManager::Secret', 1);
+      template.hasResourceProperties('AWS::SecretsManager::Secret', {
+        Name: 'parimaan/web-client-credentials',
+      });
+    });
+
+    it('never embeds the secret value as a literal string — SecretString is a dynamic reference, not plain text', () => {
+      const json = synth('dev').toJSON() as {
+        Resources: Record<string, { Type: string; Properties?: Record<string, unknown> }>;
+      };
+      const secretResource = Object.values(json.Resources).find(
+        (resource) => resource.Type === 'AWS::SecretsManager::Secret',
+      );
+      expect(secretResource).toBeDefined();
+
+      const secretString = secretResource?.Properties?.SecretString;
+      // This is the real regression test: a literal (or falsely-dynamic)
+      // secret value would serialize as a plain JS `string`. CDK's own
+      // `secretObjectValue` mechanism for a value sourced from another
+      // construct's generated attribute (here, `UserPoolClient.
+      // userPoolClientSecret`) instead renders as an `Fn::Join` CFN
+      // intrinsic whose parts mix literal JSON scaffolding with an
+      // `Fn::GetAtt` reference into a custom resource — never a bare
+      // string. If a future change "fixes" this by reading the secret into
+      // a plain CDK string (e.g. via `.unsafeUnwrap()` misuse or a
+      // hardcoded test value) and passing it straight into
+      // `secretObjectValue`/`secretStringValue`, `SecretString` collapses
+      // to `typeof 'string'` and this assertion fails.
+      expect(typeof secretString).not.toBe('string');
+      expect(secretString).toEqual(
+        expect.objectContaining({
+          'Fn::Join': expect.anything(),
+        }),
+      );
+
+      // The dynamic part must specifically be a deploy-time-resolved
+      // attribute of a custom resource — not some other intrinsic (e.g. a
+      // `Ref` to a plain CFN parameter that could itself be handed a
+      // literal default). Walk the Fn::Join's parts array looking for an
+      // `Fn::GetAtt` whose target resource is the
+      // `Custom::DescribeCognitoUserPoolClient` this construct is known
+      // (confirmed via a real synth, not assumed) to generate for a
+      // client's generated secret.
+      const joinParts = (secretString as { 'Fn::Join': [string, unknown[]] })['Fn::Join'][1];
+      const getAttParts = joinParts.filter(
+        (part): part is { 'Fn::GetAtt': [string, string] } =>
+          typeof part === 'object' && part !== null && 'Fn::GetAtt' in part,
+      );
+      expect(getAttParts.length).toBeGreaterThan(0);
+
+      const referencedResourceNames = getAttParts.map((part) => part['Fn::GetAtt'][0]);
+      for (const resourceName of referencedResourceNames) {
+        expect(json.Resources[resourceName]?.Type).toBe('Custom::DescribeCognitoUserPoolClient');
+      }
+
+      // Belt-and-suspenders: the part of the Join literal scaffolding
+      // around the dynamic references is expected (the `{"clientId":"` /
+      // `","clientSecret":"` / `"}"` JSON glue) — but none of those literal
+      // fragments should themselves look like a populated secret value
+      // (i.e. a long opaque token sitting where only JSON punctuation is
+      // expected).
+      const literalParts = joinParts.filter((part): part is string => typeof part === 'string');
+      for (const literal of literalParts) {
+        expect(literal).not.toMatch(/[A-Za-z0-9_-]{20,}/);
+      }
+    });
+
+    it('does not export the secret ARN or value via CfnOutput (no reason to publish it — consumers resolve it by its well-known name)', () => {
+      const outputsJson = JSON.stringify(
+        (synth('dev').toJSON() as { Outputs?: unknown }).Outputs ?? {},
+      );
+      expect(outputsJson).not.toContain('WebClientCredentialsSecret');
+    });
+  });
 });
