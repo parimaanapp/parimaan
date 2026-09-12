@@ -1339,8 +1339,8 @@ lib/
 
 - **App Router** with server components for public pages, client components for authenticated views.
 - **Auth:** NextAuth.js with Cognito provider (OAuth code flow).
-- **GraphQL:** `urql` with subscriptions via `graphql-ws`.
-- **Deployed:** Amplify Hosting with automatic previews on PRs.
+- **GraphQL:** `urql`, query/mutation only (`cacheExchange`/`fetchExchange`) — **reconciled W18 S7**: the sketch above originally said "with subscriptions via `graphql-ws`," but no subscription exchange was ever built or planned server-side for the web client (`web/src/graphql/clientClient.ts`/`serverClient.ts` wire only `cacheExchange`/`fetchExchange`); W18's own D4-D7 never named a subscription need, and the dashboard's read-only screens refetch on navigation rather than subscribing. A live `Authorization` header (the raw Cognito ID token, no `Bearer` prefix — confirmed against the mobile app's own `auth_link.dart` convention) is attached per-request via NextAuth's `jwt`/`session` callbacks (W18 D2).
+- **Deployed:** Amplify Hosting (`@aws-cdk/aws-amplify-alpha`, `Platform.WEB_COMPUTE`), `dev.parimaan.app`/`parimaan.app` custom domain — **as of W18, provisioned but not yet building real code**: the CDK construct has no GitHub App connection option (only a PAT-based `ISourceCodeProvider`), so a human must create a GitHub PAT, store it in Secrets Manager, and supply it via CDK context before the Amplify app has a connected repo or any real deploy job; "automatic previews on PRs" is the intended end state once that manual step is done, not a currently-running behavior.
 - **Scope:** view pantry / meal plan / shopping list; add + edit recipes (URL import + freeform paste); household settings admin. No meal-plan calendar editing on web MVP.
 
 ### 9.3 Shared TypeScript types
