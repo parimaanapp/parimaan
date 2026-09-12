@@ -33,6 +33,14 @@ export interface MeQueryResult {
  * exactly (`shared/schema.graphql`); only `id` is selected on `Household`
  * since that's all the dashboard's own three section queries need as their
  * `householdId` argument.
+ *
+ * Also the shared D3 query for the settings screen (W18 S6) — both slices
+ * independently needed "which household" and both resolve it identically
+ * (`me.households[0]`), so this one query constant serves both rather than
+ * each screen declaring its own copy. (`S5`'s recipes screen has its own,
+ * still-separate `household/householdQueries.ts` copy of this same query —
+ * a known, flagged duplication across three screens, not yet consolidated
+ * into one shared module; a follow-up cleanup, not a correctness issue.)
  */
 export const MY_HOUSEHOLDS_QUERY = `
   query MyHouseholds {
@@ -166,4 +174,67 @@ export interface ShoppingListQueryResult {
       purchased: boolean;
     }>;
   } | null;
+}
+
+/**
+ * Field selection matches `HouseholdSettings` in `shared/schema.graphql`
+ * exactly. `mealStructure`/`cuisineTier2Weights` come back as the raw
+ * `AWSJSON` string (see `web/src/settings/types.ts`'s doc comment) — decoded
+ * only inside the section component that edits that field.
+ */
+const HOUSEHOLD_SETTINGS_FIELDS = `
+  mealsEnabled
+  mealStructure
+  cuisineTier1
+  cuisineTier2Weights
+  dietaryTags
+  allergens
+  skipIngredients
+`;
+
+export const HOUSEHOLD_SETTINGS_QUERY = `
+  query HouseholdSettingsQuery($householdId: ID!) {
+    household(householdId: $householdId) {
+      id
+      settings {
+        ${HOUSEHOLD_SETTINGS_FIELDS}
+      }
+    }
+  }
+`;
+
+export interface HouseholdSettingsQueryResult {
+  household: {
+    id: string;
+    settings: {
+      mealsEnabled: string[];
+      mealStructure: string;
+      cuisineTier1: string[];
+      cuisineTier2Weights: string;
+      dietaryTags: string[];
+      allergens: string[];
+      skipIngredients: string[];
+    };
+  };
+}
+
+/**
+ * W18 D5/D7 — reuses `Mutation.updateHouseholdSettings` entirely unchanged
+ * (already shipped W4/W8). `$input`'s keys are whatever
+ * `buildSettingsPatch` decided actually changed — this query string makes no
+ * assumption about which keys are present.
+ */
+export const UPDATE_HOUSEHOLD_SETTINGS_MUTATION = `
+  mutation UpdateHouseholdSettings($householdId: ID!, $input: HouseholdSettingsInput!) {
+    updateHouseholdSettings(householdId: $householdId, input: $input) {
+      id
+      settings {
+        ${HOUSEHOLD_SETTINGS_FIELDS}
+      }
+    }
+  }
+`;
+
+export interface UpdateHouseholdSettingsMutationResult {
+  updateHouseholdSettings: HouseholdSettingsQueryResult['household'];
 }
