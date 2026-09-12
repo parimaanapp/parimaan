@@ -280,6 +280,12 @@ export const DB_RESOLVERS: readonly DbResolverEntry[] = [
     fieldName: 'regenerateShoppingList',
   },
   {
+    id: 'ShoppingList',
+    entryFile: 'shoppingList.ts',
+    typeName: 'Query',
+    fieldName: 'shoppingList',
+  },
+  {
     id: 'HaveIt',
     entryFile: 'haveIt.ts',
     typeName: 'Mutation',

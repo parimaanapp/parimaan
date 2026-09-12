@@ -125,6 +125,22 @@ type Query {
   `menuId` (no existence oracle, matching `addMenuItem`'s own pattern).
   """
   autoFillPreview(menuId: ID!): AutoFillPreviewResult!
+
+  """
+  Returns the OPEN shopping list generated from `menuId`, or `null` if
+  none has been generated yet — never an error (W18 S2, E2E_MVP_PLAN.md
+  §24.2.4, D4). Exists because `generateShoppingList`/`regenerateShoppingList`
+  are the only other ways to reach a `ShoppingList`, and both are
+  mutations: `generateShoppingList` specifically throws `CONFLICT` if a
+  list already exists for the menu (confirmed live during W17 S5's own
+  verification pass), so neither is safely callable as an idempotent
+  "get." This field is a small, pure read — it reuses the identical
+  "does an open list already exist for this menu" lookup
+  `generateShoppingList` already performs, and writes nothing. Gated by
+  `requireHouseholdMember`, denied identically to a nonexistent `menuId`
+  (no existence oracle), matching `menu`'s own pattern.
+  """
+  shoppingList(menuId: ID!): ShoppingList
 }
 
 type Mutation {
