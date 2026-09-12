@@ -2,6 +2,7 @@ import * as amplify from '@aws-cdk/aws-amplify-alpha';
 import * as cdk from 'aws-cdk-lib';
 import type { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { Secret as SecretsManagerSecret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Construct } from 'constructs';
 
 export interface FrontendStackProps extends cdk.StackProps {
@@ -122,6 +123,25 @@ export class FrontendStack extends cdk.Stack {
           })
         : undefined;
 
+    // NextAuth's own JWT session strategy needs a stable signing/encryption
+    // secret (`NEXTAUTH_SECRET`) — without one, NextAuth falls back to an
+    // ephemeral auto-generated value in development only; in a real
+    // multi-instance Amplify Hosting SSR deployment this would mean every
+    // instance signs with a different secret and sessions break
+    // unpredictably across requests. A real gap S3 flagged explicitly
+    // ("No NEXTAUTH_SECRET is wired... needed for real deploy time") and
+    // left for follow-up rather than inventing — closed here, same
+    // Secrets-Manager-ARN-as-env-var pattern as `webClientCredentialsSecret`
+    // above, except this secret holds a single plain random string, not a
+    // JSON object — CDK's `Secret` construct with no `generateSecretString`
+    // override already generates exactly that (a plain random string
+    // `SecretString`, not a JSON envelope), so no `secretStringTemplate`/
+    // `generateStringKey` pair is needed here.
+    const nextAuthSecret = new SecretsManagerSecret(this, 'NextAuthSecret', {
+      secretName: `parimaan/nextauth-secret-${envName}`,
+      description: "NextAuth's JWT session signing/encryption secret for the web dashboard.",
+    });
+
     this.app = new amplify.App(this, 'App', {
       appName: `parimaan-${envName}-web`,
       // Finding #2 above — SSR Next.js needs WEB_COMPUTE, not the WEB
@@ -142,16 +162,18 @@ export class FrontendStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: userPool.userPoolId,
         COGNITO_WEB_CLIENT_ID: webClient.userPoolClientId,
         WEB_CLIENT_CREDENTIALS_SECRET_ARN: webClientCredentialsSecret.secretArn,
+        NEXTAUTH_SECRET_ARN: nextAuthSecret.secretArn,
       },
     });
 
     // Grants the app's compute role (auto-created for Platform.WEB_COMPUTE
-    // per `AppProps.computeRole`'s own doc comment) read access to the
-    // secret whose ARN was just passed above — the exact
+    // per `AppProps.computeRole`'s own doc comment) read access to both
+    // secrets whose ARNs were just passed above — the exact
     // `geminiApiKeySecret.grantRead(fn)` pattern `api-stack.ts` already
     // uses, applied to `App` (which implements `iam.IGrantable` via
     // `grantPrincipal`) instead of a Lambda.
     webClientCredentialsSecret.grantRead(this.app);
+    nextAuthSecret.grantRead(this.app);
 
     this.branch = this.app.addBranch('Branch', {
       branchName,
