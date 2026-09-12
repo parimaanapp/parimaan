@@ -50,6 +50,16 @@ export interface DbResolverEntry {
    * placement logic.
    */
   readonly needsInternetEgress?: boolean;
+  /**
+   * W17 S6 (`E2E_MVP_PLAN.md` §23.2.8 D8) — true ONLY for
+   * `ExportShoppingListImage`. Grants `EXPORTS_BUCKET_NAME` + a narrow
+   * `s3:PutObject` scoped to the `exports/*` prefix of `DataStack
+   * .exportsBucket` — never the whole bucket, and never any other S3
+   * action (`GetObject`/`DeleteObject`/...) this resolver has no use for.
+   * Mirrors `needsCacheTable`'s "grant exactly what this one Lambda calls"
+   * convention.
+   */
+  readonly needsExportsBucket?: boolean;
 }
 
 /**
@@ -328,6 +338,13 @@ export const DB_RESOLVERS: readonly DbResolverEntry[] = [
     entryFile: 'onShoppingListChanged.ts',
     typeName: 'Subscription',
     fieldName: 'onShoppingListChanged',
+  },
+  {
+    id: 'ExportShoppingListImage',
+    entryFile: 'exportShoppingListImage.ts',
+    typeName: 'Mutation',
+    fieldName: 'exportShoppingListImage',
+    needsExportsBucket: true,
   },
 ];
 

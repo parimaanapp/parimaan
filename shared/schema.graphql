@@ -473,6 +473,22 @@ type Mutation {
   markPurchased(itemId: ID!): ShoppingList!
 
   """
+  Returns a presigned S3 PUT URL (W17 S6, `E2E_MVP_PLAN.md` §23.2.8, D8) for
+  uploading a client-rendered categorized shopping-list PNG as a backup —
+  not a referenced asset: the caller uploads once, immediately, and never
+  looks the object up again, which is why this is a bare `String!` rather
+  than the richer `PresignedUpload!` shape W20's `getPantryPhotoUploadUrl`
+  sketch uses. Requires the caller to already be a member of `listId`'s
+  household, denied identically to a nonexistent `listId` — never an
+  existence oracle. The returned URL targets a key under
+  `exports/{householdId}/{listId}/{timestamp}.png` and expires in 10
+  minutes. The PUT itself is plain HTTP, outside GraphQL entirely, and is
+  fire-and-forget from the caller's perspective — a failed upload must
+  never block or interrupt the share-sheet flow the user actually came for.
+  """
+  exportShoppingListImage(listId: ID!): String!
+
+  """
   Marks `menuItemId` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses

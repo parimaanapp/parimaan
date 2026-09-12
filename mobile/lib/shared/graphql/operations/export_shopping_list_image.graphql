@@ -1,0 +1,9 @@
+# `Mutation.exportShoppingListImage` (W17 S6, E2E_MVP_PLAN.md §23.2.8 D8) —
+# returns a presigned S3 PUT URL for the caller to PUT a client-rendered
+# categorized shopping-list PNG to, outside GraphQL entirely. Deliberately a
+# bare `String!`, never a `ShoppingListFields`-shaped selection — there is
+# no object here to select fields from (see D8's own explicit rejection of
+# widening this to a `PresignedUpload`-shaped return).
+mutation ExportShoppingListImage($listId: ID!) {
+  exportShoppingListImage(listId: $listId)
+}
