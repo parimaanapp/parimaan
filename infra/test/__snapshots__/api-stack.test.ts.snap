@@ -1898,6 +1898,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiExportShoppingListImageDataSource971826B2": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "ExportShoppingListImageFnCBC49AFE",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "ExportShoppingListImageDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiExportShoppingListImageDataSourceServiceRoleB3AE0F98",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiExportShoppingListImageDataSourceServiceRoleB3AE0F98": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiExportShoppingListImageDataSourceServiceRoleDefaultPolicy4C6C013E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ExportShoppingListImageFnCBC49AFE",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ExportShoppingListImageFnCBC49AFE",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiExportShoppingListImageDataSourceServiceRoleDefaultPolicy4C6C013E",
+        "Roles": [
+          {
+            "Ref": "ApiExportShoppingListImageDataSourceServiceRoleB3AE0F98",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiExportShoppingListImageResolverD417291C": {
+      "DependsOn": [
+        "ApiExportShoppingListImageDataSource971826B2",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "ExportShoppingListImageDataSource",
+        "FieldName": "exportShoppingListImage",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiF70053CD": {
       "Properties": {
         "AuthenticationType": "AMAZON_COGNITO_USER_POOLS",
@@ -5267,6 +5372,22 @@ type Mutation {
   markPurchased(itemId: ID!): ShoppingList!
 
   """
+  Returns a presigned S3 PUT URL (W17 S6, \`E2E_MVP_PLAN.md\` §23.2.8, D8) for
+  uploading a client-rendered categorized shopping-list PNG as a backup —
+  not a referenced asset: the caller uploads once, immediately, and never
+  looks the object up again, which is why this is a bare \`String!\` rather
+  than the richer \`PresignedUpload!\` shape W20's \`getPantryPhotoUploadUrl\`
+  sketch uses. Requires the caller to already be a member of \`listId\`'s
+  household, denied identically to a nonexistent \`listId\` — never an
+  existence oracle. The returned URL targets a key under
+  \`exports/{householdId}/{listId}/{timestamp}.png\` and expires in 10
+  minutes. The PUT itself is plain HTTP, outside GraphQL entirely, and is
+  fire-and-forget from the caller's perspective — a failed upload must
+  never block or interrupt the share-sheet flow the user actually came for.
+  """
+  exportShoppingListImage(listId: ID!): String!
+
+  """
   Marks \`menuItemId\` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
@@ -8413,6 +8534,165 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "DeleteRecipeFnServiceRole920B5E77",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ExportShoppingListImageFnCBC49AFE": {
+      "DependsOn": [
+        "ExportShoppingListImageFnServiceRoleDefaultPolicy33A467FC",
+        "ExportShoppingListImageFnServiceRoleD8E17CCE",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+            "EXPORTS_BUCKET_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefExportsBucket5A12738B671B903D",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "ExportShoppingListImageFnServiceRoleD8E17CCE",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "ExportShoppingListImageFnServiceRoleD8E17CCE": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ExportShoppingListImageFnServiceRoleDefaultPolicy33A467FC": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+            {
+              "Action": [
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+                "s3:Abort*",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttExportsBucket5A12738BArn6FAD0B2A",
+                    },
+                    "/exports/*",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ExportShoppingListImageFnServiceRoleDefaultPolicy33A467FC",
+        "Roles": [
+          {
+            "Ref": "ExportShoppingListImageFnServiceRoleD8E17CCE",
           },
         ],
       },

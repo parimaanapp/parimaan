@@ -15,6 +15,7 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Secret as SecretsManagerSecret } from 'aws-cdk-lib/aws-secretsmanager';
+import type { Bucket } from 'aws-cdk-lib/aws-s3';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import type { Topic } from 'aws-cdk-lib/aws-sns';
 import type { Construct } from 'constructs';
@@ -61,6 +62,14 @@ export interface ApiStackProps extends cdk.StackProps {
    * stale (still said "the two") since the non-VPC pair was added.
    */
   readonly cacheTable: Table;
+  /**
+   * Exports S3 bucket from DataStack (W17 S6, `E2E_MVP_PLAN.md` §23.2.8,
+   * D8) — `exportShoppingListImage`'s own presigned-PUT target. Granted to
+   * exactly that one resolver, scoped to the `exports/*` prefix only (via
+   * `needsExportsBucket` on `resolverEntries.ts`'s `DbResolverEntry`), never
+   * the whole bucket and never any other Lambda.
+   */
+  readonly exportsBucket: Bucket;
   /**
    * DataStack's shared alerts SNS topic (W17 S3, `E2E_MVP_PLAN.md` §23.2.2)
    * — `staplesNoteFn`'s own error-rate `Alarm` publishes here, the same
@@ -264,7 +273,7 @@ export class ApiStack extends cdk.Stack {
   }
 
   private createHouseholdResolvers(props: ApiStackProps): void {
-    const { dbCluster, appRoleSecret, lambdaSecurityGroup, cacheTable } = props;
+    const { dbCluster, appRoleSecret, lambdaSecurityGroup, cacheTable, exportsBucket } = props;
     // Same `exactOptionalPropertyTypes` quirk as data-stack.ts's `vpc` cast —
     // `Vpc` implements every member `IVpc` needs at runtime.
     const vpc = props.vpc as IVpc;
@@ -305,6 +314,16 @@ export class ApiStack extends cdk.Stack {
       if (entry.id === 'GenerateShoppingList' || entry.id === 'RegenerateShoppingList') {
         fn.addEnvironment('STAPLES_NOTE_FN_NAME', staplesNoteFn.functionName);
         staplesNoteFn.grantInvoke(fn);
+      }
+
+      // W17 S6 (D8, `E2E_MVP_PLAN.md` §23.2.8) — only `exportShoppingListImage`
+      // ever presigns against `exportsBucket`, and even then only for the
+      // `exports/*` prefix (`grantPut`'s `objectsKeyPattern` argument), never
+      // the whole bucket — least privilege, same narrow-grant convention as
+      // `needsCacheTable`/`needsGeminiSecret` above.
+      if (entry.needsExportsBucket === true) {
+        fn.addEnvironment('EXPORTS_BUCKET_NAME', exportsBucket.bucketName);
+        exportsBucket.grantPut(fn, 'exports/*');
       }
 
       this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);
