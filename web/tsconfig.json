@@ -8,7 +8,7 @@
     "allowJs": true,
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"], "@/components/*": ["./components/*"] }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "app/**/*.ts", "app/**/*.tsx", "components/**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules", ".next"]
