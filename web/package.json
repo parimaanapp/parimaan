@@ -5,11 +5,31 @@
   "description": "Parimaan web dashboard (Next.js App Router)",
   "type": "module",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . -c ../eslint.config.mjs --max-warnings=0",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@parimaan/shared": "workspace:*"
+    "@aws-sdk/client-secrets-manager": "^3.933.0",
+    "@parimaan/shared": "workspace:*",
+    "graphql": "^16.14.2",
+    "next": "15.5.25",
+    "next-auth": "^4.24.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "server-only": "^0.0.1",
+    "urql": "^5.0.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1"
   }
 }
