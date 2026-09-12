@@ -109,19 +109,7 @@ export class FrontendStack extends cdk.Stack {
     // above). Absent in normal dev iteration until a human completes the
     // one-time manual PAT-creation step documented there; the app still
     // deploys without it, just with no linked repository.
-    const githubTokenSecretName = this.node.tryGetContext('githubTokenSecretName') as
-      | string
-      | undefined;
-    const githubOwner = this.node.tryGetContext('githubOwner') as string | undefined;
-    const githubRepo = this.node.tryGetContext('githubRepo') as string | undefined;
-    const sourceCodeProvider =
-      githubTokenSecretName && githubOwner && githubRepo
-        ? new amplify.GitHubSourceCodeProvider({
-            owner: githubOwner,
-            repository: githubRepo,
-            oauthToken: cdk.SecretValue.secretsManager(githubTokenSecretName),
-          })
-        : undefined;
+    const sourceCodeProvider = this.resolveGitHubSourceCodeProvider();
 
     // NextAuth's own JWT session strategy needs a stable signing/encryption
     // secret (`NEXTAUTH_SECRET`) — without one, NextAuth falls back to an
@@ -197,6 +185,29 @@ export class FrontendStack extends cdk.Stack {
       value: this.app.defaultDomain,
       description: 'Amplify Hosting default (amplifyapp.com) domain, before DNS for the custom domain is confirmed.',
       exportName: `Parimaan-${envName}-FrontendDefaultDomain`,
+    });
+  }
+
+  /**
+   * Finding #1 (class doc comment above): a GitHub PAT-based source-control
+   * connection, present only once a human has completed the one-time
+   * manual PAT-creation step and supplied its CDK context values. Extracted
+   * from the constructor purely to stay under this repo's
+   * `max-lines-per-function` lint rule — no behavior change from inlining.
+   */
+  private resolveGitHubSourceCodeProvider(): amplify.GitHubSourceCodeProvider | undefined {
+    const githubTokenSecretName = this.node.tryGetContext('githubTokenSecretName') as string | undefined;
+    const githubOwner = this.node.tryGetContext('githubOwner') as string | undefined;
+    const githubRepo = this.node.tryGetContext('githubRepo') as string | undefined;
+
+    if (!githubTokenSecretName || !githubOwner || !githubRepo) {
+      return undefined;
+    }
+
+    return new amplify.GitHubSourceCodeProvider({
+      owner: githubOwner,
+      repository: githubRepo,
+      oauthToken: cdk.SecretValue.secretsManager(githubTokenSecretName),
     });
   }
 }
