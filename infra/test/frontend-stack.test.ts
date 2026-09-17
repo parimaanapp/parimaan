@@ -128,6 +128,19 @@ describe('FrontendStack', () => {
     }
   });
 
+  it('writes the pnpm hoisted-linker .npmrc inside the build container itself, not as a file committed to the repo', () => {
+    // A committed repo-root .npmrc with node-linker=hoisted broke the
+    // repo's own CI `web` test suite ("Cannot find module 'server-only'",
+    // 10 test files failing) — confirmed live via a real failed PR check.
+    // AWS's monorepo docs' requirement (pnpm/Turborepo monorepos need
+    // node-linker=hoisted) still applies to Amplify's own build container,
+    // so it's written there via a preBuild command instead of committed.
+    const { appProps, branchProps } = frontendResourcesOf(synth('dev'));
+    for (const buildSpecYaml of [appProps?.BuildSpec, branchProps?.BuildSpec]) {
+      expect(buildSpecYaml).toContain('node-linker=hoisted');
+    }
+  });
+
   it('sets AMPLIFY_MONOREPO_APP_ROOT on both App and Branch — required explicitly for a CDK-deployed monorepo app', () => {
     // The Amplify Console sets this automatically when a human configures
     // "My app is a monorepo" there; nothing does for a CDK/CloudFormation-

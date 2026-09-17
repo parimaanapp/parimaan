@@ -376,7 +376,18 @@ export class FrontendStack extends cdk.Stack {
             buildPath: '/',
             phases: {
               preBuild: {
-                commands: ['corepack enable', 'pnpm install --frozen-lockfile'],
+                // node-linker=hoisted is scoped to THIS build container only
+                // (written here, not committed to the repo) — a repo-root
+                // .npmrc broke `server-only` module resolution in the repo's
+                // own CI `web` test suite, confirmed via a real failed PR
+                // check (10 test files failing with
+                // `Cannot find module 'server-only'`) that only started
+                // after a committed .npmrc was added.
+                commands: [
+                  'corepack enable',
+                  'echo "node-linker=hoisted" > .npmrc',
+                  'pnpm install --frozen-lockfile',
+                ],
               },
               build: {
                 commands: ['pnpm --filter @parimaan/web build'],
