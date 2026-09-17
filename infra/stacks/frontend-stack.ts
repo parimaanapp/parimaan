@@ -102,6 +102,28 @@ export interface FrontendStackProps extends cdk.StackProps {
  *    effective spec from the `Branch`, not inherited from the `App`, for an
  *    actual build run — the same `buildSpec` is now passed to `addBranch`
  *    too, which is what actually took effect.
+ * 6. **`baseDirectory`/`buildPath`/`AMPLIFY_MONOREPO_APP_ROOT`, found live
+ *    via a THIRD real build.** #4/#5 got a real `next build` to complete
+ *    successfully, only to hit a new failure immediately after:
+ *    `Failed to find the deploy-manifest.json file in the build output`
+ *    (Amplify's own SSR-compute post-processing step). AWS's own monorepo
+ *    docs (`monorepo-configuration.html`) — not the single-app Next.js SSR
+ *    doc page #4 was verified against — reveal three requirements none of
+ *    which are guessable from that page alone: `artifacts.baseDirectory`
+ *    is relative to the MONOREPO ROOT, not `appRoot` (their own worked
+ *    example: `baseDirectory: packages/nextjs-app/.next` for `appRoot:
+ *    packages/nextjs-app` — this stack's own previous `.next` pointed at a
+ *    directory that doesn't exist at the repo root); `buildPath: '/'` runs
+ *    install/build from the monorepo root (replacing the earlier `cd ..`
+ *    hack, which never affected Amplify's own artifact-resolution step,
+ *    only this stack's own `preBuild` commands); and pnpm/Turborepo
+ *    monorepos need a root `.npmrc` with `node-linker=hoisted` — AWS's own
+ *    docs state plainly that these "require additional configuration"
+ *    beyond npm/Yarn/Nx workspaces. `AMPLIFY_MONOREPO_APP_ROOT` (matching
+ *    `appRoot` exactly) is also required as an explicit environment
+ *    variable for a CDK/CloudFormation-deployed app — the Amplify Console
+ *    sets it automatically when a human configures "My app is a monorepo"
+ *    there, but nothing sets it automatically for this stack.
  *
  * See SYSTEM_DESIGN.md §9.2 and E2E_MVP_PLAN.md §24.2.6 for the full design
  * rationale.
@@ -156,25 +178,7 @@ export class FrontendStack extends cdk.Stack {
     // deploys without it, just with no linked repository.
     const sourceCodeProvider = this.resolveGitHubSourceCodeProvider();
 
-    // NextAuth's own JWT session strategy needs a stable signing/encryption
-    // secret (`NEXTAUTH_SECRET`) — without one, NextAuth falls back to an
-    // ephemeral auto-generated value in development only; in a real
-    // multi-instance Amplify Hosting SSR deployment this would mean every
-    // instance signs with a different secret and sessions break
-    // unpredictably across requests. A real gap S3 flagged explicitly
-    // ("No NEXTAUTH_SECRET is wired... needed for real deploy time") and
-    // left for follow-up rather than inventing — closed here, same
-    // Secrets-Manager-ARN-as-env-var pattern as `webClientCredentialsSecret`
-    // above, except this secret holds a single plain random string, not a
-    // JSON object — CDK's `Secret` construct with no `generateSecretString`
-    // override already generates exactly that (a plain random string
-    // `SecretString`, not a JSON envelope), so no `secretStringTemplate`/
-    // `generateStringKey` pair is needed here.
-    const nextAuthSecret = new SecretsManagerSecret(this, 'NextAuthSecret', {
-      secretName: `parimaan/nextauth-secret-${envName}`,
-      description: "NextAuth's JWT session signing/encryption secret for the web dashboard.",
-    });
-
+    const nextAuthSecret = this.createNextAuthSecret(envName);
     const buildSpec = this.buildAmplifyBuildSpec();
 
     this.app = new amplify.App(this, 'App', {
@@ -199,6 +203,13 @@ export class FrontendStack extends cdk.Stack {
         COGNITO_WEB_CLIENT_ID: webClient.userPoolClientId,
         WEB_CLIENT_CREDENTIALS_SECRET_ARN: webClientCredentialsSecret.secretArn,
         NEXTAUTH_SECRET_ARN: nextAuthSecret.secretArn,
+        // Finding #6 (buildAmplifyBuildSpec's own doc) — required by
+        // Amplify's own monorepo build support; must match `appRoot`
+        // exactly. The Amplify Console sets this automatically when a
+        // human configures "My app is a monorepo" there — a CDK/
+        // CloudFormation-deployed app gets no such automatic behavior and
+        // must set it explicitly (confirmed via AWS's own monorepo docs).
+        AMPLIFY_MONOREPO_APP_ROOT: 'web',
       },
     });
 
@@ -225,6 +236,15 @@ export class FrontendStack extends cdk.Stack {
       // actual build run — passing the identical spec here is what
       // actually takes effect.
       buildSpec,
+      // `AMPLIFY_MONOREPO_APP_ROOT` (finding #6) is set at both App and
+      // Branch level, defensively, for the identical reason `buildSpec`
+      // needed both (finding #5) — Amplify's own internal monorepo
+      // orchestration reads this before running any build command, and
+      // this stack has already found once that an App-level-only setting
+      // does not reliably reach what a real build run actually uses.
+      environmentVariables: {
+        AMPLIFY_MONOREPO_APP_ROOT: 'web',
+      },
     });
 
     // Finding #3 above — domain association is its own construct, mapped
@@ -263,6 +283,31 @@ export class FrontendStack extends cdk.Stack {
   }
 
   /**
+   * NextAuth's own JWT session strategy needs a stable signing/encryption
+   * secret (`NEXTAUTH_SECRET`) — without one, NextAuth falls back to an
+   * ephemeral auto-generated value in development only; in a real
+   * multi-instance Amplify Hosting SSR deployment this would mean every
+   * instance signs with a different secret and sessions break
+   * unpredictably across requests. A real gap S3 flagged explicitly ("No
+   * NEXTAUTH_SECRET is wired... needed for real deploy time") and left for
+   * follow-up rather than inventing — closed here, same
+   * Secrets-Manager-ARN-as-env-var pattern as `webClientCredentialsSecret`,
+   * except this secret holds a single plain random string, not a JSON
+   * object — CDK's `Secret` construct with no `generateSecretString`
+   * override already generates exactly that (a plain random string
+   * `SecretString`, not a JSON envelope), so no `secretStringTemplate`/
+   * `generateStringKey` pair is needed here. Extracted from the constructor
+   * purely to stay under this repo's `max-lines-per-function` lint rule —
+   * no behavior change from inlining.
+   */
+  private createNextAuthSecret(envName: 'dev' | 'prod'): Secret {
+    return new SecretsManagerSecret(this, 'NextAuthSecret', {
+      secretName: `parimaan/nextauth-secret-${envName}`,
+      description: "NextAuth's JWT session signing/encryption secret for the web dashboard.",
+    });
+  }
+
+  /**
    * Finding #1 (class doc comment above): a GitHub PAT-based source-control
    * connection, present only once a human has completed the one-time
    * manual PAT-creation step and supplied its CDK context values. Extracted
@@ -294,6 +339,32 @@ export class FrontendStack extends cdk.Stack {
    * explicit `applications:`/`appRoot` block. Extracted from the
    * constructor purely to stay under this repo's `max-lines-per-function`
    * lint rule — no behavior change from inlining.
+   *
+   * Finding #6, found live via a THIRD real build (the first two rounds
+   * got past `pnpm: command not found` and then past the Branch-level
+   * `buildSpec` gap, only to hit `Failed to find the deploy-manifest.json
+   * file in the build output` — Amplify's own SSR-compute post-processing
+   * step, confirmed via AWS's own monorepo docs
+   * (`docs.aws.amazon.com/amplify/latest/userguide/monorepo-configuration.html`),
+   * requires THREE things this earlier version was missing, none of them
+   * guessable from the single-app (non-monorepo) Next.js SSR doc page
+   * alone:
+   * 1. `buildPath: '/'` — install/build commands run from the monorepo
+   *    ROOT (replacing the manual `cd ..` hack, which only affected the
+   *    `preBuild` phase's own commands, not Amplify's own internal
+   *    artifact-resolution step).
+   * 2. `artifacts.baseDirectory` is relative to the MONOREPO ROOT, not
+   *    `appRoot` — AWS's own worked example states this explicitly:
+   *    `baseDirectory: packages/nextjs-app/.next` for `appRoot:
+   *    packages/nextjs-app`. The previous `.next` (implicitly relative to
+   *    `appRoot`) pointed Amplify's own manifest-generation step at a
+   *    `.next` directory that doesn't exist at the repo root, which is
+   *    exactly what "Failed to find the deploy-manifest.json file" meant.
+   * 3. A root-level `.npmrc` with `node-linker=hoisted` — AWS's own docs
+   *    state plainly that "Turborepo and pnpm apps require additional
+   *    configuration" beyond npm/Yarn/Nx workspaces, and this is the
+   *    specific requirement (see the repo-root `.npmrc`, new this same
+   *    commit).
    */
   private buildAmplifyBuildSpec(): BuildSpec {
     return BuildSpec.fromObjectToYaml({
@@ -302,20 +373,32 @@ export class FrontendStack extends cdk.Stack {
         {
           appRoot: 'web',
           frontend: {
+            buildPath: '/',
             phases: {
               preBuild: {
-                commands: ['corepack enable', 'cd .. && pnpm install --frozen-lockfile'],
+                // node-linker=hoisted is scoped to THIS build container only
+                // (written here, not committed to the repo) — a repo-root
+                // .npmrc broke `server-only` module resolution in the repo's
+                // own CI `web` test suite, confirmed via a real failed PR
+                // check (10 test files failing with
+                // `Cannot find module 'server-only'`) that only started
+                // after a committed .npmrc was added.
+                commands: [
+                  'corepack enable',
+                  'echo "node-linker=hoisted" > .npmrc',
+                  'pnpm install --frozen-lockfile',
+                ],
               },
               build: {
                 commands: ['pnpm --filter @parimaan/web build'],
               },
             },
             artifacts: {
-              baseDirectory: '.next',
+              baseDirectory: 'web/.next',
               files: ['**/*'],
             },
             cache: {
-              paths: ['../node_modules/**/*', '.next/cache/**/*'],
+              paths: ['node_modules/**/*', 'web/.next/cache/**/*'],
             },
           },
         },
