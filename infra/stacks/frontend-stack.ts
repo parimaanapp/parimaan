@@ -211,6 +211,24 @@ export class FrontendStack extends cdk.Stack {
         // CloudFormation-deployed app gets no such automatic behavior and
         // must set it explicitly (confirmed via AWS's own monorepo docs).
         AMPLIFY_MONOREPO_APP_ROOT: 'web',
+        // Finding #10, found live via a real browser sign-in attempt (the
+        // first time one was ever reachable — findings #7-#9 first had to
+        // fix the build/deploy/runtime chain). NextAuth's Cognito
+        // redirect_uri was `http://localhost:3000/api/auth/callback/
+        // cognito`, not the real deployed domain — Cognito rejected it
+        // (`error=redirect_mismatch`, confirmed via the real OAuth
+        // request). Root cause, confirmed by reading `next-auth`'s own
+        // `detectOrigin()` (`node_modules/next-auth/utils/detect-origin.js`):
+        // it returns `process.env.NEXTAUTH_URL` if set, else falls back to
+        // trusting the forwarded host ONLY if `VERCEL`/`AUTH_TRUST_HOST` is
+        // set — neither applies to Amplify Hosting compute, so it silently
+        // fell through to next-auth's own `localhost:3000` default. Setting
+        // `NEXTAUTH_URL` explicitly (this stack already knows the real
+        // canonical domain as `webDomain`) is the fix; it must also reach
+        // `web/.env.production` at build time (finding #9's own lesson —
+        // `buildAmplifyBuildSpec` below), since an Amplify env var alone is
+        // never visible to `process.env` at actual request time.
+        NEXTAUTH_URL: `https://${webDomain}`,
       },
     });
 
@@ -234,7 +252,7 @@ export class FrontendStack extends cdk.Stack {
     webClientCredentialsSecret.grantRead(this.app.computeRole);
     nextAuthSecret.grantRead(this.app.computeRole);
 
-    this.branch = this.createBranch(branchName, envName, buildSpec);
+    this.branch = this.createBranch(branchName, envName, buildSpec, webDomain);
 
     this.domain = this.createDomainIfEnabled(webDomain, envName);
 
@@ -276,7 +294,7 @@ export class FrontendStack extends cdk.Stack {
     });
   }
 
-  private createBranch(branchName: string, envName: 'dev' | 'prod', buildSpec: BuildSpec): amplify.Branch {
+  private createBranch(branchName: string, envName: 'dev' | 'prod', buildSpec: BuildSpec, webDomain: string): amplify.Branch {
     const branch = this.app.addBranch('Branch', {
       branchName,
       stage: envName === 'prod' ? 'PRODUCTION' : 'DEVELOPMENT',
@@ -291,14 +309,16 @@ export class FrontendStack extends cdk.Stack {
       // actual build run — passing the identical spec here is what
       // actually takes effect.
       buildSpec,
-      // `AMPLIFY_MONOREPO_APP_ROOT` (finding #6) is set at both App and
-      // Branch level, defensively, for the identical reason `buildSpec`
-      // needed both (finding #5) — Amplify's own internal monorepo
-      // orchestration reads this before running any build command, and
-      // this stack has already found once that an App-level-only setting
-      // does not reliably reach what a real build run actually uses.
+      // `AMPLIFY_MONOREPO_APP_ROOT` (finding #6) and `NEXTAUTH_URL`
+      // (finding #10) are set at both App and Branch level, defensively,
+      // for the identical reason `buildSpec` needed both (finding #5) —
+      // Amplify's own internal orchestration reads these before running any
+      // build command, and this stack has already found once that an
+      // App-level-only setting does not reliably reach what a real build
+      // run actually uses.
       environmentVariables: {
         AMPLIFY_MONOREPO_APP_ROOT: 'web',
+        NEXTAUTH_URL: `https://${webDomain}`,
       },
     });
 
@@ -468,7 +488,7 @@ export class FrontendStack extends cdk.Stack {
                 // `appRoot` (`apps/app/.env.production`) — `web/.env.production`
                 // here.
                 commands: [
-                  'env | grep -e COGNITO_ -e NEXTAUTH_SECRET_ARN -e WEB_CLIENT_CREDENTIALS_SECRET_ARN >> web/.env.production',
+                  'env | grep -e COGNITO_ -e NEXTAUTH_SECRET_ARN -e NEXTAUTH_URL -e WEB_CLIENT_CREDENTIALS_SECRET_ARN >> web/.env.production',
                   'pnpm --filter @parimaan/web build',
                 ],
               },
