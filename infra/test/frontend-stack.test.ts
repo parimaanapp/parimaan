@@ -79,6 +79,21 @@ describe('FrontendStack', () => {
     expect(buildSpecYaml).toMatch(/pnpm --filter @parimaan\/web build/);
   });
 
+  it('sets the identical build spec on the Branch itself, not only the App — a real build ran the auto-detected default and failed until this was added', () => {
+    // Regression guard for finding #5: `App.buildSpec` alone did nothing
+    // for an actual build — confirmed live via `aws amplify get-branch`
+    // showing `buildSpec: None` even after `aws amplify get-app` showed it
+    // correctly set. Amplify's build service resolves the effective spec
+    // from the Branch, not inherited from the App.
+    const json = synth('dev').toJSON() as {
+      Resources: Record<string, { Type: string; Properties?: { BuildSpec?: string } }>;
+    };
+    const branchResource = Object.values(json.Resources).find((r) => r.Type === 'AWS::Amplify::Branch');
+    const buildSpecYaml = branchResource?.Properties?.BuildSpec ?? '';
+    expect(buildSpecYaml).toContain('corepack enable');
+    expect(buildSpecYaml).toContain('appRoot: web');
+  });
+
   it('declares exactly one branch, tracking the real git "main" branch for both dev and prod', () => {
     // This repo has exactly one git branch, `main` — every other stack
     // already deploys from it regardless of AWS environment. A real bug

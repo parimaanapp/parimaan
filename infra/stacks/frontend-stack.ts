@@ -92,6 +92,16 @@ export interface FrontendStackProps extends cdk.StackProps {
  *    pnpm-workspace monorepo with the Next.js app under `web/`, not at the
  *    repo root, which Amplify's monorepo `applications:`/`appRoot` build
  *    spec shape is required to express. See the explicit `buildSpec` below.
+ * 5. **The `App`-level `buildSpec` alone does nothing for an actual build.**
+ *    Found live, a second real-build round after fixing #4: setting
+ *    `buildSpec` on `App` alone (confirmed correctly stored there via
+ *    `aws amplify get-app`) did not stop a real build from running
+ *    Amplify's auto-detected default — the exact same `pnpm: command not
+ *    found` failure recurred. Reading the deployed `Branch`'s own
+ *    `buildSpec` back showed `None`. Amplify's build service resolves the
+ *    effective spec from the `Branch`, not inherited from the `App`, for an
+ *    actual build run — the same `buildSpec` is now passed to `addBranch`
+ *    too, which is what actually took effect.
  *
  * See SYSTEM_DESIGN.md §9.2 and E2E_MVP_PLAN.md §24.2.6 for the full design
  * rationale.
@@ -204,6 +214,17 @@ export class FrontendStack extends cdk.Stack {
     this.branch = this.app.addBranch('Branch', {
       branchName,
       stage: envName === 'prod' ? 'PRODUCTION' : 'DEVELOPMENT',
+      // Finding #5, found live: the `App`-level `buildSpec` above is not
+      // enough on its own — a real build against a branch with no explicit
+      // `buildSpec` of its own ran Amplify's auto-detected default (the
+      // exact "pnpm: command not found" failure finding #4 already fixed
+      // at the App level) rather than inheriting it, confirmed by reading
+      // the deployed branch's own `buildSpec` back as `None` even after the
+      // App's `buildSpec` was correctly set. Amplify's build service
+      // resolves the effective spec from the Branch, not the App, for an
+      // actual build run — passing the identical spec here is what
+      // actually takes effect.
+      buildSpec,
     });
 
     // Finding #3 above — domain association is its own construct, mapped
