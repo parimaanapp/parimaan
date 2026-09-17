@@ -276,8 +276,33 @@ describe('FrontendStack', () => {
     expect(plainStringValues).toEqual([]);
   });
 
-  it('grants the Amplify compute role read access to the web client credentials secret (so NextAuth can fetch it at cold start)', () => {
+  it('grants secret read access to the App.computeRole specifically, not the App service role — a real 500 happened without this', () => {
+    // Regression guard for finding #8: this test used to just assert SOME
+    // IAM::Policy somewhere granted secretsmanager:GetSecretValue — which
+    // passed even while the grant was on the wrong role. A real request
+    // against a genuinely successful build/deploy (finding #7 fixed that)
+    // 500'd on every page calling `buildAuthOptions()`, because
+    // `grantRead(this.app)` grants the App's own *service* role
+    // (`amplify.amazonaws.com`, used for build/CI operations) — a
+    // completely different IAM identity from `computeRole`, the one that
+    // actually executes the Next.js SSR server and needs this permission at
+    // request time. Confirmed live by reading the synthesized template: the
+    // grant landed on `App/Role/DefaultPolicy`, never `App/ComputeRole`.
     const template = synth('dev');
+    const json = template.toJSON() as {
+      Resources: Record<string, { Type: string }>;
+    };
+    // The `App` L2 construct creates exactly two IAM roles for
+    // `Platform.WEB_COMPUTE`: the App's own service role (construct id
+    // `App/Role`, logical id prefix `AppRole`) and the separate compute
+    // role (construct id `App/ComputeRole`, logical id prefix
+    // `AppComputeRole`) — distinguished here by that stable prefix rather
+    // than `aws:cdk:path`, which `Template.toJSON()` strips.
+    const computeRoleLogicalId = Object.keys(json.Resources).find(
+      (id) => json.Resources[id]?.Type === 'AWS::IAM::Role' && id.startsWith('AppComputeRole'),
+    );
+    expect(computeRoleLogicalId).toBeDefined();
+
     template.hasResourceProperties('AWS::IAM::Policy', {
       PolicyDocument: Match.objectLike({
         Statement: Match.arrayWith([
@@ -287,6 +312,7 @@ describe('FrontendStack', () => {
           }),
         ]),
       }),
+      Roles: Match.arrayWith([Match.objectLike({ Ref: computeRoleLogicalId })]),
     });
   });
 

@@ -214,14 +214,25 @@ export class FrontendStack extends cdk.Stack {
       },
     });
 
-    // Grants the app's compute role (auto-created for Platform.WEB_COMPUTE
-    // per `AppProps.computeRole`'s own doc comment) read access to both
-    // secrets whose ARNs were just passed above — the exact
-    // `geminiApiKeySecret.grantRead(fn)` pattern `api-stack.ts` already
-    // uses, applied to `App` (which implements `iam.IGrantable` via
-    // `grantPrincipal`) instead of a Lambda.
-    webClientCredentialsSecret.grantRead(this.app);
-    nextAuthSecret.grantRead(this.app);
+    // Finding #8, found live via the first real request against a
+    // genuinely successful build/deploy (finding #7 fixed that): the app
+    // rendered but every page that calls `buildAuthOptions()` (which fetches
+    // both secrets below) 500'd. `App.grantPrincipal` — what `grantRead(
+    // this.app)` used here originally — is the App's own *service* role
+    // (`amplify.amazonaws.com`, used for build/CI operations), a completely
+    // different IAM identity from the `computeRole` that actually executes
+    // the Next.js SSR server at request time. Granting the service role read
+    // access never helped the compute role, which had no permissions at all
+    // (confirmed by reading the synthesized template: `secretsmanager:
+    // GetSecretValue` landed only on `App/Role/DefaultPolicy`, never on
+    // `App/ComputeRole`). `App.computeRole` (a distinct public property from
+    // `grantPrincipal`, auto-created for `Platform.WEB_COMPUTE` since no
+    // `computeRole` prop was passed in) is the one that needs the grant.
+    if (!this.app.computeRole) {
+      throw new Error('App.computeRole is undefined — expected an auto-created compute role for Platform.WEB_COMPUTE.');
+    }
+    webClientCredentialsSecret.grantRead(this.app.computeRole);
+    nextAuthSecret.grantRead(this.app.computeRole);
 
     this.branch = this.createBranch(branchName, envName, buildSpec);
 
