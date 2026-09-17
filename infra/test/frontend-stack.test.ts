@@ -54,10 +54,17 @@ describe('FrontendStack', () => {
     });
   });
 
-  it('declares exactly one branch, named "dev" for the dev environment and "main" for prod', () => {
+  it('declares exactly one branch, tracking the real git "main" branch for both dev and prod', () => {
+    // This repo has exactly one git branch, `main` — every other stack
+    // already deploys from it regardless of AWS environment. A real bug
+    // (branchName: 'dev' for the dev env) was found live once the GitHub
+    // connection actually existed to surface it: Amplify's own `git clone`
+    // fails outright against a branch that was never created
+    // (`fatal: Remote branch dev not found in upstream origin`). This test
+    // is the regression guard for that fix.
     const devTemplate = synth('dev');
     devTemplate.resourceCountIs('AWS::Amplify::Branch', 1);
-    devTemplate.hasResourceProperties('AWS::Amplify::Branch', { BranchName: 'dev' });
+    devTemplate.hasResourceProperties('AWS::Amplify::Branch', { BranchName: 'main' });
 
     const prodTemplate = synth('prod');
     prodTemplate.resourceCountIs('AWS::Amplify::Branch', 1);
