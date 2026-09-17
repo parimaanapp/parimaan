@@ -128,6 +128,22 @@ describe('FrontendStack', () => {
     }
   });
 
+  it('sets Framework: "Next.js - SSR" on the Branch — a real build kept failing on deploy-manifest.json without it', () => {
+    // Regression guard for finding #7: `next build` completed successfully
+    // in a real build every time, yet Amplify still failed right after with
+    // "Failed to find the deploy-manifest.json file in the build output".
+    // Root cause (confirmed against AWS CDK GitHub issue #25679 and
+    // discussion #24574 — undocumented on AWS's own SSR/monorepo doc pages):
+    // the Amplify Console sets a `Framework` field on the Branch when a
+    // human picks "Next.js" during setup; nothing does this for a
+    // CDK-deployed app, so Amplify's build orchestrator never runs the
+    // internal Next.js SSR adapter that actually produces
+    // `deploy-manifest.json` from `.next` output.
+    synth('dev').hasResourceProperties('AWS::Amplify::Branch', {
+      Framework: 'Next.js - SSR',
+    });
+  });
+
   it('writes the pnpm hoisted-linker .npmrc inside the build container itself, not as a file committed to the repo', () => {
     // A committed repo-root .npmrc with node-linker=hoisted broke the
     // repo's own CI `web` test suite ("Cannot find module 'server-only'",
