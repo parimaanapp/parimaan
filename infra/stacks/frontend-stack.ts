@@ -103,7 +103,18 @@ export class FrontendStack extends cdk.Stack {
     // call sites must change together (flagged in the doc comment on
     // `auth-stack.ts`'s own inline `webDomain` for a future cross-check).
     const webDomain = envName === 'prod' ? 'parimaan.app' : 'dev.parimaan.app';
-    const branchName = envName === 'prod' ? 'main' : 'dev';
+    // A real bug, found live once the GitHub connection actually existed to
+    // surface it: this repo has exactly one git branch, `main` — every
+    // stack in this project (network/data/auth/api) already deploys from
+    // it regardless of AWS environment (dev vs. prod is an account/stack
+    // distinction, never a separate git branch). The original `'dev'` here
+    // assumed a git branch that was never created, and Amplify's own
+    // `git clone` failed outright the first time this connected to a real
+    // repo (`fatal: Remote branch dev not found in upstream origin`).
+    // Locked to `'main'` for both envs until/unless this project actually
+    // adopts a real multi-branch git workflow — a decision to make
+    // deliberately later, not to default into silently here.
+    const branchName = 'main';
 
     // Optional: a GitHub PAT for the source-control connection (finding #1
     // above). Absent in normal dev iteration until a human completes the
