@@ -424,7 +424,30 @@ export class FrontendStack extends cdk.Stack {
                 ],
               },
               build: {
-                commands: ['pnpm --filter @parimaan/web build'],
+                // Finding #9, found live via the first real request against
+                // a genuinely successful build/deploy/IAM-role fix (findings
+                // #7/#8): every page still 500'd, now with an EMPTY response
+                // body on API routes (a raw uncaught-exception crash, not a
+                // rendered Next.js error page) — `requireEnv(...)` throwing
+                // because `process.env.WEB_CLIENT_CREDENTIALS_SECRET_ARN`
+                // (and friends) were `undefined` at request time. Confirmed
+                // against AWS's own SSR-environment-variables doc: "a
+                // Next.js server component doesn't have access to [App/
+                // Branch] environment variables by default" — env vars set
+                // on the Amplify App/Branch resource are visible during the
+                // BUILD phase's shell environment only. Making them visible
+                // to `process.env` at actual request time (the standalone
+                // server's own runtime, not the build container) requires
+                // writing them into a `.env.production` file that ships as
+                // part of the build artifacts, which Next.js's own env
+                // loader (`@next/env`) reads back at server start. The
+                // monorepo doc's own worked example prefixes the file with
+                // `appRoot` (`apps/app/.env.production`) — `web/.env.production`
+                // here.
+                commands: [
+                  'env | grep -e COGNITO_ -e NEXTAUTH_SECRET_ARN -e WEB_CLIENT_CREDENTIALS_SECRET_ARN >> web/.env.production',
+                  'pnpm --filter @parimaan/web build',
+                ],
               },
             },
             artifacts: {

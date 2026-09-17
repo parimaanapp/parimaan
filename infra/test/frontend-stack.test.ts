@@ -157,6 +157,26 @@ describe('FrontendStack', () => {
     }
   });
 
+  it('writes server-side runtime env vars into web/.env.production during the build — a real request 500\'d with an empty body without this', () => {
+    // Regression guard for finding #9: even after findings #7/#8 (a real
+    // build/deploy/IAM role all genuinely correct), a real HTTP request
+    // still 500'd — now with an EMPTY response body on API routes, a raw
+    // uncaught-exception crash rather than a rendered Next.js error page —
+    // because `requireEnv('WEB_CLIENT_CREDENTIALS_SECRET_ARN', ...)` throws
+    // when that var is `undefined`. Confirmed against AWS's own
+    // SSR-environment-variables doc: env vars set on the Amplify App/Branch
+    // resource are visible during the BUILD phase's shell environment only
+    // — never automatically to `process.env` at actual request time. They
+    // must be written into a `.env.production` file (Next.js's own
+    // `@next/env` loader reads it back at server start) as part of the
+    // build, prefixed with `appRoot` for a monorepo per that doc's own
+    // worked example.
+    const { appProps, branchProps } = frontendResourcesOf(synth('dev'));
+    for (const buildSpecYaml of [appProps?.BuildSpec, branchProps?.BuildSpec]) {
+      expect(buildSpecYaml).toMatch(/env \| grep.*>> web\/\.env\.production/);
+    }
+  });
+
   it('sets AMPLIFY_MONOREPO_APP_ROOT on both App and Branch — required explicitly for a CDK-deployed monorepo app', () => {
     // The Amplify Console sets this automatically when a human configures
     // "My app is a monorepo" there; nothing does for a CDK/CloudFormation-
