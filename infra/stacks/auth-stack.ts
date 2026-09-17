@@ -89,6 +89,13 @@ export class AuthStack extends cdk.Stack {
     super(scope, id, props);
 
     const { envName, googleClientId } = props;
+    // Prod's canonical host is the bare apex `parimaan.app` — confirmed
+    // with the user before prod was ever deployed, so this carried no
+    // migration risk. `www.parimaan.app` 301-redirects to it (Amplify's own
+    // App-level custom rule, in `frontend-stack.ts`), so it's never the
+    // canonical origin OAuth callbacks land on. `frontend-stack.ts`
+    // recomputes this identical literal rule; if it ever changes, both
+    // call sites must change together (flagged there too).
     const webDomain = envName === 'prod' ? 'parimaan.app' : 'dev.parimaan.app';
 
     this.userPool = new UserPool(this, 'UserPool', {

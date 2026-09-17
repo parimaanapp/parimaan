@@ -232,6 +232,34 @@ describe('FrontendStack', () => {
     prodTemplate.hasResourceProperties('AWS::Amplify::Domain', { DomainName: 'parimaan.app' });
   });
 
+  it('maps www to the prod branch too, and 301-redirects it to the apex — apex is canonical, confirmed with the user rather than assumed', () => {
+    const prodTemplate = synth('prod', { enableCustomDomain: 'true' });
+    prodTemplate.hasResourceProperties('AWS::Amplify::Domain', {
+      SubDomainSettings: Match.arrayWith([
+        Match.objectLike({ Prefix: 'www' }),
+      ]),
+    });
+    prodTemplate.hasResourceProperties('AWS::Amplify::App', {
+      CustomRules: Match.arrayWith([
+        Match.objectLike({
+          Source: 'https://www.parimaan.app',
+          Target: 'https://parimaan.app',
+          Status: '301',
+        }),
+      ]),
+    });
+  });
+
+  it('does not map or redirect www for dev — dev has no www concept, only dev.parimaan.app', () => {
+    const devTemplate = synth('dev', { enableCustomDomain: 'true' });
+    devTemplate.hasResourceProperties('AWS::Amplify::Domain', {
+      SubDomainSettings: Match.not(Match.arrayWith([Match.objectLike({ Prefix: 'www' })])),
+    });
+    const json = devTemplate.toJSON() as { Resources: Record<string, { Type: string; Properties?: { CustomRules?: unknown[] } }> };
+    const appResource = Object.values(json.Resources).find((r) => r.Type === 'AWS::Amplify::App');
+    expect(appResource?.Properties?.CustomRules ?? []).toEqual([]);
+  });
+
   it('maps the branch to the domain root, once opted in via enableCustomDomain=true', () => {
     const template = synth('dev', { enableCustomDomain: 'true' });
     template.hasResourceProperties('AWS::Amplify::Domain', {
