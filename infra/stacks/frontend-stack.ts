@@ -236,27 +236,7 @@ export class FrontendStack extends cdk.Stack {
 
     this.branch = this.createBranch(branchName, envName, buildSpec);
 
-    // Finding #3 above — domain association is its own construct, mapped
-    // onto the branch afterward, not an inline App/Branch prop.
-    //
-    // Gated behind `enableCustomDomain` (default off) — a real gap found
-    // live: Amplify refuses any update to a `Domain` resource while its
-    // certificate sits in `PENDING_VERIFICATION` (the DNS CNAME record for
-    // cert validation was never added at wherever `dev.parimaan.app` is
-    // actually hosted), and CloudFormation bundles Domain into the same
-    // changeset as Branch — so an otherwise-unrelated branch update failed
-    // and rolled back with it. Once a human completes that one-time DNS
-    // step and re-deploys with `-c enableCustomDomain=true`, this
-    // provisions normally; until then the app is reachable at its default
-    // `*.amplifyapp.com` domain (`DefaultDomain` output below), which needs
-    // no DNS at all.
-    const enableCustomDomain = this.node.tryGetContext('enableCustomDomain') === 'true';
-    if (enableCustomDomain) {
-      this.domain = this.app.addDomain('Domain', {
-        domainName: webDomain,
-      });
-      this.domain.mapRoot(this.branch);
-    }
+    this.domain = this.createDomainIfEnabled(webDomain, envName);
 
     new cdk.CfnOutput(this, 'AppId', {
       value: this.app.appId,
@@ -339,6 +319,49 @@ export class FrontendStack extends cdk.Stack {
     (branch.node.defaultChild as CfnBranch).framework = 'Next.js - SSR';
 
     return branch;
+  }
+
+  /**
+   * Finding #3 above — domain association is its own construct, mapped onto
+   * the branch afterward, not an inline App/Branch prop.
+   *
+   * Gated behind `enableCustomDomain` (default off) — a real gap found
+   * live: Amplify refuses any update to a `Domain` resource while its
+   * certificate sits in `PENDING_VERIFICATION` (the DNS CNAME record for
+   * cert validation was never added at wherever `dev.parimaan.app` is
+   * actually hosted), and CloudFormation bundles Domain into the same
+   * changeset as Branch — so an otherwise-unrelated branch update failed
+   * and rolled back with it. Once a human completes that one-time DNS step
+   * and re-deploys with `-c enableCustomDomain=true`, this provisions
+   * normally; until then the app is reachable at its default
+   * `*.amplifyapp.com` domain (`DefaultDomain` output), which needs no DNS
+   * at all.
+   */
+  private createDomainIfEnabled(webDomain: string, envName: 'dev' | 'prod'): amplify.Domain | undefined {
+    if (this.node.tryGetContext('enableCustomDomain') !== 'true') {
+      return undefined;
+    }
+
+    const domain = this.app.addDomain('Domain', { domainName: webDomain });
+    domain.mapRoot(this.branch);
+
+    // Prod only: `parimaan.app` (webDomain, the apex) is canonical —
+    // `www.parimaan.app` 301-redirects to it, confirmed with the user
+    // rather than assumed (apex-canonical and www-canonical are both
+    // legitimate industry patterns; this repo picked apex). `www` is still
+    // mapped to the same branch first — Amplify's CloudFront distribution
+    // and ACM certificate must actually cover `www` for a request to reach
+    // this redirect rule at all, not just the apex.
+    if (envName === 'prod') {
+      domain.mapSubDomain(this.branch, 'www');
+      this.app.addCustomRule({
+        source: `https://www.${webDomain}`,
+        target: `https://${webDomain}`,
+        status: amplify.RedirectStatus.PERMANENT_REDIRECT,
+      });
+    }
+
+    return domain;
   }
 
   /**
