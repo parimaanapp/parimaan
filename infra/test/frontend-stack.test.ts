@@ -62,6 +62,23 @@ describe('FrontendStack', () => {
     });
   });
 
+  it('configures a build spec that enables corepack (pnpm) and treats web/ as a monorepo appRoot — a real build failed live without either', () => {
+    // Regression guard for finding #4: Amplify's build image has no pnpm
+    // pre-installed, and this repo's Next.js app lives in the `web/`
+    // workspace of a pnpm-workspace monorepo, not at the repo root. A real
+    // build against the deployed app failed with "pnpm: command not
+    // found" before this fix.
+    const json = synth('dev').toJSON() as {
+      Resources: Record<string, { Type: string; Properties?: { BuildSpec?: string } }>;
+    };
+    const appResource = Object.values(json.Resources).find((r) => r.Type === 'AWS::Amplify::App');
+    const buildSpecYaml = appResource?.Properties?.BuildSpec ?? '';
+    expect(buildSpecYaml).toContain('corepack enable');
+    expect(buildSpecYaml).toContain('appRoot: web');
+    expect(buildSpecYaml).toMatch(/pnpm install/);
+    expect(buildSpecYaml).toMatch(/pnpm --filter @parimaan\/web build/);
+  });
+
   it('declares exactly one branch, tracking the real git "main" branch for both dev and prod', () => {
     // This repo has exactly one git branch, `main` — every other stack
     // already deploys from it regardless of AWS environment. A real bug

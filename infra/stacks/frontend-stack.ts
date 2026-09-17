@@ -1,5 +1,6 @@
 import * as amplify from '@aws-cdk/aws-amplify-alpha';
 import * as cdk from 'aws-cdk-lib';
+import { BuildSpec } from 'aws-cdk-lib/aws-codebuild';
 import type { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Secret as SecretsManagerSecret } from 'aws-cdk-lib/aws-secretsmanager';
@@ -82,6 +83,15 @@ export interface FrontendStackProps extends cdk.StackProps {
  *    on `App` or `Branch`. Branches are mapped onto it afterward via
  *    `domain.mapRoot(branch)` (root domain) / `domain.mapSubDomain(branch,
  *    prefix)` (subdomains) — confirmed via `domain.d.ts`.
+ * 4. **Build spec, found live via a real build (not assumed).** Amplify's
+ *    build image has no `pnpm` pre-installed; its own auto-detected default
+ *    build spec correctly identified this as a pnpm project (from the root
+ *    `package.json`'s `packageManager` field) but failed immediately with
+ *    `pnpm: command not found` — `corepack enable` (which activates the
+ *    exact pinned version) is never run implicitly. This repo is also a
+ *    pnpm-workspace monorepo with the Next.js app under `web/`, not at the
+ *    repo root, which Amplify's monorepo `applications:`/`appRoot` build
+ *    spec shape is required to express. See the explicit `buildSpec` below.
  *
  * See SYSTEM_DESIGN.md §9.2 and E2E_MVP_PLAN.md §24.2.6 for the full design
  * rationale.
@@ -155,11 +165,14 @@ export class FrontendStack extends cdk.Stack {
       description: "NextAuth's JWT session signing/encryption secret for the web dashboard.",
     });
 
+    const buildSpec = this.buildAmplifyBuildSpec();
+
     this.app = new amplify.App(this, 'App', {
       appName: `parimaan-${envName}-web`,
       // Finding #2 above — SSR Next.js needs WEB_COMPUTE, not the WEB
       // (static-only) default.
       platform: amplify.Platform.WEB_COMPUTE,
+      buildSpec,
       ...(sourceCodeProvider ? { sourceCodeProvider } : {}),
       environmentVariables: {
         // All three are already-public values other stacks already export
@@ -248,6 +261,44 @@ export class FrontendStack extends cdk.Stack {
       owner: githubOwner,
       repository: githubRepo,
       oauthToken: cdk.SecretValue.secretsManager(githubTokenSecretName),
+    });
+  }
+
+  /**
+   * Finding #4 (class doc comment above): a monorepo-aware build spec,
+   * found necessary only via a real build against the live deployed app —
+   * Amplify's own auto-detected default correctly identified this as a
+   * pnpm project but never runs `corepack enable`, and has no way to know
+   * the Next.js app lives under `web/`, not the repo root, without an
+   * explicit `applications:`/`appRoot` block. Extracted from the
+   * constructor purely to stay under this repo's `max-lines-per-function`
+   * lint rule — no behavior change from inlining.
+   */
+  private buildAmplifyBuildSpec(): BuildSpec {
+    return BuildSpec.fromObjectToYaml({
+      version: 1,
+      applications: [
+        {
+          appRoot: 'web',
+          frontend: {
+            phases: {
+              preBuild: {
+                commands: ['corepack enable', 'cd .. && pnpm install --frozen-lockfile'],
+              },
+              build: {
+                commands: ['pnpm --filter @parimaan/web build'],
+              },
+            },
+            artifacts: {
+              baseDirectory: '.next',
+              files: ['**/*'],
+            },
+            cache: {
+              paths: ['../node_modules/**/*', '.next/cache/**/*'],
+            },
+          },
+        },
+      ],
     });
   }
 }
