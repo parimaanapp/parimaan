@@ -89,7 +89,21 @@ export interface FrontendStackProps extends cdk.StackProps {
 export class FrontendStack extends cdk.Stack {
   public readonly app: amplify.App;
   public readonly branch: amplify.Branch;
-  public readonly domain: amplify.Domain;
+  /**
+   * Undefined until the custom domain's DNS is actually verified (see
+   * `enableCustomDomain` context in the constructor below) — a real,
+   * separate manual-setup gap discovered live, same shape as the GitHub PAT
+   * one: Amplify refuses ANY update to a `Domain` resource while it sits in
+   * `PENDING_VERIFICATION` (confirmed live — a branch-name-only change
+   * failed and rolled back an otherwise-unrelated Branch update, because
+   * CloudFormation bundles both into one changeset). Until a human adds the
+   * certificate's DNS validation CNAME record at wherever `dev.parimaan.app`
+   * is actually hosted, this stack skips provisioning the domain at all —
+   * the app still builds/deploys and is reachable at its default
+   * `*.amplifyapp.com` domain (`DefaultDomain` output below) in the
+   * meantime.
+   */
+  public readonly domain: amplify.Domain | undefined;
 
   constructor(scope: Construct, id: string, props: FrontendStackProps) {
     super(scope, id, props);
@@ -181,10 +195,25 @@ export class FrontendStack extends cdk.Stack {
 
     // Finding #3 above — domain association is its own construct, mapped
     // onto the branch afterward, not an inline App/Branch prop.
-    this.domain = this.app.addDomain('Domain', {
-      domainName: webDomain,
-    });
-    this.domain.mapRoot(this.branch);
+    //
+    // Gated behind `enableCustomDomain` (default off) — a real gap found
+    // live: Amplify refuses any update to a `Domain` resource while its
+    // certificate sits in `PENDING_VERIFICATION` (the DNS CNAME record for
+    // cert validation was never added at wherever `dev.parimaan.app` is
+    // actually hosted), and CloudFormation bundles Domain into the same
+    // changeset as Branch — so an otherwise-unrelated branch update failed
+    // and rolled back with it. Once a human completes that one-time DNS
+    // step and re-deploys with `-c enableCustomDomain=true`, this
+    // provisions normally; until then the app is reachable at its default
+    // `*.amplifyapp.com` domain (`DefaultDomain` output below), which needs
+    // no DNS at all.
+    const enableCustomDomain = this.node.tryGetContext('enableCustomDomain') === 'true';
+    if (enableCustomDomain) {
+      this.domain = this.app.addDomain('Domain', {
+        domainName: webDomain,
+      });
+      this.domain.mapRoot(this.branch);
+    }
 
     new cdk.CfnOutput(this, 'AppId', {
       value: this.app.appId,

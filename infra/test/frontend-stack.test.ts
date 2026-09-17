@@ -22,8 +22,15 @@ const buildRealAuthStack = (app: cdk.App, envName: 'dev' | 'prod'): AuthStack =>
   });
 
 describe('FrontendStack', () => {
-  const build = (envName: 'dev' | 'prod'): FrontendStack => {
-    const app = new cdk.App();
+  /**
+   * `context` defaults to none — `enableCustomDomain` is off by default
+   * (a real gap found live: Amplify refuses any `Domain` update while its
+   * certificate sits in `PENDING_VERIFICATION`, so this stack does not
+   * provision one until a human completes the one-time DNS verification
+   * step and opts back in via `-c enableCustomDomain=true`).
+   */
+  const build = (envName: 'dev' | 'prod', context: Record<string, string> = {}): FrontendStack => {
+    const app = new cdk.App({ context });
     const auth = buildRealAuthStack(app, envName);
     return new FrontendStack(app, `Parimaan-${envName}-Frontend`, {
       envName,
@@ -34,7 +41,8 @@ describe('FrontendStack', () => {
     });
   };
 
-  const synth = (envName: 'dev' | 'prod'): Template => Template.fromStack(build(envName));
+  const synth = (envName: 'dev' | 'prod', context?: Record<string, string>): Template =>
+    Template.fromStack(build(envName, context));
 
   it('synthesizes without error for dev', () => {
     expect(() => synth('dev')).not.toThrow();
@@ -71,18 +79,34 @@ describe('FrontendStack', () => {
     prodTemplate.hasResourceProperties('AWS::Amplify::Branch', { BranchName: 'main' });
   });
 
-  it('declares exactly one custom domain association, mapped to the environment-appropriate domain reused verbatim from auth-stack.ts (dev.parimaan.app / parimaan.app)', () => {
+  it('declares no custom domain association by default — enableCustomDomain is off until DNS verification is done', () => {
+    // A real gap found live: Amplify refuses any update to a `Domain`
+    // resource while its certificate sits in `PENDING_VERIFICATION`
+    // (the DNS CNAME record for cert validation was never added at
+    // wherever dev.parimaan.app is actually hosted), and CloudFormation
+    // bundles Domain into the same changeset as Branch — so an
+    // otherwise-unrelated branch-name fix failed and rolled back with it,
+    // live. Default-off avoids that until a human completes the one-time
+    // DNS step.
     const devTemplate = synth('dev');
+    devTemplate.resourceCountIs('AWS::Amplify::Domain', 0);
+
+    const prodTemplate = synth('prod');
+    prodTemplate.resourceCountIs('AWS::Amplify::Domain', 0);
+  });
+
+  it('declares the custom domain association, mapped to the environment-appropriate domain reused verbatim from auth-stack.ts (dev.parimaan.app / parimaan.app), once opted in via enableCustomDomain=true', () => {
+    const devTemplate = synth('dev', { enableCustomDomain: 'true' });
     devTemplate.resourceCountIs('AWS::Amplify::Domain', 1);
     devTemplate.hasResourceProperties('AWS::Amplify::Domain', { DomainName: 'dev.parimaan.app' });
 
-    const prodTemplate = synth('prod');
+    const prodTemplate = synth('prod', { enableCustomDomain: 'true' });
     prodTemplate.resourceCountIs('AWS::Amplify::Domain', 1);
     prodTemplate.hasResourceProperties('AWS::Amplify::Domain', { DomainName: 'parimaan.app' });
   });
 
-  it('maps the branch to the domain root', () => {
-    const template = synth('dev');
+  it('maps the branch to the domain root, once opted in via enableCustomDomain=true', () => {
+    const template = synth('dev', { enableCustomDomain: 'true' });
     template.hasResourceProperties('AWS::Amplify::Domain', {
       SubDomainSettings: Match.arrayWith([
         Match.objectLike({ Prefix: '' }),
