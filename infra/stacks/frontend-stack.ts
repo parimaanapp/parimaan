@@ -1,5 +1,6 @@
 import * as amplify from '@aws-cdk/aws-amplify-alpha';
 import * as cdk from 'aws-cdk-lib';
+import type { CfnBranch } from 'aws-cdk-lib/aws-amplify';
 import { BuildSpec } from 'aws-cdk-lib/aws-codebuild';
 import type { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import type { Secret } from 'aws-cdk-lib/aws-secretsmanager';
@@ -222,30 +223,7 @@ export class FrontendStack extends cdk.Stack {
     webClientCredentialsSecret.grantRead(this.app);
     nextAuthSecret.grantRead(this.app);
 
-    this.branch = this.app.addBranch('Branch', {
-      branchName,
-      stage: envName === 'prod' ? 'PRODUCTION' : 'DEVELOPMENT',
-      // Finding #5, found live: the `App`-level `buildSpec` above is not
-      // enough on its own — a real build against a branch with no explicit
-      // `buildSpec` of its own ran Amplify's auto-detected default (the
-      // exact "pnpm: command not found" failure finding #4 already fixed
-      // at the App level) rather than inheriting it, confirmed by reading
-      // the deployed branch's own `buildSpec` back as `None` even after the
-      // App's `buildSpec` was correctly set. Amplify's build service
-      // resolves the effective spec from the Branch, not the App, for an
-      // actual build run — passing the identical spec here is what
-      // actually takes effect.
-      buildSpec,
-      // `AMPLIFY_MONOREPO_APP_ROOT` (finding #6) is set at both App and
-      // Branch level, defensively, for the identical reason `buildSpec`
-      // needed both (finding #5) — Amplify's own internal monorepo
-      // orchestration reads this before running any build command, and
-      // this stack has already found once that an App-level-only setting
-      // does not reliably reach what a real build run actually uses.
-      environmentVariables: {
-        AMPLIFY_MONOREPO_APP_ROOT: 'web',
-      },
-    });
+    this.branch = this.createBranch(branchName, envName, buildSpec);
 
     // Finding #3 above — domain association is its own construct, mapped
     // onto the branch afterward, not an inline App/Branch prop.
@@ -305,6 +283,51 @@ export class FrontendStack extends cdk.Stack {
       secretName: `parimaan/nextauth-secret-${envName}`,
       description: "NextAuth's JWT session signing/encryption secret for the web dashboard.",
     });
+  }
+
+  private createBranch(branchName: string, envName: 'dev' | 'prod', buildSpec: BuildSpec): amplify.Branch {
+    const branch = this.app.addBranch('Branch', {
+      branchName,
+      stage: envName === 'prod' ? 'PRODUCTION' : 'DEVELOPMENT',
+      // Finding #5, found live: the `App`-level `buildSpec` above is not
+      // enough on its own — a real build against a branch with no explicit
+      // `buildSpec` of its own ran Amplify's auto-detected default (the
+      // exact "pnpm: command not found" failure finding #4 already fixed
+      // at the App level) rather than inheriting it, confirmed by reading
+      // the deployed branch's own `buildSpec` back as `None` even after the
+      // App's `buildSpec` was correctly set. Amplify's build service
+      // resolves the effective spec from the Branch, not the App, for an
+      // actual build run — passing the identical spec here is what
+      // actually takes effect.
+      buildSpec,
+      // `AMPLIFY_MONOREPO_APP_ROOT` (finding #6) is set at both App and
+      // Branch level, defensively, for the identical reason `buildSpec`
+      // needed both (finding #5) — Amplify's own internal monorepo
+      // orchestration reads this before running any build command, and
+      // this stack has already found once that an App-level-only setting
+      // does not reliably reach what a real build run actually uses.
+      environmentVariables: {
+        AMPLIFY_MONOREPO_APP_ROOT: 'web',
+      },
+    });
+
+    // Finding #7, found live via a THIRD real build (after #6's baseDirectory
+    // fix): `next build` completed successfully every time, yet Amplify kept
+    // failing right after with "Failed to find the deploy-manifest.json file
+    // in the build output". Root cause (confirmed against AWS CDK GitHub
+    // issue #25679 and discussion #24574, since neither AWS's own SSR nor
+    // monorepo doc pages mention this): the CloudFormation `AWS::Amplify::
+    // Branch` resource has a `Framework` field that the Amplify Console sets
+    // automatically when a human picks "Next.js" during app setup — nothing
+    // does this for a CDK-deployed app. Without it, Amplify's build
+    // orchestrator never runs its internal Next.js SSR adapter step (the one
+    // that actually produces `deploy-manifest.json` from `.next` output),
+    // regardless of how correct the buildSpec otherwise is. The L2 `Branch`
+    // construct doesn't expose this property, so it's set on the underlying
+    // L1 `CfnBranch`.
+    (branch.node.defaultChild as CfnBranch).framework = 'Next.js - SSR';
+
+    return branch;
   }
 
   /**
