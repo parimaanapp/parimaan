@@ -177,6 +177,36 @@ describe('FrontendStack', () => {
     }
   });
 
+  it('sets NEXTAUTH_URL to the real canonical domain, on both App and Branch, and includes it in the web/.env.production write — a real sign-in redirect_uri went to localhost:3000 without this', () => {
+    // Regression guard for finding #10: the first real browser sign-in
+    // attempt against a genuinely working build/deploy/runtime chain
+    // (findings #7-#9) reached Cognito with redirect_uri set to
+    // `http://localhost:3000/api/auth/callback/cognito`, which Cognito
+    // rejected outright (`error=redirect_mismatch`, confirmed via the real
+    // OAuth request/response). Root cause, confirmed by reading
+    // `next-auth`'s own `detectOrigin()`
+    // (`node_modules/next-auth/utils/detect-origin.js`): it returns
+    // `process.env.NEXTAUTH_URL` if set, else trusts the forwarded host
+    // only when `VERCEL`/`AUTH_TRUST_HOST` is set — neither applies to
+    // Amplify Hosting compute, so it silently fell through to next-auth's
+    // own `localhost:3000` default. `NEXTAUTH_URL` also needs to reach
+    // `web/.env.production` at build time (finding #9's own lesson), since
+    // an Amplify env var alone is never visible to `process.env` at actual
+    // request time.
+    const { appProps, branchProps } = frontendResourcesOf(synth('dev'));
+    expect(appProps?.EnvironmentVariables ?? []).toContainEqual({
+      Name: 'NEXTAUTH_URL',
+      Value: 'https://dev.parimaan.app',
+    });
+    expect(branchProps?.EnvironmentVariables ?? []).toContainEqual({
+      Name: 'NEXTAUTH_URL',
+      Value: 'https://dev.parimaan.app',
+    });
+    for (const buildSpecYaml of [appProps?.BuildSpec, branchProps?.BuildSpec]) {
+      expect(buildSpecYaml).toMatch(/env \| grep.*-e NEXTAUTH_URL.*>> web\/\.env\.production/);
+    }
+  });
+
   it('sets AMPLIFY_MONOREPO_APP_ROOT on both App and Branch — required explicitly for a CDK-deployed monorepo app', () => {
     // The Amplify Console sets this automatically when a human configures
     // "My app is a monorepo" there; nothing does for a CDK/CloudFormation-
@@ -312,11 +342,16 @@ describe('FrontendStack', () => {
     // No env var anywhere carries a value containing the word "secret" in
     // a way that looks like a *value* (as opposed to the ARN variable's own
     // name, which is fine) — and no env var's value is a plain string that
-    // could be a literal secret. Two plain-string values are known-safe and
-    // explicitly allowlisted: the AppSync URL, and `AMPLIFY_MONOREPO_APP_ROOT`
-    // (finding #6 — the literal `'web'` workspace path, not remotely
-    // secret-shaped). Any THIRD plain-string value still fails this test.
-    const KNOWN_SAFE_PLAIN_STRING_ENV_VARS = new Set(['NEXT_PUBLIC_APPSYNC_GRAPHQL_URL', 'AMPLIFY_MONOREPO_APP_ROOT']);
+    // could be a literal secret. Three plain-string values are known-safe
+    // and explicitly allowlisted: the AppSync URL, `AMPLIFY_MONOREPO_APP_ROOT`
+    // (finding #6 — the literal `'web'` workspace path), and `NEXTAUTH_URL`
+    // (finding #10 — the app's own public domain, not remotely secret-shaped
+    // either). Any FOURTH plain-string value still fails this test.
+    const KNOWN_SAFE_PLAIN_STRING_ENV_VARS = new Set([
+      'NEXT_PUBLIC_APPSYNC_GRAPHQL_URL',
+      'AMPLIFY_MONOREPO_APP_ROOT',
+      'NEXTAUTH_URL',
+    ]);
     const plainStringValues = envVars
       .filter((v) => !KNOWN_SAFE_PLAIN_STRING_ENV_VARS.has(v.Name))
       .map((v) => v.Value)
