@@ -94,6 +94,52 @@ describe('FrontendStack', () => {
     expect(buildSpecYaml).toContain('appRoot: web');
   });
 
+  /** Shared shape for the two finding-#6 regression tests below. */
+  const frontendResourcesOf = (
+    template: Template,
+  ): {
+    appProps: { BuildSpec?: string; EnvironmentVariables?: { Name: string; Value: unknown }[] };
+    branchProps: { BuildSpec?: string; EnvironmentVariables?: { Name: string; Value: unknown }[] };
+  } => {
+    const json = template.toJSON() as {
+      Resources: Record<
+        string,
+        { Type: string; Properties?: { BuildSpec?: string; EnvironmentVariables?: { Name: string; Value: unknown }[] } }
+      >;
+    };
+    return {
+      appProps: Object.values(json.Resources).find((r) => r.Type === 'AWS::Amplify::App')?.Properties ?? {},
+      branchProps: Object.values(json.Resources).find((r) => r.Type === 'AWS::Amplify::Branch')?.Properties ?? {},
+    };
+  };
+
+  it('sets baseDirectory relative to the monorepo root (web/.next) and buildPath to the monorepo root, on both App and Branch', () => {
+    // Regression guard for finding #6: a real build got past #4/#5 only to
+    // fail with "Failed to find the deploy-manifest.json file in the build
+    // output" — confirmed against AWS's own monorepo docs that
+    // baseDirectory must be relative to the repo root (web/.next, not
+    // .next), and buildPath: '/' is required for the monorepo root
+    // install/build to run correctly (replacing the earlier `cd ..` hack).
+    const { appProps, branchProps } = frontendResourcesOf(synth('dev'));
+    for (const buildSpecYaml of [appProps?.BuildSpec, branchProps?.BuildSpec]) {
+      expect(buildSpecYaml).toContain('baseDirectory: web/.next');
+      expect(buildSpecYaml).toMatch(/buildPath:\s*\/(\s|$)/);
+      expect(buildSpecYaml).not.toContain('cd ..');
+    }
+  });
+
+  it('sets AMPLIFY_MONOREPO_APP_ROOT on both App and Branch — required explicitly for a CDK-deployed monorepo app', () => {
+    // The Amplify Console sets this automatically when a human configures
+    // "My app is a monorepo" there; nothing does for a CDK/CloudFormation-
+    // deployed app, confirmed against AWS's own monorepo docs.
+    const { appProps, branchProps } = frontendResourcesOf(synth('dev'));
+    expect(appProps?.EnvironmentVariables ?? []).toContainEqual({ Name: 'AMPLIFY_MONOREPO_APP_ROOT', Value: 'web' });
+    expect(branchProps?.EnvironmentVariables ?? []).toContainEqual({
+      Name: 'AMPLIFY_MONOREPO_APP_ROOT',
+      Value: 'web',
+    });
+  });
+
   it('declares exactly one branch, tracking the real git "main" branch for both dev and prod', () => {
     // This repo has exactly one git branch, `main` — every other stack
     // already deploys from it regardless of AWS environment. A real bug
@@ -189,10 +235,13 @@ describe('FrontendStack', () => {
     // No env var anywhere carries a value containing the word "secret" in
     // a way that looks like a *value* (as opposed to the ARN variable's own
     // name, which is fine) — and no env var's value is a plain string that
-    // could be a literal secret (the only plain-string env var values this
-    // stack declares are the AppSync URL and nothing else).
+    // could be a literal secret. Two plain-string values are known-safe and
+    // explicitly allowlisted: the AppSync URL, and `AMPLIFY_MONOREPO_APP_ROOT`
+    // (finding #6 — the literal `'web'` workspace path, not remotely
+    // secret-shaped). Any THIRD plain-string value still fails this test.
+    const KNOWN_SAFE_PLAIN_STRING_ENV_VARS = new Set(['NEXT_PUBLIC_APPSYNC_GRAPHQL_URL', 'AMPLIFY_MONOREPO_APP_ROOT']);
     const plainStringValues = envVars
-      .filter((v) => v.Name !== 'NEXT_PUBLIC_APPSYNC_GRAPHQL_URL')
+      .filter((v) => !KNOWN_SAFE_PLAIN_STRING_ENV_VARS.has(v.Name))
       .map((v) => v.Value)
       .filter((v): v is string => typeof v === 'string');
     expect(plainStringValues).toEqual([]);
