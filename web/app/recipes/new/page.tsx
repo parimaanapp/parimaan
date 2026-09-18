@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { buildAuthOptions } from '@/auth/config';
 import { requireIdToken } from '@/auth/requireIdToken';
 import { createServerUrqlClient } from '@/graphql/serverClient';
-import { resolveHouseholdId } from '@/household/resolveHousehold';
+import { resolveHouseholdId } from '@/household/resolveHouseholdId';
 import { NewRecipeEntry } from '@/recipes/NewRecipeEntry';
 
 export const dynamic = 'force-dynamic';

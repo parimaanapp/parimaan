@@ -26,7 +26,7 @@ interface GraphqlCall {
 
 /**
  * A fetch mock keyed by GraphQL operation name — each of
- * `loadDashboardData`'s/`resolvePrimaryHouseholdId`'s own queries
+ * `loadDashboardData`'s/`resolveHouseholdId`'s own queries
  * (`MyHouseholds`/`Pantry`/`Menu`/`ShoppingList`) is a distinct named
  * operation, so routing by name (rather than by call order) mirrors how a
  * real GraphQL server dispatches and lets each test assert on the exact

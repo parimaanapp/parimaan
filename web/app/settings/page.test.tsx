@@ -117,4 +117,31 @@ describe('SettingsPage', () => {
     const variables = JSON.parse(new URL(url).searchParams.get('variables') ?? '{}') as { householdId: string };
     expect(variables.householdId).toBe('hh-42');
   });
+
+  // Regression test for the household-resolution-helper consolidation: this
+  // page used to call a variant that THREW on "no household" (an ugly error
+  // boundary), unlike dashboard/recipes' own graceful empty state for the
+  // identical case. Now that all three share one resolver, this page gets
+  // the same graceful empty state too.
+  it('renders a graceful empty state, not a crash, when the caller belongs to no household', async () => {
+    getServerSession.mockResolvedValue({ idToken: 'real-token', expires: '2099-01-01' });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ data: { me: { households: [] } } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    const { default: SettingsPage } = await import('./page');
+
+    const client = new Client({
+      url: 'https://example.appsync-api.ap-south-1.amazonaws.com/graphql',
+      exchanges: [cacheExchange, fetchExchange],
+    });
+    render(<Provider value={client}>{await SettingsPage()}</Provider>);
+
+    expect(screen.getByTestId('no-household-state')).toBeInTheDocument();
+  });
 });

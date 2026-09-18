@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { buildAuthOptions } from '@/auth/config';
 import { requireIdToken } from '@/auth/requireIdToken';
 import { createServerUrqlClient } from '@/graphql/serverClient';
-import { resolveHouseholdId } from '@/household/resolveHousehold';
+import { resolveHouseholdId } from '@/household/resolveHouseholdId';
 import { buildRecipesQueryVariables } from '@/recipes/buildRecipesQueryVariables';
 import { RECIPES_QUERY, type RecipesQueryResult } from '@/recipes/recipeQueries';
 import { RECIPE_ROLES, type RecipeRole } from '@/recipes/types';
