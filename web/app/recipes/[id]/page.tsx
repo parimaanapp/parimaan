@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { buildAuthOptions } from '@/auth/config';
 import { requireIdToken } from '@/auth/requireIdToken';
 import { createServerUrqlClient } from '@/graphql/serverClient';
-import { resolveHouseholdId } from '@/household/resolveHousehold';
+import { resolveHouseholdId } from '@/household/resolveHouseholdId';
 import { assertOwnHousehold } from '@/recipes/buildRecipesQueryVariables';
 import { DeleteRecipeButton } from '@/recipes/DeleteRecipeButton';
 import { RECIPE_QUERY, type RecipeQueryResult } from '@/recipes/recipeQueries';

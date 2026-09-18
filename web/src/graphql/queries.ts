@@ -34,13 +34,12 @@ export interface MeQueryResult {
  * since that's all the dashboard's own three section queries need as their
  * `householdId` argument.
  *
- * Also the shared D3 query for the settings screen (W18 S6) — both slices
- * independently needed "which household" and both resolve it identically
- * (`me.households[0]`), so this one query constant serves both rather than
- * each screen declaring its own copy. (`S5`'s recipes screen has its own,
- * still-separate `household/householdQueries.ts` copy of this same query —
- * a known, flagged duplication across three screens, not yet consolidated
- * into one shared module; a follow-up cleanup, not a correctness issue.)
+ * The shared D3 query for every screen that needs "which household" —
+ * dashboard, settings, and recipes all resolve it identically
+ * (`me.households[0]`) via `household/resolveHouseholdId.ts`, the one
+ * consolidated helper (previously three near-identical copies across
+ * `dashboard/`, `graphql/`, and `household/`, flagged as a known gap in
+ * W18's own closing report and consolidated in a later pass).
  */
 export const MY_HOUSEHOLDS_QUERY = `
   query MyHouseholds {

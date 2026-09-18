@@ -5,8 +5,8 @@ import { ShoppingListSection } from '@/components/dashboard/ShoppingListSection'
 import { buildAuthOptions } from '@/auth/config';
 import { requireIdToken } from '@/auth/requireIdToken';
 import { loadDashboardData } from '@/dashboard/loadDashboardData';
-import { resolvePrimaryHouseholdId } from '@/dashboard/resolvePrimaryHousehold';
 import { createServerUrqlClient } from '@/graphql/serverClient';
+import { resolveHouseholdId } from '@/household/resolveHouseholdId';
 
 // Same reasoning as `app/me/page.tsx` — session-dependent, never statically
 // prerendered.
@@ -20,8 +20,8 @@ export const dynamic = 'force-dynamic';
  * data (RED test 5) — the identical gating `app/me/page.tsx` already
  * established in S3, reused here rather than re-invented.
  *
- * The household is always `resolvePrimaryHouseholdId`'s own resolved id
- * (D3: `me.households[0]`, no switcher) — every one of `loadDashboardData`'s
+ * The household is always `resolveHouseholdId`'s own resolved id (D3:
+ * `me.households[0]`, no switcher) — every one of `loadDashboardData`'s
  * three queries is built from THAT id, never a client-suppliable one (RED
  * test 6): there is no route param, query string, or form field anywhere on
  * this page that could supply a different household id.
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   const idToken = requireIdToken(session, '/dashboard');
 
   const client = createServerUrqlClient(idToken);
-  const householdId = await resolvePrimaryHouseholdId(client);
+  const householdId = await resolveHouseholdId(client);
 
   if (householdId === null) {
     return (

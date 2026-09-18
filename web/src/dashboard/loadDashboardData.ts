@@ -60,7 +60,7 @@ const fetchShoppingList = async (
 /**
  * Loads the dashboard's three independent sections (D5: `Query.pantry`,
  * `Query.menu`, D4's `Query.shoppingList`) for `householdId` — always that
- * RESOLVED household's own id (D3's `resolvePrimaryHouseholdId`), never a
+ * RESOLVED household's own id (D3's `resolveHouseholdId`), never a
  * client-suppliable one, since this function takes no caller input beyond
  * the already-authenticated `client` and the already-resolved
  * `householdId`. Pantry and menu are independent reads and run in
