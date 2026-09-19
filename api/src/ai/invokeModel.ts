@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import { AiBusyError, AiTimeoutError, AiUnavailableError, AiUnparseableError } from '../errors.js';
-import type { GeminiClientDeps } from './geminiClient.js';
+import { emitAiCostMetric, estimateGeminiCostUsd } from './costMetric.js';
+import type { GeminiClientDeps, GeminiUsage } from './geminiClient.js';
 import { callGemini, GeminiAuthError, GeminiTransportError } from './geminiClient.js';
 
 /**
@@ -65,6 +66,8 @@ export interface InvokeModelOptions {
  */
 export interface InvokeModelDeps extends GeminiClientDeps {
   sleepImpl?: (ms: number) => Promise<void>;
+  /** W19 D6: defaults to the real `emitAiCostMetric`. Overridable in tests so the suite never emits real EMF lines. */
+  emitCostMetric?: (costUsd: number) => void;
 }
 
 /**
@@ -119,6 +122,21 @@ export const invokeModel = async <T>(
   return parseWithReinforcementRetry(prompt, firstRawText, schema, deadline, deps);
 };
 
+/**
+ * W19 D6: every real Gemini call this function makes (including a
+ * reinforcement retry — a real second call incurs real second cost) emits a
+ * cost-metric line, never gated on the caller's own success/failure path.
+ * Wrapped so a metering bug can never turn a real, otherwise-successful AI
+ * response into a thrown error — see `costMetric.ts`'s own doc comment.
+ */
+const emitCostMetricSafely = (usage: GeminiUsage, deps: InvokeModelDeps): void => {
+  try {
+    (deps.emitCostMetric ?? ((costUsd) => emitAiCostMetric(costUsd)))(estimateGeminiCostUsd(usage));
+  } catch {
+    // Metering must never break the real response.
+  }
+};
+
 /** The transport chain: retries a Gemini call against transient failures, deadline-gated throughout. */
 const callWithTransportRetries = async (prompt: string, deadline: number, deps: InvokeModelDeps): Promise<string> => {
   for (let attempt = 1; attempt <= TRANSPORT_MAX_ATTEMPTS; attempt++) {
@@ -128,6 +146,7 @@ const callWithTransportRetries = async (prompt: string, deadline: number, deps: 
     }
     try {
       const result = await callGemini(prompt, { timeoutMs: budget }, deps);
+      emitCostMetricSafely(result.usage, deps);
       return result.rawText;
     } catch (error) {
       if (error instanceof GeminiAuthError) {

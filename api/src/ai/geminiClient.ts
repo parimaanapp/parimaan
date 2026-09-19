@@ -96,9 +96,24 @@ export class GeminiTransportError extends Error {}
  */
 export class GeminiAuthError extends Error {}
 
+/**
+ * Token counts for one Gemini call — W19 D6's own cost-metering input.
+ * Deliberately best-effort (see `extractUsageFromGeminiResponse`): a
+ * metering gap must never turn into a broken recipe parse or a broken
+ * pantry-vision call, so this is `{ promptTokens: 0, candidateTokens: 0 }`
+ * rather than a throw when Gemini's response shape doesn't carry
+ * `usageMetadata` for some reason.
+ */
+export interface GeminiUsage {
+  promptTokens: number;
+  candidateTokens: number;
+}
+
 export interface GeminiCallResult {
   /** The model's raw text output — not yet JSON.parsed. `invokeModel.ts` owns markdown-fence-stripping and parsing (provider-neutral concerns). */
   rawText: string;
+  /** W19 D6: real token counts, for `invokeModel.ts` to turn into a real cost-metric emission after a successful call. */
+  usage: GeminiUsage;
 }
 
 /**
@@ -180,7 +195,8 @@ export const callGemini = async (
 
   const body: unknown = await response.json();
   const rawText = extractTextFromGeminiResponse(body);
-  return { rawText };
+  const usage = extractUsageFromGeminiResponse(body);
+  return { rawText, usage };
 };
 
 /**
@@ -205,4 +221,29 @@ const extractTextFromGeminiResponse = (body: unknown): string => {
     throw new Error('Gemini response part has no text.');
   }
   return text;
+};
+
+/**
+ * Reads `usageMetadata.promptTokenCount`/`candidatesTokenCount` — the exact
+ * field names confirmed against a real response during W19 S1's own live
+ * verification. Deliberately best-effort, unlike `extractTextFromGeminiResponse`:
+ * this function backs a cost *metric*, not the actual AI output the caller
+ * needs to function — a missing/malformed `usageMetadata` degrades to
+ * `{ promptTokens: 0, candidateTokens: 0 }` (an under-reported cost metric
+ * for that one call) rather than failing a real, otherwise-successful
+ * recipe parse or pantry-vision call over a metering gap.
+ */
+const extractUsageFromGeminiResponse = (body: unknown): GeminiUsage => {
+  const usageMetadata = (body as { usageMetadata?: unknown }).usageMetadata;
+  if (typeof usageMetadata !== 'object' || usageMetadata === null) {
+    return { promptTokens: 0, candidateTokens: 0 };
+  }
+  const { promptTokenCount, candidatesTokenCount } = usageMetadata as {
+    promptTokenCount?: unknown;
+    candidatesTokenCount?: unknown;
+  };
+  return {
+    promptTokens: typeof promptTokenCount === 'number' ? promptTokenCount : 0,
+    candidateTokens: typeof candidatesTokenCount === 'number' ? candidatesTokenCount : 0,
+  };
 };
