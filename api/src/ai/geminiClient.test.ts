@@ -6,8 +6,9 @@ const config = { geminiApiKeySecretArn: 'arn:aws:secretsmanager:ap-south-1:12345
 const jsonResponse = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-const geminiSuccessBody = (text: string) => ({
+const geminiSuccessBody = (text: string, usageMetadata?: { promptTokenCount: number; candidatesTokenCount: number }) => ({
   candidates: [{ content: { parts: [{ text }] }, finishReason: 'STOP' }],
+  ...(usageMetadata ? { usageMetadata } : {}),
 });
 
 afterEach(() => {
@@ -108,6 +109,49 @@ describe('callGemini', () => {
   // W19 D2/S1: multimodal support, real-call-verified against real pantry
   // photos before this test was written (two real Gemini calls, both
   // succeeded and correctly identified real pantry items).
+  // W19 D6: real token counts back the $5/day cost-metric emission
+  // (`costMetric.ts`), so this client's job is extracting them faithfully
+  // — real field names (`promptTokenCount`/`candidatesTokenCount`)
+  // confirmed against a real response during W19 S1's own live verification.
+  describe('usage', () => {
+    it('extracts promptTokens/candidateTokens from a real-shaped usageMetadata', async () => {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(200, geminiSuccessBody('{}', { promptTokenCount: 1152, candidatesTokenCount: 52 })),
+        );
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      const result = await callGemini('p', { timeoutMs: 5000 }, { config, fetchApiKey, fetchImpl });
+
+      expect(result.usage).toEqual({ promptTokens: 1152, candidateTokens: 52 });
+    });
+
+    it('degrades to {promptTokens: 0, candidateTokens: 0} rather than throwing when usageMetadata is missing', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{}')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      const result = await callGemini('p', { timeoutMs: 5000 }, { config, fetchApiKey, fetchImpl });
+
+      expect(result.usage).toEqual({ promptTokens: 0, candidateTokens: 0 });
+    });
+
+    it('degrades the same way when usageMetadata is present but malformed — a metering gap must never break the real response', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(
+        jsonResponse(200, {
+          candidates: [{ content: { parts: [{ text: '{}' }] } }],
+          usageMetadata: { promptTokenCount: 'not-a-number' },
+        }),
+      );
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      const result = await callGemini('p', { timeoutMs: 5000 }, { config, fetchApiKey, fetchImpl });
+
+      expect(result.usage).toEqual({ promptTokens: 0, candidateTokens: 0 });
+      expect(result.rawText).toBe('{}');
+    });
+  });
+
   describe('images', () => {
     it('sends each image as an inline_data part alongside the text prompt', async () => {
       const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('[]')));

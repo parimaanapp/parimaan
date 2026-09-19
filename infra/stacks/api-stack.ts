@@ -6,7 +6,7 @@ import {
   FieldLogLevel,
   GraphqlApi,
 } from 'aws-cdk-lib/aws-appsync';
-import { Alarm, ComparisonOperator, TreatMissingData } from 'aws-cdk-lib/aws-cloudwatch';
+import { Alarm, ComparisonOperator, Metric, TreatMissingData } from 'aws-cdk-lib/aws-cloudwatch';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import type { IUserPool, UserPool } from 'aws-cdk-lib/aws-cognito';
 import type { ISecurityGroup, IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
@@ -234,6 +234,7 @@ export class ApiStack extends cdk.Stack {
     this.createHealthResolver();
     this.createHouseholdResolvers(props);
     this.createAiAndNetResolvers(props);
+    this.createAiCostAlarm(props.alertsTopic);
 
     // Build-time config for the Flutter mobile app
     // (`mobile/lib/app/config/dev_config.dart` — see docs/RUNBOOK.md for the
@@ -382,6 +383,40 @@ export class ApiStack extends cdk.Stack {
     }).addAlarmAction(new SnsAction(alertsTopic));
 
     return fn;
+  }
+
+  /**
+   * W19 D6 — the `$5/day` AI cost alarm deferred from W7 (§13.2.9/D8).
+   * Watches the custom `Parimaan/AI` / `EstimatedCostUsd` metric every
+   * AI-calling Lambda emits via `invokeModel.ts`'s own EMF line
+   * (`api/src/ai/costMetric.ts`) — no per-Lambda wiring needed here, since
+   * CloudFormation Logs → EMF extraction happens automatically per Lambda
+   * that logs the shape, and this one `Metric` reference (no dimensions)
+   * sums across every one of them. `Sum` over a 24-hour period, not the
+   * `Average`/`Maximum` this construct defaults to — a cost alarm needs the
+   * total spent in a day, not a per-datapoint statistic.
+   *
+   * `treatMissingData: NOT_BREACHING` — a day with zero AI calls (a
+   * genuinely idle account, or before any AI feature has shipped) must
+   * never alarm; there is no metric datapoint to evaluate at all on a day
+   * with no emissions.
+   */
+  private createAiCostAlarm(alertsTopic: Topic): void {
+    const dailyCostMetric = new Metric({
+      namespace: 'Parimaan/AI',
+      metricName: 'EstimatedCostUsd',
+      statistic: 'Sum',
+      period: cdk.Duration.hours(24),
+    });
+
+    new Alarm(this, 'AiDailyCostAlarm', {
+      alarmDescription: 'Estimated daily Gemini AI spend exceeded $5 (W19 D6, deferred from W7 §13.2.9/D8, parimaan-dev/prod)',
+      metric: dailyCostMetric,
+      threshold: 5,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(new SnsAction(alertsTopic));
   }
 
   /**

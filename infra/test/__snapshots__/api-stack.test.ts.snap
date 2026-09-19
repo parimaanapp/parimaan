@@ -292,6 +292,25 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::IAM::Policy",
     },
+    "AiDailyCostAlarm808CCEDB": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAlertsTopic3414BE910C2DFF03",
+          },
+        ],
+        "AlarmDescription": "Estimated daily Gemini AI spend exceeded $5 (W19 D6, deferred from W7 §13.2.9/D8, parimaan-dev/prod)",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "EvaluationPeriods": 1,
+        "MetricName": "EstimatedCostUsd",
+        "Namespace": "Parimaan/AI",
+        "Period": 86400,
+        "Statistic": "Sum",
+        "Threshold": 5,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
     "ApiAddMenuItemDataSourceEA4ED7FD": {
       "Properties": {
         "ApiId": {
