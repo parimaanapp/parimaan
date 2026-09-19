@@ -104,4 +104,61 @@ describe('callGemini', () => {
     const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
     expect(init.signal).toBeInstanceOf(AbortSignal);
   });
+
+  // W19 D2/S1: multimodal support, real-call-verified against real pantry
+  // photos before this test was written (two real Gemini calls, both
+  // succeeded and correctly identified real pantry items).
+  describe('images', () => {
+    it('sends each image as an inline_data part alongside the text prompt', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('[]')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      await callGemini(
+        'list the pantry items',
+        { timeoutMs: 5000, images: [{ mimeType: 'image/jpeg', base64Data: 'ZmFrZS1pbWFnZS1ieXRlcw==' }] },
+        { config, fetchApiKey, fetchImpl },
+      );
+
+      const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as {
+        contents: [{ parts: [{ text: string }, { inline_data: { mime_type: string; data: string } }] }];
+      };
+      expect(body.contents[0].parts[0]).toEqual({ text: 'list the pantry items' });
+      expect(body.contents[0].parts[1]).toEqual({
+        inline_data: { mime_type: 'image/jpeg', data: 'ZmFrZS1pbWFnZS1ieXRlcw==' },
+      });
+    });
+
+    it('sends multiple images as separate parts, in order', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('[]')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      await callGemini(
+        'p',
+        {
+          timeoutMs: 5000,
+          images: [
+            { mimeType: 'image/jpeg', base64Data: 'Zmlyc3Q=' },
+            { mimeType: 'image/jpeg', base64Data: 'c2Vjb25k' },
+          ],
+        },
+        { config, fetchApiKey, fetchImpl },
+      );
+
+      const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as { contents: [{ parts: unknown[] }] };
+      expect(body.contents[0].parts).toHaveLength(3);
+    });
+
+    it('omits image parts entirely when none are given — the existing text-only callers stay byte-identical', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{}')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      await callGemini('text only', { timeoutMs: 5000 }, { config, fetchApiKey, fetchImpl });
+
+      const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as { contents: [{ parts: unknown[] }] };
+      expect(body.contents[0].parts).toEqual([{ text: 'text only' }]);
+    });
+  });
 });

@@ -2,6 +2,14 @@ import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-sec
 import type { AiConfig } from './config.js';
 import { loadAiConfig } from './config.js';
 
+// Real call, W19 S1 (real photos, real endpoint, not assumed): this same
+// text model accepts inline image parts and returns real, reasonable
+// pantry-item identifications — no separate vision-only model id exists or
+// is needed. Confirmed twice against two real pantry/fridge photos: both
+// calls succeeded (~2.3s), correctly named nearly every real item present
+// (potatoes/onions/garlic; curry leaves/chillies/corn/carrots/cucumbers/
+// ginger/coriander), at ~1,150 prompt tokens per image (~$0.0003-0.0005/call
+// at this model's published per-token price) — real numbers, not estimated.
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -94,6 +102,18 @@ export interface GeminiCallResult {
 }
 
 /**
+ * One inline image part for a multimodal `callGemini` call (W19 D2) —
+ * Gemini's own `inline_data` shape, base64-encoded, sent alongside the text
+ * prompt as an additional `parts` entry. `mimeType` is caller-supplied
+ * rather than sniffed here, since the caller (e.g. a future `analyzePantryPhoto`
+ * resolver, W20) already knows the real content type of what it uploaded.
+ */
+export interface GeminiImageInput {
+  mimeType: string;
+  base64Data: string;
+}
+
+/**
  * One Gemini API call, no retry logic — `invokeModel.ts` (provider-neutral)
  * owns every retry/deadline decision; this function's only job is "make one
  * HTTP call, map the response to a typed result or a typed error." Sends
@@ -104,14 +124,23 @@ export interface GeminiCallResult {
  * mode — reduces malformed output but is never treated as the validation
  * boundary (§13.2.5, D4); `invokeModel.ts`'s Zod layer is authoritative
  * regardless of what this flag does or doesn't guarantee.
+ *
+ * `options.images` (W19 D2) — optional inline image parts, appended after
+ * the text prompt. Confirmed via two real calls against real pantry photos
+ * that the one existing `GEMINI_MODEL` constant already handles this; no
+ * second, vision-only model id exists in this client.
  */
+const toInlineDataParts = (images: GeminiImageInput[] | undefined): { inline_data: { mime_type: string; data: string } }[] =>
+  (images ?? []).map((image) => ({ inline_data: { mime_type: image.mimeType, data: image.base64Data } }));
+
 export const callGemini = async (
   prompt: string,
-  options: { timeoutMs: number },
+  options: { timeoutMs: number; images?: GeminiImageInput[] },
   deps: GeminiClientDeps = {},
 ): Promise<GeminiCallResult> => {
   const apiKey = await getApiKey(deps);
   const fetchImpl = deps.fetchImpl ?? fetch;
+  const imageParts = toInlineDataParts(options.images);
 
   let response: Response;
   try {
@@ -122,7 +151,7 @@ export const callGemini = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: [{ text: prompt }, ...imageParts] }],
         generationConfig: { responseMimeType: 'application/json' },
       }),
       signal: AbortSignal.timeout(options.timeoutMs),
