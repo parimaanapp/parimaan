@@ -5115,17 +5115,19 @@ Wireframe 9.x "Photo AI review" (45/50): the user photographs one shelf, sees AI
 
 ### 27.3 Slice breakdown
 
-| # | Slice | Size / Risk | Depends on |
-|---|---|---|---|
-| **S0** | Capture guidance — tips, camera, compression *(DONE, §26)* | — | — |
-| **S1** | Extend `invokeModel` (images/temperature/deadline) + **re-measure vision latency on 1024px/q80** and set `VISION_DEADLINE_MS` (D2, D8) | 2.5h / **High** | — |
-| **S2** | Proposal schema, prompt, caps, unit/category vocabulary, Zod (D3) | 2h / Medium | S1 |
-| **S3** | `getPantryPhotoUploadUrl` — resolver, SDL, non-VPC infra entry, bucket grant, 1-day lifecycle (D1, D4) | 2.5h / Medium | — |
-| **S4** | `analyzePantryPhoto` — key-ownership check (strict key regex `pantry-photos/{sub}/{uuid}.jpg`; `..`/absolute/other-prefix keys rejected before any S3 call; presign sets `Content-Type: image/jpeg`), HeadObject size + magic bytes, GET, rate limit, `invokeModel`, delete-after, errors, structured logging (D1, D4, D5, D9) | 3.5h / **High** | S1–S3 |
-| **S5** | Ferry operations, mobile repository (presigned PUT via `http`, as W17's export does), controller state machine incl. loading, timeout, and **upload failure/offline** (a failed PUT must land on a retry-or-manual screen, never an endless spinner; the app-root `OfflineBanner` already exists) | 3h / Medium | S3, S4 |
-| **S6** | Review screen (wireframe Flow 9's single Photo-AI-review screen; Flow 9's other three screens shipped in W5 — **S6 opens by reading the wireframe source, which is not in this repo**): `AIProposal` per field, confidence-based default ticking (D12), quantity stepper + unit chips, duplicate warnings, empty/failure screens, "Add another shelf" loop, confirm → `bulkAddPantryItems` (D6, D7, D11) | 4h / **High** | S5 |
-| **S7** | Wire capture → analyze → review (replaces the §26 confirmation snackbar); `onPantryBulkChanged` push (D10) | 2h / Medium | S6 |
-| **S8** | Real-AWS verification (direct-Lambda invokes, per RUNBOOK §2's procedure) + **physical-iPhone pass** covering everything §26.3 lists as unverified + weekly doc pass | 2.5h / Medium | all |
+**A slice is complete when it is merged to `main`** (founder's rule, 2026-09-28) — not when its code is written or its PR opened. The Status column is updated by the *next* slice's PR, so it always reflects merged reality.
+
+| # | Slice | Size / Risk | Depends on | Status |
+|---|---|---|---|---|
+| **S0** | Capture guidance — tips, camera, compression *(DONE, §26)* | — | — | ✅ merged (#194) |
+| **S1** | Extend `invokeModel` (images/temperature/deadline) + **re-measure vision latency on 1024px/q80** and set `VISION_DEADLINE_MS` (D2, D8) | 2.5h / **High** | — | ✅ merged (#195) |
+| **S2** | Proposal schema, prompt, caps, unit/category vocabulary, Zod (D3) | 2h / Medium | S1 | ✅ merged (#196) |
+| **S3** | `getPantryPhotoUploadUrl` — resolver, SDL, non-VPC infra entry, bucket grant, 1-day lifecycle (D1, D4) | 2.5h / Medium | — | ✅ merged (#197) |
+| **S4** | `analyzePantryPhoto` — key-ownership check (strict key regex `pantry-photos/{sub}/{uuid}.jpg`; `..`/absolute/other-prefix keys rejected before any S3 call; presign sets `Content-Type: image/jpeg`), HeadObject size + magic bytes, GET, rate limit, `invokeModel`, delete-after, errors, structured logging (D1, D4, D5, D9) | 3.5h / **High** | S1–S3 | 🔄 in review |
+| **S5** | Ferry operations, mobile repository (presigned PUT via `http`, as W17's export does), controller state machine incl. loading, timeout, and **upload failure/offline** (a failed PUT must land on a retry-or-manual screen, never an endless spinner; the app-root `OfflineBanner` already exists) | 3h / Medium | S3, S4 | — |
+| **S6** | Review screen (wireframe Flow 9's single Photo-AI-review screen; Flow 9's other three screens shipped in W5 — **S6 opens by reading the wireframe source, which is not in this repo**): `AIProposal` per field, confidence-based default ticking (D12), quantity stepper + unit chips, duplicate warnings, empty/failure screens, "Add another shelf" loop, confirm → `bulkAddPantryItems` (D6, D7, D11) | 4h / **High** | S5 | — |
+| **S7** | Wire capture → analyze → review (replaces the §26 confirmation snackbar); `onPantryBulkChanged` push (D10) | 2h / Medium | S6 | — |
+| **S8** | Real-AWS verification (direct-Lambda invokes, per RUNBOOK §2's procedure) + **physical-iPhone pass** covering everything §26.3 lists as unverified + weekly doc pass | 2.5h / Medium | all | — |
 
 **Planned total ≈ 22h** (S0 already spent). Sequencing: S1 first — its measurement can invalidate D2 and reshape S4. S1 ‖ S3 are independent; S2 follows S1; S4 gates the mobile slices; S5–S7 are strictly sequential; S8 needs the founder's phone.
 
@@ -5182,3 +5184,19 @@ A real phone photo of a real shelf goes capture → upload → analyze → revie
 **Pinned invariants that legitimately changed**, each a deliberate edit and not a loosened assertion: Lambda count 51→52, resolvers and data sources 50→51, non-VPC Lambdas 3→4, rate-limited cache-table grants 4→5 (+ staplesNoteFn). The `exportShoppingListImage` test's "no other Lambda holds this PutObject" check is now scoped to the `exports/*` prefix, since the new Lambda legitimately holds its own PutObject on a different bucket's prefix. Both dev snapshots changed additively only (ApiStack: +250 lines, 0 deletions — the new Lambda/role/policy/data source/resolver plus the SDL text; DataStack: the lifecycle rule).
 
 **Not done, on purpose:** nothing is deployed. S3 is verified by synth and unit tests; the first real deploy and a real presigned PUT happen in S8's real-AWS pass, alongside `analyzePantryPhoto`, since the resolver has no consumer until S5. The mobile Ferry operation for this mutation is S5's.
+
+### 27.9 S4 result — `analyzePantryPhoto`
+
+**Delivered (TDD; api 1651/1651, infra 233/233, both `tsc` and `eslint --max-warnings=0` clean):**
+- `Mutation.analyzePantryPhoto(s3Key: String!): PantryPhotoAnalysis!` with `PantryPhotoProposal`, `PantryPhotoAnalysis` and a lowercase `ProposalConfidence` enum (matching the SDL's enum convention). Returns an **unsaved** proposal; the pantry changes only via `bulkAddPantryItems` (PRD §5.4).
+- **Step order is the design, and each position is tested** (23 resolver tests against a fake store plus the real DynamoDB limiter): ownership from the key alone (before *any* S3 call — another user's key and a traversal attempt never reach S3) → `HeadObject` (exists, 1 byte – 500KB, `image/jpeg`) → daily limit → capped read + JPEG magic bytes → vision call → delete in a `finally`.
+- **A photo rejected as missing, oversize, empty, wrong-type or not-a-JPEG consumes no quota and never reaches the model** (asserted, including 22 consecutive rejections against a limit of 20). The limit (20/day, SD §8.5) is spent only by a photo that will cost an AI call, and the 21st is refused before the photo is read.
+- **The read is a `Range` GET capped at 500KB+1.** A presigned PUT stays valid 5 minutes, so an object could be swapped for a huge one between the size check and the read; the cap bounds Lambda memory regardless, and a result over 500KB is rejected. Content-Type is client-supplied, so the JPEG magic bytes are the check that counts.
+- **S3 answers 403, not 404, for a missing key** when the caller lacks `s3:ListBucket`. Rather than grant that permission, the store treats 403 and 404 alike as "no such photo" (a genuine 500 still surfaces). The Lambda's IAM is exactly `s3:GetObject` + `s3:DeleteObject` on `pantry-photos/*` — no Put, no List, no other prefix — asserted, as is the presign Lambda keeping its own write-only grant.
+- **Cleanup**: the photo is deleted on success *and* on every failure after `HeadObject`; a failed delete is logged and never fails the request (the bucket's 1-day lifecycle rule is the backstop).
+- **Vision call**: `VISION_DEADLINE_MS`, `maxOutputTokens: 2048`, the S2 prompt, the photo's exact bytes as one image part — asserted argument-for-argument, since the call itself is faked in unit tests.
+- **Measurement (D9)**: one CloudWatch EMF line per analysis in `Parimaan/PhotoPantry` — items proposed, items dropped, high-confidence items, empty result, truncated, latency — so PRD §11's photo-accuracy numbers can be measured before PostHog exists in W24. A metering failure never fails a photo.
+
+**Pinned invariants that changed, deliberately:** Lambdas 52→53, resolvers/data sources 51→52, non-VPC Lambdas 4→5, rate-limited cache grants 6→7. S3's "only this Lambda receives `UPLOADS_BUCKET_NAME`" is now "exactly these two". ApiStack snapshot: +324 lines, 0 deletions.
+
+**Not verified, named plainly:** this resolver has never run against real S3 or a real Gemini call — unit tests fake both, and the production `invoke` wiring is covered by argument assertions plus S1/S2's own tests of `invokeModel` and the schema, not by an end-to-end call. That first real run, and a real presigned-PUT-then-analyze round trip, are S8's real-AWS pass. **Dev note:** the infra suite's synth-heavy tests exceed their 15s timeout when the api suite runs concurrently (5 spurious failures at 27–39s, all green alone) — run them separately.

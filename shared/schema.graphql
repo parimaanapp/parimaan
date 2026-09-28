@@ -521,6 +521,21 @@ type Mutation {
   getPantryPhotoUploadUrl: PresignedUpload!
 
   """
+  Reads a photo uploaded via `getPantryPhotoUploadUrl` and returns AI-PROPOSED
+  pantry items for the user to review (W20 S4, `E2E_MVP_PLAN.md` §27). Nothing
+  is saved: the pantry changes only when the user confirms items through
+  `bulkAddPantryItems` (PRD §5.4). `s3Key` must be the caller's own
+  (`FORBIDDEN` otherwise, before any S3 access); a missing photo is
+  `NOT_FOUND`; an oversize (> 500KB), non-JPEG or empty one is `VALIDATION`
+  — and none of those three consumes the daily limit. Limited to 20 analyses
+  per user per day (`RATE_LIMITED`). The photo is deleted after analysis,
+  whether or not it succeeded. AI failures surface as `AI_TIMEOUT`,
+  `AI_BUSY`, `AI_UNAVAILABLE` or `AI_UNPARSEABLE`; an empty `items` list is a
+  normal, successful answer (the photo showed nothing identifiable).
+  """
+  analyzePantryPhoto(s3Key: String!): PantryPhotoAnalysis!
+
+  """
   Marks `menuItemId` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
@@ -826,6 +841,43 @@ input HouseholdSettingsInput {
   dietaryTags: [DietaryTag!]
   allergens: [String!]
   skipIngredients: [String!]
+}
+
+"""
+How sure the model says it is. Text as well as colour in the UI; `low` items
+are unticked by default in the review screen (W20 D12).
+"""
+enum ProposalConfidence {
+  high
+  medium
+  low
+}
+
+"""
+One AI-proposed pantry item (W20 S4) — UNSAVED until the user confirms it.
+`quantity`/`unit` are the model's container-count guess ("1 jar"), a default
+for the user to correct, never a measured weight (W20 D6). `unit` is null when
+the model's unit was not one a photo can support. `warnings` are non-blocking
+notes (an unrecognised unit or category was corrected).
+"""
+type PantryPhotoProposal {
+  name: String!
+  quantity: Float
+  unit: String
+  category: String!
+  confidence: ProposalConfidence!
+  warnings: [String!]!
+}
+
+"""
+The result of `Mutation.analyzePantryPhoto` (W20 S4). `droppedCount` is how
+many items the server removed as generic placeholders or non-food;
+`truncated` is true when more than 40 items survived and the tail was cut.
+"""
+type PantryPhotoAnalysis {
+  items: [PantryPhotoProposal!]!
+  droppedCount: Int!
+  truncated: Boolean!
 }
 
 """

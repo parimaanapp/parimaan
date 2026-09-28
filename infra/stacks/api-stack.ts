@@ -474,6 +474,13 @@ export class ApiStack extends cdk.Stack {
         );
       }
 
+      if (entry.needsUploadsBucketReadDelete === true) {
+        fn.addEnvironment('UPLOADS_BUCKET_NAME', uploadsBucket.bucketName);
+        fn.addToRolePolicy(
+          new PolicyStatement({ actions: ['s3:GetObject', 's3:DeleteObject'], resources: [uploadsBucket.arnForObjects('pantry-photos/*')] }),
+        );
+      }
+
       this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);
     }
   }
