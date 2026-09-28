@@ -42,7 +42,7 @@ const MAX_QUANTITY_TEXT_LENGTH = 200;
  * reused exactly from `createRecipe`'s own caps — a draft that could not
  * be saved must never be proposed (§13.2.5).
  */
-const geminiIngredientSchema = z.object({
+export const geminiIngredientSchema = z.object({
   name: z.string().trim().min(1).max(MAX_INGREDIENT_NAME_LENGTH),
   quantity: z.string().trim().max(MAX_QUANTITY_TEXT_LENGTH).nullish(),
   unit: z.string().trim().max(MAX_INGREDIENT_UNIT_LENGTH).nullish(),
