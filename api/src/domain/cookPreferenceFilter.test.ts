@@ -199,3 +199,13 @@ describe('allergenWarnings — household allergen words expand to the foods they
     expect(allergenWarnings(withIngredients('kiwi fruit'), ['kiwi'])).toHaveLength(1);
   });
 });
+
+describe('normalisation matches the prompt (a term typed in fullwidth or mixed forms is enforced as it was shown to the model)', () => {
+  it('finds a skip term typed in fullwidth letters against a plain-letter ingredient', () => {
+    expect(findSkipViolations(withIngredients('onion'), ['\uFF4F\uFF4E\uFF49\uFF4F\uFF4E'])).toHaveLength(1);
+  });
+
+  it('finds an allergen typed with different case and width', () => {
+    expect(allergenWarnings(withIngredients('peanut oil'), ['\uFF30eanuts'])).toHaveLength(1);
+  });
+});

@@ -364,9 +364,9 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 53 Lambda functions: the 52 resolvers (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek + exportShoppingListImage + getPantryPhotoUploadUrl + analyzePantryPhoto + shoppingList) plus staplesNoteFn (W17 S3 — the one Lambda in this stack invoked only by another Lambda, never by AppSync, so it never appears in the resolver/data-source counts below)', () => {
+  it('declares exactly 54 Lambda functions: the 53 resolvers (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek + exportShoppingListImage + getPantryPhotoUploadUrl + analyzePantryPhoto + cookFromPantry + shoppingList) plus staplesNoteFn (W17 S3 — the one Lambda in this stack invoked only by another Lambda, never by AppSync, so it never appears in the resolver/data-source counts below)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(53);
+    expect(ourFunctions(template)).toHaveLength(54);
   });
 
   it('declares the health, parseFreeformRecipe, importRecipeFromUrl, getPantryPhotoUploadUrl (W20 S3), and analyzePantryPhoto (W20 S4) Lambdas outside the VPC, on the Node.js 24 runtime', () => {
@@ -387,10 +387,10 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares 48 VPC-attached Lambdas: the 47 resolvers (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences, menu, createMenu, addMenuItem, removeMenuItem, autoFillPreview, autoFillWeek, generateShoppingList, regenerateShoppingList, haveIt, markMade, onMenuChanged, onMembershipRevoked, markPurchased, onShoppingListChanged, clearMenuDay, clearMenuWeek, copyMenuDay, copyMenuWeek, exportShoppingListImage, shoppingList) plus staplesNoteFn (W17 S3 — VPC-attached via the same factory, in the new private-egress subnet group, D1/D2), all on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 49 VPC-attached Lambdas: the 48 resolvers (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences, menu, createMenu, addMenuItem, removeMenuItem, autoFillPreview, autoFillWeek, generateShoppingList, regenerateShoppingList, haveIt, markMade, onMenuChanged, onMembershipRevoked, markPurchased, onShoppingListChanged, clearMenuDay, clearMenuWeek, copyMenuDay, copyMenuWeek, exportShoppingListImage, cookFromPantry, shoppingList) plus staplesNoteFn (W17 S3 — VPC-attached via the same factory, in the new private-egress subnet group, D1/D2), all on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(48);
+    expect(vpcFunctions).toHaveLength(49);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -408,7 +408,7 @@ describe('ApiStack', () => {
   it('gives every VPC-attached Lambda (resolvers + staplesNoteFn) enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(48);
+    expect(vpcFunctions).toHaveLength(49);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
@@ -418,7 +418,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached Lambda (resolvers + staplesNoteFn) — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(48);
+    expect(vpcFunctions).toHaveLength(49);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -446,7 +446,7 @@ describe('ApiStack', () => {
     }
   });
 
-  it('sets CACHE_TABLE_NAME on the two rate-limited VPC-attached resolvers (joinHousehold, rotateInviteCode) plus staplesNoteFn (its own cache + rate-limit reads/writes, W17 S3), never on any other VPC-attached Lambda', () => {
+  it('sets CACHE_TABLE_NAME on the two rate-limited VPC-attached resolvers (joinHousehold, rotateInviteCode) plus staplesNoteFn (W17 S3) and cookFromPantry (its own cache + rate-limit reads/writes, W21 S3), never on any other VPC-attached Lambda', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
     const withCacheTableEnv = vpcFunctions.filter(([, fn]) => {
@@ -454,11 +454,12 @@ describe('ApiStack', () => {
         .Properties.Environment.Variables;
       return env['CACHE_TABLE_NAME'] !== undefined;
     });
-    expect(withCacheTableEnv).toHaveLength(3);
+    expect(withCacheTableEnv).toHaveLength(4);
     const logicalIds = withCacheTableEnv.map(([logicalId]) => logicalId).sort();
-    expect(logicalIds[0]).toMatch(/^JoinHouseholdFn/);
-    expect(logicalIds[1]).toMatch(/^RotateInviteCodeFn/);
-    expect(logicalIds[2]).toMatch(/^StaplesNoteFn/);
+    expect(logicalIds[0]).toMatch(/^CookFromPantryFn/);
+    expect(logicalIds[1]).toMatch(/^JoinHouseholdFn/);
+    expect(logicalIds[2]).toMatch(/^RotateInviteCodeFn/);
+    expect(logicalIds[3]).toMatch(/^StaplesNoteFn/);
   });
 
   it('sets CACHE_TABLE_NAME on the non-VPC parseFreeformRecipe and importRecipeFromUrl Lambdas too (their own \'freeformParse\'/\'urlImport\' rate limits, W7 S3/S5) — separate from the two VPC-attached ones above', () => {
@@ -496,7 +497,7 @@ describe('ApiStack', () => {
       }).map((statement) => ({ statement, roleRefs }));
     });
 
-  it('grants dynamodb:UpdateItem-only on the cache table to exactly the six rate-limited Lambdas, plus a wider (but still narrow, non-"*") Get/Put/Update grant to staplesNoteFn for its own cache reads/writes (W17 S3) — no other action, never Resource: "*"', () => {
+  it('grants dynamodb:UpdateItem-only on the cache table to exactly the six rate-limited Lambdas, plus a wider (but still narrow, non-"*") Get/Put/Update grant to staplesNoteFn (W17 S3) and cookFromPantry (W21 S3) for their own cache reads/writes — no other action, never Resource: "*"', () => {
     // Six as of W20 S4 (`AnalyzePantryPhotoFn`, `'photoPantry'`), five as of S3
     // (`GetPantryPhotoUploadUrlFn`, `'photoPantryUrl'` — same grant shape); four, not three, as of W7 S5: `ImportRecipeFromUrlFn` joins
     // `JoinHouseholdFn`/`RotateInviteCodeFn`/`ParseFreeformRecipeFn` — its
@@ -510,11 +511,12 @@ describe('ApiStack', () => {
     // folded into the four `UpdateItem`-only entries above.
     const template = synth('dev');
     const entries = ddbPolicyStatements(template);
-    expect(entries).toHaveLength(7);
+    expect(entries).toHaveLength(8);
 
-    const staplesNoteEntries = entries.filter((entry) => entry.roleRefs.some((ref) => ref.startsWith('StaplesNoteFn')));
-    expect(staplesNoteEntries).toHaveLength(1);
-    const updateOnlyEntries = entries.filter((entry) => entry !== staplesNoteEntries[0]);
+    const isWide = (entry: (typeof entries)[number]): boolean => entry.roleRefs.some((ref) => ref.startsWith('StaplesNoteFn') || ref.startsWith('CookFromPantryFn'));
+    const wideEntries = entries.filter(isWide);
+    expect(wideEntries).toHaveLength(2);
+    const updateOnlyEntries = entries.filter((entry) => !isWide(entry));
     expect(updateOnlyEntries).toHaveLength(6);
 
     for (const { statement } of updateOnlyEntries) {
@@ -523,19 +525,16 @@ describe('ApiStack', () => {
       expect(statement.Resource).not.toBe('*');
     }
 
-    const staplesNoteStatement = staplesNoteEntries[0]!.statement;
-    const staplesNoteActions = Array.isArray(staplesNoteStatement.Action)
-      ? staplesNoteStatement.Action
-      : [staplesNoteStatement.Action];
-    expect([...staplesNoteActions].sort()).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem']);
-    expect(staplesNoteStatement.Resource).not.toBe('*');
+    for (const { statement } of wideEntries) {
+      const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+      expect([...actions].sort()).toEqual(['dynamodb:GetItem', 'dynamodb:PutItem', 'dynamodb:UpdateItem']);
+      expect(statement.Resource).not.toBe('*');
+    }
 
     const grantedRoles = entries.flatMap((entry) => entry.roleRefs).join(' ');
-    expect(grantedRoles).toMatch(/JoinHouseholdFnServiceRole/);
-    expect(grantedRoles).toMatch(/RotateInviteCodeFnServiceRole/);
-    expect(grantedRoles).toMatch(/ParseFreeformRecipeFnServiceRole/);
-    expect(grantedRoles).toMatch(/ImportRecipeFromUrlFnServiceRole/);
-    expect(grantedRoles).toMatch(/StaplesNoteFnServiceRole/);
+    for (const name of ['JoinHousehold', 'RotateInviteCode', 'ParseFreeformRecipe', 'ImportRecipeFromUrl', 'StaplesNote', 'CookFromPantry']) {
+      expect(grantedRoles).toMatch(new RegExp(`${name}FnServiceRole`));
+    }
   });
 
   // W17 S3 (D2, E2E_MVP_PLAN.md §23.2.2) — the first Lambda-to-Lambda async
@@ -677,9 +676,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 52 AppSync Lambda data sources', () => {
+  it('declares exactly 53 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 52);
+    template.resourceCountIs('AWS::AppSync::DataSource', 53);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -997,9 +996,9 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 52 resolvers total', () => {
+  it('declares exactly 53 resolvers total', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 52);
+    template.resourceCountIs('AWS::AppSync::Resolver', 53);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {
