@@ -45,27 +45,27 @@ type Fn = { Properties: { VpcConfig?: unknown; Environment?: { Variables: Record
 const functions = (template: Template): Array<[string, Fn]> =>
   Object.entries(template.findResources('AWS::Lambda::Function')).filter(([id]) => !id.startsWith('LogRetention')) as Array<[string, Fn]>;
 
-describe('ApiStack — Mutation.getPantryPhotoUploadUrl (W20 S3)', () => {
-  it('declares a resolver for Mutation.getPantryPhotoUploadUrl', () => {
+describe('ApiStack — Mutation.analyzePantryPhoto (W20 S4)', () => {
+  it('declares a resolver for Mutation.analyzePantryPhoto', () => {
     synth().hasResourceProperties('AWS::AppSync::Resolver', {
       TypeName: 'Mutation',
-      FieldName: 'getPantryPhotoUploadUrl',
+      FieldName: 'analyzePantryPhoto',
       DataSourceName: Match.anyValue(),
     });
   });
 
-  it('is a non-VPC Lambda with the uploads bucket and cache table, and no Gemini secret (D1: no DB, no AI)', () => {
-    const [, fn] = functions(synth()).find(([id]) => id.startsWith('GetPantryPhotoUploadUrlFn'))!;
+  it('is a non-VPC Lambda with the uploads bucket, cache table and Gemini secret (D1: no DB; it calls the model)', () => {
+    const [, fn] = functions(synth()).find(([id]) => id.startsWith('AnalyzePantryPhotoFn'))!;
     const env = fn.Properties.Environment!.Variables;
 
     expect(fn.Properties.VpcConfig).toBeUndefined();
     expect(env['UPLOADS_BUCKET_NAME']).toBeDefined();
     expect(env['CACHE_TABLE_NAME']).toBeDefined();
-    expect(env['GEMINI_API_KEY_SECRET_ARN']).toBeUndefined();
+    expect(env['GEMINI_API_KEY_SECRET_ARN']).toBeDefined();
     expect(env['EXPORTS_BUCKET_NAME']).toBeUndefined();
   });
 
-  it('grants s3:PutObject scoped to pantry-photos/* — and no other S3 action, to no other Lambda', () => {
+  it('may read and delete pantry-photos/* — and nothing more: no Put, no List, no other prefix', () => {
     const policies = Object.values(synth().findResources('AWS::IAM::Policy')) as Array<{
       Properties: { PolicyDocument: { Statement: Array<{ Action: string | string[]; Resource: unknown }> }; Roles?: Array<{ Ref?: string }> };
     }>;
@@ -77,24 +77,17 @@ describe('ApiStack — Mutation.getPantryPhotoUploadUrl (W20 S3)', () => {
       }),
     );
 
-    const mine = s3Grants.filter((g) => g.roles.some((r) => r.startsWith('GetPantryPhotoUploadUrlFnServiceRole')));
+    const mine = s3Grants.filter((g) => g.roles.some((r) => r.startsWith('AnalyzePantryPhotoFnServiceRole')));
     expect(mine.length).toBeGreaterThan(0);
-    for (const grant of mine) {
-      expect(grant.actions).toEqual(['s3:PutObject']);
-      expect(grant.resource).toMatch(/pantry-photos\/\*/);
-    }
-    // analyzePantryPhoto's own read/delete grant on the same prefix is asserted in its own test file.
-    expect(
-      s3Grants.filter(
-        (g) => g.resource.includes('pantry-photos') && !g.roles.some((r) => r.startsWith('GetPantryPhotoUploadUrlFnServiceRole') || r.startsWith('AnalyzePantryPhotoFnServiceRole')),
-      ),
-    ).toHaveLength(0);
-  });
+    expect(mine.flatMap((g) => g.actions).sort()).toEqual(['s3:DeleteObject', 's3:GetObject']);
+    for (const grant of mine) expect(grant.resource).toMatch(/pantry-photos\/\*/);
 
-  it('only this Lambda and analyzePantryPhoto (W20 S4) receive UPLOADS_BUCKET_NAME', () => {
-    const withUploads = functions(synth())
-      .filter(([, fn]) => fn.Properties.Environment?.Variables['UPLOADS_BUCKET_NAME'] !== undefined)
-      .map(([id]) => id.replace(/[0-9A-F]{8}$/, ''));
-    expect(withUploads.sort()).toEqual(['AnalyzePantryPhotoFn', 'GetPantryPhotoUploadUrlFn']);
+    // The presign Lambda keeps its write-only grant; nobody else touches pantry-photos/*.
+    const others = s3Grants.filter(
+      (g) => g.resource.includes('pantry-photos') && !g.roles.some((r) => r.startsWith('AnalyzePantryPhotoFnServiceRole') || r.startsWith('GetPantryPhotoUploadUrlFnServiceRole')),
+    );
+    expect(others).toHaveLength(0);
+    const presign = s3Grants.filter((g) => g.roles.some((r) => r.startsWith('GetPantryPhotoUploadUrlFnServiceRole')));
+    expect(presign.flatMap((g) => g.actions)).toEqual(['s3:PutObject']);
   });
 });

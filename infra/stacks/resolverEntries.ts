@@ -370,6 +370,8 @@ export interface NonVpcResolverEntry {
   readonly needsCacheTable?: boolean;
   /** W20 S3 (`E2E_MVP_PLAN.md` §27.2 D1/D4) — grants `UPLOADS_BUCKET_NAME` + a narrow `s3:PutObject` on the `pantry-photos/*` prefix only (never the whole bucket, never Get/Delete) — `getPantryPhotoUploadUrl` only presigns. `analyzePantryPhoto` (S4) will need its own, different read/delete grant and gets its own flag rather than widening this one. */
   readonly needsUploadsBucketPut?: boolean;
+  /** W20 S4 — `analyzePantryPhoto` reads the photo and deletes it afterwards: `s3:GetObject` (which also authorizes `HeadObject`) and `s3:DeleteObject` on `pantry-photos/*`, nothing else — deliberately no `s3:ListBucket` (the resolver treats S3's 403-for-a-missing-key as "no such photo"), no Put. Its own flag rather than a widening of `needsUploadsBucketPut`, so the presign Lambda stays write-only. */
+  readonly needsUploadsBucketReadDelete?: boolean;
 }
 
 /**
@@ -386,6 +388,16 @@ export const AI_RESOLVERS: readonly NonVpcResolverEntry[] = [
     fieldName: 'parseFreeformRecipe',
     needsGeminiSecret: true,
     needsCacheTable: true,
+  },
+  {
+    // W20 S4 — the vision call. Non-VPC like the other AI resolver (D1: caller-scoped keys, no DB).
+    id: 'AnalyzePantryPhoto',
+    entryFile: 'analyzePantryPhoto.ts',
+    typeName: 'Mutation',
+    fieldName: 'analyzePantryPhoto',
+    needsGeminiSecret: true,
+    needsCacheTable: true,
+    needsUploadsBucketReadDelete: true,
   },
 ];
 

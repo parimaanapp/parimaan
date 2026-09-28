@@ -311,6 +311,173 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::CloudWatch::Alarm",
     },
+    "AnalyzePantryPhotoFnEA186012": {
+      "DependsOn": [
+        "AnalyzePantryPhotoFnServiceRoleDefaultPolicyF92563E9",
+        "AnalyzePantryPhotoFnServiceRoleE341DC1B",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "CACHE_TABLE_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefCacheTableC1E6DF7EB68DF245",
+            },
+            "GEMINI_API_KEY_SECRET_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":secretsmanager:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":secret:parimaan/gemini-api-key",
+                ],
+              ],
+            },
+            "UPLOADS_BUCKET_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefUploadsBucket5E5E9B64F2F56CC2",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "AnalyzePantryPhotoFnServiceRoleE341DC1B",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 28,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "AnalyzePantryPhotoFnServiceRoleDefaultPolicyF92563E9": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:parimaan/gemini-api-key-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttCacheTableC1E6DF7EArn8EF20E10",
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:GetObject",
+                "s3:DeleteObject",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttUploadsBucket5E5E9B64Arn8603C131",
+                    },
+                    "/pantry-photos/*",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AnalyzePantryPhotoFnServiceRoleDefaultPolicyF92563E9",
+        "Roles": [
+          {
+            "Ref": "AnalyzePantryPhotoFnServiceRoleE341DC1B",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "AnalyzePantryPhotoFnServiceRoleE341DC1B": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
     "ApiAddMenuItemDataSourceEA4ED7FD": {
       "Properties": {
         "ApiId": {
@@ -516,6 +683,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
         },
         "DataSourceName": "AddPantryItemDataSource",
         "FieldName": "addPantryItem",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiAnalyzePantryPhotoDataSourceEB7CF352": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "AnalyzePantryPhotoFnEA186012",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "AnalyzePantryPhotoDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiAnalyzePantryPhotoDataSourceServiceRole5352C3E9",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiAnalyzePantryPhotoDataSourceServiceRole5352C3E9": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiAnalyzePantryPhotoDataSourceServiceRoleDefaultPolicyCC6ED505": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "AnalyzePantryPhotoFnEA186012",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "AnalyzePantryPhotoFnEA186012",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiAnalyzePantryPhotoDataSourceServiceRoleDefaultPolicyCC6ED505",
+        "Roles": [
+          {
+            "Ref": "ApiAnalyzePantryPhotoDataSourceServiceRole5352C3E9",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiAnalyzePantryPhotoResolver51D06AA9": {
+      "DependsOn": [
+        "ApiAnalyzePantryPhotoDataSourceEB7CF352",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "AnalyzePantryPhotoDataSource",
+        "FieldName": "analyzePantryPhoto",
         "Kind": "UNIT",
         "TypeName": "Mutation",
       },
@@ -5544,6 +5816,21 @@ type Mutation {
   getPantryPhotoUploadUrl: PresignedUpload!
 
   """
+  Reads a photo uploaded via \`getPantryPhotoUploadUrl\` and returns AI-PROPOSED
+  pantry items for the user to review (W20 S4, \`E2E_MVP_PLAN.md\` §27). Nothing
+  is saved: the pantry changes only when the user confirms items through
+  \`bulkAddPantryItems\` (PRD §5.4). \`s3Key\` must be the caller's own
+  (\`FORBIDDEN\` otherwise, before any S3 access); a missing photo is
+  \`NOT_FOUND\`; an oversize (> 500KB), non-JPEG or empty one is \`VALIDATION\`
+  — and none of those three consumes the daily limit. Limited to 20 analyses
+  per user per day (\`RATE_LIMITED\`). The photo is deleted after analysis,
+  whether or not it succeeded. AI failures surface as \`AI_TIMEOUT\`,
+  \`AI_BUSY\`, \`AI_UNAVAILABLE\` or \`AI_UNPARSEABLE\`; an empty \`items\` list is a
+  normal, successful answer (the photo showed nothing identifiable).
+  """
+  analyzePantryPhoto(s3Key: String!): PantryPhotoAnalysis!
+
+  """
   Marks \`menuItemId\` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
@@ -5849,6 +6136,43 @@ input HouseholdSettingsInput {
   dietaryTags: [DietaryTag!]
   allergens: [String!]
   skipIngredients: [String!]
+}
+
+"""
+How sure the model says it is. Text as well as colour in the UI; \`low\` items
+are unticked by default in the review screen (W20 D12).
+"""
+enum ProposalConfidence {
+  high
+  medium
+  low
+}
+
+"""
+One AI-proposed pantry item (W20 S4) — UNSAVED until the user confirms it.
+\`quantity\`/\`unit\` are the model's container-count guess ("1 jar"), a default
+for the user to correct, never a measured weight (W20 D6). \`unit\` is null when
+the model's unit was not one a photo can support. \`warnings\` are non-blocking
+notes (an unrecognised unit or category was corrected).
+"""
+type PantryPhotoProposal {
+  name: String!
+  quantity: Float
+  unit: String
+  category: String!
+  confidence: ProposalConfidence!
+  warnings: [String!]!
+}
+
+"""
+The result of \`Mutation.analyzePantryPhoto\` (W20 S4). \`droppedCount\` is how
+many items the server removed as generic placeholders or non-food;
+\`truncated\` is true when more than 40 items survived and the tail was cut.
+"""
+type PantryPhotoAnalysis {
+  items: [PantryPhotoProposal!]!
+  droppedCount: Int!
+  truncated: Boolean!
 }
 
 """

@@ -364,22 +364,22 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 52 Lambda functions: the 51 resolvers (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek + exportShoppingListImage + getPantryPhotoUploadUrl + shoppingList) plus staplesNoteFn (W17 S3 — the one Lambda in this stack invoked only by another Lambda, never by AppSync, so it never appears in the resolver/data-source counts below)', () => {
+  it('declares exactly 53 Lambda functions: the 52 resolvers (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek + exportShoppingListImage + getPantryPhotoUploadUrl + analyzePantryPhoto + shoppingList) plus staplesNoteFn (W17 S3 — the one Lambda in this stack invoked only by another Lambda, never by AppSync, so it never appears in the resolver/data-source counts below)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(52);
+    expect(ourFunctions(template)).toHaveLength(53);
   });
 
-  it('declares the health, parseFreeformRecipe, importRecipeFromUrl, and getPantryPhotoUploadUrl (W20 S3) Lambdas outside the VPC, on the Node.js 24 runtime', () => {
+  it('declares the health, parseFreeformRecipe, importRecipeFromUrl, getPantryPhotoUploadUrl (W20 S3), and analyzePantryPhoto (W20 S4) Lambdas outside the VPC, on the Node.js 24 runtime', () => {
     // health has no DB access; parseFreeformRecipe (W7 S3) and
     // importRecipeFromUrl (W7 S5) are both the non-VPC category (D3) —
-    // none should be dragged into the VPC; getPantryPhotoUploadUrl (W20 D1) presigns
-    // with caller-scoped keys and needs no DB. See each Lambda's
+    // none should be dragged into the VPC; getPantryPhotoUploadUrl and analyzePantryPhoto
+    // (W20 D1) use caller-scoped keys and need no DB. See each Lambda's
     // own comment in api-stack.ts.
     const template = synth('dev');
     const nonVpcFunctions = ourFunctions(template).filter(([, r]) => !r.Properties.VpcConfig);
-    expect(nonVpcFunctions).toHaveLength(4);
+    expect(nonVpcFunctions).toHaveLength(5);
     const nonVpcLogicalIds = nonVpcFunctions.map(([logicalId]) => logicalId);
-    for (const prefix of ['HealthFn', 'ParseFreeformRecipeFn', 'ImportRecipeFromUrlFn', 'GetPantryPhotoUploadUrlFn']) {
+    for (const prefix of ['HealthFn', 'ParseFreeformRecipeFn', 'ImportRecipeFromUrlFn', 'GetPantryPhotoUploadUrlFn', 'AnalyzePantryPhotoFn']) {
       expect(nonVpcLogicalIds.some((id) => id.startsWith(prefix))).toBe(true);
     }
     for (const [, fn] of nonVpcFunctions) {
@@ -496,9 +496,9 @@ describe('ApiStack', () => {
       }).map((statement) => ({ statement, roleRefs }));
     });
 
-  it('grants dynamodb:UpdateItem-only on the cache table to exactly the five rate-limited Lambdas, plus a wider (but still narrow, non-"*") Get/Put/Update grant to staplesNoteFn for its own cache reads/writes (W17 S3) — no other action, never Resource: "*"', () => {
-    // Five as of W20 S3 (`GetPantryPhotoUploadUrlFn`, its own `'photoPantryUrl'`
-    // limit — same grant shape); four, not three, as of W7 S5: `ImportRecipeFromUrlFn` joins
+  it('grants dynamodb:UpdateItem-only on the cache table to exactly the six rate-limited Lambdas, plus a wider (but still narrow, non-"*") Get/Put/Update grant to staplesNoteFn for its own cache reads/writes (W17 S3) — no other action, never Resource: "*"', () => {
+    // Six as of W20 S4 (`AnalyzePantryPhotoFn`, `'photoPantry'`), five as of S3
+    // (`GetPantryPhotoUploadUrlFn`, `'photoPantryUrl'` — same grant shape); four, not three, as of W7 S5: `ImportRecipeFromUrlFn` joins
     // `JoinHouseholdFn`/`RotateInviteCodeFn`/`ParseFreeformRecipeFn` — its
     // own `'urlImport'` rate limit (§13.2.9 D8), the identical
     // `createAiAndNetResolvers`-owned `needsCacheTable` grant shape
@@ -510,12 +510,12 @@ describe('ApiStack', () => {
     // folded into the four `UpdateItem`-only entries above.
     const template = synth('dev');
     const entries = ddbPolicyStatements(template);
-    expect(entries).toHaveLength(6);
+    expect(entries).toHaveLength(7);
 
     const staplesNoteEntries = entries.filter((entry) => entry.roleRefs.some((ref) => ref.startsWith('StaplesNoteFn')));
     expect(staplesNoteEntries).toHaveLength(1);
     const updateOnlyEntries = entries.filter((entry) => entry !== staplesNoteEntries[0]);
-    expect(updateOnlyEntries).toHaveLength(5);
+    expect(updateOnlyEntries).toHaveLength(6);
 
     for (const { statement } of updateOnlyEntries) {
       const actions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
@@ -677,9 +677,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 51 AppSync Lambda data sources', () => {
+  it('declares exactly 52 AppSync Lambda data sources', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 51);
+    template.resourceCountIs('AWS::AppSync::DataSource', 52);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -997,9 +997,9 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 51 resolvers total', () => {
+  it('declares exactly 52 resolvers total', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 51);
+    template.resourceCountIs('AWS::AppSync::Resolver', 52);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {
