@@ -230,3 +230,10 @@ _To be filled in W22–W23._
 > **Security constraint:** no AWS account IDs, no phone numbers, no email addresses of beta users,
 > no ARNs, and no credentials of any kind in this file. It is committed to the repository.
 > Reference the password manager or Secrets Manager by name instead.
+
+### W20 S8 — photo pantry deployed and verified live; one harness gotcha (`E2E_MVP_PLAN.md` §27.13)
+
+- **Direct-invoke verification needs a UUID-shaped `sub`.** `analyzePantryPhoto`'s ownership check (`isOwnPantryPhotoKey`) requires the key's `sub` segment to look like a real Cognito sub. `getPantryPhotoUploadUrl` will happily presign a key for a made-up sub like `w20-s8-verify-1`, then `analyzePantryPhoto` answers `FORBIDDEN "You can only analyze your own photos."` for that same caller, which reads like an authorization bug and isn't. Generate the sub with `uuidgen | tr A-Z a-z`.
+- **Procedure that worked:** invoke `GetPantryPhotoUploadUrlFn` with `identity.claims.sub`/`email` → `curl -X PUT -H "Content-Type: image/jpeg" --data-binary @photo.jpg <url>` (resize first: `sips -Z 1024 -s formatOptions 80`) → invoke `AnalyzePantryPhotoFn` with `arguments.s3Key` → confirm `aws s3api head-object` returns 404 (deleted after analysis). Function names come from `aws lambda list-functions`; select the AWS profile with `AWS_PROFILE=parimaan-dev`.
+- The Data+Api deploy completed in about 100s on the first attempt; the `MigrationRunnerTrigger` cold-start timeout described under W14 S7 did not recur.
+
