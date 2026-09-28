@@ -17,7 +17,9 @@ import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/curated_items_sheet.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
+import 'package:mobile/features/pantry/presentation/pantry_photo_analyzing_screen.dart';
 import 'package:mobile/features/pantry/presentation/pantry_photo_capture_screen.dart';
+import 'package:mobile/features/pantry/presentation/pantry_photo_review_screen.dart';
 import 'package:mobile/features/pantry/presentation/pantry_photo_tips_screen.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
 import 'package:mobile/features/recipes/presentation/ai_failure_screen.dart';
@@ -734,6 +736,55 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(PantryPhotoCaptureScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the photo review and analyzing routes are behind sign-in (W20 S6)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(AppRoutes.pantryPhotoReview('household-1'));
+        await tester.pumpAndSettle();
+        expect(_location(router), AppRoutes.signIn);
+
+        router.go(AppRoutes.pantryPhotoAnalyzing('household-1'));
+        await tester.pumpAndSettle();
+        expect(_location(router), AppRoutes.signIn);
+      },
+    );
+
+    testWidgets(
+      'the analyzing route without a photo (a restored or deep-linked visit) falls back to the tips screen (W20 S6)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.pantryPhotoAnalyzing('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PantryPhotoTipsScreen), findsOneWidget);
+        expect(find.byType(PantryPhotoAnalyzingScreen), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '/home/pantry/add/photo/review renders the review screen, householdId threaded through (W20 S6)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.pantryPhotoReview('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PantryPhotoReviewScreen), findsOneWidget);
       },
     );
 

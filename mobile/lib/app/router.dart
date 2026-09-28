@@ -40,7 +40,9 @@ import '../features/pantry/domain/curated_pantry_selection.dart';
 import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
+import '../features/pantry/presentation/pantry_photo_analyzing_screen.dart';
 import '../features/pantry/presentation/pantry_photo_capture_screen.dart';
+import '../features/pantry/presentation/pantry_photo_review_screen.dart';
 import '../features/pantry/presentation/pantry_photo_tips_screen.dart';
 import '../features/pantry/presentation/pantry_error_copy.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
@@ -64,6 +66,7 @@ import '../features/shopping_list/presentation/notification_permission_prompt_sc
 import '../features/shopping_list/presentation/shopping_list_screen.dart';
 import '../features/shopping_list/presentation/shopping_list_share_image_screen.dart';
 import '../shared/errors/app_error.dart';
+import '../shared/ui/components/components.dart';
 import 'membership_revocation_guard.dart';
 
 /// Every path the app can be at. String literals live here and nowhere else.
@@ -333,6 +336,12 @@ abstract final class AppRoutes {
   static const String _pantryPhotoTipsPattern = '/home/pantry/add/photo';
   static String pantryPhotoTips(String householdId) =>
       '$_pantryPhotoTipsPattern?householdId=$householdId';
+
+  static const String _pantryPhotoAnalyzingPattern = '/home/pantry/add/photo/analyzing';
+  static String pantryPhotoAnalyzing(String householdId) => '$_pantryPhotoAnalyzingPattern?householdId=$householdId';
+
+  static const String _pantryPhotoReviewPattern = '/home/pantry/add/photo/review';
+  static String pantryPhotoReview(String householdId) => '$_pantryPhotoReviewPattern?householdId=$householdId';
 
   static const String _pantryPhotoCapturePattern = '/home/pantry/add/photo/camera';
   static String pantryPhotoCapture(String householdId) =>
@@ -859,6 +868,39 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
                 ),
               ),
             );
+          },
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes._pantryPhotoAnalyzingPattern,
+        // The photo travels as `extra` (never in the URL). A restored or
+        // deep-linked visit has none, so it goes back to the start of the flow.
+        redirect: (BuildContext context, GoRouterState state) =>
+            state.extra is Uint8List ? null : AppRoutes.pantryPhotoTips(_pantryHouseholdId(state)),
+        builder: (BuildContext context, GoRouterState state) => PantryPhotoAnalyzingScreen(
+          photo: state.extra! as Uint8List,
+          householdId: _pantryHouseholdId(state),
+          onReviewReady: () => context.pushReplacement(AppRoutes.pantryPhotoReview(_pantryHouseholdId(state))),
+          onRetake: () => context.pop(),
+          onAddManually: () => context.pushReplacement(AppRoutes.pantryManualAdd(_pantryHouseholdId(state))),
+          onCancel: () => context.pop(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes._pantryPhotoReviewPattern,
+        builder: (BuildContext context, GoRouterState state) => PantryPhotoReviewScreen(
+          householdId: _pantryHouseholdId(state),
+          // Back to the camera still on the stack below; the session is kept.
+          onAddAnotherShelf: () => context.pop(),
+          onAddManually: () => context.pushReplacement(AppRoutes.pantryManualAdd(_pantryHouseholdId(state))),
+          onCancel: () => context.go(AppRoutes.pantry),
+          onDone: (int count) {
+            PToast.show(
+              context: context,
+              toast: PToast(message: count == 1 ? 'Added 1 item to your pantry.' : 'Added $count items to your pantry.', tone: PToastTone.success),
+              duration: const Duration(seconds: 4),
+            );
+            context.go(AppRoutes.pantry);
           },
         ),
       ),

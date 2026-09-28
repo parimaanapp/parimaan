@@ -82,25 +82,30 @@ class PantryFormController extends AsyncNotifier<void> {
   Future<bool> bulkAdd(
     String householdId,
     List<CuratedPantrySelection> selections,
-  ) => _run(PantryFormAction.bulkAdd, () async {
-    if (selections.length > maxBulkAddPantryItems) {
-      throw ValidationError(
-        'Select $maxBulkAddPantryItems items or fewer at a time.',
-      );
-    }
-    await _repository.bulkAddPantryItems(
-      householdId,
-      <PantryItemDraft>[
-        for (final CuratedPantrySelection selection in selections)
-          PantryItemDraft(
-            name: selection.name,
-            quantity: selection.quantity,
-            unit: selection.unit,
-          ),
-      ],
-    );
-    ref.invalidate(pantryControllerProvider(householdId));
-  });
+  ) => bulkAddDrafts(householdId, <PantryItemDraft>[
+    for (final CuratedPantrySelection selection in selections)
+      PantryItemDraft(
+        name: selection.name,
+        quantity: selection.quantity,
+        unit: selection.unit,
+      ),
+  ]);
+
+  /// One `bulkAddPantryItems` call for [drafts], the general form of
+  /// [bulkAdd]. Added in W20 S6 for the photo review's confirm: a photo
+  /// item carries a category that a curated selection has no field for, and
+  /// squeezing it through [bulkAdd]'s `CuratedPantrySelection` would have
+  /// silently dropped it.
+  Future<bool> bulkAddDrafts(String householdId, List<PantryItemDraft> drafts) =>
+      _run(PantryFormAction.bulkAdd, () async {
+        if (drafts.length > maxBulkAddPantryItems) {
+          throw ValidationError(
+            'Select $maxBulkAddPantryItems items or fewer at a time.',
+          );
+        }
+        await _repository.bulkAddPantryItems(householdId, drafts);
+        ref.invalidate(pantryControllerProvider(householdId));
+      });
 
   /// Named `updateItem`, not `update` — `AsyncNotifierBase` already declares
   /// a built-in `update` (a `state`-transform helper), and this method's

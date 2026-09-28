@@ -6,6 +6,7 @@ import 'package:mobile/features/pantry/domain/curated_pantry_selection.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/domain/pantry_item_draft.dart';
 import 'package:mobile/features/pantry/domain/pantry_item_patch.dart';
+import 'package:mobile/features/pantry/domain/photo_review_session.dart';
 import 'package:mobile/features/pantry/state/pantry_controller.dart';
 import 'package:mobile/features/pantry/state/pantry_form_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
@@ -95,6 +96,55 @@ void main() {
         container.read(pantryFormControllerProvider).error,
         isA<ValidationError>(),
       );
+    });
+  });
+
+  group('PantryFormController — bulkAddDrafts (W20 S6: the photo review\'s confirm)', () {
+    test('sends the drafts as ONE bulkAddPantryItems call with every field intact — category included, which bulkAdd(selections) has no way to carry', () async {
+      final FakePantryRepository repository = FakePantryRepository(bulkAddResult: <PantryItem>[_dal]);
+      final ProviderContainer container = _container(repository);
+
+      final bool ok = await container.read(pantryFormControllerProvider.notifier).bulkAddDrafts(
+        'household-1',
+        const <PantryItemDraft>[
+          PantryItemDraft(name: 'Toor Dal', quantity: 2, unit: 'jar', category: 'dal'),
+          PantryItemDraft(name: 'Ghee', quantity: 1, unit: 'bottle', category: 'oil'),
+        ],
+      );
+
+      expect(ok, isTrue);
+      expect(repository.bulkAddCalls, hasLength(1));
+      final List<PantryItemDraft> sent = repository.bulkAddCalls.single.items;
+      expect(sent.map((PantryItemDraft d) => d.category), <String?>['dal', 'oil']);
+      expect(sent.map((PantryItemDraft d) => d.unit), <String>['jar', 'bottle']);
+    });
+
+    test('refuses more than the bulk cap before calling the server', () async {
+      final FakePantryRepository repository = FakePantryRepository(bulkAddResult: <PantryItem>[_dal]);
+      final ProviderContainer container = _container(repository);
+
+      final bool ok = await container.read(pantryFormControllerProvider.notifier).bulkAddDrafts(
+        'household-1',
+        List<PantryItemDraft>.generate(maxBulkAddPantryItems + 1, (int i) => PantryItemDraft(name: 'Item $i', quantity: 1, unit: 'piece')),
+      );
+
+      expect(ok, isFalse);
+      expect(repository.bulkAddCalls, isEmpty);
+      expect(container.read(pantryFormControllerProvider).error, isA<ValidationError>());
+    });
+
+    test('a server failure surfaces typed, exactly like bulkAdd', () async {
+      final FakePantryRepository repository = FakePantryRepository(bulkAddError: const NotFoundError('Household not found.'));
+      final ProviderContainer container = _container(repository);
+
+      final bool ok = await container.read(pantryFormControllerProvider.notifier).bulkAddDrafts('household-1', const <PantryItemDraft>[_draft]);
+
+      expect(ok, isFalse);
+      expect(container.read(pantryFormControllerProvider).error, isA<NotFoundError>());
+    });
+
+    test('the photo review\'s own cap is the same number as the form controller\'s — they are two constants for one server limit', () {
+      expect(photoReviewBulkCap, maxBulkAddPantryItems);
     });
   });
 
