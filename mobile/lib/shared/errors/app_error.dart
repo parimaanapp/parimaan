@@ -180,6 +180,21 @@ final class UrlUnreadableError extends AppError {
   String get errorType => 'URL_UNREADABLE';
 }
 
+/// The photo never reached S3 — a network failure, a timeout, or S3 refusing
+/// the presigned PUT (an expired URL, say). **Client-only**: no server ever
+/// sends this `errorType`, because the PUT is plain HTTP to S3, outside
+/// GraphQL entirely (W20 S5). Retryable — a fresh attempt fetches a fresh URL.
+///
+/// The message is fixed, user-safe copy by construction: the presigned URL is
+/// a credential, and neither it nor S3's response body may reach the screen or
+/// a log line through this type.
+final class PhotoUploadError extends AppError {
+  const PhotoUploadError(super.errorMessage);
+
+  @override
+  String get errorType => 'PHOTO_UPLOAD_FAILED';
+}
+
 /// The server's `INTERNAL` fallback, and this client's own fallback for
 /// anything it cannot classify: an unrecognised `errorType`, a transport
 /// failure, a response that fails to deserialize.
