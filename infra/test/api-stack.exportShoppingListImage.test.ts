@@ -62,6 +62,7 @@ describe('ApiStack — Mutation.exportShoppingListImage (W17 S6, D8)', () => {
       lambdaSecurityGroup: data.lambdaSecurityGroup,
       cacheTable: data.cacheTable,
       exportsBucket: data.exportsBucket,
+      uploadsBucket: data.uploadsBucket,
       alertsTopic: data.alertsTopic,
     });
     return Template.fromStack(stack);
@@ -102,8 +103,12 @@ describe('ApiStack — Mutation.exportShoppingListImage (W17 S6, D8)', () => {
     expect(resourceJson).toMatch(/exports\/\*/);
 
     // No other Lambda's role gets this grant.
+    // Scoped to the exports/* prefix: W20's getPantryPhotoUploadUrl legitimately
+    // holds its own PutObject, on the pantry-photos/* prefix of a different bucket.
     const otherRolesWithPut = putStatementsByRole.filter(
-      (e) => !e.roleRefs.some((ref) => ref.startsWith('ExportShoppingListImageFnServiceRole')),
+      (e) =>
+        !e.roleRefs.some((ref) => ref.startsWith('ExportShoppingListImageFnServiceRole')) &&
+        /exports\/\*/.test(JSON.stringify(e.statement.Resource)),
     );
     expect(otherRolesWithPut).toHaveLength(0);
 

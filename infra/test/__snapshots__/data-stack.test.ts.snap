@@ -622,6 +622,15 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
           ],
         },
         "BucketName": "parimaan-uploads-dev",
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "ExpirationInDays": 1,
+              "Prefix": "pantry-photos/",
+              "Status": "Enabled",
+            },
+          ],
+        },
         "PublicAccessBlockConfiguration": {
           "BlockPublicAcls": true,
           "BlockPublicPolicy": true,

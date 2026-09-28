@@ -380,7 +380,7 @@ describe('DataStack', () => {
       }
     });
 
-    it('only the exports bucket has a lifecycle rule, expiring objects after 30 days', () => {
+    it('exports expire after 30 days; uploads expire pantry-photos/ after 1 day and nothing else (W20 D4)', () => {
       const template = synth('dev');
       template.hasResourceProperties('AWS::S3::Bucket', {
         BucketName: 'parimaan-exports-dev',
@@ -390,9 +390,14 @@ describe('DataStack', () => {
           ]),
         },
       });
+      // Photos of people's kitchens: gone within a day even if `analyzePantryPhoto`
+      // never ran or its post-analysis delete failed. Prefix-scoped so this rule can
+      // never reach any other object the uploads bucket ever holds.
       template.hasResourceProperties('AWS::S3::Bucket', {
         BucketName: 'parimaan-uploads-dev',
-        LifecycleConfiguration: Match.absent(),
+        LifecycleConfiguration: {
+          Rules: [Match.objectLike({ ExpirationInDays: 1, Status: 'Enabled', Prefix: 'pantry-photos/' })],
+        },
       });
     });
 

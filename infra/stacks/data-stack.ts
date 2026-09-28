@@ -282,6 +282,11 @@ export class DataStack extends cdk.Stack {
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       encryption: BucketEncryption.S3_MANAGED,
       removalPolicy: bucketRemovalPolicy,
+      // W20 D4 (E2E_MVP_PLAN.md §27.2): photos of people's kitchens. The
+      // resolver deletes each object after analysis; this is the backstop for
+      // any photo never analyzed or whose delete failed. Prefix-scoped so it
+      // can never reach any other object this bucket ever holds.
+      lifecycleRules: [{ enabled: true, prefix: 'pantry-photos/', expiration: cdk.Duration.days(1) }],
     });
 
     this.exportsBucket = new Bucket(this, 'ExportsBucket', {

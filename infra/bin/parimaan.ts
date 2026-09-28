@@ -71,6 +71,7 @@ const api = new ApiStack(app, `Parimaan-${envName}-Api`, {
   lambdaSecurityGroup: data.lambdaSecurityGroup,
   cacheTable: data.cacheTable,
   exportsBucket: data.exportsBucket,
+  uploadsBucket: data.uploadsBucket,
   alertsTopic: data.alertsTopic,
   description: `Parimaan ${envName} — AppSync GraphQL API + Lambda resolvers.`,
 });
