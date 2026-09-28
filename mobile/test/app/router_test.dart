@@ -17,6 +17,8 @@ import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/curated_items_sheet.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
+import 'package:mobile/features/pantry/presentation/pantry_photo_capture_screen.dart';
+import 'package:mobile/features/pantry/presentation/pantry_photo_tips_screen.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
 import 'package:mobile/features/recipes/presentation/ai_failure_screen.dart';
 import 'package:mobile/features/recipes/presentation/freeform_input_screen.dart';
@@ -186,6 +188,36 @@ void main() {
         );
 
         router.go(AppRoutes.pantryManualAdd('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.signIn);
+      },
+    );
+
+    testWidgets(
+      'deep navigation to /home/pantry/add/photo (W19 §26.1) is redirected to /sign-in',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(AppRoutes.pantryPhotoTips('household-1'));
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.signIn);
+      },
+    );
+
+    testWidgets(
+      'deep navigation to /home/pantry/add/photo/camera (W19 §26.1) is redirected to /sign-in',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: const AuthSession.signedOut(),
+        );
+
+        router.go(AppRoutes.pantryPhotoCapture('household-1'));
         await tester.pumpAndSettle();
 
         expect(_location(router), AppRoutes.signIn);
@@ -659,6 +691,49 @@ void main() {
 
         expect(_location(router), AppRoutes.pantryManualAdd('household-1'));
         expect(find.byType(ManualAddScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '/home/pantry/add opens the photo option live, reaching PantryPhotoTipsScreen (W19 §26.1)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.pantryAddChooseMethod('household-1'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(AddMethodScreen.photoButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PantryPhotoTipsScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping through the tips screen reaches PantryPhotoCaptureScreen (W19 §26.1)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+
+        router.go(AppRoutes.pantryPhotoTips('household-1'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(PantryPhotoTipsScreen.continueButtonKey));
+        // Not `pumpAndSettle`: the capture screen's real camera init leaves
+        // a permanently-animating `CircularProgressIndicator` on screen in
+        // this test environment (no real camera platform channel — see
+        // `pantry_photo_capture_screen_test.dart`'s own doc), which would
+        // make `pumpAndSettle` time out regardless of whether the route
+        // transition itself succeeded.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(PantryPhotoCaptureScreen), findsOneWidget);
       },
     );
 

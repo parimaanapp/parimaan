@@ -88,6 +88,18 @@ dependencies:
   # presigned S3 URL (D8). Deliberately NOT routed through the Ferry GraphQL
   # client — this is a plain HTTP call to S3, not a GraphQL operation.
   http: ^1.6.0
+  # W19 §26.1 — the pantry-photo capture screen. This app's first real
+  # camera dependency; added via `flutter pub add camera` (a real resolved
+  # version against this repo's actual SDK constraints, not a guessed
+  # number). The image-stream API (`startImageStream`) backs the live
+  # brightness check (`frame_brightness.dart`); `takePicture()` backs the
+  # actual capture.
+  camera: ^0.12.1
+  # W19 §26.1 — resizes a captured photo to 1024px longest edge / JPEG q80
+  # before it leaves the device (SD:1274's already-locked spec). Was already
+  # present transitively (pulled in by `camera` and others); made a direct
+  # dependency since this slice's own code calls it, not just inherits it.
+  image: ^4.10.1
 
 dev_dependencies:
   flutter_test:
