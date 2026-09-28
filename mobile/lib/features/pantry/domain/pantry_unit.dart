@@ -14,4 +14,9 @@ const List<String> knownPantryUnits = <String>[
   'tsp',
   'tbsp',
   'cup',
+  // jar/bottle (W19 S2): a real Gemini vision spike against 59 real pantry
+  // photos found >75% of proposed quantities were container counts these
+  // two weren't in yet — same count-only family as piece/packet/bunch.
+  'jar',
+  'bottle',
 ];

@@ -18,6 +18,12 @@ export const KNOWN_PANTRY_UNITS = [
   'tsp',
   'tbsp',
   'cup',
+  // jar/bottle (W19 S2): a real Gemini vision spike against 59 real pantry
+  // photos found >75% of proposed quantities were container counts these
+  // two weren't in — same count-only family as piece/packet/bunch above,
+  // no mass/volume conversion-table entry (unitConversion.ts's own doc).
+  'jar',
+  'bottle',
 ] as const;
 
 export type KnownPantryUnit = (typeof KNOWN_PANTRY_UNITS)[number];

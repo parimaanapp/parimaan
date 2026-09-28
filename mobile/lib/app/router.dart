@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +40,8 @@ import '../features/pantry/domain/curated_pantry_selection.dart';
 import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
 import '../features/pantry/presentation/manual_add_screen.dart';
+import '../features/pantry/presentation/pantry_photo_capture_screen.dart';
+import '../features/pantry/presentation/pantry_photo_tips_screen.dart';
 import '../features/pantry/presentation/pantry_error_copy.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
 import '../features/pantry/state/pantry_form_controller.dart';
@@ -321,6 +325,18 @@ abstract final class AppRoutes {
   static const String _pantryManualAddPattern = '/home/pantry/add/manual';
   static String pantryManualAdd(String householdId) =>
       '$_pantryManualAddPattern?householdId=$householdId';
+
+  // W19 §26.1 — the pre-camera tips screen. Stops at "here's a compressed,
+  // guidance-following photo file" per that slice's own scope boundary; the
+  // camera-preview screen and the actual upload/analyze wiring are later,
+  // not-yet-planned W20 slices.
+  static const String _pantryPhotoTipsPattern = '/home/pantry/add/photo';
+  static String pantryPhotoTips(String householdId) =>
+      '$_pantryPhotoTipsPattern?householdId=$householdId';
+
+  static const String _pantryPhotoCapturePattern = '/home/pantry/add/photo/camera';
+  static String pantryPhotoCapture(String householdId) =>
+      '$_pantryPhotoCapturePattern?householdId=$householdId';
 
   // ── Recipe Detail (wireframes 7.2/7.3 — W6 S7) ───────────────────────────
   //
@@ -772,6 +788,8 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
           return AddMethodScreen(
             onManual: () =>
                 context.push(AppRoutes.pantryManualAdd(householdId)),
+            onPhoto: () =>
+                context.push(AppRoutes.pantryPhotoTips(householdId)),
             // W14 S6 (E2E_MVP_PLAN.md §20.2.7/§20.3): the curated
             // multi-select sheet's confirm becomes one
             // `bulkAddPantryItems` call here — see
@@ -812,6 +830,36 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => ManualAddScreen(
           householdId: _pantryHouseholdId(state),
           initialItem: state.extra as PantryItem?,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes._pantryPhotoTipsPattern,
+        builder: (BuildContext context, GoRouterState state) => PantryPhotoTipsScreen(
+          onContinue: () => context.push(AppRoutes.pantryPhotoCapture(_pantryHouseholdId(state))),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes._pantryPhotoCapturePattern,
+        // W19 §26.1's own named scope boundary: this slice stops at "here's
+        // a real, compressed, guidance-following photo file" — no upload,
+        // no `analyzePantryPhoto` call, no AI proposal review (all later,
+        // not-yet-planned W20 slices). Popping back to `AddMethodScreen`
+        // with an honest confirmation of what actually happened (a real
+        // byte count, not a placeholder) is this route's real current
+        // behavior, not a stand-in for unbuilt functionality.
+        builder: (BuildContext context, GoRouterState state) => PantryPhotoCaptureScreen(
+          onCaptured: (Uint8List compressedBytes) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Photo captured and compressed to '
+                  '${(compressedBytes.lengthInBytes / 1024).toStringAsFixed(0)} KB. '
+                  '(Uploading it is coming soon.)',
+                ),
+              ),
+            );
+          },
         ),
       ),
       GoRoute(

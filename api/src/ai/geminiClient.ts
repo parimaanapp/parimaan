@@ -144,13 +144,43 @@ export interface GeminiImageInput {
  * the text prompt. Confirmed via two real calls against real pantry photos
  * that the one existing `GEMINI_MODEL` constant already handles this; no
  * second, vision-only model id exists in this client.
+ *
+ * `options.temperature` (found missing in W19 S2's own real-photo spike —
+ * `generationConfig` had never set it, for any caller, despite SD §8.6
+ * locking `0.2` for structured outputs and `0.6` for creative ones before
+ * W19) — a caller-supplied value, not a fixed constant here, since
+ * different call sites need genuinely different values (freeform parse,
+ * staples note, and photo pantry all want 0.2; a future creative caller
+ * like cook-from-pantry, W21, wants 0.6). Defaults to `0.2` because every
+ * real caller today is structured-output; a creative caller passes its own.
  */
+const DEFAULT_TEMPERATURE = 0.2;
+
 const toInlineDataParts = (images: GeminiImageInput[] | undefined): { inline_data: { mime_type: string; data: string } }[] =>
   (images ?? []).map((image) => ({ inline_data: { mime_type: image.mimeType, data: image.base64Data } }));
 
+/**
+ * Extracted from `callGemini` itself purely to keep that function's own
+ * cyclomatic complexity under this repo's lint ceiling — adding the
+ * `temperature` default pushed it one branch over. No behavior change from
+ * inlining it back would occur; this is a lint-driven split, not a design one.
+ */
+const buildRequestBody = (
+  prompt: string,
+  imageParts: { inline_data: { mime_type: string; data: string } }[],
+  temperature: number | undefined,
+): string =>
+  JSON.stringify({
+    contents: [{ parts: [{ text: prompt }, ...imageParts] }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: temperature ?? DEFAULT_TEMPERATURE,
+    },
+  });
+
 export const callGemini = async (
   prompt: string,
-  options: { timeoutMs: number; images?: GeminiImageInput[] },
+  options: { timeoutMs: number; images?: GeminiImageInput[]; temperature?: number },
   deps: GeminiClientDeps = {},
 ): Promise<GeminiCallResult> => {
   const apiKey = await getApiKey(deps);
@@ -165,10 +195,7 @@ export const callGemini = async (
         'x-goog-api-key': apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }, ...imageParts] }],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
+      body: buildRequestBody(prompt, imageParts, options.temperature),
       signal: AbortSignal.timeout(options.timeoutMs),
     });
   } catch (cause) {

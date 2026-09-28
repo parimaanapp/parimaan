@@ -9,6 +9,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required VoidCallback onManual,
   ValueChanged<List<CuratedPantrySelection>>? onCuratedItemsSelected,
+  VoidCallback? onPhoto,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -16,6 +17,7 @@ Future<void> _pump(
       home: AddMethodScreen(
         onManual: onManual,
         onCuratedItemsSelected: onCuratedItemsSelected,
+        onPhoto: onPhoto,
       ),
     ),
   );
@@ -47,7 +49,9 @@ void main() {
       expect(find.byKey(AddMethodScreen.photoButtonKey), findsOneWidget);
     });
 
-    testWidgets('the photo option is disabled', (WidgetTester tester) async {
+    testWidgets('the photo option is disabled when onPhoto is not supplied (unchanged default)', (
+      WidgetTester tester,
+    ) async {
       await _pump(tester, onManual: () {});
 
       final Semantics semantics = tester.widget<Semantics>(
@@ -56,15 +60,47 @@ void main() {
       expect(semantics.properties.enabled, isFalse);
     });
 
-    testWidgets('the photo option announces "coming soon" to screen readers', (
+    testWidgets(
+      'the photo option announces "coming soon" to screen readers when onPhoto is not supplied',
+      (WidgetTester tester) async {
+        await _pump(tester, onManual: () {});
+
+        final Semantics semantics = tester.widget<Semantics>(
+          find.byKey(AddMethodScreen.photoButtonKey),
+        );
+        expect(semantics.properties.label, contains('Coming soon'));
+      },
+    );
+
+    // W19 §26.1 — the photo option goes live once a real onPhoto callback is
+    // supplied (the router's own job); AddMethodScreen itself stays a plain
+    // presentational chooser and doesn't know or care what onPhoto does.
+    testWidgets('the photo option is enabled and reachable once onPhoto is supplied', (
       WidgetTester tester,
     ) async {
-      await _pump(tester, onManual: () {});
+      int photoTaps = 0;
+      await _pump(tester, onManual: () {}, onPhoto: () => photoTaps++);
 
       final Semantics semantics = tester.widget<Semantics>(
         find.byKey(AddMethodScreen.photoButtonKey),
       );
-      expect(semantics.properties.label, contains('Coming soon'));
+      expect(semantics.properties.enabled, isTrue);
+
+      await tester.tap(find.byKey(AddMethodScreen.photoButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(photoTaps, 1);
+    });
+
+    testWidgets('the photo option no longer announces "coming soon" once onPhoto is supplied', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, onManual: () {}, onPhoto: () {});
+
+      final Semantics semantics = tester.widget<Semantics>(
+        find.byKey(AddMethodScreen.photoButtonKey),
+      );
+      expect(semantics.properties.label, isNot(contains('Coming soon')));
     });
 
     testWidgets('picking a category with curated entries opens the multi-select sheet', (

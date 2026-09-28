@@ -15,7 +15,14 @@ void main() {
         'tsp',
         'tbsp',
         'cup',
+        'jar',
+        'bottle',
       ]);
+    });
+
+    test('knows jar and bottle — W19 S2\'s real Gemini vision spike found >75% of real photo-sourced quantities used container-count units these weren\'t in yet', () {
+      expect(knownPantryUnits, contains('jar'));
+      expect(knownPantryUnits, contains('bottle'));
     });
   });
 }

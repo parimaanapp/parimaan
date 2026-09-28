@@ -9,25 +9,35 @@ import 'curated_items_sheet.dart';
 
 /// Wireframe screen 9.2 — "Add choose method".
 ///
-/// Manual is the only *typed* method this week; Photo (W18) is rendered
-/// present-but-disabled with a "Coming soon" `Tooltip`, matching
+/// Manual and "Choose from list" (W14 S5, §20.2.5/§20.2.6) are both live
+/// from day one — the latter raises `curated_items_sheet.dart`'s category
+/// picker and multi-select sheet rather than a new screen, which is exactly
+/// why it belongs on this screen: see that file's own doc comment for the
+/// full placement reasoning. Photo (W18-reserved, wired live W19 §26.1) is
+/// present-but-disabled with a "Coming soon" `Tooltip` — matching
 /// `MembersListScreen`'s `_MemberRow` overflow-button precedent
 /// (E2E_MVP_PLAN.md §11.2.8) rather than hiding the option or leaving it a
-/// live dead end. "Choose from list" (W14 S5, §20.2.5/§20.2.6) is the third
-/// method, live from day one — it raises `curated_items_sheet.dart`'s
-/// category picker and multi-select sheet rather than a new screen, which is
-/// exactly why it belongs on this screen: see that file's own doc comment
-/// for the full placement reasoning.
+/// live dead end — **only while [onPhoto] is `null`**. Once a real
+/// `onPhoto` callback is supplied (the router's own job, pointing at
+/// `pantry_photo_tips_screen.dart`), the card goes live and the tooltip
+/// disappears; this screen itself stays a plain presentational chooser and
+/// has no opinion on what `onPhoto` actually does.
 class AddMethodScreen extends StatelessWidget {
   const AddMethodScreen({
     super.key,
     required this.onManual,
     this.onBack,
     this.onCuratedItemsSelected,
+    this.onPhoto,
   });
 
   final VoidCallback onManual;
   final VoidCallback? onBack;
+
+  /// `null` (the default) keeps the photo card disabled with its "Coming
+  /// soon" tooltip. A real callback (W19 §26.1: navigates to
+  /// `pantry_photo_tips_screen.dart`) enables it.
+  final VoidCallback? onPhoto;
 
   /// Called with the items ticked and quantified in the curated
   /// multi-select sheet once its Confirm is tapped. Left `null` by the
@@ -44,6 +54,31 @@ class AddMethodScreen extends StatelessWidget {
   static const Key manualButtonKey = Key('add-method-manual');
   static const Key photoButtonKey = Key('add-method-photo');
   static const Key curatedButtonKey = Key('add-method-curated');
+
+  /// [onPhoto] `null` → the original W18-reserved disabled card, tooltip and
+  /// all. Non-`null` (W19 §26.1) → the same card, live, no tooltip — the
+  /// `Tooltip` wrapper only ever exists to explain *why* something is
+  /// disabled, so it has no reason to exist once it isn't.
+  Widget _photoCard() {
+    const String title = 'Add from a photo';
+    if (onPhoto == null) {
+      return Tooltip(
+        message: 'Coming soon',
+        child: _MethodCard(
+          semanticsKey: photoButtonKey,
+          title: title,
+          body: 'Snap a photo of your shelf and let AI read what\'s there — coming soon.',
+          onTap: null,
+        ),
+      );
+    }
+    return _MethodCard(
+      semanticsKey: photoButtonKey,
+      title: title,
+      body: 'Snap a photo of your shelf and let AI read what\'s there.',
+      onTap: onPhoto,
+    );
+  }
 
   Future<void> _openCuratedFlow(BuildContext context) async {
     final List<CuratedPantrySelection>? selections = await showCuratedPantryFlow(
@@ -93,17 +128,7 @@ class AddMethodScreen extends StatelessWidget {
                   onTap: onManual,
                 ),
                 const SizedBox(height: AppSpacing.s2),
-                Tooltip(
-                  message: 'Coming soon',
-                  child: _MethodCard(
-                    semanticsKey: photoButtonKey,
-                    title: 'Add from a photo',
-                    body:
-                        'Snap a photo of your shelf and let AI read what\'s '
-                        'there — coming soon.',
-                    onTap: null,
-                  ),
-                ),
+                _photoCard(),
               ],
             ),
           ),

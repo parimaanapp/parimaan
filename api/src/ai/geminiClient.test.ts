@@ -205,4 +205,28 @@ describe('callGemini', () => {
       expect(body.contents[0].parts).toEqual([{ text: 'text only' }]);
     });
   });
+
+  describe('temperature', () => {
+    it('defaults generationConfig.temperature to 0.2 (SD §8.6\'s structured-output value) when the caller does not specify one', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{}')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      await callGemini('p', { timeoutMs: 5000 }, { config, fetchApiKey, fetchImpl });
+
+      const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as { generationConfig: { temperature: number } };
+      expect(body.generationConfig.temperature).toBe(0.2);
+    });
+
+    it('uses the caller-supplied temperature when one is given (e.g. a future creative-output caller at 0.6, SD §8.6)', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{}')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      await callGemini('p', { timeoutMs: 5000, temperature: 0.6 }, { config, fetchApiKey, fetchImpl });
+
+      const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as { generationConfig: { temperature: number } };
+      expect(body.generationConfig.temperature).toBe(0.6);
+    });
+  });
 });
