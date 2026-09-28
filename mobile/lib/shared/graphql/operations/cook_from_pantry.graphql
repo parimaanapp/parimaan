@@ -1,0 +1,25 @@
+#import "./recipe_draft_fields.graphql"
+
+# W21 S4 — AI-suggested recipes the household can cook from its pantry.
+# UNSAVED: a suggestion becomes a recipe only when the user saves it through
+# `createRecipe` (with `source: { sourceType: ai }`). Grounding (`ingredientMatches`,
+# `have`, `missing`) is computed by the server against the real pantry, never by the model.
+mutation CookFromPantry($householdId: ID!, $vibe: CookVibe) {
+  cookFromPantry(householdId: $householdId, vibe: $vibe) {
+    outcome
+    vibe
+    suggestions {
+      id
+      draft {
+        ...RecipeDraftFields
+      }
+      ingredientMatches {
+        ingredient
+        status
+        pantryItemName
+      }
+      have
+      missing
+    }
+  }
+}
