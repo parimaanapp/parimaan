@@ -10,7 +10,7 @@ import { loadAiConfig } from './config.js';
 // (potatoes/onions/garlic; curry leaves/chillies/corn/carrots/cucumbers/
 // ginger/coriander), at ~1,150 prompt tokens per image (~$0.0003-0.0005/call
 // at this model's published per-token price) — real numbers, not estimated.
-const GEMINI_MODEL = 'gemini-3.5-flash-lite';
+export const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 interface GeminiApiKeySecretJson {
