@@ -212,6 +212,8 @@ sequenceDiagram
 
 ### 5.4 Photo pantry AI
 
+> **Corrected W19 S4** (`E2E_MVP_PLAN.md` §25 D1) — the diagram below originally showed Bedrock/Claude Sonnet for the vision call; W19 re-verified Bedrock is still blocked (SD §15.1's account-level use-case-form gap, unchanged since W7) and locked Gemini for the whole photo-pantry/cook-from-pantry feature family instead. Real numbers behind this correction: a real `callGemini` multimodal call against 59 real Indian-household pantry photos (W19 S2) returned 346 proposed items at $0.068 total cost, 0 call errors, 0 JSON parse failures.
+
 ```mermaid
 sequenceDiagram
   participant U as User
@@ -220,7 +222,7 @@ sequenceDiagram
   participant L1 as Lambda (getUploadUrl)
   participant S3 as S3 photos bucket
   participant L2 as Lambda (analyzePantryPhoto)
-  participant BR as Bedrock (Sonnet)
+  participant GM as Gemini (gemini-3.5-flash-lite, vision)
   participant DDB as DynamoDB rate-limit
   participant DB as Postgres
 
@@ -232,15 +234,15 @@ sequenceDiagram
   App->>S3: PUT image
   App->>AS: analyzePantryPhoto(s3Key)
   AS->>L2: analyzePantryPhoto
-  L2->>DDB: check rate limit (per user/day)
+  L2->>DDB: check rate limit (per user/day, 'photoPantry')
   DDB-->>L2: OK
   L2->>S3: GET image
-  L2->>BR: InvokeModel (Sonnet, vision)
-  BR-->>L2: proposed items JSON
+  L2->>GM: callGemini (multimodal, base64 inline_data part)
+  GM-->>L2: proposed items JSON
   L2->>L2: validate JSON against schema, retry once on failure
   L2-->>AS: [{name, qty, unit, category}, ...]
   AS-->>App: proposed items
-  U->>App: Review + edit + confirm
+  U->>App: Review + edit + confirm (AIProposal widget, already shipped — W7)
   App->>AS: bulkAddPantryItems(items)
   AS->>DB: insert pantry_items
   AS-->>App: success
@@ -1186,12 +1188,14 @@ Single table, on-demand billing, sub-cent monthly.
 
 ### 8.1 Model routing
 
+> **Corrected W19 S4** (`E2E_MVP_PLAN.md` §25 D1) — the two Bedrock/Claude Sonnet rows below were the original pre-W19 sketch; both are Gemini in practice, per D1's deviation covering the whole vision/photo-pantry feature family (W19 spike, W20 photo pantry, W21 cook-from-pantry). Freeform parse and staples note were already Gemini since W7 (D11) — this table just hadn't been updated to match.
+
 | Task | Model | Why |
 |---|---|---|
-| Photo pantry (vision) | Claude Sonnet | Vision requires the larger model for accuracy |
-| Cook-from-pantry (recipe suggestions) | Claude Sonnet | Complex reasoning over pantry + constraints |
-| Freeform recipe parse | Claude Haiku | Structured extraction; Haiku is cheaper and fast enough |
-| Staples note | Claude Haiku | Short summarization |
+| Photo pantry (vision) | Gemini (`gemini-3.5-flash-lite`) | Bedrock vision access still blocked on an unfiled use-case form (SD §15.1); Gemini already has a proven multimodal client (W19 S1) and real-measured accuracy (W19 S2: 93% of 346 real-photo items landed medium-or-higher confidence) |
+| Cook-from-pantry (recipe suggestions) | Gemini (`gemini-3.5-flash-lite`) | Same D1 deviation — W21's own job to re-verify with real calls before building, not assumed from this row |
+| Freeform recipe parse | Gemini (`gemini-3.5-flash-lite`) | Structured extraction; already shipped and proven since W7 |
+| Staples note | Gemini (`gemini-3.5-flash-lite`) | Short summarization; already shipped since W17 |
 
 ### 8.2 Invocation shape
 
