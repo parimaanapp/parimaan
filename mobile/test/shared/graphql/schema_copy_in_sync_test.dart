@@ -14,23 +14,32 @@ import 'package:flutter_test/flutter_test.dart';
 /// `../shared/` directory, since `mobile/` is deliberately outside the pnpm
 /// workspace (Q13) and could in principle be built standalone.
 void main() {
-  test('the mobile schema copy matches shared/schema.graphql below its header', () {
-    final File shared = File('../shared/schema.graphql');
-    if (!shared.existsSync()) {
-      markTestSkipped('shared/schema.graphql not found relative to mobile/');
-      return;
-    }
-    final String copy = File('lib/shared/graphql/schema.graphql').readAsStringSync();
-    const String marker = '# Parimaan GraphQL schema — SINGLE SOURCE OF TRUTH.';
-    final int at = copy.indexOf(marker);
+  test(
+    'the mobile schema copy matches shared/schema.graphql below its header',
+    () {
+      final File shared = File('../shared/schema.graphql');
+      if (!shared.existsSync()) {
+        markTestSkipped('shared/schema.graphql not found relative to mobile/');
+        return;
+      }
+      final String copy = File('lib/shared/graphql/schema.graphql')
+          .readAsStringSync();
+      const String marker =
+          '# Parimaan GraphQL schema — SINGLE SOURCE OF TRUTH.';
+      final int at = copy.indexOf(marker);
 
-    expect(at, greaterThanOrEqualTo(0), reason: 'the copy lost the marker line its header is split on');
-    expect(
-      copy.substring(at),
-      shared.readAsStringSync(),
-      reason:
-          'The mobile schema copy has drifted. Fix: re-copy shared/schema.graphql below '
-          "the copy's header, then `dart run build_runner build`.",
-    );
-  });
+      expect(
+        at,
+        greaterThanOrEqualTo(0),
+        reason: 'the copy lost the marker line its header is split on',
+      );
+      expect(
+        copy.substring(at),
+        shared.readAsStringSync(),
+        reason:
+            'The mobile schema copy has drifted. Fix: re-copy shared/schema.graphql below '
+            "the copy's header, then `dart run build_runner build`.",
+      );
+    },
+  );
 }

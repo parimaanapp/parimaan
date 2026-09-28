@@ -73,16 +73,27 @@ class PantryPhotoProposal {
           _listEquals(other.warnings, warnings);
 
   @override
-  int get hashCode => Object.hash(name, quantity, unit, category, confidence, Object.hashAll(warnings));
+  int get hashCode => Object.hash(
+    name,
+    quantity,
+    unit,
+    category,
+    confidence,
+    Object.hashAll(warnings),
+  );
 
   @override
-  String toString() => 'PantryPhotoProposal($name, $quantity $unit, $category, ${confidence.name})';
+  String toString() =>
+      'PantryPhotoProposal($name, $quantity $unit, $category, ${confidence.name})';
 }
 
 /// The whole answer for one photo.
 class PantryPhotoAnalysis {
-  PantryPhotoAnalysis({required List<PantryPhotoProposal> items, required this.droppedCount, required this.truncated})
-    : items = List<PantryPhotoProposal>.unmodifiable(items);
+  PantryPhotoAnalysis({
+    required List<PantryPhotoProposal> items,
+    required this.droppedCount,
+    required this.truncated,
+  }) : items = List<PantryPhotoProposal>.unmodifiable(items);
 
   final List<PantryPhotoProposal> items;
 
@@ -105,7 +116,8 @@ class PantryPhotoAnalysis {
           _listEquals(other.items, items);
 
   @override
-  int get hashCode => Object.hash(droppedCount, truncated, Object.hashAll(items));
+  int get hashCode =>
+      Object.hash(droppedCount, truncated, Object.hashAll(items));
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

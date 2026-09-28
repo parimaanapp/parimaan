@@ -20,11 +20,14 @@ abstract interface class PantryPhotoUploader {
 /// User-safe copy, fixed by construction. The presigned URL is a credential
 /// (its query string IS the signature), so neither it nor S3's response body
 /// is ever interpolated into a message, an exception, or a log line here.
-const String _uploadFailedMessage = 'Could not upload the photo. Check your connection and try again.';
+const String _uploadFailedMessage =
+    'Could not upload the photo. Check your connection and try again.';
 
 class HttpPantryPhotoUploader implements PantryPhotoUploader {
-  HttpPantryPhotoUploader({http.Client? client, this.timeout = const Duration(seconds: 30)})
-    : _client = client ?? http.Client();
+  HttpPantryPhotoUploader({
+    http.Client? client,
+    this.timeout = const Duration(seconds: 30),
+  }) : _client = client ?? http.Client();
 
   final http.Client _client;
 
@@ -60,6 +63,5 @@ class HttpPantryPhotoUploader implements PantryPhotoUploader {
   }
 }
 
-final Provider<PantryPhotoUploader> pantryPhotoUploaderProvider = Provider<PantryPhotoUploader>(
-  (Ref ref) => HttpPantryPhotoUploader(),
-);
+final Provider<PantryPhotoUploader> pantryPhotoUploaderProvider =
+    Provider<PantryPhotoUploader>((Ref ref) => HttpPantryPhotoUploader());

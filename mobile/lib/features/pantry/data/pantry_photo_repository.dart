@@ -10,7 +10,8 @@ import '../../../shared/graphql/operations/__generated__/analyze_pantry_photo.re
 import '../../../shared/graphql/operations/__generated__/analyze_pantry_photo.var.gql.dart';
 import '../../../shared/graphql/operations/__generated__/get_pantry_photo_upload_url.data.gql.dart';
 import '../../../shared/graphql/operations/__generated__/get_pantry_photo_upload_url.req.gql.dart';
-import '../../../shared/graphql/__generated__/schema.schema.gql.dart' show GProposalConfidence;
+import '../../../shared/graphql/__generated__/schema.schema.gql.dart'
+    show GProposalConfidence;
 import '../domain/pantry_photo_analysis.dart';
 import 'pantry_photo_uploader.dart';
 
@@ -29,42 +30,62 @@ abstract interface class PantryPhotoRepository {
   /// S3, otherwise whatever typed error the server returned (`RATE_LIMITED`,
   /// `AI_TIMEOUT`, `NOT_FOUND`, …) — kept typed so the UI can choose between
   /// "try again", "retake" and "add manually".
-  Future<PantryPhotoAnalysis> analyze(Uint8List jpegBytes, {void Function(PhotoAnalysisPhase phase)? onPhase});
+  Future<PantryPhotoAnalysis> analyze(
+    Uint8List jpegBytes, {
+    void Function(PhotoAnalysisPhase phase)? onPhase,
+  });
 }
 
-class FerryPantryPhotoRepository with FerryExecuteMixin implements PantryPhotoRepository {
-  const FerryPantryPhotoRepository({required this.client, required this.uploader});
+class FerryPantryPhotoRepository
+    with FerryExecuteMixin
+    implements PantryPhotoRepository {
+  const FerryPantryPhotoRepository({
+    required this.client,
+    required this.uploader,
+  });
 
   @override
   final Client client;
   final PantryPhotoUploader uploader;
 
   @override
-  Future<PantryPhotoAnalysis> analyze(Uint8List jpegBytes, {void Function(PhotoAnalysisPhase phase)? onPhase}) async {
+  Future<PantryPhotoAnalysis> analyze(
+    Uint8List jpegBytes, {
+    void Function(PhotoAnalysisPhase phase)? onPhase,
+  }) async {
     onPhase?.call(PhotoAnalysisPhase.uploading);
-    final GGetPantryPhotoUploadUrlData urlData = await execute(GGetPantryPhotoUploadUrlReq());
-    final GGetPantryPhotoUploadUrlData_getPantryPhotoUploadUrl upload = urlData.getPantryPhotoUploadUrl;
+    final GGetPantryPhotoUploadUrlData urlData = await execute(
+      GGetPantryPhotoUploadUrlReq(),
+    );
+    final GGetPantryPhotoUploadUrlData_getPantryPhotoUploadUrl upload =
+        urlData.getPantryPhotoUploadUrl;
     await uploader.put(upload.url, jpegBytes);
 
     onPhase?.call(PhotoAnalysisPhase.analyzing);
     final GAnalyzePantryPhotoData data = await execute(
-      GAnalyzePantryPhotoReq((GAnalyzePantryPhotoReqBuilder b) => b..vars = (GAnalyzePantryPhotoVarsBuilder()..s3Key = upload.s3Key)),
+      GAnalyzePantryPhotoReq(
+        (GAnalyzePantryPhotoReqBuilder b) =>
+            b..vars = (GAnalyzePantryPhotoVarsBuilder()..s3Key = upload.s3Key),
+      ),
     );
     return _toAnalysis(data.analyzePantryPhoto);
   }
 }
 
-PantryPhotoAnalysis _toAnalysis(GAnalyzePantryPhotoData_analyzePantryPhoto raw) => PantryPhotoAnalysis(
+PantryPhotoAnalysis _toAnalysis(
+  GAnalyzePantryPhotoData_analyzePantryPhoto raw,
+) => PantryPhotoAnalysis(
   items: raw.items
       .map(
-        (GAnalyzePantryPhotoData_analyzePantryPhoto_items item) => PantryPhotoProposal(
-          name: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          category: item.category,
-          confidence: _toConfidence(item.confidence),
-          warnings: item.warnings.toList(),
-        ),
+        (GAnalyzePantryPhotoData_analyzePantryPhoto_items item) =>
+            PantryPhotoProposal(
+              name: item.name,
+              quantity: item.quantity,
+              unit: item.unit,
+              category: item.category,
+              confidence: _toConfidence(item.confidence),
+              warnings: item.warnings.toList(),
+            ),
       )
       .toList(),
   droppedCount: raw.droppedCount,
@@ -77,15 +98,17 @@ PantryPhotoAnalysis _toAnalysis(GAnalyzePantryPhotoData_analyzePantryPhoto raw) 
 /// conservative reading, because `low` proposals start unticked in review
 /// (D12): the worst case is a user ticking a good item, never silently adding
 /// a bad one.
-ProposalConfidence _toConfidence(GProposalConfidence confidence) => switch (confidence) {
-  GProposalConfidence.high => ProposalConfidence.high,
-  GProposalConfidence.medium => ProposalConfidence.medium,
-  _ => ProposalConfidence.low,
-};
+ProposalConfidence _toConfidence(GProposalConfidence confidence) =>
+    switch (confidence) {
+      GProposalConfidence.high => ProposalConfidence.high,
+      GProposalConfidence.medium => ProposalConfidence.medium,
+      _ => ProposalConfidence.low,
+    };
 
-final Provider<PantryPhotoRepository> pantryPhotoRepositoryProvider = Provider<PantryPhotoRepository>(
-  (Ref ref) => FerryPantryPhotoRepository(
-    client: ref.watch(ferryClientProvider),
-    uploader: ref.watch(pantryPhotoUploaderProvider),
-  ),
-);
+final Provider<PantryPhotoRepository> pantryPhotoRepositoryProvider =
+    Provider<PantryPhotoRepository>(
+      (Ref ref) => FerryPantryPhotoRepository(
+        client: ref.watch(ferryClientProvider),
+        uploader: ref.watch(pantryPhotoUploaderProvider),
+      ),
+    );

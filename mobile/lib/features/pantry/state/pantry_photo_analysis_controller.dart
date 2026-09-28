@@ -39,7 +39,11 @@ final class PhotoAnalysisFailed extends PantryPhotoAnalysisState {
   /// not fixed by a retry — the screen should offer "retake" / "add
   /// manually" instead of a button that fails the same way.
   bool get canRetry => switch (error) {
-    PhotoUploadError() || AiTimeoutError() || AiBusyError() || NotFoundError() || InternalError() => true,
+    PhotoUploadError() ||
+    AiTimeoutError() ||
+    AiBusyError() ||
+    NotFoundError() ||
+    InternalError() => true,
     _ => false,
   };
 }
@@ -49,9 +53,12 @@ final class PhotoAnalysisFailed extends PantryPhotoAnalysisState {
 /// AppSync's 30s ceiling — so 40s means "the server had its full chance and
 /// nothing came back", e.g. a stalled connection, and ends in a retryable
 /// error instead of an endless spinner. Overridable for tests.
-final Provider<Duration> photoAnalysisTimeoutProvider = Provider<Duration>((Ref ref) => const Duration(seconds: 40));
+final Provider<Duration> photoAnalysisTimeoutProvider = Provider<Duration>(
+  (Ref ref) => const Duration(seconds: 40),
+);
 
-class PantryPhotoAnalysisController extends AutoDisposeNotifier<PantryPhotoAnalysisState> {
+class PantryPhotoAnalysisController
+    extends AutoDisposeNotifier<PantryPhotoAnalysisState> {
   Uint8List? _photo;
 
   /// Bumped by [reset]; a result that lands for an older generation is
@@ -66,12 +73,15 @@ class PantryPhotoAnalysisController extends AutoDisposeNotifier<PantryPhotoAnaly
     return const PhotoAnalysisIdle();
   }
 
-  PantryPhotoRepository get _repository => ref.read(pantryPhotoRepositoryProvider);
+  PantryPhotoRepository get _repository =>
+      ref.read(pantryPhotoRepositoryProvider);
 
   /// Analyzes [jpegBytes]. Ignored while a photo is already in flight, so a
   /// double-tap cannot spend two of the day's 20 analyses.
   Future<void> analyze(Uint8List jpegBytes) async {
-    if (state is PhotoAnalysisInProgress) return;
+    if (state is PhotoAnalysisInProgress) {
+      return;
+    }
     _photo = jpegBytes;
     final int generation = ++_generation;
     state = const PhotoAnalysisInProgress(PhotoAnalysisPhase.uploading);
@@ -82,7 +92,9 @@ class PantryPhotoAnalysisController extends AutoDisposeNotifier<PantryPhotoAnaly
           .analyze(
             jpegBytes,
             onPhase: (PhotoAnalysisPhase phase) {
-              if (generation == _generation) state = PhotoAnalysisInProgress(phase);
+              if (generation == _generation) {
+                state = PhotoAnalysisInProgress(phase);
+              }
             },
           )
           .timeout(ref.read(photoAnalysisTimeoutProvider));
@@ -90,20 +102,28 @@ class PantryPhotoAnalysisController extends AutoDisposeNotifier<PantryPhotoAnaly
     } on AppError catch (error) {
       outcome = PhotoAnalysisFailed(error);
     } on TimeoutException {
-      outcome = const PhotoAnalysisFailed(AiTimeoutError('This is taking longer than expected. Please try again.'));
+      outcome = const PhotoAnalysisFailed(
+        AiTimeoutError(
+          'This is taking longer than expected. Please try again.',
+        ),
+      );
     } on Object {
       // Never surface an unexpected exception's text — it can carry a URL.
       outcome = const PhotoAnalysisFailed(InternalError(genericErrorMessage));
     }
 
-    if (generation == _generation) state = outcome;
+    if (generation == _generation) {
+      state = outcome;
+    }
   }
 
   /// Re-runs the whole pipeline with the same photo, when a retry can help.
   Future<void> retry() async {
     final PantryPhotoAnalysisState current = state;
     final Uint8List? photo = _photo;
-    if (current is! PhotoAnalysisFailed || !current.canRetry || photo == null) return;
+    if (current is! PhotoAnalysisFailed || !current.canRetry || photo == null) {
+      return;
+    }
     await analyze(photo);
   }
 
@@ -115,5 +135,12 @@ class PantryPhotoAnalysisController extends AutoDisposeNotifier<PantryPhotoAnaly
   }
 }
 
-final AutoDisposeNotifierProvider<PantryPhotoAnalysisController, PantryPhotoAnalysisState> pantryPhotoAnalysisControllerProvider =
-    NotifierProvider.autoDispose<PantryPhotoAnalysisController, PantryPhotoAnalysisState>(PantryPhotoAnalysisController.new);
+final AutoDisposeNotifierProvider<
+  PantryPhotoAnalysisController,
+  PantryPhotoAnalysisState
+>
+pantryPhotoAnalysisControllerProvider =
+    NotifierProvider.autoDispose<
+      PantryPhotoAnalysisController,
+      PantryPhotoAnalysisState
+    >(PantryPhotoAnalysisController.new);

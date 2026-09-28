@@ -15,13 +15,25 @@ final Uint8List _photoB = Uint8List.fromList(<int>[0xff, 0xd8, 0xff, 2]);
 
 final PantryPhotoAnalysis _analysis = PantryPhotoAnalysis(
   items: <PantryPhotoProposal>[
-    PantryPhotoProposal(name: 'Toor Dal', quantity: 1, unit: 'jar', category: 'dal', confidence: ProposalConfidence.high, warnings: <String>[]),
+    PantryPhotoProposal(
+      name: 'Toor Dal',
+      quantity: 1,
+      unit: 'jar',
+      category: 'dal',
+      confidence: ProposalConfidence.high,
+      warnings: <String>[],
+    ),
   ],
   droppedCount: 0,
   truncated: false,
 );
 
-({ProviderContainer container, FakePantryPhotoRepository repository, List<PantryPhotoAnalysisState> states}) _subject({Duration timeout = const Duration(seconds: 40)}) {
+({
+  ProviderContainer container,
+  FakePantryPhotoRepository repository,
+  List<PantryPhotoAnalysisState> states,
+})
+_subject({Duration timeout = const Duration(seconds: 40)}) {
   final FakePantryPhotoRepository repository = FakePantryPhotoRepository();
   final ProviderContainer container = ProviderContainer(
     overrides: [
@@ -31,11 +43,16 @@ final PantryPhotoAnalysis _analysis = PantryPhotoAnalysis(
   );
   addTearDown(container.dispose);
   final List<PantryPhotoAnalysisState> states = <PantryPhotoAnalysisState>[];
-  container.listen<PantryPhotoAnalysisState>(pantryPhotoAnalysisControllerProvider, (_, PantryPhotoAnalysisState next) => states.add(next), fireImmediately: true);
+  container.listen<PantryPhotoAnalysisState>(
+    pantryPhotoAnalysisControllerProvider,
+    (_, PantryPhotoAnalysisState next) => states.add(next),
+    fireImmediately: true,
+  );
   return (container: container, repository: repository, states: states);
 }
 
-PantryPhotoAnalysisController _controller(ProviderContainer c) => c.read(pantryPhotoAnalysisControllerProvider.notifier);
+PantryPhotoAnalysisController _controller(ProviderContainer c) =>
+    c.read(pantryPhotoAnalysisControllerProvider.notifier);
 
 void main() {
   test('starts idle', () {
@@ -49,28 +66,65 @@ void main() {
 
     await _controller(s.container).analyze(_photoA);
 
-    expect(s.states.map((PantryPhotoAnalysisState e) => e.runtimeType).toList(), <Type>[
-      PhotoAnalysisIdle, PhotoAnalysisInProgress, PhotoAnalysisInProgress, PhotoAnalysisInProgress, PhotoAnalysisReady,
-    ]);
-    final List<PhotoAnalysisPhase?> phases = s.states.whereType<PhotoAnalysisInProgress>().map((PhotoAnalysisInProgress e) => e.phase).toList();
-    expect(phases, containsAllInOrder(<PhotoAnalysisPhase>[PhotoAnalysisPhase.uploading, PhotoAnalysisPhase.analyzing]));
+    expect(
+      s.states.map((PantryPhotoAnalysisState e) => e.runtimeType).toList(),
+      <Type>[
+        PhotoAnalysisIdle,
+        PhotoAnalysisInProgress,
+        PhotoAnalysisInProgress,
+        PhotoAnalysisInProgress,
+        PhotoAnalysisReady,
+      ],
+    );
+    final List<PhotoAnalysisPhase?> phases = s.states
+        .whereType<PhotoAnalysisInProgress>()
+        .map((PhotoAnalysisInProgress e) => e.phase)
+        .toList();
+    expect(
+      phases,
+      containsAllInOrder(<PhotoAnalysisPhase>[
+        PhotoAnalysisPhase.uploading,
+        PhotoAnalysisPhase.analyzing,
+      ]),
+    );
     expect((s.states.last as PhotoAnalysisReady).analysis, _analysis);
     expect(s.repository.calls.single, _photoA);
   });
 
   group('failures', () {
-    for (final (String label, AppError error, bool canRetry) in <(String, AppError, bool)>[
-      ('an upload failure', const PhotoUploadError('Could not upload the photo.'), true),
-      ('an AI timeout', const AiTimeoutError('slow'), true),
-      ('AI busy', const AiBusyError('busy'), true),
-      ('a photo the server could not find', const NotFoundError('gone'), true),
-      ('a connection failure', const InternalError('Could not reach the server.'), true),
-      ('the daily limit — retrying today is pointless', const RateLimitedError('limit'), false),
-      ('a rejected photo — retake, do not resend the same bytes', const ValidationError('bad photo'), false),
-      ('a forbidden key', const ForbiddenError('no'), false),
-      ('AI unavailable', const AiUnavailableError('down'), false),
-      ('an unparseable answer', const AiUnparseableError('junk'), false),
-    ]) {
+    for (final (String label, AppError error, bool canRetry)
+        in <(String, AppError, bool)>[
+          (
+            'an upload failure',
+            const PhotoUploadError('Could not upload the photo.'),
+            true,
+          ),
+          ('an AI timeout', const AiTimeoutError('slow'), true),
+          ('AI busy', const AiBusyError('busy'), true),
+          (
+            'a photo the server could not find',
+            const NotFoundError('gone'),
+            true,
+          ),
+          (
+            'a connection failure',
+            const InternalError('Could not reach the server.'),
+            true,
+          ),
+          (
+            'the daily limit — retrying today is pointless',
+            const RateLimitedError('limit'),
+            false,
+          ),
+          (
+            'a rejected photo — retake, do not resend the same bytes',
+            const ValidationError('bad photo'),
+            false,
+          ),
+          ('a forbidden key', const ForbiddenError('no'), false),
+          ('AI unavailable', const AiUnavailableError('down'), false),
+          ('an unparseable answer', const AiUnparseableError('junk'), false),
+        ]) {
       test('$label lands on failed, with canRetry=$canRetry', () async {
         final s = _subject();
         s.repository.failWith(error);
