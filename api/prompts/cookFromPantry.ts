@@ -1,6 +1,9 @@
 import { CUISINE_TIER1_VALUES } from '../src/domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../src/domain/dietaryTags.js';
+import { MAX_PROMPT_PANTRY_ITEMS, normalizeForPrompt, PROMPT_LIMITS } from '../src/domain/cookPromptText.js';
 import { RECIPE_ROLE_VALUES } from '../src/domain/recipeRoles.js';
+
+export { MAX_PROMPT_PANTRY_ITEMS, PROMPT_LIMITS };
 
 /**
  * Bumped whenever the prompt text below changes after it has shipped. The
@@ -29,17 +32,6 @@ export const COOK_VIBE_PHRASES: Record<CookVibe, string> = {
 export const COOK_TEMPERATURE = 0.6;
 export const COOK_MAX_OUTPUT_TOKENS = 3500;
 
-/** What the prompt asks of the model. The grounding rules (S2) and the tests read these, so the prompt and its consumers cannot drift. */
-export const PROMPT_LIMITS = { suggestions: 3, ingredients: 12, steps: 8, stepChars: 200, missing: 4, minPantryItems: 2 } as const;
-
-/**
- * Prompt-size guard (D6). A backstop only: S2's `selectPromptPantryItems`
- * drops staple categories first, so this alphabetical cut is reached only by
- * a pantry that is still over the limit after that. Names are the only
- * pantry content sent: no quantities, no expiry.
- */
-export const MAX_PROMPT_PANTRY_ITEMS = 120;
-const MAX_PROMPT_NAME_LENGTH = 60;
 /**
  * Skip, allergen, dietary and cuisine lists are short by construction. This
  * only bounds a pathological one, and is set far above any real list because
@@ -58,32 +50,6 @@ export interface CookPromptContext {
   /** Household `cuisine_tier2_weights`: values are `more` / `normal` / `less`; anything else is ignored. */
   readonly cuisineTier2Weights: Readonly<Record<string, unknown>>;
 }
-
-/** Line and paragraph separators and every control character (incl. NEL): become a space so words do not fuse. */
-const SEPARATORS_AND_CONTROLS = /[\p{Cc}\p{Zl}\p{Zp}]/gu;
-/** Invisible formatting characters (zero-width, bidi overrides): removed outright, so "on<ZWSP>ion" is "onion". */
-const FORMAT_CHARACTERS = /\p{Cf}/gu;
-
-/**
- * Compatibility-normalise (fullwidth letters become plain), strip invisible
- * and separator characters, collapse whitespace, lowercase, cap by code point.
- * Lowercasing is what makes the prompt (and so the cache key) independent of
- * how a household happened to capitalise "Toor Dal"; capping by code point,
- * not UTF-16 unit, never splits an emoji into a lone surrogate.
- */
-const normalizeForPrompt = (raw: string): string =>
-  Array.from(
-    raw
-      .normalize('NFKC')
-      .replace(FORMAT_CHARACTERS, '')
-      .replace(SEPARATORS_AND_CONTROLS, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toLowerCase(),
-  )
-    .slice(0, MAX_PROMPT_NAME_LENGTH)
-    .join('')
-    .trim();
 
 /** Normalised, de-duplicated, sorted, bounded — the deterministic form every list enters the prompt in. */
 const promptList = (values: readonly string[], max: number): string[] =>
