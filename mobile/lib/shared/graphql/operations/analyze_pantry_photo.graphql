@@ -1,0 +1,16 @@
+# W20 S5 — AI-PROPOSED pantry items for an uploaded photo. UNSAVED: the pantry
+# changes only when the user confirms through `bulkAddPantryItems`.
+mutation AnalyzePantryPhoto($s3Key: String!) {
+  analyzePantryPhoto(s3Key: $s3Key) {
+    items {
+      name
+      quantity
+      unit
+      category
+      confidence
+      warnings
+    }
+    droppedCount
+    truncated
+  }
+}

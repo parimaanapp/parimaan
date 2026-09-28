@@ -1,0 +1,9 @@
+# W20 S5 — where to PUT one compressed pantry photo, and the key that names it.
+# `expiresAt` is deliberately not selected: the client uploads immediately and
+# never reads it, so requesting it would only add an AWSDateTime scalar to wire.
+mutation GetPantryPhotoUploadUrl {
+  getPantryPhotoUploadUrl {
+    url
+    s3Key
+  }
+}
