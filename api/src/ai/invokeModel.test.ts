@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { AiBusyError, AiTimeoutError, AiUnavailableError, AiUnparseableError } from '../errors.js';
 import { resetGeminiClientForTesting } from './geminiClient.js';
-import { invokeModel } from './invokeModel.js';
+import { AI_DEADLINE_MS, invokeModel, VISION_DEADLINE_MS } from './invokeModel.js';
 
 const config = { geminiApiKeySecretArn: 'arn:aws:secretsmanager:ap-south-1:123456789012:secret:parimaan/gemini-api-key-abc' };
 const fetchApiKey = () => Promise.resolve('test-key');
@@ -278,5 +278,64 @@ describe('invokeModel — cost-metric emission (W19 D6)', () => {
     );
 
     expect(result).toEqual({ title: 'Dal', count: 2 });
+  });
+});
+
+describe('invokeModel — images and temperature (W20 S1, W19 D2)', () => {
+  const image = { mimeType: 'image/jpeg', base64Data: 'ZmFrZQ==' };
+  const bodyOf = (fetchImpl: ReturnType<typeof vi.fn>, call: number) =>
+    JSON.parse((fetchImpl.mock.calls[call] as [string, RequestInit])[1].body as string) as {
+      contents: [{ parts: unknown[] }];
+      generationConfig: { temperature: number };
+    };
+
+  it('sends the caller\'s images as inline_data parts alongside the prompt', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{"title":"Dal","count":1}')));
+
+    await invokeModel('prompt', schema, { deadlineMs: 30_000, images: [image] }, { config, fetchApiKey, fetchImpl, emitCostMetric, sleepImpl });
+
+    expect(bodyOf(fetchImpl, 0).contents[0].parts).toEqual([
+      { text: 'prompt' },
+      { inline_data: { mime_type: 'image/jpeg', data: 'ZmFrZQ==' } },
+    ]);
+  });
+
+  it('keeps the image on the reinforcement retry — a retry without it would ask the model to re-answer a question it can no longer see', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, geminiSuccessBody('not json')))
+      .mockResolvedValueOnce(jsonResponse(200, geminiSuccessBody('{"title":"Dal","count":1}')));
+
+    await invokeModel('prompt', schema, { deadlineMs: 30_000, images: [image] }, { config, fetchApiKey, fetchImpl, emitCostMetric, sleepImpl });
+
+    expect(bodyOf(fetchImpl, 1).contents[0].parts).toHaveLength(2);
+  });
+
+  it('passes a caller-supplied temperature through to every underlying call', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, geminiSuccessBody('not json')))
+      .mockResolvedValueOnce(jsonResponse(200, geminiSuccessBody('{"title":"Dal","count":1}')));
+
+    await invokeModel('prompt', schema, { deadlineMs: 30_000, temperature: 0.6 }, { config, fetchApiKey, fetchImpl, emitCostMetric, sleepImpl });
+
+    expect(bodyOf(fetchImpl, 0).generationConfig.temperature).toBe(0.6);
+    expect(bodyOf(fetchImpl, 1).generationConfig.temperature).toBe(0.6);
+  });
+
+  it('leaves existing text-only callers byte-identical: no image parts, default temperature', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{"title":"Dal","count":1}')));
+
+    await invokeModel('prompt', schema, { deadlineMs: 30_000 }, { config, fetchApiKey, fetchImpl, emitCostMetric, sleepImpl });
+
+    expect(bodyOf(fetchImpl, 0).contents[0].parts).toEqual([{ text: 'prompt' }]);
+    expect(bodyOf(fetchImpl, 0).generationConfig.temperature).toBe(0.2);
+  });
+});
+
+describe('deadline constants (W20 S1)', () => {
+  it('the vision deadline is longer than the text one but leaves headroom under the 28s non-VPC Lambda timeout for S3 round trips and a cold start', () => {
+    expect(VISION_DEADLINE_MS).toBeGreaterThan(AI_DEADLINE_MS);
+    expect(VISION_DEADLINE_MS).toBeLessThanOrEqual(24_000);
   });
 });

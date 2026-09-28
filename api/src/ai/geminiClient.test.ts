@@ -206,6 +206,30 @@ describe('callGemini', () => {
     });
   });
 
+  describe('maxOutputTokens', () => {
+    it('omits maxOutputTokens entirely when the caller does not set one — existing callers stay byte-identical', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{}')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      await callGemini('p', { timeoutMs: 5000 }, { config, fetchApiKey, fetchImpl });
+
+      const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as { generationConfig: Record<string, unknown> };
+      expect(body.generationConfig).not.toHaveProperty('maxOutputTokens');
+    });
+
+    it('sends the caller-supplied cap (W20 D2/D3: bounds output length, and with it vision latency)', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{}')));
+      const fetchApiKey = vi.fn().mockResolvedValue('key');
+
+      await callGemini('p', { timeoutMs: 5000, maxOutputTokens: 2048 }, { config, fetchApiKey, fetchImpl });
+
+      const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as { generationConfig: { maxOutputTokens: number } };
+      expect(body.generationConfig.maxOutputTokens).toBe(2048);
+    });
+  });
+
   describe('temperature', () => {
     it('defaults generationConfig.temperature to 0.2 (SD §8.6\'s structured-output value) when the caller does not specify one', async () => {
       const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, geminiSuccessBody('{}')));
