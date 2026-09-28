@@ -19,10 +19,14 @@ describe('convertQuantity', () => {
     expect(convertQuantity(500, 'g', 'ml')).toBeNull();
   });
 
-  it('returns null for count-only units (piece, packet, bunch) against a convertible family', () => {
+  it('returns null for count-only units (piece, packet, bunch, jar, bottle) against a convertible family', () => {
     expect(convertQuantity(2, 'piece', 'g')).toBeNull();
     expect(convertQuantity(2, 'packet', 'ml')).toBeNull();
     expect(convertQuantity(2, 'bunch', 'kg')).toBeNull();
+    // jar/bottle (W19 S2) follow packet's own precedent exactly — container-count units never
+    // get a mass/volume table entry, same reasoning this file's own doc comment already gives.
+    expect(convertQuantity(2, 'jar', 'g')).toBeNull();
+    expect(convertQuantity(2, 'bottle', 'ml')).toBeNull();
   });
 
   it('returns null between two different count-only units — no conversion, not even a guess', () => {

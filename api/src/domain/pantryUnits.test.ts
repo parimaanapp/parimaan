@@ -19,4 +19,9 @@ describe('canonicalizePantryUnit', () => {
     expect(canonicalizePantryUnit('पाव')).toBe('पाव');
     expect(canonicalizePantryUnit('  dozen  ')).toBe('dozen');
   });
+
+  it('knows jar and bottle — W19 S2\'s real Gemini vision spike found >75% of real photo-sourced quantities used container-count units these weren\'t in yet', () => {
+    expect(KNOWN_PANTRY_UNITS as readonly string[]).toContain('jar');
+    expect(KNOWN_PANTRY_UNITS as readonly string[]).toContain('bottle');
+  });
 });

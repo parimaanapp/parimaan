@@ -93,7 +93,7 @@ void main() {
       expect(find.byKey(CuratedItemsSheet.quantityFieldKey(second)), findsNothing);
     });
 
-    testWidgets('the stepper offers exactly the ten KNOWN_PANTRY_UNITS and no eleventh', (
+    testWidgets('the stepper offers exactly knownPantryUnits and nothing beyond it', (
       WidgetTester tester,
     ) async {
       await _pumpSheet(tester, category: 'dal');
