@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { householdIdSchema } from './householdId.js';
 
-const MAX_NAME_LENGTH = 120;
-const MAX_UNIT_LENGTH = 20;
+export const MAX_NAME_LENGTH = 120;
+export const MAX_UNIT_LENGTH = 20;
 const MAX_CATEGORY_LENGTH = 40;
 /** `YYYY-MM-DD` — AppSync's own `AWSDate` wire format. */
 const AWS_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
