@@ -5127,7 +5127,7 @@ Wireframe 9.x "Photo AI review" (45/50): the user photographs one shelf, sees AI
 | **S5** | Ferry operations, mobile repository (presigned PUT via `http`, as W17's export does), controller state machine incl. loading, timeout, and **upload failure/offline** (a failed PUT must land on a retry-or-manual screen, never an endless spinner; the app-root `OfflineBanner` already exists) | 3h / Medium | S3, S4 | ✅ merged (#199) |
 | **S6** | Review screen (wireframe Flow 9's single Photo-AI-review screen; Flow 9's other three screens shipped in W5 — **S6 opens by reading the wireframe source, which is not in this repo**): `AIProposal` per field, confidence-based default ticking (D12), quantity stepper + unit chips, duplicate warnings, empty/failure screens, "Add another shelf" loop, confirm → `bulkAddPantryItems` (D6, D7, D11) | 4h / **High** | S5 | ✅ merged (#200) |
 | **S7** | Wire capture → analyze → review (replaces the §26 confirmation snackbar); `onPantryBulkChanged` push (D10) | 2h / Medium | S6 | 🔄 in review |
-| **S8** | Real-AWS verification (direct-Lambda invokes, per RUNBOOK §2's procedure) + **physical-iPhone pass** covering everything §26.3 lists as unverified + weekly doc pass | 2.5h / Medium | all | — |
+| **S8** | Real-AWS verification (direct-Lambda invokes, per RUNBOOK §2's procedure) + **physical-iPhone pass** covering everything §26.3 lists as unverified + weekly doc pass | 2.5h / Medium | all | 🔄 backend verified live; iPhone pass pending |
 
 **Planned total ≈ 22h** (S0 already spent). Sequencing: S1 first — its measurement can invalidate D2 and reshape S4. S1 ‖ S3 are independent; S2 follows S1; S4 gates the mobile slices; S5–S7 are strictly sequential; S8 needs the founder's phone.
 
@@ -5239,3 +5239,22 @@ A real phone photo of a real shelf goes capture → upload → analyze → revie
 **D10 (`onPantryBulkChanged` push) descoped, not done.** It is a schema, resolver and infra change that would ride the S8 deploy, for one benefit: a second household member's open pantry list refreshing without a pull. The adder's own list refreshes (the controller invalidates on confirm). This is the same accepted gap W14 S6 recorded (§20.2.7) for the curated multi-select; W20 doesn't widen it. Carried as an open item, not fixed.
 
 **Not verified:** the full path has never run on a device or against a real server — that is S8.
+
+### 27.13 S8 result — the week deployed to dev and verified live
+
+**Deployed:** `Parimaan-dev-Data` and `Parimaan-dev-Api` in one `cdk deploy` (100s, no rollback, no Aurora cold-start timeout this time). `cdk diff` beforehand was purely additive: two Lambdas, their AppSync data sources/resolvers, the 1-day `pantry-photos/` lifecycle rule, and scoped grants (S3 `pantry-photos/*`, the Gemini secret, DynamoDB `UpdateItem`). Network and Auth: no differences.
+
+**Verified by direct Lambda invoke (RUNBOOK §2 method), against real S3 and real Gemini:**
+- `getPantryPhotoUploadUrl` returns a presigned PUT and a `pantry-photos/{sub}/{uuid}.jpg` key; the PUT with `Content-Type: image/jpeg` returns 200.
+- `analyzePantryPhoto` on a real corpus photo (resized to the app's 1024px/q80, 247KB): **5s end to end, 6 items** (Cumin Seeds, Mustard Seeds, Peanuts, Green Moong Dal, Tur Dal, Fennel Seeds), 0 dropped, categories and units valid, all "medium" confidence.
+- **The photo is deleted after analysis** (`HeadObject` → 404), on success and on rejection.
+- Rejections, each with its designed error and message: another user's key and a `..` traversal key → `FORBIDDEN`; an own key never uploaded → `NOT_FOUND`; non-JPEG bytes at a valid key → `VALIDATION` (and the object is still removed).
+- The `Parimaan/PhotoPantry` EMF metric line is emitted.
+
+**A test-harness gotcha, not a product bug:** the ownership regex requires a UUID-shaped `sub` (as real Cognito subs are). A synthetic sub like `w20-s8-verify-1` presigns fine but is then FORBIDDEN at analyze. Use `uuidgen` for the sub in any future direct-invoke pass.
+
+**Not verified, named plainly:**
+- **The physical-iPhone pass** — camera preview and permission prompt, whether the dark-frame threshold (`unverifiedDarkFrameLumaThreshold`) is right, capture size, the review screen with a keyboard up, and the Android build. The founder runs this; nothing here substitutes for it.
+- **The 20/day quota cap and the "rejected photos never consume quota" ordering** are covered by unit tests only; not exercised live (it would take 20 real Gemini calls).
+- **AppSync end to end** (a real Cognito token through the GraphQL API, not a direct Lambda invoke) happens with the first phone run.
+- **Gemini key tier** (free vs paid) is unconfirmed; it must be paid before real users' photos are sent.
