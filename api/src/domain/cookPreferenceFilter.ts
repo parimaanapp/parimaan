@@ -23,7 +23,10 @@ export interface FilterableSuggestion {
   readonly ingredients: readonly { readonly name: string }[];
 }
 
-const texts = (suggestion: FilterableSuggestion): string[] => [suggestion.title, ...suggestion.ingredients.map((i) => i.name)].map((t) => t.toLowerCase());
+/** NFKC + lowercase, the same compatibility normalisation the prompt applies, so a term typed in fullwidth or mixed forms is enforced as the model was shown it. */
+const fold = (text: string): string => text.normalize('NFKC').toLowerCase();
+
+const texts = (suggestion: FilterableSuggestion): string[] => [suggestion.title, ...suggestion.ingredients.map((i) => i.name)].map(fold);
 
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -61,10 +64,10 @@ const neutralise = (text: string): string => text.replace(HARMLESS_PHRASES, ' ')
 /** Case-insensitive substring on ingredient names (the auto-fill skip filter's `ILIKE %term%`, but `%` and `_` in a term are literal); whole-word on the title, so "oil" does not drop "Boiled Egg". A phrase such as "no raw onion" matches nothing, as in auto-fill. */
 export const findSkipViolations = (suggestion: FilterableSuggestion, skipIngredients: readonly string[]): string[] => {
   const seen = new Set<string>();
-  const title = suggestion.title.toLowerCase();
-  const ingredientTexts = suggestion.ingredients.map((i) => i.name.toLowerCase());
+  const title = fold(suggestion.title);
+  const ingredientTexts = suggestion.ingredients.map((i) => fold(i.name));
   return skipIngredients.filter((term) => {
-    const lower = term.trim().toLowerCase();
+    const lower = fold(term).trim();
     if (lower === '' || seen.has(lower)) {
       return false;
     }
@@ -165,7 +168,7 @@ const ALLERGEN_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
 };
 
 const allergenStem = (allergen: string): string => {
-  const lower = allergen.trim().toLowerCase().replace(/\s+allerg(?:y|ies)$/, '');
+  const lower = fold(allergen).trim().replace(/\s+allerg(?:y|ies)$/, '');
   return lower.length > 3 && lower.endsWith('s') ? lower.slice(0, -1) : lower;
 };
 

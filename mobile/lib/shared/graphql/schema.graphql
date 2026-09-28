@@ -555,6 +555,32 @@ type Mutation {
   analyzePantryPhoto(s3Key: String!): PantryPhotoAnalysis!
 
   """
+  Suggests up to 3 recipes the household can cook mostly from its current
+  pantry (W21 S3, `E2E_MVP_PLAN.md` §28 D1). Nothing is saved: every suggestion
+  is an unsaved `RecipeDraft`; a client keeps one through `createRecipe` with
+  `source: { sourceType: ai }` (accepted from W21 S4), and `role` is only an AI
+  proposal, never a confirmed role. Replaces SD §6's earlier `Query cookFromPantry(...): [Recipe!]!`
+  sketch: a suggestion has no id or timestamps, and the call spends quota and
+  writes a cache row, so it is a Mutation.
+
+  **Grounding is computed by the server, not the model:** each suggestion's
+  `ingredientMatches` say, per ingredient, whether it is in the pantry (with
+  the pantry row's own stored name), missing, or assumed (water, salt). The
+  household's skip list and dietary tags are hard filters; allergens add a
+  warning to `draft.warnings`; cuisine preferences only steer the prompt.
+  `vibe: null` means "any vibe".
+
+  A pantry too small to cook from, and a pantry the model could not ground
+  suggestions in, are normal outcomes (`outcome`), not errors. Only members
+  of `householdId` may call this. An identical request within 30 minutes is
+  answered from a cache and does not use the daily limit of 10 (`RATE_LIMITED`);
+  a too-small pantry, a rejected argument, a non-member and a call that cannot
+  finish inside the time budget also cost nothing. AI failures surface as
+  `AI_TIMEOUT`, `AI_BUSY`, `AI_UNAVAILABLE` or `AI_UNPARSEABLE`.
+  """
+  cookFromPantry(householdId: ID!, vibe: CookVibe): CookFromPantryResult!
+
+  """
   Marks `menuItemId` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
@@ -886,6 +912,69 @@ type PantryPhotoProposal {
   category: String!
   confidence: ProposalConfidence!
   warnings: [String!]!
+}
+
+"""
+The vibe chips on wireframe 11.1 (W21). A closed set: there is no free-text
+vibe, so a household member cannot inject text into the model's prompt this way.
+"""
+enum CookVibe {
+  quick
+  weekend
+  kid_friendly
+  comfort
+}
+
+"""
+What `Mutation.cookFromPantry` found. `suggestions` is non-empty if and only
+if `outcome` is `suggestions`; the other two are normal answers with their own screens:
+`pantry_too_small` (too few real ingredients to cook from) and
+`no_grounded_suggestions` (the model's ideas did not fit this pantry or this
+household's rules; changing the vibe is the useful next step).
+"""
+enum CookFromPantryOutcome {
+  suggestions
+  pantry_too_small
+  no_grounded_suggestions
+}
+
+"""Whether one suggested ingredient is in the household's pantry."""
+enum PantryMatchStatus {
+  in_pantry
+  missing
+  "Water and salt: every kitchen has them, so they are never listed as missing."
+  assumed
+}
+
+"""One suggested ingredient's place in the pantry (W21). Presence, not quantity."""
+type CookIngredientMatch {
+  "The recipe's own wording for this ingredient (the pantry row's name, when there is one, is `pantryItemName`)."
+  ingredient: String!
+  status: PantryMatchStatus!
+  "The matched pantry row's own stored name. Set if and only if `status` is `in_pantry`; never model text."
+  pantryItemName: String
+}
+
+"""One suggested recipe (W21). Unsaved."""
+type CookSuggestion {
+  "Stable for this pantry, vibe and household rules, including across a cached answer: a client's key for UI state such as an expanded card or a saved marker."
+  id: ID!
+  "Unsaved. `role` is an AI proposal, never a confirmed role, and `sourceUrl` is always null."
+  draft: RecipeDraft!
+  "Exactly one entry per `draft.ingredients` element, in the same order."
+  ingredientMatches: [CookIngredientMatch!]!
+  "Distinct pantry-row names this recipe uses."
+  have: [String!]!
+  "The recipe's own wording for each ingredient the pantry lacks."
+  missing: [String!]!
+}
+
+"""The result of `Mutation.cookFromPantry` (W21). Between 0 and 3 suggestions."""
+type CookFromPantryResult {
+  outcome: CookFromPantryOutcome!
+  "The vibe this answer is for (null: any vibe), echoed so a dead-end or restored screen need not remember it."
+  vibe: CookVibe
+  suggestions: [CookSuggestion!]!
 }
 
 """

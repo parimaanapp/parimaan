@@ -60,6 +60,21 @@ export interface DbResolverEntry {
    * convention.
    */
   readonly needsExportsBucket?: boolean;
+  /**
+   * W21 S3 (`E2E_MVP_PLAN.md` §28 D2) — true ONLY for `CookFromPantry`. Sets
+   * `GEMINI_API_KEY_SECRET_ARN` and grants read on the one
+   * `parimaan/gemini-api-key` secret, for a VPC resolver that also calls Gemini
+   * (pair with `needsInternetEgress`). A data flag rather than a second bespoke
+   * `createXFn`, so "grant exactly what this Lambda calls" stays in one loop.
+   */
+  readonly needsGeminiSecret?: boolean;
+  /**
+   * W21 S3 (D2/D5/D7) — true ONLY for `CookFromPantry`. Sets `CACHE_TABLE_NAME` and grants exactly
+   * `dynamodb:GetItem` + `PutItem` + `UpdateItem` on the cache table: the suggestion cache read and
+   * write, and the daily-limit counter's atomic increment. Distinct from `needsCacheTable`, which
+   * grants the limiter's `UpdateItem` alone.
+   */
+  readonly needsAiCacheReadWrite?: boolean;
 }
 
 /**
@@ -351,6 +366,15 @@ export const DB_RESOLVERS: readonly DbResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'exportShoppingListImage',
     needsExportsBucket: true,
+  },
+  {
+    id: 'CookFromPantry',
+    entryFile: 'cookFromPantry.ts',
+    typeName: 'Mutation',
+    fieldName: 'cookFromPantry',
+    needsInternetEgress: true,
+    needsGeminiSecret: true,
+    needsAiCacheReadWrite: true,
   },
 ];
 

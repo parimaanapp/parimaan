@@ -1349,6 +1349,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiCookFromPantryDataSourceA4848650": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "CookFromPantryFn6D8BF0ED",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "CookFromPantryDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiCookFromPantryDataSourceServiceRole071A1C53",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiCookFromPantryDataSourceServiceRole071A1C53": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiCookFromPantryDataSourceServiceRoleDefaultPolicy8978B14A": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "CookFromPantryFn6D8BF0ED",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "CookFromPantryFn6D8BF0ED",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiCookFromPantryDataSourceServiceRoleDefaultPolicy8978B14A",
+        "Roles": [
+          {
+            "Ref": "ApiCookFromPantryDataSourceServiceRole071A1C53",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiCookFromPantryResolver280D6D96": {
+      "DependsOn": [
+        "ApiCookFromPantryDataSourceA4848650",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "CookFromPantryDataSource",
+        "FieldName": "cookFromPantry",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiCopyMenuDayDataSource1B2854AE": {
       "Properties": {
         "ApiId": {
@@ -5831,6 +5936,32 @@ type Mutation {
   analyzePantryPhoto(s3Key: String!): PantryPhotoAnalysis!
 
   """
+  Suggests up to 3 recipes the household can cook mostly from its current
+  pantry (W21 S3, \`E2E_MVP_PLAN.md\` §28 D1). Nothing is saved: every suggestion
+  is an unsaved \`RecipeDraft\`; a client keeps one through \`createRecipe\` with
+  \`source: { sourceType: ai }\` (accepted from W21 S4), and \`role\` is only an AI
+  proposal, never a confirmed role. Replaces SD §6's earlier \`Query cookFromPantry(...): [Recipe!]!\`
+  sketch: a suggestion has no id or timestamps, and the call spends quota and
+  writes a cache row, so it is a Mutation.
+
+  **Grounding is computed by the server, not the model:** each suggestion's
+  \`ingredientMatches\` say, per ingredient, whether it is in the pantry (with
+  the pantry row's own stored name), missing, or assumed (water, salt). The
+  household's skip list and dietary tags are hard filters; allergens add a
+  warning to \`draft.warnings\`; cuisine preferences only steer the prompt.
+  \`vibe: null\` means "any vibe".
+
+  A pantry too small to cook from, and a pantry the model could not ground
+  suggestions in, are normal outcomes (\`outcome\`), not errors. Only members
+  of \`householdId\` may call this. An identical request within 30 minutes is
+  answered from a cache and does not use the daily limit of 10 (\`RATE_LIMITED\`);
+  a too-small pantry, a rejected argument, a non-member and a call that cannot
+  finish inside the time budget also cost nothing. AI failures surface as
+  \`AI_TIMEOUT\`, \`AI_BUSY\`, \`AI_UNAVAILABLE\` or \`AI_UNPARSEABLE\`.
+  """
+  cookFromPantry(householdId: ID!, vibe: CookVibe): CookFromPantryResult!
+
+  """
   Marks \`menuItemId\` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
@@ -6162,6 +6293,69 @@ type PantryPhotoProposal {
   category: String!
   confidence: ProposalConfidence!
   warnings: [String!]!
+}
+
+"""
+The vibe chips on wireframe 11.1 (W21). A closed set: there is no free-text
+vibe, so a household member cannot inject text into the model's prompt this way.
+"""
+enum CookVibe {
+  quick
+  weekend
+  kid_friendly
+  comfort
+}
+
+"""
+What \`Mutation.cookFromPantry\` found. \`suggestions\` is non-empty if and only
+if \`outcome\` is \`suggestions\`; the other two are normal answers with their own screens:
+\`pantry_too_small\` (too few real ingredients to cook from) and
+\`no_grounded_suggestions\` (the model's ideas did not fit this pantry or this
+household's rules; changing the vibe is the useful next step).
+"""
+enum CookFromPantryOutcome {
+  suggestions
+  pantry_too_small
+  no_grounded_suggestions
+}
+
+"""Whether one suggested ingredient is in the household's pantry."""
+enum PantryMatchStatus {
+  in_pantry
+  missing
+  "Water and salt: every kitchen has them, so they are never listed as missing."
+  assumed
+}
+
+"""One suggested ingredient's place in the pantry (W21). Presence, not quantity."""
+type CookIngredientMatch {
+  "The recipe's own wording for this ingredient (the pantry row's name, when there is one, is \`pantryItemName\`)."
+  ingredient: String!
+  status: PantryMatchStatus!
+  "The matched pantry row's own stored name. Set if and only if \`status\` is \`in_pantry\`; never model text."
+  pantryItemName: String
+}
+
+"""One suggested recipe (W21). Unsaved."""
+type CookSuggestion {
+  "Stable for this pantry, vibe and household rules, including across a cached answer: a client's key for UI state such as an expanded card or a saved marker."
+  id: ID!
+  "Unsaved. \`role\` is an AI proposal, never a confirmed role, and \`sourceUrl\` is always null."
+  draft: RecipeDraft!
+  "Exactly one entry per \`draft.ingredients\` element, in the same order."
+  ingredientMatches: [CookIngredientMatch!]!
+  "Distinct pantry-row names this recipe uses."
+  have: [String!]!
+  "The recipe's own wording for each ingredient the pantry lacks."
+  missing: [String!]!
+}
+
+"""The result of \`Mutation.cookFromPantry\` (W21). Between 0 and 3 suggestions."""
+type CookFromPantryResult {
+  outcome: CookFromPantryOutcome!
+  "The vibe this answer is for (null: any vibe), echoed so a dead-end or restored screen need not remember it."
+  vibe: CookVibe
+  suggestions: [CookSuggestion!]!
 }
 
 """
@@ -8059,6 +8253,203 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "ClearMenuWeekFnServiceRole9F55337F",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CookFromPantryFn6D8BF0ED": {
+      "DependsOn": [
+        "CookFromPantryFnServiceRoleDefaultPolicy121FA9C2",
+        "CookFromPantryFnServiceRole039A84FC",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "CACHE_TABLE_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefCacheTableC1E6DF7EB68DF245",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+            "GEMINI_API_KEY_SECRET_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":secretsmanager:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":secret:parimaan/gemini-api-key",
+                ],
+              ],
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "CookFromPantryFnServiceRole039A84FC",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcprivateegressSubnet1Subnet830BC88F45116193",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcprivateegressSubnet2SubnetEB0EA9CBFD91A0CD",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CookFromPantryFnServiceRole039A84FC": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CookFromPantryFnServiceRoleDefaultPolicy121FA9C2": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:parimaan/gemini-api-key-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:UpdateItem",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttCacheTableC1E6DF7EArn8EF20E10",
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CookFromPantryFnServiceRoleDefaultPolicy121FA9C2",
+        "Roles": [
+          {
+            "Ref": "CookFromPantryFnServiceRole039A84FC",
           },
         ],
       },

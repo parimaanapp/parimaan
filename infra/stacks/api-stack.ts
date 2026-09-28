@@ -23,6 +23,7 @@ import type { Construct } from 'constructs';
 import { createDbResolverFunction } from './dbResolver';
 import { createNonVpcResolverFunction } from './nonVpcResolver';
 import { AI_RESOLVERS, DB_RESOLVERS, NET_RESOLVERS } from './resolverEntries';
+import type { DbResolverEntry } from './resolverEntries';
 
 export interface ApiStackProps extends cdk.StackProps {
   /** Deployment environment name, supplied via CDK context. */
@@ -325,6 +326,11 @@ export class ApiStack extends cdk.Stack {
         staplesNoteFn.grantInvoke(fn);
       }
 
+      // W21 S3 (D2, `E2E_MVP_PLAN.md` §28) — the two opt-in AI flags (`needsGeminiSecret`,
+      // `needsAiCacheReadWrite`): read of the one Gemini secret, and Get/Put/Update on the
+      // cache table. Only entries that set a flag get anything.
+      this.grantOptInAiAccess(entry, fn, cacheTable);
+
       // W17 S6 (D8, `E2E_MVP_PLAN.md` §23.2.8) — only `exportShoppingListImage`
       // ever presigns against `exportsBucket`, and even then only for the
       // `exports/*` prefix (`grantPut`'s `objectsKeyPattern` argument), never
@@ -336,6 +342,18 @@ export class ApiStack extends cdk.Stack {
       }
 
       this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);
+    }
+  }
+
+  private grantOptInAiAccess(entry: DbResolverEntry, fn: NodejsFunction, cacheTable: Table): void {
+    if (entry.needsGeminiSecret === true) {
+      const geminiApiKeySecret = SecretsManagerSecret.fromSecretNameV2(this, `${entry.id}GeminiApiKeySecret`, 'parimaan/gemini-api-key');
+      fn.addEnvironment('GEMINI_API_KEY_SECRET_ARN', geminiApiKeySecret.secretArn);
+      geminiApiKeySecret.grantRead(fn);
+    }
+    if (entry.needsAiCacheReadWrite === true) {
+      fn.addEnvironment('CACHE_TABLE_NAME', cacheTable.tableName);
+      cacheTable.grant(fn, 'dynamodb:UpdateItem', 'dynamodb:GetItem', 'dynamodb:PutItem');
     }
   }
 

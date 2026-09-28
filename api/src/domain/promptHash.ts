@@ -19,3 +19,12 @@ export interface PromptHashInput {
  */
 export const computePromptHash = ({ model, temperature, maxOutputTokens, prompt }: PromptHashInput): string =>
   createHash('sha256').update(JSON.stringify([model, temperature, maxOutputTokens, prompt])).digest('hex').slice(0, 16);
+
+/**
+ * A stable id for one suggestion within one prompt's answer (W21 S3, for S4's UI
+ * state: the expanded card, the "saved" marker, the detail route). Derived from
+ * the prompt hash and the suggestion's identity in the model's output, so it is
+ * the same on a cache hit and never depends on how grounding re-ranks the list.
+ */
+export const computeSuggestionId = (promptHash: string, suggestionKey: string): string =>
+  createHash('sha256').update(JSON.stringify([promptHash, suggestionKey])).digest('hex').slice(0, 16);
