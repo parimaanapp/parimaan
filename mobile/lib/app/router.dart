@@ -65,6 +65,7 @@ import '../features/shopping_list/presentation/list_preview_screen.dart';
 import '../features/shopping_list/presentation/notification_permission_prompt_screen.dart';
 import '../features/shopping_list/presentation/shopping_list_screen.dart';
 import '../features/shopping_list/presentation/shopping_list_share_image_screen.dart';
+import '../features/pantry/state/photo_review_session_controller.dart';
 import '../shared/errors/app_error.dart';
 import '../shared/ui/components/components.dart';
 import 'membership_revocation_guard.dart';
@@ -844,31 +845,23 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes._pantryPhotoTipsPattern,
         builder: (BuildContext context, GoRouterState state) => PantryPhotoTipsScreen(
-          onContinue: () => context.push(AppRoutes.pantryPhotoCapture(_pantryHouseholdId(state))),
+          onContinue: () {
+            // The start of a fresh sitting: drop anything a previous, abandoned
+            // review left behind. (Not on the camera route — "Add another
+            // shelf" returns there and must keep its items.)
+            ProviderScope.containerOf(context).read(photoReviewSessionControllerProvider.notifier).clear();
+            context.push(AppRoutes.pantryPhotoCapture(_pantryHouseholdId(state)));
+          },
         ),
       ),
       GoRoute(
         path: AppRoutes._pantryPhotoCapturePattern,
-        // W19 §26.1's own named scope boundary: this slice stops at "here's
-        // a real, compressed, guidance-following photo file" — no upload,
-        // no `analyzePantryPhoto` call, no AI proposal review (all later,
-        // not-yet-planned W20 slices). Popping back to `AddMethodScreen`
-        // with an honest confirmation of what actually happened (a real
-        // byte count, not a placeholder) is this route's real current
-        // behavior, not a stand-in for unbuilt functionality.
         builder: (BuildContext context, GoRouterState state) => PantryPhotoCaptureScreen(
-          onCaptured: (Uint8List compressedBytes) {
-            Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Photo captured and compressed to '
-                  '${(compressedBytes.lengthInBytes / 1024).toStringAsFixed(0)} KB. '
-                  '(Uploading it is coming soon.)',
-                ),
-              ),
-            );
-          },
+          // W20 S7: a captured shelf goes to the analyzing screen, which
+          // resolves into the review (replacing itself) — so "Add another
+          // shelf" pops back to this camera with the session intact.
+          onCaptured: (Uint8List compressedBytes) =>
+              context.push(AppRoutes.pantryPhotoAnalyzing(_pantryHouseholdId(state)), extra: compressedBytes),
         ),
       ),
       GoRoute(
