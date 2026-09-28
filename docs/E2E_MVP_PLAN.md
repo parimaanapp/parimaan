@@ -5125,8 +5125,8 @@ Wireframe 9.x "Photo AI review" (45/50): the user photographs one shelf, sees AI
 | **S3** | `getPantryPhotoUploadUrl` — resolver, SDL, non-VPC infra entry, bucket grant, 1-day lifecycle (D1, D4) | 2.5h / Medium | — | ✅ merged (#197) |
 | **S4** | `analyzePantryPhoto` — key-ownership check (strict key regex `pantry-photos/{sub}/{uuid}.jpg`; `..`/absolute/other-prefix keys rejected before any S3 call; presign sets `Content-Type: image/jpeg`), HeadObject size + magic bytes, GET, rate limit, `invokeModel`, delete-after, errors, structured logging (D1, D4, D5, D9) | 3.5h / **High** | S1–S3 | ✅ merged (#198) |
 | **S5** | Ferry operations, mobile repository (presigned PUT via `http`, as W17's export does), controller state machine incl. loading, timeout, and **upload failure/offline** (a failed PUT must land on a retry-or-manual screen, never an endless spinner; the app-root `OfflineBanner` already exists) | 3h / Medium | S3, S4 | ✅ merged (#199) |
-| **S6** | Review screen (wireframe Flow 9's single Photo-AI-review screen; Flow 9's other three screens shipped in W5 — **S6 opens by reading the wireframe source, which is not in this repo**): `AIProposal` per field, confidence-based default ticking (D12), quantity stepper + unit chips, duplicate warnings, empty/failure screens, "Add another shelf" loop, confirm → `bulkAddPantryItems` (D6, D7, D11) | 4h / **High** | S5 | 🔄 in review |
-| **S7** | Wire capture → analyze → review (replaces the §26 confirmation snackbar); `onPantryBulkChanged` push (D10) | 2h / Medium | S6 | — |
+| **S6** | Review screen (wireframe Flow 9's single Photo-AI-review screen; Flow 9's other three screens shipped in W5 — **S6 opens by reading the wireframe source, which is not in this repo**): `AIProposal` per field, confidence-based default ticking (D12), quantity stepper + unit chips, duplicate warnings, empty/failure screens, "Add another shelf" loop, confirm → `bulkAddPantryItems` (D6, D7, D11) | 4h / **High** | S5 | ✅ merged (#200) |
+| **S7** | Wire capture → analyze → review (replaces the §26 confirmation snackbar); `onPantryBulkChanged` push (D10) | 2h / Medium | S6 | 🔄 in review |
 | **S8** | Real-AWS verification (direct-Lambda invokes, per RUNBOOK §2's procedure) + **physical-iPhone pass** covering everything §26.3 lists as unverified + weekly doc pass | 2.5h / Medium | all | — |
 
 **Planned total ≈ 22h** (S0 already spent). Sequencing: S1 first — its measurement can invalidate D2 and reshape S4. S1 ‖ S3 are independent; S2 follows S1; S4 gates the mobile slices; S5–S7 are strictly sequential; S8 needs the founder's phone.
@@ -5231,3 +5231,11 @@ A real phone photo of a real shelf goes capture → upload → analyze → revie
 **Deliberately not here:** the camera's `onCaptured` still shows the W19 snackbar — wiring capture → analyzing → review, clearing the session at flow start, and the `onPantryBulkChanged` push are **S7**. So the flow is fully built and route-reachable but not yet reachable from the UI; nothing is user-visible until S7.
 
 **Not verified:** on-device look and feel (real fonts, safe areas, the sheet with a keyboard up) — checked only in widget tests and, where noted in the PR, on the iOS simulator; and nothing has run against a real server (S8).
+
+### 27.12 S7 result — capture wired to analyze and review
+
+**Delivered:** the camera's `onCaptured` now pushes the analyzing screen (photo as route `extra`), which replaces itself with the review; "Add another shelf" pops back to the still-mounted camera with the session intact. The tips screen's Continue clears the review session — the start of a fresh sitting, deliberately not on the camera route, which "Add another shelf" returns to. The W19 "coming soon" snackbar is gone: the feature is now reachable end to end from Add item → Add from a photo.
+
+**D10 (`onPantryBulkChanged` push) descoped, not done.** It is a schema, resolver and infra change that would ride the S8 deploy, for one benefit: a second household member's open pantry list refreshing without a pull. The adder's own list refreshes (the controller invalidates on confirm). This is the same accepted gap W14 S6 recorded (§20.2.7) for the curated multi-select; W20 doesn't widen it. Carried as an open item, not fixed.
+
+**Not verified:** the full path has never run on a device or against a real server — that is S8.

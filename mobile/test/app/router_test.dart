@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +13,10 @@ import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/menu/presentation/today_screen.dart';
 import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
+import 'package:mobile/features/pantry/data/pantry_photo_repository.dart';
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
+import 'package:mobile/features/pantry/domain/pantry_photo_analysis.dart';
+import 'package:mobile/features/pantry/state/photo_review_session_controller.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/curated_items_sheet.dart';
@@ -35,6 +39,7 @@ import 'package:mobile/shared/ui/theme.dart';
 
 import '../support/fake_auth_repository.dart';
 import '../support/fake_household_repository.dart';
+import '../support/fake_pantry_photo_repository.dart';
 import '../support/fake_pantry_repository.dart';
 import '../support/household_activity_overrides.dart';
 import '../support/household_fixtures.dart';
@@ -72,6 +77,7 @@ Future<GoRouter> _pumpRouter(
   // The non-empty default reproduces the pre-S6 landing exactly, so only
   // tests that actually care about the Q20 threshold need to override this.
   List<Override> activityOverrides = const <Override>[],
+  List<Override> extraOverrides = const <Override>[],
 }) async {
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
@@ -91,6 +97,7 @@ Future<GoRouter> _pumpRouter(
       // which is what lets a caller's `activityOverrides` win over the
       // default above.
       ...activityOverrides,
+      ...extraOverrides,
     ],
   );
   addTearDown(container.dispose);
@@ -785,6 +792,73 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(PantryPhotoReviewScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'continuing from the tips screen starts a fresh photo session (W20 S7)',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+        );
+        router.go(AppRoutes.pantryPhotoTips('household-1'));
+        await tester.pumpAndSettle();
+        final ProviderContainer container = ProviderScope.containerOf(
+          tester.element(find.byType(PantryPhotoTipsScreen)),
+        );
+        container
+            .read(photoReviewSessionControllerProvider.notifier)
+            .addAnalysis(
+              PantryPhotoAnalysis(
+                items: <PantryPhotoProposal>[
+                  PantryPhotoProposal(
+                    name: 'Left over',
+                    quantity: 1,
+                    unit: 'jar',
+                    category: 'dal',
+                    confidence: ProposalConfidence.high,
+                    warnings: const <String>[],
+                  ),
+                ],
+                droppedCount: 0,
+                truncated: false,
+              ),
+              pantryNames: const <String>{},
+            );
+
+        await tester.tap(find.byKey(PantryPhotoTipsScreen.continueButtonKey));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(container.read(photoReviewSessionControllerProvider).items, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'the analyzing route renders when it is given a photo (W20 S7)',
+      (WidgetTester tester) async {
+        final FakePantryPhotoRepository photos = FakePantryPhotoRepository()
+          ..failWith(const InternalError('no server in this test'));
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          extraOverrides: <Override>[
+            pantryPhotoRepositoryProvider.overrideWithValue(photos),
+          ],
+        );
+
+        unawaited(
+          router.push(
+            AppRoutes.pantryPhotoAnalyzing('household-1'),
+            extra: Uint8List.fromList(<int>[1, 2, 3]),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(PantryPhotoAnalyzingScreen), findsOneWidget);
+        await tester.pumpWidget(const SizedBox());
       },
     );
 
