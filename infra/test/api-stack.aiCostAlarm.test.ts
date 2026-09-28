@@ -55,6 +55,7 @@ describe('ApiStack — AI cost alarm (W19 D6)', () => {
       lambdaSecurityGroup: data.lambdaSecurityGroup,
       cacheTable: data.cacheTable,
       exportsBucket: data.exportsBucket,
+      uploadsBucket: data.uploadsBucket,
       alertsTopic: data.alertsTopic,
     });
     return cdk.assertions.Template.fromStack(stack).toJSON() as {

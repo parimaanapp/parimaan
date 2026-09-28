@@ -2258,6 +2258,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiGetPantryPhotoUploadUrlDataSourceFA7A5BDD": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "GetPantryPhotoUploadUrlFn034570EC",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "GetPantryPhotoUploadUrlDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiGetPantryPhotoUploadUrlDataSourceServiceRole3DA8F5C1",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiGetPantryPhotoUploadUrlDataSourceServiceRole3DA8F5C1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiGetPantryPhotoUploadUrlDataSourceServiceRoleDefaultPolicy0DCB24DC": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "GetPantryPhotoUploadUrlFn034570EC",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "GetPantryPhotoUploadUrlFn034570EC",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiGetPantryPhotoUploadUrlDataSourceServiceRoleDefaultPolicy0DCB24DC",
+        "Roles": [
+          {
+            "Ref": "ApiGetPantryPhotoUploadUrlDataSourceServiceRole3DA8F5C1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiGetPantryPhotoUploadUrlResolver32241A87": {
+      "DependsOn": [
+        "ApiGetPantryPhotoUploadUrlDataSourceFA7A5BDD",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "GetPantryPhotoUploadUrlDataSource",
+        "FieldName": "getPantryPhotoUploadUrl",
+        "Kind": "UNIT",
+        "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiHaveItDataSourceCE536544": {
       "Properties": {
         "ApiId": {
@@ -5423,6 +5528,22 @@ type Mutation {
   exportShoppingListImage(listId: ID!): String!
 
   """
+  Returns a presigned S3 PUT URL for uploading ONE compressed pantry-shelf
+  photo (W20 S3, \`E2E_MVP_PLAN.md\` §27.2 D1/D4), plus the \`s3Key\` to hand to
+  \`analyzePantryPhoto\` afterwards. Takes no arguments: the key is scoped to
+  the caller's own identity (\`pantry-photos/{sub}/{uuid}.jpg\`), so no
+  household or membership check is involved — a photo is transient input, not
+  household data, until the user confirms proposed items through
+  \`bulkAddPantryItems\`. The URL expires in 5 minutes and only accepts
+  \`Content-Type: image/jpeg\`; S3 cannot cap a presigned PUT's size, so
+  \`analyzePantryPhoto\` re-checks it (≤ 500KB) before reading. Limited to 60
+  URLs per user per day (\`RATE_LIMITED\`). The PUT itself is plain HTTP,
+  outside GraphQL. Supersedes SD §6's earlier \`getPantryPhotoUploadUrl(
+  householdId: ID!)\` sketch, whose \`householdId\` had nothing to authorize.
+  """
+  getPantryPhotoUploadUrl: PresignedUpload!
+
+  """
   Marks \`menuItemId\` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
@@ -5728,6 +5849,18 @@ input HouseholdSettingsInput {
   dietaryTags: [DietaryTag!]
   allergens: [String!]
   skipIngredients: [String!]
+}
+
+"""
+The result of \`Mutation.getPantryPhotoUploadUrl\` (W20 S3): where to PUT one
+photo, and the key that names it afterwards.
+"""
+type PresignedUpload {
+  "Presigned S3 PUT URL. Requires \`Content-Type: image/jpeg\`; expires at \`expiresAt\`."
+  url: String!
+  "Pass this to \`analyzePantryPhoto\`. Scoped to the caller — another user's key is refused."
+  s3Key: String!
+  expiresAt: AWSDateTime!
 }
 
 """
@@ -9130,6 +9263,123 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "GenerateShoppingListFnServiceRole3AF28480",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "GetPantryPhotoUploadUrlFn034570EC": {
+      "DependsOn": [
+        "GetPantryPhotoUploadUrlFnServiceRoleDefaultPolicy3FADC05E",
+        "GetPantryPhotoUploadUrlFnServiceRoleD236D282",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "CACHE_TABLE_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefCacheTableC1E6DF7EB68DF245",
+            },
+            "UPLOADS_BUCKET_NAME": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefUploadsBucket5E5E9B64F2F56CC2",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "GetPantryPhotoUploadUrlFnServiceRoleD236D282",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 28,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "GetPantryPhotoUploadUrlFnServiceRoleD236D282": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "GetPantryPhotoUploadUrlFnServiceRoleDefaultPolicy3FADC05E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttCacheTableC1E6DF7EArn8EF20E10",
+                },
+              ],
+            },
+            {
+              "Action": "s3:PutObject",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttUploadsBucket5E5E9B64Arn8603C131",
+                    },
+                    "/pantry-photos/*",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "GetPantryPhotoUploadUrlFnServiceRoleDefaultPolicy3FADC05E",
+        "Roles": [
+          {
+            "Ref": "GetPantryPhotoUploadUrlFnServiceRoleD236D282",
           },
         ],
       },

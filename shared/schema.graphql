@@ -505,6 +505,22 @@ type Mutation {
   exportShoppingListImage(listId: ID!): String!
 
   """
+  Returns a presigned S3 PUT URL for uploading ONE compressed pantry-shelf
+  photo (W20 S3, `E2E_MVP_PLAN.md` §27.2 D1/D4), plus the `s3Key` to hand to
+  `analyzePantryPhoto` afterwards. Takes no arguments: the key is scoped to
+  the caller's own identity (`pantry-photos/{sub}/{uuid}.jpg`), so no
+  household or membership check is involved — a photo is transient input, not
+  household data, until the user confirms proposed items through
+  `bulkAddPantryItems`. The URL expires in 5 minutes and only accepts
+  `Content-Type: image/jpeg`; S3 cannot cap a presigned PUT's size, so
+  `analyzePantryPhoto` re-checks it (≤ 500KB) before reading. Limited to 60
+  URLs per user per day (`RATE_LIMITED`). The PUT itself is plain HTTP,
+  outside GraphQL. Supersedes SD §6's earlier `getPantryPhotoUploadUrl(
+  householdId: ID!)` sketch, whose `householdId` had nothing to authorize.
+  """
+  getPantryPhotoUploadUrl: PresignedUpload!
+
+  """
   Marks `menuItemId` as cooked and deducts its recipe's ingredients from the
   household's pantry, in one transaction (W12 S2, E2E_MVP_PLAN.md §18.2.2–
   §18.2.4, SD §6.1's already-locked shape — zero widening). Deduction reuses
@@ -810,6 +826,18 @@ input HouseholdSettingsInput {
   dietaryTags: [DietaryTag!]
   allergens: [String!]
   skipIngredients: [String!]
+}
+
+"""
+The result of `Mutation.getPantryPhotoUploadUrl` (W20 S3): where to PUT one
+photo, and the key that names it afterwards.
+"""
+type PresignedUpload {
+  "Presigned S3 PUT URL. Requires `Content-Type: image/jpeg`; expires at `expiresAt`."
+  url: String!
+  "Pass this to `analyzePantryPhoto`. Scoped to the caller — another user's key is refused."
+  s3Key: String!
+  expiresAt: AWSDateTime!
 }
 
 """

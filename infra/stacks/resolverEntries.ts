@@ -368,6 +368,8 @@ export interface NonVpcResolverEntry {
   readonly needsGeminiSecret?: boolean;
   /** Grants `CACHE_TABLE_NAME` + a narrow `dynamodb:UpdateItem` on the shared cache table — same flag, same narrow grant shape as `DbResolverEntry.needsCacheTable` above, reused here rather than re-invented for this category. True for `parseFreeformRecipe` (S3, `'freeformParse'` rate limit) and, later, `importRecipeFromUrl` (S5, `'urlImport'`). */
   readonly needsCacheTable?: boolean;
+  /** W20 S3 (`E2E_MVP_PLAN.md` §27.2 D1/D4) — grants `UPLOADS_BUCKET_NAME` + a narrow `s3:PutObject` on the `pantry-photos/*` prefix only (never the whole bucket, never Get/Delete) — `getPantryPhotoUploadUrl` only presigns. `analyzePantryPhoto` (S4) will need its own, different read/delete grant and gets its own flag rather than widening this one. */
+  readonly needsUploadsBucketPut?: boolean;
 }
 
 /**
@@ -400,5 +402,14 @@ export const NET_RESOLVERS: readonly NonVpcResolverEntry[] = [
     typeName: 'Mutation',
     fieldName: 'importRecipeFromUrl',
     needsCacheTable: true,
+  },
+  {
+    // W20 S3 — presigns only; no Gemini, no Aurora (caller-scoped keys, D1).
+    id: 'GetPantryPhotoUploadUrl',
+    entryFile: 'getPantryPhotoUploadUrl.ts',
+    typeName: 'Mutation',
+    fieldName: 'getPantryPhotoUploadUrl',
+    needsCacheTable: true,
+    needsUploadsBucketPut: true,
   },
 ];

@@ -710,8 +710,11 @@ type Mutation {
   haveIt(itemId: ID!, quantity: Float!): ShoppingList!
   exportShoppingListImage(listId: ID!): String!    # returns presigned URL
 
-  # Upload URL
-  getPantryPhotoUploadUrl(householdId: ID!): PresignedUpload!
+  # Upload URL. CHANGED W20 S3 (E2E_MVP_PLAN.md §27.2 D1): no `householdId` argument —
+  # the key is scoped to the caller's own Cognito sub (`pantry-photos/{sub}/{uuid}.jpg`),
+  # so the resolver is a non-VPC Lambda with no DB and nothing to authorize. A photo is
+  # transient input; it becomes household data only via the confirmed bulkAddPantryItems.
+  getPantryPhotoUploadUrl: PresignedUpload!
 
   # Notification preferences. SHIPPED W8 S8 (§14.2.6 D1). Always writes the
   # CALLER's own (userId, householdId) row — no argument for a target user.

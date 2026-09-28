@@ -10,6 +10,7 @@ import { Alarm, ComparisonOperator, Metric, TreatMissingData } from 'aws-cdk-lib
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import type { IUserPool, UserPool } from 'aws-cdk-lib/aws-cognito';
 import type { ISecurityGroup, IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
@@ -70,6 +71,13 @@ export interface ApiStackProps extends cdk.StackProps {
    * the whole bucket and never any other Lambda.
    */
   readonly exportsBucket: Bucket;
+  /**
+   * Uploads S3 bucket from DataStack (W20 S3, `E2E_MVP_PLAN.md` §27.2 D1/D4)
+   * — `getPantryPhotoUploadUrl`'s presigned-PUT target. Granted to exactly
+   * that one resolver, `s3:PutObject` on `pantry-photos/*` only (via
+   * `needsUploadsBucketPut` on `resolverEntries.ts`'s `NonVpcResolverEntry`).
+   */
+  readonly uploadsBucket: Bucket;
   /**
    * DataStack's shared alerts SNS topic (W17 S3, `E2E_MVP_PLAN.md` §23.2.2)
    * — `staplesNoteFn`'s own error-rate `Alarm` publishes here, the same
@@ -435,7 +443,7 @@ export class ApiStack extends cdk.Stack {
    * `grantReadData` convenience grants this Lambda category has no use for.
    */
   private createAiAndNetResolvers(props: ApiStackProps): void {
-    const { cacheTable } = props;
+    const { cacheTable, uploadsBucket } = props;
     const geminiApiKeySecret = SecretsManagerSecret.fromSecretNameV2(this, 'GeminiApiKeySecret', 'parimaan/gemini-api-key');
 
     for (const entry of [...AI_RESOLVERS, ...NET_RESOLVERS]) {
@@ -452,6 +460,18 @@ export class ApiStack extends cdk.Stack {
       if (needsCacheTable) {
         fn.addEnvironment('CACHE_TABLE_NAME', cacheTable.tableName);
         cacheTable.grant(fn, 'dynamodb:UpdateItem');
+      }
+      // Least privilege, same convention as `exportsBucket.grantPut(fn, 'exports/*')`
+      // above: the presign resolver signs a PUT URL, so it needs PutObject on its
+      // own prefix and nothing else.
+      if (entry.needsUploadsBucketPut === true) {
+        fn.addEnvironment('UPLOADS_BUCKET_NAME', uploadsBucket.bucketName);
+        // An explicit statement rather than `grantPut`: CDK's `grantPut` also
+        // adds `PutObject*`/`Abort*` variants (six actions), and signing a
+        // presigned PUT needs exactly one — `s3:PutObject`.
+        fn.addToRolePolicy(
+          new PolicyStatement({ actions: ['s3:PutObject'], resources: [uploadsBucket.arnForObjects('pantry-photos/*')] }),
+        );
       }
 
       this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);
