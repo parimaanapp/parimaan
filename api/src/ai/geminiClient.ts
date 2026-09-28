@@ -169,18 +169,20 @@ const buildRequestBody = (
   prompt: string,
   imageParts: { inline_data: { mime_type: string; data: string } }[],
   temperature: number | undefined,
+  maxOutputTokens: number | undefined,
 ): string =>
   JSON.stringify({
     contents: [{ parts: [{ text: prompt }, ...imageParts] }],
     generationConfig: {
       responseMimeType: 'application/json',
       temperature: temperature ?? DEFAULT_TEMPERATURE,
+      ...(maxOutputTokens !== undefined ? { maxOutputTokens } : {}),
     },
   });
 
 export const callGemini = async (
   prompt: string,
-  options: { timeoutMs: number; images?: GeminiImageInput[]; temperature?: number },
+  options: { timeoutMs: number; images?: GeminiImageInput[]; temperature?: number; maxOutputTokens?: number },
   deps: GeminiClientDeps = {},
 ): Promise<GeminiCallResult> => {
   const apiKey = await getApiKey(deps);
@@ -195,7 +197,7 @@ export const callGemini = async (
         'x-goog-api-key': apiKey,
         'Content-Type': 'application/json',
       },
-      body: buildRequestBody(prompt, imageParts, options.temperature),
+      body: buildRequestBody(prompt, imageParts, options.temperature, options.maxOutputTokens),
       signal: AbortSignal.timeout(options.timeoutMs),
     });
   } catch (cause) {

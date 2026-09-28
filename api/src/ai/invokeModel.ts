@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import { AiBusyError, AiTimeoutError, AiUnavailableError, AiUnparseableError } from '../errors.js';
 import { emitAiCostMetric, estimateGeminiCostUsd } from './costMetric.js';
-import type { GeminiClientDeps, GeminiUsage } from './geminiClient.js';
+import type { GeminiClientDeps, GeminiImageInput, GeminiUsage } from './geminiClient.js';
 import { callGemini, GeminiAuthError, GeminiTransportError } from './geminiClient.js';
 
 /**
@@ -12,6 +12,19 @@ import { callGemini, GeminiAuthError, GeminiTransportError } from './geminiClien
  * AppSync's 30s resolver ceiling (§13.2.8).
  */
 export const AI_DEADLINE_MS = 15_000;
+
+/**
+ * W20 S1 — the vision deadline, set from a real re-measurement (E2E_MVP_PLAN.md
+ * §27.6), not carried over from the text number above. On 1024px/JPEG-q80 photos
+ * at temperature 0.2 with a 2048-token output cap, all 59 real calls finished in
+ * ≤ 4.1s (p50 2.9s, p95 3.9s). W19's 12–27s calls were NOT payload cost: they came
+ * in consecutive runs (photos #18-20, #28-33, #35-36) and the same photos took
+ * 2-3s in this run — Gemini-side slow windows. So the deadline is sized for a slow
+ * window, not for the typical call: 24s = the shared non-VPC Lambda's 28s timeout
+ * (`infra/stacks/nonVpcResolver.ts`) minus room for the S3 head/get/delete round
+ * trips and a cold start. AppSync's hard ceiling is 30s.
+ */
+export const VISION_DEADLINE_MS = 24_000;
 
 const TRANSPORT_MAX_ATTEMPTS = 3; // up to 2 retries
 const TRANSPORT_FIRST_BACKOFF_MS = 500;
@@ -54,7 +67,20 @@ const remainingBudget = (deadline: number): number => deadline - Date.now();
 export interface InvokeModelOptions {
   /** Overall deadline for this call, including every retry. Defaults to `AI_DEADLINE_MS`. */
   deadlineMs?: number;
+  /**
+   * W20 S1 (the widening W19 D2 explicitly assigned to W20): inline images sent with
+   * the prompt on EVERY underlying call, reinforcement retry included — a retry that
+   * dropped them would ask the model to re-answer a question it can no longer see.
+   */
+  images?: GeminiImageInput[];
+  /** Forwarded to every underlying call; `callGemini` defaults to SD §8.6's 0.2 when omitted. */
+  temperature?: number;
+  /** Forwarded to every underlying call; bounds output length (W20 D2/D3), and with it vision latency. */
+  maxOutputTokens?: number;
 }
+
+/** The subset of `InvokeModelOptions` that shapes each individual Gemini call (vs. the deadline, which shapes the whole chain). */
+type CallOptions = Pick<InvokeModelOptions, 'images' | 'temperature' | 'maxOutputTokens'>;
 
 /**
  * `GeminiClientDeps` plus a test-only backoff hook — kept separate from
@@ -118,8 +144,13 @@ export const invokeModel = async <T>(
   deps: InvokeModelDeps = {},
 ): Promise<T> => {
   const deadline = Date.now() + (options.deadlineMs ?? AI_DEADLINE_MS);
-  const firstRawText = await callWithTransportRetries(prompt, deadline, deps);
-  return parseWithReinforcementRetry(prompt, firstRawText, schema, deadline, deps);
+  const callOptions: CallOptions = {
+    ...(options.images !== undefined ? { images: options.images } : {}),
+    ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
+    ...(options.maxOutputTokens !== undefined ? { maxOutputTokens: options.maxOutputTokens } : {}),
+  };
+  const firstRawText = await callWithTransportRetries(prompt, deadline, deps, callOptions);
+  return parseWithReinforcementRetry(prompt, firstRawText, schema, deadline, deps, callOptions);
 };
 
 /**
@@ -138,14 +169,19 @@ const emitCostMetricSafely = (usage: GeminiUsage, deps: InvokeModelDeps): void =
 };
 
 /** The transport chain: retries a Gemini call against transient failures, deadline-gated throughout. */
-const callWithTransportRetries = async (prompt: string, deadline: number, deps: InvokeModelDeps): Promise<string> => {
+const callWithTransportRetries = async (
+  prompt: string,
+  deadline: number,
+  deps: InvokeModelDeps,
+  callOptions: CallOptions,
+): Promise<string> => {
   for (let attempt = 1; attempt <= TRANSPORT_MAX_ATTEMPTS; attempt++) {
     const budget = remainingBudget(deadline);
     if (budget <= 0) {
       throw new AiTimeoutError();
     }
     try {
-      const result = await callGemini(prompt, { timeoutMs: budget }, deps);
+      const result = await callGemini(prompt, { timeoutMs: budget, ...callOptions }, deps);
       emitCostMetricSafely(result.usage, deps);
       return result.rawText;
     } catch (error) {
@@ -184,6 +220,7 @@ const parseWithReinforcementRetry = async <T>(
   schema: z.ZodSchema<T>,
   deadline: number,
   deps: InvokeModelDeps,
+  callOptions: CallOptions,
 ): Promise<T> => {
   const tryParse = (rawText: string): { ok: true; value: T } | { ok: false; reason: unknown } => {
     if (rawText.length > MAX_RAW_TEXT_LENGTH) {
@@ -209,7 +246,7 @@ const parseWithReinforcementRetry = async <T>(
   }
 
   const reinforcedPrompt = originalPrompt + REINFORCEMENT_SUFFIX;
-  const secondRawText = await callWithTransportRetries(reinforcedPrompt, deadline, deps);
+  const secondRawText = await callWithTransportRetries(reinforcedPrompt, deadline, deps, callOptions);
   const second = tryParse(secondRawText);
   if (second.ok) {
     return second.value;

@@ -5131,7 +5131,7 @@ Wireframe 9.x "Photo AI review" (45/50): the user photographs one shelf, sees AI
 
 ### 27.4 Risks
 
-- **R1 (High) — Vision latency may not fit AppSync's 30s.** Mitigated by measuring first (S1), capping output, and a named async fallback; the plan will not build S4 against an assumed deadline.
+- **R1 (Medium, downgraded by S1 — see §27.6) — Vision latency vs AppSync's 30s.** S1's measurement found the typical call is ~3s, not ~15s; W19's 12–27s calls were Gemini-side slow windows, not payload cost. The residual risk is a slow window landing on a user's photo: handled by the 24s deadline and the `AI_TIMEOUT` → retake/manual screen (D11), not by an async redesign. Revisit only if S8's real-AWS pass sees slow windows on a meaningful share of calls.
 - **R2 (High) — Gemini data terms for household photos.** Photos of people's kitchens are sent to Google. Free-tier Gemini API usage may be used to improve Google's products; paid-tier usage is not. **Founder action before any real user's photo is sent: confirm which tier `parimaan/gemini-api-key` is on, and enable billing if it is free-tier.** This is a privacy decision for the founder, not something the code can settle. Also worth one line in onboarding copy ("photos are analyzed by an AI service and deleted afterwards").
 - **R3 (Medium) — Physical-device-only unknowns**: real `CameraImage` layout, permission flow, real capture size, the brightness threshold (§26.3). All land in S8; the earlier slices can't retire them.
 - **R4 (Medium) — Whole-frame duplicates across shelves** (D7) may produce noisy warnings in real use; warning-only by design so the cost of being wrong is low.
@@ -5141,3 +5141,23 @@ Wireframe 9.x "Photo AI review" (45/50): the user photographs one shelf, sees AI
 ### 27.5 Exit criteria
 
 A real phone photo of a real shelf goes capture → upload → analyze → review → confirm and lands in the pantry; a dark/opaque photo lands on the empty-result screen, not a spinner or crash; every AI error code lands on a recoverable screen; the 21st photo in a day is refused with the rate-limit copy; the object is gone from S3 after analysis; the $5/day alarm's metric shows the vision calls; latency p95 is recorded next to the deadline it justified; all §26.3 "unverified" items are either verified on-device or re-listed with a reason.
+
+### 27.6 S1 result — vision re-measured on the real payload; latency risk mostly retired, recall risk found and fixed
+
+**Code (S1, TDD, 82 `src/ai` tests green, `tsc`/`eslint` clean):** `invokeModel` and `callGemini` now accept `images`, `temperature` and `maxOutputTokens`, forwarded on *every* underlying call including the reinforcement retry (a retry that dropped the image would ask the model to re-answer a question it can no longer see); text-only callers are byte-identical (asserted). `VISION_DEADLINE_MS = 24_000` added, with a test guarding it against the 28s non-VPC Lambda timeout.
+
+**Measurement (59 real photos, compressed to the real 1024px/q80 spec — all ≤ 275KB, comfortably under the 500KB cap — temperature 0.2, `maxOutputTokens` 2048, the app's real 10-category / 9-unit vocabulary, sequential single attempts):**
+
+| | W19 spike (§25.5) | W20 S1 |
+|---|---|---|
+| Errors / parse failures | 0 / 0 | 0 / 0 |
+| Latency p50 / p95 / max | ~3.7s / — / **27.2s** | **2.9s / 3.9s / 4.1s** |
+| Calls > 15s | 9 (15%) | **0** |
+| Output vocabulary violations | n/a (invented categories) | 0 bad category, 1 bad unit of 221 |
+| Confidence mix | 153 high / 168 med / 25 low | 139 high / 81 med / 1 low |
+
+**Finding 1 — D2's premise was wrong in a good way.** W19's slow calls came in *consecutive runs* (photos #18–20, #28–33, #35–36), and the very same photos took 1.7–3.4s here. That is Gemini-side slow windows, not the cost of an image. The deadline is therefore sized for a slow window (24s), not the typical call, and the async start/poll fallback is not needed on this evidence. Caveat: one calm run does not prove slow windows are gone — S8's real-AWS pass is the check.
+
+**Finding 2 — recall collapsed under the first, stricter prompt, and was recoverable.** The v0 prompt ("skip anything you can't identify") cut proposals from 346 to 221 (−36%) and zero-item photos from 6 to 11: photos of clear jars of visibly identifiable lentils and spices went to `[]`. Spot-checked: p02 (opaque unlabeled jars) going empty was *correct* — W19 had emitted four "Spice Powder" placeholders — but p51 (nine legumes W19 named from visible contents) going empty was a real loss. The v1 prompt (may identify from *visible contents* at `medium` confidence; skip only when contents are invisible; never emit generic placeholders) recovered 39 → 101 items across the 20 affected photos (W19: 137), with **zero generic placeholders** and latency still ≤ 4.1s. 4 of those 20 photos remain empty. S2 starts from the v1 prompt.
+
+**Carried forward:** the 13 W19 placeholder items ("Spice Mix Jar" ×7, "Storage Jar", "Oil or Sauce") and non-food items no longer appear with the v1 prompt on this corpus, but S2's server-side generic-name filter (D12) stays as a backstop — a prompt is not a guarantee. The `medium`-confidence items recovered from unlabeled jars are educated guesses (a red powder called "Chili Powder"); that is exactly what D12's review defaults (medium ticked, user edits) and PRD §5.4 exist for, and it argues for showing the confidence text on each row.
