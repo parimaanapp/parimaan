@@ -19,17 +19,22 @@ import {
  * `RecipeSourceAttribution.sourceType` (§13.2.4 D2) — deliberately a
  * NARROWER set than the full `RecipeSource` enum (`user`/`url`/`curated`/
  * `ai`/`freeform_ai`, `domain/recipeRoles.ts`-style single source of
- * truth would be overkill for two values used nowhere else). `curated`
- * (the W13/W14 seeder) and `ai` (a future cook-from-pantry feature) are
- * server-owned values a client must never be able to claim through this
- * argument — the whole reason this test exists (§13.2.4's own RED test),
- * not an oversight if a client-supplied `curated`/`ai` were ever accepted
- * here. `user` is also excluded: sending `source` at all IS the
- * confirm-a-draft path, and `user` is what absent `source` already means
- * — accepting it explicitly here would blur that distinction for no
- * benefit.
+ * truth would be overkill for three values used nowhere else). `curated`
+ * (the W13/W14 seeder) is a server-owned value a client must never be able
+ * to claim through this argument — the whole reason the rejection test
+ * exists (§13.2.4's own RED test), not an oversight if a client-supplied
+ * `curated` were ever accepted here. `user` is also excluded: sending
+ * `source` at all IS the confirm-a-draft path, and `user` is what absent
+ * `source` already means — accepting it explicitly here would blur that
+ * distinction for no benefit.
+ *
+ * `ai` was server-owned until W21 D9 (`E2E_MVP_PLAN.md` §28) and is now
+ * client-claimable, on the same reasoning W7 D2 accepted `freeform_ai`:
+ * provenance is a low-stakes, self-reported label inside one household, and
+ * the alternative — a server-issued draft token — would expire with the
+ * 30-minute suggestion cache and add a write path for no security gain.
  */
-const CLIENT_SOURCE_TYPE_VALUES = ['url', 'freeform_ai'] as const;
+const CLIENT_SOURCE_TYPE_VALUES = ['url', 'freeform_ai', 'ai'] as const;
 
 /** `https`-only — same reasoning as `validation/importRecipeFromUrl.ts`'s own `url` argument, since this value is later displayed to other household members as stored, untrusted, third-party-influenced text (§12.3 S3's own bound reused here via `MAX_SOURCE_URL_LENGTH`). */
 const isHttpsUrl = (value: string): boolean => {

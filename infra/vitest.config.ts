@@ -15,7 +15,12 @@ export default defineConfig({
     // a "synthesizes without error for dev" timeout at 15_000ms twice in a
     // row on PR #34 (not a one-off; a rerun didn't fix it), immediately
     // after "for prod" alone had already taken 8.7s on that runner.
-    testTimeout: 25_000,
+    // W21 S3 added a 54th Lambda (cookFromPantry) to ApiStack; a full `synth()`
+    // now takes ~17s locally (esbuild-bundling every Lambda) and was tipping
+    // over the old 25s ceiling on a loaded CI runner, which made the whole
+    // suite look "hung" while CI's own script silently retried it up to 10
+    // times. Raised with headroom rather than re-tuned per Lambda count.
+    testTimeout: 60_000,
     // Cuts per-file cold start (each file no longer re-pays the
     // jsii/aws-cdk-lib module-load cost), a genuine local speedup, but did
     // NOT fix the CI-only "[vitest-worker]: Timeout calling 'onTaskUpdate'"

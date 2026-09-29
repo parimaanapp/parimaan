@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { MAX_PROMPT_PANTRY_ITEMS } from './cookPromptText.js';
 import { isPantryTooSmall, MIN_COOKABLE_PANTRY_ITEMS, selectPromptPantryItems, type CookablePantryItem } from './cookablePantry.js';
@@ -76,5 +77,20 @@ describe('selectPromptPantryItems', () => {
   it('does not mutate its input', () => {
     const input = Object.freeze([Object.freeze(item('b')), Object.freeze(item('a'))]);
     expect(() => selectPromptPantryItems(input)).not.toThrow();
+  });
+});
+
+// The Dart twin (mobile/lib/features/cook/domain/cookable_pantry.dart) reads the same file, so the rule cannot drift between client and server.
+describe('isPantryTooSmall — the shared client/server fixture', () => {
+  const fixture = JSON.parse(readFileSync(new URL('../../../shared/fixtures/cookable-pantry-cases.json', import.meta.url), 'utf8')) as {
+    cases: { name: string; items: CookablePantryItem[]; tooSmall: boolean }[];
+  };
+
+  it('has cases to run', () => {
+    expect(fixture.cases.length).toBeGreaterThan(5);
+  });
+
+  it.each(fixture.cases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    expect(isPantryTooSmall(c.items)).toBe(c.tooSmall);
   });
 });

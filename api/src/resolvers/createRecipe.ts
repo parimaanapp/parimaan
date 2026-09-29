@@ -22,7 +22,7 @@ const DEFAULT_SERVINGS = 4;
 /**
  * Resolves the `source` argument (§13.2.4 D2) to the two columns it
  * actually controls — absent/`null` (every pre-W7 caller) means
- * `sourceType: 'user'`, `sourceUrl: null`; a `freeform_ai` attribution
+ * `sourceType: 'user'`, `sourceUrl: null`; a `freeform_ai` or `ai` attribution
  * also has `sourceUrl: null` (the validation schema already guarantees
  * `source.sourceUrl` is only ever set when `sourceType: 'url'`, so this
  * is a straightforward pass-through, not a second enforcement point).
@@ -101,7 +101,7 @@ export const productionDeps: CreateRecipeResolverDeps = { getPool };
  * S6, §13.2.4 D2) via `resolveSourceColumns` — absent (every pre-W7
  * caller, unchanged) resolves to `'user'`/`null`; the Zod schema
  * (`validation/createRecipe.ts`) is what actually restricts client-
- * suppliable `sourceType` values to `url`/`freeform_ai` and enforces
+ * suppliable `sourceType` values to `url`/`freeform_ai`/`ai` and enforces
  * `sourceUrl` required-iff-`url`, not this resolver. `createdBy` is
  * exclusively the verified caller. See `toInsertRecipeInput`'s own doc
  * for the explicit-default-fallback reasoning.

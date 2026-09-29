@@ -6476,10 +6476,10 @@ enum RecipeSource {
 """
 Provenance attribution for \`Mutation.createRecipe\`'s confirm-a-draft path
 (W7 S6, §13.2.4 D2). \`sourceType\` is restricted server-side to \`url\`/
-\`freeform_ai\` — \`curated\`/\`ai\` are values only the server itself ever
-sets (the W13/W14 curated seeder, a future cook-from-pantry feature) and
-a client-supplied \`curated\`/\`ai\` here is rejected, not silently accepted.
-\`sourceUrl\` is required exactly when \`sourceType: url\`.
+\`freeform_ai\`/\`ai\` (\`ai\` from W21: a saved cook-from-pantry suggestion) —
+\`curated\` is a value only the server itself ever sets (the W13/W14 curated
+seeder) and a client-supplied \`curated\` here is rejected, not silently
+accepted. \`sourceUrl\` is required exactly when \`sourceType: url\`.
 """
 input RecipeSourceAttribution {
   sourceType: RecipeSource!
