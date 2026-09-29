@@ -59,6 +59,7 @@ Future<ProviderContainer> _pumpPushed(
   Recipe? initialRecipe,
   AiRecipeDraft? initialDraft,
   String? sourceUrl,
+  RecipeSource? reviewSourceType,
 }) async {
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
@@ -86,6 +87,7 @@ Future<ProviderContainer> _pumpPushed(
           initialRecipe: initialRecipe,
           initialDraft: initialDraft,
           sourceUrl: sourceUrl,
+          reviewSourceType: reviewSourceType,
         ),
       ),
     ],
@@ -700,6 +702,30 @@ void main() {
         expect(call.draft.title, 'Rajma Chawal');
         expect(call.source, isNotNull);
         expect(call.source!.sourceType, RecipeSource.freeformAi);
+        expect(call.source!.sourceUrl, isNull);
+      },
+    );
+
+    testWidgets(
+      'confirm sends createRecipe with the explicit reviewSourceType (W21 D9) when supplied, overriding the sourceUrl-based default',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(createResult: _dalRecipe);
+        await _pumpPushed(
+          tester,
+          repository: repository,
+          initialDraft: _rajmaDraft,
+          reviewSourceType: RecipeSource.ai,
+        );
+
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
+        await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(repository.createCalls, hasLength(1));
+        final call = repository.createCalls.single;
+        expect(call.source!.sourceType, RecipeSource.ai);
         expect(call.source!.sourceUrl, isNull);
       },
     );

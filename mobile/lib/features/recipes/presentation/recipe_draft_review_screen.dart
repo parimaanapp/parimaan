@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/ai_recipe_draft.dart';
+import '../domain/recipe_source.dart';
 import 'recipe_form_screen.dart';
 
 /// Wireframe 8.5 — the shared review screen both S9 (URL import) and S10
@@ -17,6 +18,7 @@ class RecipeDraftReviewScreen extends StatelessWidget {
     required this.householdId,
     required this.draft,
     this.sourceUrl,
+    this.reviewSourceType,
   });
 
   final String householdId;
@@ -28,10 +30,15 @@ class RecipeDraftReviewScreen extends StatelessWidget {
   /// the `source` argument on confirm.
   final String? sourceUrl;
 
+  /// W21 D9 — forwarded straight through; `null` for the URL/freeform
+  /// paths, which keep `RecipeFormScreen`'s own sourceUrl-based default.
+  final RecipeSource? reviewSourceType;
+
   @override
   Widget build(BuildContext context) => RecipeFormScreen(
     householdId: householdId,
     initialDraft: draft,
     sourceUrl: sourceUrl,
+    reviewSourceType: reviewSourceType,
   );
 }
