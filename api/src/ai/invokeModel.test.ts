@@ -122,6 +122,32 @@ describe('invokeModel — output chain', () => {
     expect((caught as AiUnparseableError).cause).toBeInstanceOf(Error);
   });
 
+  it('an unparseable response never attaches V8\'s raw JSON.parse SyntaxError as cause — that message echoes a snippet of the model output, which for these AI features can be real household content (SD §8.3, E2E_MVP_PLAN.md W21 D11)', async () => {
+    // A realistic unparseable response that contains household content
+    // (pantry item names) a model might echo back verbatim on a bad turn.
+    const householdContent = 'Basmati Rice, Toor Dal, and Amul Butter are on the shelf';
+    const fetchImpl = vi
+      .fn()
+      .mockImplementation(async () => jsonResponse(200, geminiSuccessBody(householdContent)));
+
+    let caught: unknown;
+    try {
+      await invokeModel('prompt', schema, { deadlineMs: 30_000 }, { config, fetchApiKey, fetchImpl, emitCostMetric });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(AiUnparseableError);
+    const cause = (caught as AiUnparseableError).cause as Error;
+    expect(cause).toBeInstanceOf(Error);
+    expect(cause.message).not.toContain('Basmati');
+    expect(cause.message).not.toContain(householdContent);
+    // Node's own inspect of an Error prints its `cause` chain recursively
+    // (e.g. via console.error) — so the cause's own cause must be scrubbed
+    // too, not just its top-level message.
+    expect(JSON.stringify(cause, Object.getOwnPropertyNames(cause))).not.toContain('Basmati');
+  });
+
   it('raw model output over the size cap is rejected as a parse failure before JSON.parse ever runs on it', async () => {
     const hugeText = `{"title":"${'x'.repeat(250_000)}","count":2}`;
     const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse(200, geminiSuccessBody(hugeText)));

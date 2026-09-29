@@ -57,6 +57,20 @@ const stripMarkdownFence = (text: string): string => {
   return fenced ? fenced[1]!.trim() : text.trim();
 };
 
+/**
+ * V8's `JSON.parse` `SyntaxError` embeds a snippet of the text it was
+ * parsing (e.g. `Unexpected token 'B', "Basmati Ri"... is not valid
+ * JSON`) — for these AI features that text is the model's raw response,
+ * which can echo real household content (pantry item names, staples
+ * notes) back verbatim on a bad turn. Design intent (SYSTEM_DESIGN.md
+ * §8.3, E2E_MVP_PLAN.md W21 D11) is that household content is never
+ * logged, and `withErrorHandling.ts` logs this error's full `cause` chain
+ * server-side — so the raw `SyntaxError` must never become that cause.
+ * This sanitized stand-in carries no text from the parsed input, only the
+ * fact that parsing failed.
+ */
+const sanitizedJsonParseError = (): Error => Object.assign(new Error('Model output was not valid JSON.'), { name: 'SyntaxError' });
+
 /** ±20% jitter on a base backoff, per §13.2.7's "jittered backoff". */
 const jitter = (baseMs: number): number => baseMs + Math.random() * baseMs * 0.2;
 
@@ -229,8 +243,8 @@ const parseWithReinforcementRetry = async <T>(
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(stripMarkdownFence(rawText));
-    } catch (error) {
-      return { ok: false, reason: error };
+    } catch {
+      return { ok: false, reason: sanitizedJsonParseError() };
     }
     const result = schema.safeParse(parsedJson);
     return result.success ? { ok: true, value: result.data } : { ok: false, reason: result.error };
