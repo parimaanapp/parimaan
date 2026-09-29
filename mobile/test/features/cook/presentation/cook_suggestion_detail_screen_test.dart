@@ -49,7 +49,7 @@ CookSuggestion _suggestion() => CookSuggestion(
 Future<void> _pump(
   WidgetTester tester, {
   required CookSuggestion suggestion,
-  VoidCallback? onSave,
+  Future<String?> Function()? onSave,
   VoidCallback? onBack,
 }) async {
   await tester.pumpWidget(
@@ -111,7 +111,14 @@ void main() {
       WidgetTester tester,
     ) async {
       int taps = 0;
-      await _pump(tester, suggestion: _suggestion(), onSave: () => taps++);
+      await _pump(
+        tester,
+        suggestion: _suggestion(),
+        onSave: () async {
+          taps++;
+          return null;
+        },
+      );
 
       final Semantics semantics = tester.widget<Semantics>(
         find.byKey(CookSuggestionDetailScreen.saveButtonKey),
@@ -124,6 +131,57 @@ void main() {
       await tester.pumpAndSettle();
       expect(taps, 1);
     });
+
+    testWidgets(
+      'onSave returning null (cancelled or failed) leaves Save reachable, not saved',
+      (WidgetTester tester) async {
+        await _pump(
+          tester,
+          suggestion: _suggestion(),
+          onSave: () async => null,
+        );
+
+        await tester.tap(
+          find.byKey(CookSuggestionDetailScreen.saveButtonKey),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Saved ✓'), findsNothing);
+        final Semantics semantics = tester.widget<Semantics>(
+          find.byKey(CookSuggestionDetailScreen.saveButtonKey),
+        );
+        expect(semantics.properties.enabled, isTrue);
+      },
+    );
+
+    testWidgets(
+      'onSave returning a recipe id shows "Saved ✓" and cannot be saved again',
+      (WidgetTester tester) async {
+        int taps = 0;
+        await _pump(
+          tester,
+          suggestion: _suggestion(),
+          onSave: () async {
+            taps++;
+            return 'recipe-9';
+          },
+        );
+
+        await tester.tap(
+          find.byKey(CookSuggestionDetailScreen.saveButtonKey),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Saved ✓'), findsOneWidget);
+        expect(
+          find.byKey(CookSuggestionDetailScreen.saveButtonKey),
+          findsNothing,
+        );
+        expect(taps, 1);
+      },
+    );
 
     testWidgets(
       'never renders ingredient text as a tappable link (only Save/Back are interactive)',

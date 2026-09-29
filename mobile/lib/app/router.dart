@@ -43,6 +43,7 @@ import '../features/cook/domain/cookable_pantry.dart';
 import '../features/cook/presentation/cook_suggestion_detail_screen.dart';
 import '../features/cook/presentation/cook_suggestions_screen.dart';
 import '../features/cook/presentation/cook_trigger_screen.dart';
+import '../features/cook/presentation/save_suggestion_sheet.dart';
 import '../features/cook/state/cook_suggestions_controller.dart';
 import '../features/pantry/domain/curated_pantry_selection.dart';
 import '../features/pantry/domain/pantry_item.dart';
@@ -59,6 +60,7 @@ import '../features/pantry/state/pantry_form_controller.dart';
 import '../features/recipes/domain/ai_recipe_draft.dart';
 import '../features/recipes/domain/recipe.dart';
 import '../features/recipes/domain/recipe_role.dart';
+import '../features/recipes/domain/recipe_source.dart';
 import '../features/recipes/presentation/ai_failure_screen.dart';
 import '../features/recipes/presentation/freeform_input_screen.dart';
 import '../features/recipes/presentation/recipe_detail_screen.dart';
@@ -481,7 +483,15 @@ typedef ShoppingListFlowExtra = ({String menuId, String householdId});
 
 /// `extra` payload for [AppRoutes.recipeDraftReview] — see that route's own
 /// doc.
-typedef RecipeDraftReviewExtra = ({AiRecipeDraft draft, String? sourceUrl});
+typedef RecipeDraftReviewExtra = ({
+  AiRecipeDraft draft,
+  String? sourceUrl,
+
+  /// W21 D9 — set by the cook-from-pantry "Edit before saving" path
+  /// (`ai`); `null` for every other caller, keeping the original
+  /// sourceUrl-based default.
+  RecipeSource? reviewSourceType,
+});
 
 /// `extra` payload for [AppRoutes.recipeAiFailure] — see that route's own
 /// doc. `inputLabel` distinguishes `UrlImportScreen`'s "URL" from
@@ -1015,12 +1025,56 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             state.extra is CookSuggestion
             ? null
             : AppRoutes.cookSuggestions(_pantryHouseholdId(state)),
-        builder: (BuildContext context, GoRouterState state) =>
-            CookSuggestionDetailScreen(
-              suggestion: state.extra! as CookSuggestion,
-              // S6 wires Save (SaveSuggestionSheet); the button shows honestly as
-              // "Coming soon" until then rather than a dead tap.
-            ),
+        builder: (BuildContext context, GoRouterState state) {
+          final String householdId = _pantryHouseholdId(state);
+          final CookSuggestion suggestion = state.extra! as CookSuggestion;
+          return CookSuggestionDetailScreen(
+            suggestion: suggestion,
+            onSave: () async {
+              final String? recipeId = await showSaveSuggestionSheet(
+                context,
+                householdId: householdId,
+                suggestion: suggestion,
+                // W21 D9: a full edit is a separate flow — `RecipeDraftReviewScreen`
+                // with `reviewSourceType: ai` (never url/freeform_ai, which are for
+                // a parse/import this draft never went through).
+                //
+                // Known accepted scope gap: whether this push ends in a created
+                // recipe or a cancelled edit is indistinguishable from here —
+                // `RecipeFormScreen` pops with no value either way — so
+                // `CookSuggestionDetailScreen` is never told "this suggestion is
+                // now saved" via this path, and Save stays reachable afterward.
+                // A user who completes the edit form and returns here can tap
+                // Save again and create a second recipe from the same
+                // suggestion. Distinguishing the two would mean giving
+                // `RecipeFormScreen`'s pop a success payload, which is shared
+                // by W6/W7's own edit/create flows — out of this slice's scope.
+                onEditBeforeSaving: () => context.push(
+                  AppRoutes.recipeDraftReview(householdId),
+                  extra: (
+                    draft: suggestion.draft,
+                    sourceUrl: null,
+                    reviewSourceType: RecipeSource.ai,
+                  ),
+                ),
+              );
+              if (recipeId != null && context.mounted) {
+                PToast.show(
+                  context: context,
+                  toast: PToast(
+                    message: 'Saved to your recipes.',
+                    tone: PToastTone.success,
+                    actionLabel: 'View recipe',
+                    onAction: () =>
+                        context.push(AppRoutes.recipeDetail(recipeId)),
+                  ),
+                  duration: const Duration(seconds: 4),
+                );
+              }
+              return recipeId;
+            },
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes._recipeCreatePattern,
@@ -1075,6 +1129,7 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
             householdId: _pantryHouseholdId(state),
             draft: extra.draft,
             sourceUrl: extra.sourceUrl,
+            reviewSourceType: extra.reviewSourceType,
           );
         },
       ),

@@ -23,6 +23,7 @@ import 'package:mobile/features/cook/domain/cook_vibe.dart';
 import 'package:mobile/features/cook/presentation/cook_suggestion_detail_screen.dart';
 import 'package:mobile/features/cook/presentation/cook_suggestions_screen.dart';
 import 'package:mobile/features/cook/presentation/cook_trigger_screen.dart';
+import 'package:mobile/features/cook/presentation/save_suggestion_sheet.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/presentation/add_method_screen.dart';
 import 'package:mobile/features/pantry/presentation/curated_items_sheet.dart';
@@ -31,7 +32,11 @@ import 'package:mobile/features/pantry/presentation/pantry_photo_analyzing_scree
 import 'package:mobile/features/pantry/presentation/pantry_photo_capture_screen.dart';
 import 'package:mobile/features/pantry/presentation/pantry_photo_review_screen.dart';
 import 'package:mobile/features/pantry/presentation/pantry_photo_tips_screen.dart';
+import 'package:mobile/features/recipes/data/recipe_repository.dart';
 import 'package:mobile/features/recipes/domain/ai_recipe_draft.dart';
+import 'package:mobile/features/recipes/domain/recipe.dart';
+import 'package:mobile/features/recipes/domain/recipe_role.dart';
+import 'package:mobile/features/recipes/domain/recipe_source.dart';
 import 'package:mobile/features/recipes/presentation/ai_failure_screen.dart';
 import 'package:mobile/features/recipes/presentation/freeform_input_screen.dart';
 import 'package:mobile/features/recipes/presentation/recipe_detail_screen.dart';
@@ -41,12 +46,14 @@ import 'package:mobile/features/recipes/presentation/recipe_method_screen.dart';
 import 'package:mobile/features/recipes/presentation/url_import_screen.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/components/p_tab_bar.dart';
+import 'package:mobile/shared/ui/components/p_top_bar.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../support/fake_auth_repository.dart';
 import '../support/fake_household_repository.dart';
 import '../support/fake_pantry_photo_repository.dart';
 import '../support/fake_pantry_repository.dart';
+import '../support/fake_recipe_repository.dart';
 import '../support/household_activity_overrides.dart';
 import '../support/household_fixtures.dart';
 import '../support/household_route_harness.dart'
@@ -1053,6 +1060,136 @@ void main() {
     );
 
     testWidgets(
+      'saving a cook suggestion confirms the role, sends sourceType ai, and shows "Saved ✓" (W21 S6)',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository recipeRepository = FakeRecipeRepository(
+          createResult: Recipe(
+            id: 'recipe-9',
+            householdId: 'household-1',
+            sourceType: RecipeSource.ai,
+            title: 'Aloo Jeera',
+            servings: 4,
+            dietaryTags: const <String>[],
+            role: RecipeRole.sabziDal,
+            inRotation: true,
+            isFavorite: false,
+            steps: const <String>['Boil the potato.'],
+            createdAt: DateTime.utc(2026, 9, 29),
+            updatedAt: DateTime.utc(2026, 9, 29),
+          ),
+        );
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          extraOverrides: <Override>[
+            recipeRepositoryProvider.overrideWithValue(recipeRepository),
+          ],
+        );
+
+        final CookSuggestion suggestion = CookSuggestion(
+          id: 'sugg-1',
+          draft: const AiRecipeDraft(
+            title: 'Aloo Jeera',
+            role: RecipeRole.sabziDal,
+          ),
+          ingredientMatches: const <CookIngredientMatch>[],
+          have: const <String>['Potato'],
+          missing: const <String>[],
+        );
+        router.push(AppRoutes.cookSuggestion('household-1'), extra: suggestion);
+        await tester.pumpAndSettle();
+
+        // Not `pumpAndSettle` from here on: `CookSuggestionDetailScreen`
+        // deliberately shows its own Save button as loading for as long as
+        // the sheet is open (it awaits the sheet's result), so its spinner
+        // animates indefinitely until the sheet resolves — exactly the
+        // "won't settle" shape `pumpAndSettle` refuses to wait through.
+        await tester.tap(find.byKey(CookSuggestionDetailScreen.saveButtonKey));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(SaveSuggestionSheet), findsOneWidget);
+
+        await tester.tap(
+          find.byKey(SaveSuggestionSheet.roleChipKey(RecipeRole.sabziDal)),
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(SaveSuggestionSheet.saveButtonKey));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(recipeRepository.createCalls, hasLength(1));
+        expect(
+          recipeRepository.createCalls.single.source!.sourceType,
+          RecipeSource.ai,
+        );
+        expect(find.byType(SaveSuggestionSheet), findsNothing);
+        expect(find.text('Saved ✓'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '"Edit before saving" opens the full review screen with reviewSourceType ai, and returning without finishing leaves Save reachable, not saved (W21 S6, known scope gap: a completed edit is indistinguishable from a cancelled one from here — see router.dart)',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository recipeRepository = FakeRecipeRepository();
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          extraOverrides: <Override>[
+            recipeRepositoryProvider.overrideWithValue(recipeRepository),
+          ],
+        );
+
+        final CookSuggestion suggestion = CookSuggestion(
+          id: 'sugg-1',
+          draft: const AiRecipeDraft(
+            title: 'Aloo Jeera',
+            role: RecipeRole.sabziDal,
+          ),
+          ingredientMatches: const <CookIngredientMatch>[],
+          have: const <String>['Potato'],
+          missing: const <String>[],
+        );
+        router.push(AppRoutes.cookSuggestion('household-1'), extra: suggestion);
+        await tester.pumpAndSettle();
+
+        // Same reason as the test above: not `pumpAndSettle` while the
+        // detail screen's own Save button is mid-flight.
+        await tester.tap(find.byKey(CookSuggestionDetailScreen.saveButtonKey));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(SaveSuggestionSheet), findsOneWidget);
+
+        await tester.tap(find.byKey(SaveSuggestionSheet.editBeforeSavingKey));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(SaveSuggestionSheet), findsNothing);
+        expect(find.byType(RecipeDraftReviewScreen), findsOneWidget);
+        final RecipeDraftReviewScreen review = tester
+            .widget<RecipeDraftReviewScreen>(
+              find.byType(RecipeDraftReviewScreen),
+            );
+        expect(review.reviewSourceType, RecipeSource.ai);
+        expect(review.draft, suggestion.draft);
+
+        // Back out without completing the edit — never a create call.
+        // `.last`: the detail screen underneath is still mounted with its
+        // own back button, so two match — the review screen's is on top.
+        await tester.tap(find.byType(PTopBarBackButton).last);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(recipeRepository.createCalls, isEmpty);
+        expect(find.byType(CookSuggestionDetailScreen), findsOneWidget);
+        expect(find.text('Saved ✓'), findsNothing);
+        final Semantics semantics = tester.widget<Semantics>(
+          find.byKey(CookSuggestionDetailScreen.saveButtonKey),
+        );
+        expect(semantics.properties.enabled, isTrue);
+      },
+    );
+
+    testWidgets(
       'tapping Today\'s cook action opens the trigger screen (W21 S5)',
       (WidgetTester tester) async {
         await _pumpRouter(
@@ -1148,7 +1285,7 @@ void main() {
         const AiRecipeDraft draft = AiRecipeDraft(title: 'Rajma Chawal');
         router.go(
           AppRoutes.recipeDraftReview('household-1'),
-          extra: (draft: draft, sourceUrl: null),
+          extra: (draft: draft, sourceUrl: null, reviewSourceType: null),
         );
         await tester.pumpAndSettle();
 
