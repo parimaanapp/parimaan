@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -36,6 +37,13 @@ import '../features/menu/presentation/weekly_plan_screen.dart';
 import '../features/menu/state/current_menu_controller.dart';
 import '../features/onboarding/presentation/first_run_choose_path_screen.dart';
 import '../features/onboarding/presentation/welcome_choose_path_screen.dart';
+import '../features/cook/domain/cook_suggestion.dart';
+import '../features/cook/domain/cook_vibe.dart';
+import '../features/cook/domain/cookable_pantry.dart';
+import '../features/cook/presentation/cook_suggestion_detail_screen.dart';
+import '../features/cook/presentation/cook_suggestions_screen.dart';
+import '../features/cook/presentation/cook_trigger_screen.dart';
+import '../features/cook/state/cook_suggestions_controller.dart';
 import '../features/pantry/domain/curated_pantry_selection.dart';
 import '../features/pantry/domain/pantry_item.dart';
 import '../features/pantry/presentation/add_method_screen.dart';
@@ -46,6 +54,7 @@ import '../features/pantry/presentation/pantry_photo_review_screen.dart';
 import '../features/pantry/presentation/pantry_photo_tips_screen.dart';
 import '../features/pantry/presentation/pantry_error_copy.dart';
 import '../features/pantry/presentation/pantry_list_screen.dart';
+import '../features/pantry/state/pantry_controller.dart';
 import '../features/pantry/state/pantry_form_controller.dart';
 import '../features/recipes/domain/ai_recipe_draft.dart';
 import '../features/recipes/domain/recipe.dart';
@@ -193,6 +202,7 @@ abstract final class AppRoutes {
       '/household/$householdId/settings/notifications';
   static String settingsAbout(String householdId) =>
       '/household/$householdId/settings/about';
+
   /// Only [MealType.lunch] and [MealType.dinner] are valid — Breakfast and
   /// Snacks have no structure screen (D3). The old single-argument
   /// `editMealStructure(householdId)` was removed rather than kept as a
@@ -338,15 +348,35 @@ abstract final class AppRoutes {
   static String pantryPhotoTips(String householdId) =>
       '$_pantryPhotoTipsPattern?householdId=$householdId';
 
-  static const String _pantryPhotoAnalyzingPattern = '/home/pantry/add/photo/analyzing';
-  static String pantryPhotoAnalyzing(String householdId) => '$_pantryPhotoAnalyzingPattern?householdId=$householdId';
+  static const String _pantryPhotoAnalyzingPattern =
+      '/home/pantry/add/photo/analyzing';
+  static String pantryPhotoAnalyzing(String householdId) =>
+      '$_pantryPhotoAnalyzingPattern?householdId=$householdId';
 
-  static const String _pantryPhotoReviewPattern = '/home/pantry/add/photo/review';
-  static String pantryPhotoReview(String householdId) => '$_pantryPhotoReviewPattern?householdId=$householdId';
+  static const String _pantryPhotoReviewPattern =
+      '/home/pantry/add/photo/review';
+  static String pantryPhotoReview(String householdId) =>
+      '$_pantryPhotoReviewPattern?householdId=$householdId';
 
-  static const String _pantryPhotoCapturePattern = '/home/pantry/add/photo/camera';
+  static const String _pantryPhotoCapturePattern =
+      '/home/pantry/add/photo/camera';
   static String pantryPhotoCapture(String householdId) =>
       '$_pantryPhotoCapturePattern?householdId=$householdId';
+
+  // W21 S5 — Flow 11 (cook-from-pantry). The suggestion the detail route
+  // shows travels as `extra` (never in the URL, and never stored) — a
+  // restored or deep-linked visit falls back to the suggestions list.
+  static const String _cookPattern = '/home/cook';
+  static String cook(String householdId) =>
+      '$_cookPattern?householdId=$householdId';
+
+  static const String _cookSuggestionsPattern = '/home/cook/suggestions';
+  static String cookSuggestions(String householdId) =>
+      '$_cookSuggestionsPattern?householdId=$householdId';
+
+  static const String _cookSuggestionPattern = '/home/cook/suggestion';
+  static String cookSuggestion(String householdId) =>
+      '$_cookSuggestionPattern?householdId=$householdId';
 
   // ── Recipe Detail (wireframes 7.2/7.3 — W6 S7) ───────────────────────────
   //
@@ -694,20 +724,20 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) =>
             HouseholdEditEntry(
               householdId: _householdId(state),
-              builder: (WizardFlowContext flow) =>
-                  WhichMealsScreen(flow: flow),
+              builder: (WizardFlowContext flow) => WhichMealsScreen(flow: flow),
             ),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (
-          BuildContext context,
-          GoRouterState state,
-          StatefulNavigationShell navigationShell,
-        ) => MembershipRevocationGuard(
-          onRevoked: (BuildContext guardContext) =>
-              guardContext.go(AppRoutes.firstRun),
-          child: AppShell(navigationShell: navigationShell),
-        ),
+        builder:
+            (
+              BuildContext context,
+              GoRouterState state,
+              StatefulNavigationShell navigationShell,
+            ) => MembershipRevocationGuard(
+              onRevoked: (BuildContext guardContext) =>
+                  guardContext.go(AppRoutes.firstRun),
+              child: AppShell(navigationShell: navigationShell),
+            ),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             routes: <RouteBase>[
@@ -798,8 +828,7 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
           return AddMethodScreen(
             onManual: () =>
                 context.push(AppRoutes.pantryManualAdd(householdId)),
-            onPhoto: () =>
-                context.push(AppRoutes.pantryPhotoTips(householdId)),
+            onPhoto: () => context.push(AppRoutes.pantryPhotoTips(householdId)),
             // W14 S6 (E2E_MVP_PLAN.md §20.2.7/§20.3): the curated
             // multi-select sheet's confirm becomes one
             // `bulkAddPantryItems` call here — see
@@ -828,9 +857,8 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
                   final String message =
                       pantryErrorMessage(formState.error) ??
                       genericErrorMessage;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(message)));
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(message)));
                 },
           );
         },
@@ -844,58 +872,155 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
       ),
       GoRoute(
         path: AppRoutes._pantryPhotoTipsPattern,
-        builder: (BuildContext context, GoRouterState state) => PantryPhotoTipsScreen(
-          onContinue: () {
-            // The start of a fresh sitting: drop anything a previous, abandoned
-            // review left behind. (Not on the camera route — "Add another
-            // shelf" returns there and must keep its items.)
-            ProviderScope.containerOf(context).read(photoReviewSessionControllerProvider.notifier).clear();
-            context.push(AppRoutes.pantryPhotoCapture(_pantryHouseholdId(state)));
-          },
-        ),
+        builder: (BuildContext context, GoRouterState state) =>
+            PantryPhotoTipsScreen(
+              onContinue: () {
+                // The start of a fresh sitting: drop anything a previous, abandoned
+                // review left behind. (Not on the camera route — "Add another
+                // shelf" returns there and must keep its items.)
+                ProviderScope.containerOf(context)
+                    .read(photoReviewSessionControllerProvider.notifier)
+                    .clear();
+                context.push(
+                  AppRoutes.pantryPhotoCapture(_pantryHouseholdId(state)),
+                );
+              },
+            ),
       ),
       GoRoute(
         path: AppRoutes._pantryPhotoCapturePattern,
-        builder: (BuildContext context, GoRouterState state) => PantryPhotoCaptureScreen(
-          // W20 S7: a captured shelf goes to the analyzing screen, which
-          // resolves into the review (replacing itself) — so "Add another
-          // shelf" pops back to this camera with the session intact.
-          onCaptured: (Uint8List compressedBytes) =>
-              context.push(AppRoutes.pantryPhotoAnalyzing(_pantryHouseholdId(state)), extra: compressedBytes),
-        ),
+        builder: (BuildContext context, GoRouterState state) =>
+            PantryPhotoCaptureScreen(
+              // W20 S7: a captured shelf goes to the analyzing screen, which
+              // resolves into the review (replacing itself) — so "Add another
+              // shelf" pops back to this camera with the session intact.
+              onCaptured: (Uint8List compressedBytes) => context.push(
+                AppRoutes.pantryPhotoAnalyzing(_pantryHouseholdId(state)),
+                extra: compressedBytes,
+              ),
+            ),
       ),
       GoRoute(
         path: AppRoutes._pantryPhotoAnalyzingPattern,
         // The photo travels as `extra` (never in the URL). A restored or
         // deep-linked visit has none, so it goes back to the start of the flow.
         redirect: (BuildContext context, GoRouterState state) =>
-            state.extra is Uint8List ? null : AppRoutes.pantryPhotoTips(_pantryHouseholdId(state)),
-        builder: (BuildContext context, GoRouterState state) => PantryPhotoAnalyzingScreen(
-          photo: state.extra! as Uint8List,
-          householdId: _pantryHouseholdId(state),
-          onReviewReady: () => context.pushReplacement(AppRoutes.pantryPhotoReview(_pantryHouseholdId(state))),
-          onRetake: () => context.pop(),
-          onAddManually: () => context.pushReplacement(AppRoutes.pantryManualAdd(_pantryHouseholdId(state))),
-          onCancel: () => context.pop(),
-        ),
+            state.extra is Uint8List
+            ? null
+            : AppRoutes.pantryPhotoTips(_pantryHouseholdId(state)),
+        builder: (BuildContext context, GoRouterState state) =>
+            PantryPhotoAnalyzingScreen(
+              photo: state.extra! as Uint8List,
+              householdId: _pantryHouseholdId(state),
+              onReviewReady: () => context.pushReplacement(
+                AppRoutes.pantryPhotoReview(_pantryHouseholdId(state)),
+              ),
+              onRetake: () => context.pop(),
+              onAddManually: () => context.pushReplacement(
+                AppRoutes.pantryManualAdd(_pantryHouseholdId(state)),
+              ),
+              onCancel: () => context.pop(),
+            ),
       ),
       GoRoute(
         path: AppRoutes._pantryPhotoReviewPattern,
-        builder: (BuildContext context, GoRouterState state) => PantryPhotoReviewScreen(
-          householdId: _pantryHouseholdId(state),
-          // Back to the camera still on the stack below; the session is kept.
-          onAddAnotherShelf: () => context.pop(),
-          onAddManually: () => context.pushReplacement(AppRoutes.pantryManualAdd(_pantryHouseholdId(state))),
-          onCancel: () => context.go(AppRoutes.pantry),
-          onDone: (int count) {
-            PToast.show(
-              context: context,
-              toast: PToast(message: count == 1 ? 'Added 1 item to your pantry.' : 'Added $count items to your pantry.', tone: PToastTone.success),
-              duration: const Duration(seconds: 4),
-            );
-            context.go(AppRoutes.pantry);
-          },
-        ),
+        builder: (BuildContext context, GoRouterState state) =>
+            PantryPhotoReviewScreen(
+              householdId: _pantryHouseholdId(state),
+              // Back to the camera still on the stack below; the session is kept.
+              onAddAnotherShelf: () => context.pop(),
+              onAddManually: () => context.pushReplacement(
+                AppRoutes.pantryManualAdd(_pantryHouseholdId(state)),
+              ),
+              onCancel: () => context.go(AppRoutes.pantry),
+              onDone: (int count) {
+                PToast.show(
+                  context: context,
+                  toast: PToast(
+                    message: count == 1
+                        ? 'Added 1 item to your pantry.'
+                        : 'Added $count items to your pantry.',
+                    tone: PToastTone.success,
+                  ),
+                  duration: const Duration(seconds: 4),
+                );
+                context.go(AppRoutes.pantry);
+              },
+            ),
+      ),
+      GoRoute(
+        path: AppRoutes._cookPattern,
+        builder: (BuildContext context, GoRouterState state) {
+          final String householdId = _pantryHouseholdId(state);
+          // A `Consumer`, not `ref.watch` directly in this builder: this
+          // closure runs inside `goRouterProvider`'s own build, and watching
+          // a data provider there would invalidate and rebuild the WHOLE
+          // router (resetting navigation) every time the pantry fetch
+          // resolves. Scoping the watch to a widget keeps it local.
+          return Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              final List<PantryItem> pantry =
+                  ref
+                      .watch(pantryControllerProvider(householdId))
+                      .valueOrNull ??
+                  const <PantryItem>[];
+              return CookTriggerScreen(
+                pantryTooSmall: isPantryTooSmall(pantry),
+                onSuggest: (CookVibe? vibe) {
+                  unawaited(
+                    ref
+                        .read(
+                          cookSuggestionsControllerProvider(householdId)
+                              .notifier,
+                        )
+                        .request(vibe),
+                  );
+                  context.push(AppRoutes.cookSuggestions(householdId));
+                },
+                onAddManually: () =>
+                    context.push(AppRoutes.recipeCreate(householdId)),
+              );
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes._cookSuggestionsPattern,
+        builder: (BuildContext context, GoRouterState state) {
+          final String householdId = _pantryHouseholdId(state);
+          return CookSuggestionsScreen(
+            householdId: householdId,
+            onSelectSuggestion: (CookSuggestion suggestion) => context.push(
+              AppRoutes.cookSuggestion(householdId),
+              extra: suggestion,
+            ),
+            // Back to the trigger screen. Usually still on the stack below
+            // (`context.pop()`), but this is also where `CookSuggestionsScreen`
+            // recovers from reaching this route with no request ever made (a
+            // deep link, restored route, or browser back/forward) — nothing
+            // to pop to then, so fall back to `go` rather than crash.
+            onDifferentVibe: () => context.canPop()
+                ? context.pop()
+                : context.go(AppRoutes.cook(householdId)),
+            onAddManually: () =>
+                context.push(AppRoutes.recipeCreate(householdId)),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes._cookSuggestionPattern,
+        // The suggestion travels as `extra`, never the URL or storage. A restored
+        // or deep-linked visit has none, so it falls back to the suggestions list.
+        redirect: (BuildContext context, GoRouterState state) =>
+            state.extra is CookSuggestion
+            ? null
+            : AppRoutes.cookSuggestions(_pantryHouseholdId(state)),
+        builder: (BuildContext context, GoRouterState state) =>
+            CookSuggestionDetailScreen(
+              suggestion: state.extra! as CookSuggestion,
+              // S6 wires Save (SaveSuggestionSheet); the button shows honestly as
+              // "Coming soon" until then rather than a dead tap.
+            ),
       ),
       GoRoute(
         path: AppRoutes._recipeCreatePattern,
@@ -1011,7 +1136,10 @@ String _householdId(GoRouterState state) =>
 /// directly instead of a silent default to Lunch.
 MealType? _structureMealType(GoRouterState state) {
   final String raw = state.pathParameters[AppRoutes.mealTypeParameter] ?? '';
-  for (final MealType candidate in <MealType>[MealType.lunch, MealType.dinner]) {
+  for (final MealType candidate in <MealType>[
+    MealType.lunch,
+    MealType.dinner,
+  ]) {
     if (candidate.wireValue == raw) {
       return candidate;
     }

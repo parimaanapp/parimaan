@@ -30,6 +30,7 @@ class PantryListScreen extends ConsumerWidget {
   static const Key errorStateKey = Key('pantry-list-error');
   static const Key searchFieldKey = Key('pantry-list-search');
   static const Key addButtonKey = Key('pantry-list-add');
+  static const Key cookButtonKey = Key('pantry-list-cook');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,13 +63,27 @@ class _PantryForHousehold extends ConsumerWidget {
       children: <Widget>[
         PTopBar(
           title: 'Pantry',
-          trailing: PButton.icon(
-            key: PantryListScreen.addButtonKey,
-            icon: Icons.add,
-            semanticLabel: 'Add a pantry item',
-            variant: PButtonVariant.ghost,
-            onPressed: () =>
-                context.push(AppRoutes.pantryAddChooseMethod(householdId)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              // W21 S5 (Flow 11) — the pantry is the input to "what can I cook?", so
+              // it gets its own way in, alongside Today's.
+              PButton.icon(
+                key: PantryListScreen.cookButtonKey,
+                icon: Icons.restaurant_menu,
+                semanticLabel: 'Cook from your pantry',
+                variant: PButtonVariant.ghost,
+                onPressed: () => context.push(AppRoutes.cook(householdId)),
+              ),
+              PButton.icon(
+                key: PantryListScreen.addButtonKey,
+                icon: Icons.add,
+                semanticLabel: 'Add a pantry item',
+                variant: PButtonVariant.ghost,
+                onPressed: () =>
+                    context.push(AppRoutes.pantryAddChooseMethod(householdId)),
+              ),
+            ],
           ),
         ),
         Padding(
