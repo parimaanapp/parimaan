@@ -40,6 +40,7 @@ class TodayScreen extends ConsumerWidget {
   static const Key errorKey = Key('today-error');
   static const Key emptyStateKey = Key('today-empty');
   static const Key settingsButtonKey = Key('today-settings');
+  static const Key cookButtonKey = Key('today-cook');
 
   /// The per-item "Mark as made" affordance — present iff [menuItemId]'s
   /// item is neither server-confirmed made nor currently optimistically
@@ -93,12 +94,28 @@ class _TodayForHousehold extends ConsumerWidget {
       children: <Widget>[
         PTopBar(
           title: 'Today',
-          trailing: PButton.icon(
-            key: TodayScreen.settingsButtonKey,
-            icon: Icons.settings_outlined,
-            semanticLabel: 'Household settings',
-            variant: PButtonVariant.ghost,
-            onPressed: () => context.go(AppRoutes.settingsHub(household.id)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              // W21 S5 (Flow 11) — "what can I cook?" from the household's own
+              // pantry. A top-bar action rather than a card: Today's own body
+              // is the day's plan, and this is a way out of it, not part of it.
+              PButton.icon(
+                key: TodayScreen.cookButtonKey,
+                icon: Icons.restaurant_menu,
+                semanticLabel: 'Cook from your pantry',
+                variant: PButtonVariant.ghost,
+                onPressed: () => context.push(AppRoutes.cook(household.id)),
+              ),
+              PButton.icon(
+                key: TodayScreen.settingsButtonKey,
+                icon: Icons.settings_outlined,
+                semanticLabel: 'Household settings',
+                variant: PButtonVariant.ghost,
+                onPressed: () =>
+                    context.go(AppRoutes.settingsHub(household.id)),
+              ),
+            ],
           ),
         ),
         Expanded(
