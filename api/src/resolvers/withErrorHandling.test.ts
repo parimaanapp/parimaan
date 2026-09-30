@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
+import { invokeModel } from '../ai/invokeModel.js';
+import { resetGeminiClientForTesting } from '../ai/geminiClient.js';
 import { UnauthorizedError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+
+const jsonResponse = (status: number, body: unknown): Response =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+const geminiSuccessBody = (text: string) => ({ candidates: [{ content: { parts: [{ text }] } }] });
 
 describe('withErrorHandling', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -11,6 +19,7 @@ describe('withErrorHandling', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    resetGeminiClientForTesting();
   });
 
   it('passes the result through untouched on success', async () => {
@@ -77,4 +86,31 @@ describe('withErrorHandling', () => {
       });
     },
   );
+
+  it("never logs a snippet of the model's raw output for an AI_UNPARSEABLE failure — household content (pantry items, staples) must never reach CloudWatch (SD §8.3, E2E_MVP_PLAN.md W21 D11)", async () => {
+    const householdContent = 'Basmati Rice, Toor Dal, and Amul Butter are on the shelf';
+    const schema = z.object({ title: z.string(), count: z.number() });
+    const config = {
+      geminiApiKeySecretArn: 'arn:aws:secretsmanager:ap-south-1:123456789012:secret:parimaan/gemini-api-key-abc',
+    };
+    const fetchApiKey = () => Promise.resolve('test-key');
+    const emitCostMetric = () => undefined;
+    const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse(200, geminiSuccessBody(householdContent)));
+
+    const wrapped = withErrorHandling(async () =>
+      invokeModel('prompt', schema, { deadlineMs: 30_000 }, { config, fetchApiKey, fetchImpl, emitCostMetric }),
+    );
+
+    await expect(wrapped(undefined)).rejects.toMatchObject({ errorType: 'AI_UNPARSEABLE' });
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    const loggedArgs = errorSpy.mock.calls[0]!;
+    // Simulate how Node actually renders this call (console.error uses
+    // util.inspect under the hood, which recursively prints an Error's
+    // `cause` chain) — the household content must not survive that.
+    const { inspect } = await import('node:util');
+    const renderedLog = loggedArgs.map((arg) => (typeof arg === 'string' ? arg : inspect(arg, { depth: null }))).join(' ');
+    expect(renderedLog).not.toContain('Basmati');
+    expect(renderedLog).not.toContain(householdContent);
+  });
 });
