@@ -574,7 +574,15 @@ type Query {
   recipe(id: ID!): Recipe!
   menu(householdId: ID!, weekStartDate: AWSDateTime!): Menu
   shoppingList(householdId: ID!, id: ID): ShoppingList
-  cookFromPantry(householdId: ID!, vibe: String): [Recipe!]!   # AI
+  # Corrected W21 S7 (E2E_MVP_PLAN.md §28 D1): this was the pre-build sketch —
+  # shipped as a Mutation, not a Query. A `Recipe` has an id and timestamps
+  # an unsaved suggestion doesn't honestly have, and the call spends AI
+  # quota and writes cache, so it mutates. Real shape:
+  #   cookFromPantry(householdId: ID!, vibe: CookVibe): CookFromPantryResult!
+  # under `Mutation`, returning drafts plus server-computed grounding
+  # (`CookSuggestion { draft: RecipeDraft!, ingredientMatches, have,
+  # missing }`), not `[Recipe!]!`. See `shared/schema.graphql`'s own SDL,
+  # which already carries this correction inline.
   # SHIPPED W8 S8. Always the CALLER's own row for householdId — no argument
   # for a target user. A caller with no row yet gets the TRUE defaults
   # computed in place, never an implicit write.
@@ -1167,12 +1175,14 @@ Table: parimaan-cache-{env}
   ttl: number  # unix timestamp, auto-delete
 
 Usage patterns:
-  "aiCache#cookFromPantry#{householdId}#{pantryHash}" | "{}"      # 30-min TTL
+  "aiCache#cookFromPantry#{householdId}#{promptHash}" | "{...}"    # 30-min TTL
   "aiCache#staplesNote#{recipeSetHash}"               | "{...}"    # 24-hr TTL
-  "rateLimit#user#{userId}#{yyyy-mm-dd}"             | count      # 24-hr TTL
+  "RATELIMIT#{actionName}#{sub}"                      | count      # ~26-hr TTL, SK = yyyy-mm-dd
 ```
 
 `staplesNote`'s key is `{recipeSetHash}` (a content hash of the planned recipe set), not `{listId}` as originally sketched here — a real gap found and deviated from during W17 (`E2E_MVP_PLAN.md` §23.4 D6): a raw `listId` key would serve a stale note for up to 24 hours after a `regenerateShoppingList` call changed the planned recipes, since a regenerate reuses the same list id. As shipped, `api/src/domain/recipeSetHash.ts` computes the hash from the menu's current `menu_items` (recipe id + `servingsOverride` pairs); `api/src/aiCache/staplesNoteCache.ts` reads/writes the DynamoDB row keyed by it.
+
+**Corrected W21 S7** (`E2E_MVP_PLAN.md` §28 D5): `cookFromPantry`'s key is `{promptHash}`, not `{pantryHash}` as originally sketched here — `promptHash` covers the whole rendered prompt (pantry contents, vibe, the household's skip/dietary/allergen rules, the prompt version) plus the model and sampling settings (`api/src/domain/promptHash.ts`), so a change to any of those is a different key by construction, not only a pantry change. What's stored is the validated raw model output as a JSON string (`{...}`, not the empty-object placeholder `"{}"` originally sketched) — grounding and the household's rules are recomputed against current state on every read, so an alias-table fix or a rule change is never served stale (`api/src/aiCache/cookFromPantryCache.ts`). The rate-limit key is also corrected here to match what shipped in W7 (D8): `RATELIMIT#{actionName}#{sub}` with the date as the DynamoDB sort key, not `rateLimit#user#{userId}#{yyyy-mm-dd}` as a single partition key — `actionName` (`'freeformParse'`, `'urlImport'`, `'cookFromPantry'`, …) is in the key so each AI feature's quota is independent, and lowercase `rateLimit#user#` never matched any shipped code. Its TTL is corrected too: `~26` hours, not `24` — `api/src/rateLimit/dailyActionLimiter.ts`'s own `TTL_SECONDS_FROM_NOW` is deliberately past the UTC day boundary, unlike `staplesNote`'s genuinely-24h TTL in the row above.
 
 Single table, on-demand billing, sub-cent monthly.
 
@@ -1285,7 +1295,7 @@ Cross-region adds ~150–250ms latency. Data egress is inside AWS (cheap). Only 
 
 - `temperature: 0.2` for structured outputs (recipe parse, photo pantry).
 - `temperature: 0.6` for creative outputs (cook-from-pantry).
-- Cache `cook-from-pantry` per (household, pantryHash) for 30 minutes.
+- Cache `cook-from-pantry` per (household, promptHash) for 30 minutes — **corrected W21 S7**: `promptHash`, not `pantryHash` as originally sketched here, so a change to the vibe, the household's rules or the prompt version invalidates the cache too, not only a pantry change; see §7.3's own correction for the detail.
 - Cache `staplesNote` for 24 hours, keyed by a content hash of the planned recipe set (`recipeSetHash`), not per shopping list / forever as originally sketched here — see §7.3's own note and `E2E_MVP_PLAN.md` §23.4 D6 for why a `listId`-keyed cache was a real bug (a regenerate reuses the same list id, so it would have served a stale note across a real menu change).
 - Never cache photo pantry (unique inputs).
 
