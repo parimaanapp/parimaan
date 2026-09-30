@@ -90,7 +90,7 @@ class _FreeformInputScreenState extends ConsumerState<FreeformInputScreen> {
     if (draft != null) {
       context.push(
         AppRoutes.recipeDraftReview(widget.householdId),
-        extra: (draft: draft, sourceUrl: null),
+        extra: (draft: draft, sourceUrl: null, reviewSourceType: null),
       );
       return;
     }

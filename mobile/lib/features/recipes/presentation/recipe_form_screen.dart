@@ -71,6 +71,7 @@ class RecipeFormScreen extends ConsumerStatefulWidget {
     this.initialRecipe,
     this.initialDraft,
     this.sourceUrl,
+    this.reviewSourceType,
   }) : assert(
          initialRecipe == null || initialDraft == null,
          'RecipeFormScreen cannot seed from both a Recipe and an AiRecipeDraft.',
@@ -87,6 +88,13 @@ class RecipeFormScreen extends ConsumerStatefulWidget {
   /// and folded into the `source` argument on confirm. `null` means the
   /// draft came from freeform paste, not a URL import.
   final String? sourceUrl;
+
+  /// The `source.sourceType` to attribute a review-mode confirm to — W21 D9.
+  /// `null` (every caller before D9) keeps the original rule: `freeform_ai`
+  /// when [sourceUrl] is absent, `url` when it's present. Set explicitly by
+  /// the cook-from-pantry "Edit before saving" path, which is neither: the
+  /// draft came from a saved AI suggestion, not a parse or an import.
+  final RecipeSource? reviewSourceType;
 
   static const Key titleFieldKey = Key('recipe-form-title');
   static const Key descriptionFieldKey = Key('recipe-form-description');
@@ -630,9 +638,11 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
       // from `importRecipeFromUrl` (S9), `freeform_ai` otherwise (S10).
       final RecipeSourceAttribution? source = widget.isReviewMode
           ? RecipeSourceAttribution(
-              sourceType: widget.sourceUrl == null
-                  ? RecipeSource.freeformAi
-                  : RecipeSource.url,
+              sourceType:
+                  widget.reviewSourceType ??
+                  (widget.sourceUrl == null
+                      ? RecipeSource.freeformAi
+                      : RecipeSource.url),
               sourceUrl: widget.sourceUrl,
             )
           : null;
@@ -754,14 +764,18 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
         ? ref.watch(aiRecipeDraftControllerProvider(widget.initialDraft!))
         : null;
     final AiRecipeDraftController? draftNotifier = widget.isReviewMode
-        ? ref.read(aiRecipeDraftControllerProvider(widget.initialDraft!).notifier)
+        ? ref.read(
+            aiRecipeDraftControllerProvider(widget.initialDraft!).notifier,
+          )
         : null;
     // See the role `PChip`'s own `selected:` comment below — this is
     // `_isValid`'s exact same "still needs an affirmative tap" condition
     // (§13.2.6 D5), reused here purely to drive what the role chip/hint
     // look like, not to gate submission a second time.
     final bool roleNeedsConfirmation =
-        draftState != null && draftState.role.isProposed && draftState.role.value != null;
+        draftState != null &&
+        draftState.role.isProposed &&
+        draftState.role.value != null;
 
     return Scaffold(
       backgroundColor: AppColors.paper,

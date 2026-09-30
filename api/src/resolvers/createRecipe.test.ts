@@ -400,7 +400,20 @@ describe('createRecipe resolver — source attribution (W7 S6, §13.2.4 D2)', ()
     expect(result.sourceUrl).toBeNull();
   });
 
-  it.each(['curated', 'ai', 'user'])('rejects a client-claimed sourceType: %s with ValidationError, inserting nothing', async (sourceType) => {
+  it('{sourceType: ai} persists as ai with sourceUrl: null, and the recipe joins the library like any other (W21 D9)', async () => {
+    const owner = await createUser('sub-owner-src-cook');
+    const householdId = await createHouseholdWithMember(owner, 'SCK234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(buildEvent(householdId, validInput, 'sub-owner-src-cook', { sourceType: 'ai' }));
+
+    expect(result.sourceType).toBe('ai');
+    expect(result.sourceUrl).toBeNull();
+    const reread = await withUserTransaction(owner.id, (client) => findRecipeById(client, result.id), pool);
+    expect(reread?.sourceType).toBe('ai');
+  });
+
+  it.each(['curated', 'user'])('rejects a client-claimed sourceType: %s with ValidationError, inserting nothing', async (sourceType) => {
     const owner = await createUser(`sub-owner-src-reject-${sourceType}`);
     const householdId = await createHouseholdWithMember(owner, `SR${sourceType.slice(0, 2).toUpperCase()}23`);
     const handler = createCreateRecipeHandler({ getPool: async () => pool });

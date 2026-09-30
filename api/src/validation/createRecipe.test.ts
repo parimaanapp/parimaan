@@ -234,7 +234,24 @@ describe('createRecipeArgsSchema — source attribution (W7 S6, §13.2.4 D2)', (
     expect(result.success).toBe(true);
   });
 
-  it.each(['curated', 'ai', 'user'])('rejects a client-claimed sourceType: %s — server-owned values', (sourceType) => {
+  // W21 D9: `ai` is now client-claimable, for the same reason W7 D2 accepted `freeform_ai` — provenance is a
+  // low-stakes, self-reported label inside one household, and a server-side draft token would expire with the
+  // 30-minute suggestion cache. `curated` and `user` stay server-owned.
+  it('accepts sourceType: ai with no sourceUrl (a saved cook-from-pantry suggestion)', () => {
+    const result = createRecipeArgsSchema.safeParse({ householdId: randomUUID(), input: validInput, source: { sourceType: 'ai' } });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects a sourceUrl alongside sourceType: ai (an AI suggestion has no source page)', () => {
+    const result = createRecipeArgsSchema.safeParse({
+      householdId: randomUUID(),
+      input: validInput,
+      source: { sourceType: 'ai', sourceUrl: 'https://example.com/recipe' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it.each(['curated', 'user'])('rejects a client-claimed sourceType: %s — server-owned values', (sourceType) => {
     const result = createRecipeArgsSchema.safeParse({
       householdId: randomUUID(),
       input: validInput,

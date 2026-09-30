@@ -111,7 +111,11 @@ class _UrlImportScreenState extends ConsumerState<UrlImportScreen> {
     if (draft != null) {
       context.push(
         AppRoutes.recipeDraftReview(widget.householdId),
-        extra: (draft: draft, sourceUrl: _url.text.trim()),
+        extra: (
+          draft: draft,
+          sourceUrl: _url.text.trim(),
+          reviewSourceType: null,
+        ),
       );
       return;
     }

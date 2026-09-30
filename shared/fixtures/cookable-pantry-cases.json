@@ -1,0 +1,14 @@
+{
+  "_comment": "W21: the tiny-pantry rule (api/src/domain/cookablePantry.ts) and its Dart twin (mobile/lib/features/cook/domain/cookable_pantry.dart) must agree. Both test suites read these cases, so a drift in either fails CI. A pantry is too small when it has fewer than 3 distinct in-stock items outside the spice, masala, salt, oil and condiment categories.",
+  "cases": [
+    { "name": "empty pantry", "items": [], "tooSmall": true },
+    { "name": "two food items", "items": [{ "name": "Toor Dal", "category": "dal", "quantity": 1 }, { "name": "Rice", "category": "grain", "quantity": 2 }], "tooSmall": true },
+    { "name": "three food items", "items": [{ "name": "Toor Dal", "category": "dal", "quantity": 1 }, { "name": "Rice", "category": "grain", "quantity": 2 }, { "name": "Potato", "category": "produce", "quantity": 3 }], "tooSmall": false },
+    { "name": "five spices are not a meal", "items": [{ "name": "Jeera", "category": "spice", "quantity": 1 }, { "name": "Haldi", "category": "spice", "quantity": 1 }, { "name": "Hing", "category": "spice", "quantity": 1 }, { "name": "Ajwain", "category": "spice", "quantity": 1 }, { "name": "Saunf", "category": "spice", "quantity": 1 }], "tooSmall": true },
+    { "name": "oils, condiments, masala and salt do not count either", "items": [{ "name": "Ghee", "category": "oil", "quantity": 1 }, { "name": "Ketchup", "category": "condiment", "quantity": 1 }, { "name": "Garam Masala", "category": "masala", "quantity": 1 }, { "name": "Rock Salt", "category": "salt", "quantity": 1 }, { "name": "Toor Dal", "category": "dal", "quantity": 1 }], "tooSmall": true },
+    { "name": "an item that has run out does not count", "items": [{ "name": "Toor Dal", "category": "dal", "quantity": 1 }, { "name": "Rice", "category": "grain", "quantity": 2 }, { "name": "Potato", "category": "produce", "quantity": 0 }], "tooSmall": true },
+    { "name": "an uncategorised item counts as food", "items": [{ "name": "A", "category": null, "quantity": 1 }, { "name": "B", "category": null, "quantity": 1 }, { "name": "C", "category": null, "quantity": 1 }], "tooSmall": false },
+    { "name": "categories are case-insensitive", "items": [{ "name": "A", "category": "SPICE", "quantity": 1 }, { "name": "B", "category": "Oil", "quantity": 1 }, { "name": "C", "category": "Condiment", "quantity": 1 }], "tooSmall": true },
+    { "name": "duplicate rows of one item are one item", "items": [{ "name": "Onion", "category": "produce", "quantity": 1 }, { "name": "onion", "category": "produce", "quantity": 1 }, { "name": " ONION ", "category": "produce", "quantity": 1 }, { "name": "Rice", "category": "grain", "quantity": 1 }], "tooSmall": true }
+  ]
+}
