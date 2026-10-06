@@ -83,6 +83,26 @@ class SignInScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                   style: AppTypography.label.copyWith(color: AppColors.danger),
                 ),
+                // TEMPORARY, beta-only (2026-10-06): the app has no crash
+                // reporting yet (PostHog is W24) and this beta is sideloaded,
+                // not store-distributed, so there is no console to read a
+                // tester's logs from either. Showing the raw technical cause
+                // here — the one thing `AuthFailure.cause`'s own doc comment
+                // normally forbids — lets a tester literally screenshot the
+                // real error back to us instead of relaying "something went
+                // wrong" with no detail. Remove this block (and only this
+                // block — the rule above it stays correct) once PostHog/
+                // crash reporting exists, and before any store build.
+                if (auth.error != null) ...<Widget>[
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(
+                    '[beta debug] ${auth.error}',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.meta.copyWith(
+                      color: AppColors.inkSoft,
+                    ),
+                  ),
+                ],
               ],
             ],
           ),

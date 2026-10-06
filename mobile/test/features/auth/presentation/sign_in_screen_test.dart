@@ -123,41 +123,47 @@ void main() {
       expect(find.text('Continue with Google'), findsOneWidget);
     });
 
-    testWidgets('configuration failure shows generic copy, no internals', (
-      WidgetTester tester,
-    ) async {
-      final MockAuthRepository repository = stubbedAuthRepository();
-      when(repository.signInWithGoogle).thenThrow(
-        const AuthConfigurationFailure(message: 'REPLACE_ME_USER_POOL_ID'),
-      );
-      await _pumpSignIn(tester, repository);
+    testWidgets(
+      'configuration failure shows the generic copy as the primary message',
+      (WidgetTester tester) async {
+        final MockAuthRepository repository = stubbedAuthRepository();
+        when(repository.signInWithGoogle).thenThrow(
+          const AuthConfigurationFailure(message: 'REPLACE_ME_USER_POOL_ID'),
+        );
+        await _pumpSignIn(tester, repository);
 
-      await tester.tap(find.text('Continue with Google'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue with Google'));
+        await tester.pumpAndSettle();
 
-      expect(
-        find.text('Something went wrong. Please try again.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('REPLACE_ME_USER_POOL_ID'), findsNothing);
-    });
+        expect(
+          find.text('Something went wrong. Please try again.'),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('unknown failure shows generic copy, no internals', (
-      WidgetTester tester,
-    ) async {
-      final MockAuthRepository repository = stubbedAuthRepository();
-      when(repository.signInWithGoogle)
-          .thenThrow(AuthUnknownFailure(cause: StateError('cognito exploded')));
-      await _pumpSignIn(tester, repository);
+    testWidgets(
+      'unknown failure shows the generic copy as the primary message, plus '
+      'the TEMPORARY beta-debug line (2026-10-06, see sign_in_screen.dart — '
+      "there is no crash reporting yet, so a tester's screenshot is the only "
+      "way to recover the real cause; remove this test's second assertion "
+      'alongside that block once PostHog/crash reporting exists)',
+      (WidgetTester tester) async {
+        final MockAuthRepository repository = stubbedAuthRepository();
+        when(
+          repository.signInWithGoogle,
+        ).thenThrow(AuthUnknownFailure(cause: StateError('cognito exploded')));
+        await _pumpSignIn(tester, repository);
 
-      await tester.tap(find.text('Continue with Google'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue with Google'));
+        await tester.pumpAndSettle();
 
-      expect(
-        find.text('Something went wrong. Please try again.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('cognito exploded'), findsNothing);
-    });
+        expect(
+          find.text('Something went wrong. Please try again.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('cognito exploded'), findsOneWidget);
+      },
+    );
   });
 }
