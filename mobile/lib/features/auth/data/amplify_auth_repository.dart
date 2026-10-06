@@ -288,9 +288,19 @@ class AmplifyAuthRepository implements AuthRepository {
   void _log(String label, Object error, StackTrace stackTrace) {
     // Structured logging (PostHog / CloudWatch) arrives in a later slice; until
     // then the detail must at least not be silently dropped.
-    if (kDebugMode) {
-      debugPrint('[auth] $label: $error\n$stackTrace');
-    }
+    //
+    // Found 2026-10-06, during the beta's own first real-device sign-in
+    // attempt: this was gated on `kDebugMode`, so a release build — every
+    // build a beta tester ever runs — logged nothing at all. The one place
+    // this detail could have surfaced (`adb logcat`) was silently empty,
+    // which is exactly backwards for a pre-telemetry beta that most needs
+    // this signal from builds that are, by definition, never run in debug
+    // mode. `debugPrint` itself works in every build mode (it only
+    // rate-limits long output) — `kDebugMode` was gating something that
+    // didn't need gating. No UI change: `AuthFailure.cause`'s own doc
+    // comment ("never render this in the UI") is unaffected — this only
+    // changes whether the detail reaches the system log, never the screen.
+    debugPrint('[auth] $label: $error\n$stackTrace');
   }
 }
 
