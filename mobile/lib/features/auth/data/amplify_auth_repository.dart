@@ -8,6 +8,7 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart'
     hide AuthSession;
 import 'package:amplify_flutter/amplify_flutter.dart' hide AuthSession;
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' show ClientException;
 
 import '../../../app/config/app_config.dart';
 import '../domain/auth_failure.dart';
@@ -278,6 +279,22 @@ class AmplifyAuthRepository implements AuthRepository {
         stackTrace: stackTrace,
       ),
       TimeoutException() => AuthNetworkFailure(
+        cause: error,
+        stackTrace: stackTrace,
+      ),
+      // Found 2026-10-06, during the beta: the OAuth code-for-token exchange
+      // (Hosted UI's own final leg, driven by `package:http`, not Amplify's
+      // own networking stack) throws `http.ClientException` on a plain
+      // connectivity failure — a DNS lookup that failed on-device, not a
+      // real infra problem (the domain and endpoint were both confirmed
+      // live and healthy the moment this was found). Before this case
+      // existed, that fell through to the generic `_` arm below and showed
+      // as "Something went wrong" — scarier and less actionable than the
+      // honest, already-written "Couldn't connect. Check your connection
+      // and try again." `ClientException` is `package:http`'s own catch-all
+      // for a transport-level failure, so every instance of it genuinely
+      // is a connectivity problem, not just this one case.
+      ClientException() => AuthNetworkFailure(
         cause: error,
         stackTrace: stackTrace,
       ),
