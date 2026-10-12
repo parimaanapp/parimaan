@@ -249,3 +249,29 @@ _To be filled in W22–W23._
 - **Beta APK distribution**: `scripts/beta/presign-android-build.sh` uploads `flutter build apk --release`'s output to a new, dedicated, private S3 bucket (`parimaan-beta-builds-dev` — blocked public access, SSE-S3 encryption, 90-day expiry on `android/` objects) and prints a time-limited presigned GET URL to hand testers directly — no Play Console, no Play Integrity, no Google account registration needed for this path. **Real IaC debt, named not hidden**: this bucket was created directly via `aws s3api create-bucket`, not through CDK — `data-stack.ts` doesn't know about it. Fine for one beta round; if this becomes a recurring need, move it into CDK alongside `parimaan-uploads-{env}`/`parimaan-exports-{env}`.
 - **Context for this detour**: the founder chose, mid-course, to run the beta via TestFlight (iOS) + a sideloaded APK (Android) directly against **dev** AWS, rather than wait on the full W22 push-notification + prod-deploy sequence. Firebase/FCM is going live *during* the beta (not deferred) per that same decision — this entry covers only the Android build/signing/distribution half; the Firebase/FCM engineering itself is still W22's own work, blocked on the Firebase project being created.
 
+
+### 2026-10-12 — Public marketing site at `www.parimaan.app` (AWS Activate)
+
+**Why this exists:** AWS Activate rejected the application ("website does not reflect the company name") because `www.parimaan.app` was the registrar's (GoDaddy Website Builder) default "Launching Soon" placeholder — not anything we host. Fixing that did not need the signed-in web app; it needed a real public site.
+
+**What it is:** `marketing/` (repo root) — plain HTML + one CSS file, **no JavaScript**, self-hosted brand fonts (Instrument Serif, DM Sans, a subset of Noto Serif Devanagari for the wordmark; OFL notice in `marketing/fonts/OFL.txt`), tokens hand-ported from `shared/design-tokens.json`. Pages: `index.html`, `privacy.html`, `404.html`. Hosted by `infra/stacks/marketing-stack.ts` → `Parimaan-dev-Marketing`: private S3 bucket behind CloudFront (origin access control, TLS-only, strict security headers incl. a no-script CSP, branded 404). Live at the CloudFront URL (`DistributionDomainName` stack output) without any DNS work.
+
+**Why the dev account:** it is the only AWS account wired up for the beta (founder decision, 2026-10-06). A static site is trivially redeployable elsewhere.
+
+**Custom domain — two-phase, because DNS lives at GoDaddy (not Route 53) and CloudFront certificates must be in `us-east-1`:**
+1. Certificate (already requested, `us-east-1`): `arn:aws:acm:us-east-1:917246556431:certificate/a1bd4fc3-8d78-4a13-8208-08082baedbc8` for `www.parimaan.app`. It stays `PENDING_VALIDATION` until its DNS validation CNAME exists at GoDaddy: `aws acm describe-certificate --region us-east-1 --certificate-arn <arn> --query 'Certificate.DomainValidationOptions[0].ResourceRecord'`.
+2. Once `ISSUED`, redeploy **with both context values**, then point `www` at the distribution:
+   ```bash
+   cd infra && AWS_PROFILE=parimaan-dev pnpm cdk deploy Parimaan-dev-Marketing \
+     -c env=dev -c googleClientId=<id>.apps.googleusercontent.com \
+     -c marketingDomain=www.parimaan.app \
+     -c marketingCertArn=arn:aws:acm:us-east-1:917246556431:certificate/a1bd4fc3-8d78-4a13-8208-08082baedbc8
+   ```
+   At GoDaddy: `CNAME www → <DistributionDomainName>` (replacing the existing `www → parimaan.app` record).
+3. Apex (`parimaan.app`): GoDaddy cannot CNAME/ALIAS an apex, so use GoDaddy's domain **forwarding** `parimaan.app → https://www.parimaan.app` (permanent). Any GoDaddy Website Builder site still attached to the apex must be detached first.
+
+**Gotcha — every redeploy must repeat the two `-c marketing…` values.** They are context, not stored state: deploying without them *removes* the custom domain from the distribution. Content-only changes (edit `marketing/`, redeploy) are otherwise safe: `BucketDeployment` syncs, prunes and invalidates `/*`.
+
+**Open decision for W25 (prod web app):** `FrontendStack`'s prod variant is hard-wired to the bare apex `parimaan.app` with a `www → apex` redirect rule. This site now owns `www`, so those two intentions conflict. Resolve when prod is deployed — most likely marketing stays on `www`/apex and the signed-in app moves to `app.parimaan.app` (touches `auth-stack.ts` + `frontend-stack.ts` `webDomain` and Cognito callback URLs together). Not decided here.
+
+**Needs founder review before being relied on:** `marketing/privacy.html` is a plain-language description of what the beta actually does (verified against the code and infra), not lawyer-reviewed. In particular check: the statement about Google's paid-tier Gemini terms, the 30-day response commitment, the DPDP Act wording, and the public contact address. Also "Free to try during the beta" and "© 2026 Parimaan" (legal/trading name not yet confirmed against the AWS Activate application).

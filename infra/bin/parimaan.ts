@@ -4,6 +4,7 @@ import { ApiStack } from '../stacks/api-stack';
 import { AuthStack } from '../stacks/auth-stack';
 import { DataStack } from '../stacks/data-stack';
 import { FrontendStack } from '../stacks/frontend-stack';
+import { MarketingStack } from '../stacks/marketing-stack';
 import { NetworkStack } from '../stacks/network-stack';
 
 const app = new cdk.App();
@@ -88,6 +89,15 @@ new FrontendStack(app, `Parimaan-${envName}-Frontend`, {
   webClientCredentialsSecret: auth.webClientCredentialsSecret,
   graphqlUrl: api.api.graphqlUrl,
   description: `Parimaan ${envName} — Amplify Hosting for the Next.js web dashboard.`,
+});
+
+// Public marketing site (static, S3 + CloudFront). Independent of every stack
+// above: no cross-stack props, deployable on its own. See MarketingStack's own
+// doc comment for the two-phase, registrar-DNS domain wiring.
+new MarketingStack(app, `Parimaan-${envName}-Marketing`, {
+  env,
+  envName,
+  description: `Parimaan ${envName} — public marketing site (S3 + CloudFront).`,
 });
 
 cdk.Tags.of(app).add('Project', 'Parimaan');
