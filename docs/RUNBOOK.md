@@ -277,3 +277,37 @@ _To be filled in W22–W23._
 **Needs founder review before being relied on:** `marketing/privacy.html` is a plain-language description of what the beta actually does (verified against the code and infra), not lawyer-reviewed. In particular check: the statement about Google's paid-tier Gemini terms, the 30-day response commitment, the DPDP Act wording, and the public contact address. Also "Free to try during the beta".
 
 **Operator name (decided 2026-10-12):** the legal/trading name on the MSME/sole-proprietorship paperwork and the AWS Activate application is **Tatva Research**; the product brand is **Parimaan**. The site shows both — "Parimaan is a product of Tatva Research" in the footer, Tatva Research named as the operator in `privacy.html` (the data fiduciary under the DPDP Act), and as the `Organization` in the structured data with Parimaan as its `Brand`. The company was deliberately *not* renamed: that would mean re-papering Udyam/GST/bank for no benefit. App-store seller names should use Tatva Research too.
+
+### 2026-10-12 — iOS beta via TestFlight (Apple Developer approved)
+
+**State found on this Mac before starting:** Xcode 27.0; **no Apple account signed into Xcode, no signing identities, no provisioning profiles**; no `DEVELOPMENT_TEAM` on the Runner target; no `Podfile` (the iOS project builds through Swift Package Manager, so CocoaPods is not needed — Flutter's "CocoaPods not installed" warning is irrelevant here). Already correct: bundle id `app.parimaan.mobile`, automatic signing, complete AppIcon set, `NSCameraUsageDescription`, the `parimaan://` URL scheme (matches Cognito's `parimaan://auth` callback), display name "Parimaan". Added `ITSAppUsesNonExemptEncryption = false` (HTTPS and OS crypto only) so every upload skips the export-compliance prompt.
+
+**Founder-only steps (they need your Apple ID):**
+1. **Xcode → Settings → Accounts → +**, sign in with the Apple ID that owns the Developer Program membership. Xcode then holds the team and can create certificates and profiles.
+2. **Team ID:** developer.apple.com → Account → Membership details → 10-character Team ID. (Not secret; it gets committed as `DEVELOPMENT_TEAM`.)
+3. **Create the app record** in App Store Connect → Apps → + → New App: platform iOS; name `Parimaan` (must be unique store-wide — have a fallback such as "Parimaan: Meal Planner"); primary language English (India); bundle id `app.parimaan.mobile` (pick it from the dropdown — it appears once the App ID is registered, which Xcode does automatically on the first signed build, or register it manually under Certificates, Identifiers & Profiles → Identifiers); SKU `parimaan-ios`.
+
+**Then:** `scripts/beta/build-ios-testflight.sh` builds the signed `.ipa` (`UPLOAD=1` with an App Store Connect API key uploads it; otherwise drag the `.ipa` into Apple's Transporter app). Build numbers must strictly increase per upload. After Apple's processing (5–20 min) the build appears under TestFlight.
+
+**Testers:** *Internal* testing (App Store Connect users, up to 100) needs no Apple review and works immediately. *External* testing (a public invite link, up to 10,000) needs a one-time **Beta App Review**, usually about a day; this is the right path for beta households who are not on your team. TestFlight builds expire after **90 days**.
+
+**Known risks to resolve before external testers / the App Store (tracked in `E2E_MVP_PLAN.md` §31):**
+- **Guideline 4.8 — Sign in with Apple.** Parimaan's only login is "Continue with Google" (PRD: Google-only SSO). Apps that offer a third-party login must also offer an equivalent privacy-preserving option, in practice Sign in with Apple. Beta App Review may or may not enforce it; App Store review will. Needs a decision, not a surprise.
+- **Beta App Review needs working credentials.** Login is Google-only, so Apple's reviewer must be able to sign in with a Google account. Use a dedicated test account (it must also be on the GCP OAuth consent screen's test-user list while the app is in Testing status, and have no 2-step prompt that blocks a reviewer).
+- **App Privacy questionnaire** in App Store Connect (name, email, photos and user content, linked to the user, not used for tracking) and the **privacy policy URL** `https://www.parimaan.app/privacy.html` (live).
+- **GCP OAuth consent screen** is in Testing status: sign-in is limited to the 100 listed test users (counted over the app's whole lifetime), and its Branding page is incomplete. Both must be dealt with before opening the beta beyond those users.
+- **Push** (W22) will need the Push Notifications capability and an `aps-environment` entitlement — not added yet, deliberately.
+
+#### TestFlight build — what actually went wrong the first time (2026-10-12), so it is not repeated
+
+First signed `.ipa` built after three distinct blockers, in this order:
+
+1. **"Your team has no devices from which to generate a provisioning profile."** Apple will not generate *any* automatic-signing profile — even for an App Store build that never touches a device — until at least one device is registered to the team. Fix: connect an iPhone, make it the run destination in Xcode (Runner › *Amogh's iPhone*), then *Try Again* in Signing & Capabilities. (Or add the UDID by hand at developer.apple.com → Certificates, Identifiers & Profiles → Devices.) One-time.
+2. **Selecting the team writes `DEVELOPMENT_TEAM` for you.** Xcode does not expose the Team ID in its preferences; choosing the team on the Runner target writes it into `project.pbxproj` (Debug, Release, Profile). Team ID `632DT4UQ4R` is committed. Xcode also re-serialises `Info.plist` and bumps `objectVersion` — revert both, they are noise.
+3. **"Dart snapshot generator failed with exit code -9" — not memory.** Flutter installed via Homebrew Cask leaves `com.apple.quarantine` on its engine binaries. The first launch of `engine/ios-release/gen_snapshot_arm64` triggers a Gatekeeper prompt nobody sees, so it hangs at 0 CPU / 0 MB, gets SIGKILLed, and macOS may move the file to the Trash. Symptoms are indistinguishable from an OOM kill; the tell is *zero* resident memory. Diagnose with a launch under a watchdog (`gen_snapshot_arm64 --help` should return in about a second). Fix, run by the human in Terminal: `xattr -dr com.apple.quarantine /opt/homebrew/share/flutter/bin/cache/artifacts/engine/ios-release`. If the file was trashed, restore it from `~/.Trash` or `flutter precache --ios --force`.
+
+Also: close Xcode before building from the command line on this 16 GB machine (it held about 4 GB), and stop leftover Gradle/Kotlin daemons (`./gradlew --stop`).
+
+**Result:** `mobile/build/ios/ipa/mobile.ipa` (27.7 MB), App Store distribution profile, signed `Apple Distribution: Amogh Kulkarni (632DT4UQ4R)`, version 1.0.0 build 10121400. Upload with Apple's **Transporter** app (drag the `.ipa`), or `UPLOAD=1` with an App Store Connect API key.
+
+**Seller name:** the team is an *individual* membership, so the App Store / TestFlight shows "Amogh Kulkarni" as the seller, not Tatva Research. An organization membership (needs a D-U-N-S number and a registered legal entity) is required to show a business name — open decision before the public App Store launch, not a TestFlight blocker.
