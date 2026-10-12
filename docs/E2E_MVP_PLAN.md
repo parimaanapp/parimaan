@@ -5486,3 +5486,36 @@ Requested directly: a full cross-check of `docs/PRD.md`, this plan, the actual r
 - **No open GitHub issues.** One open PR (#208, addressed above) was the only loose end in GitHub's own state.
 - **No stray TODO/FIXME/XXX from W19–W21 work** — the only two hits in `api/src`/`mobile/lib` predate W19 (`curatedRecipes.ts`'s W16 placeholder, `sign_in_screen.dart`'s minor design-system migration note) and are non-blocking.
 - **Several items that read as "still open" earlier in this same document are in fact closed by a later week** and are not repeated here: the router's unconditional `/first-run` redirect (fixed W8 S1), the Lambda concurrency quota (raised to 1000 by W20, confirmed live), the `household_settings` `WITH CHECK` RLS gap (closed W8), "Snacks UI unreachability" (closed W13 S3), the subscribe-time re-authorization gap for a removed member (`onMembershipRevoked`, fixed W11 D7 — only its live-push half remains open, per 30.2 item 12), and PRD §7.1's copy/clear day/week requirement (closed W14 S8). Each is genuinely resolved; they were re-verified here specifically so they wouldn't be miscounted as open in this audit.
+
+## 31. Beta-phase backlog (added 2026-10-12)
+
+Things deliberately deferred until the beta is running, so they are not forgotten and not mistaken for done. None blocks AWS Activate or the TestFlight/Android beta start. Source decisions: the marketing site (`marketing/`, §30-era follow-up, `RUNBOOK.md` 2026-10-12) shipped as the minimum that satisfies AWS Activate; the founder chose to defer Search Console and the "full website" to the beta.
+
+### 31.1 Website — from "enough for AWS Activate" to a full site
+- [ ] **Google Search Console**: verify the domain (a DNS TXT record at GoDaddy), submit `sitemap.xml`. Deferred by founder, 2026-10-12.
+- [ ] **Real product imagery**: replace the illustrative "Today" card with genuine device screenshots from the beta build (the card is labelled "Illustration" on purpose).
+- [ ] **App-store links/badges** once TestFlight public link and/or Play listing exist; until then the beta CTA stays an email.
+- [ ] **Terms of Service** page (the privacy policy exists; terms do not).
+- [ ] **Support / FAQ page** and a dedicated contact page (name, operator, optional postal address — app-store listings and the DPDP grievance contact may need one).
+- [ ] **Account/data deletion page at a public URL** — both Apple and Google require a URL where a user can learn how to delete their account; today deletion is "email us" (policy §"How long we keep it").
+- [ ] **Lawyer review of `privacy.html`** (wording on Google's paid Gemini terms, the 30-day response commitment, DPDP Act language).
+- [ ] **Branded email** (`hello@parimaan.app`) instead of the Gmail address shown publicly.
+- [ ] **Per-page OG images**, a Lighthouse/accessibility pass on the real content, `security.txt`.
+- [ ] **GoDaddy forwarding destination** `http://www.parimaan.app` → `https://www.parimaan.app` (one redirect hop saved).
+- [ ] **Analytics decision** for the site (none today; PostHog is W24 for the app) — keep the site cookie-free if possible.
+- [ ] **W25 reconciliation**: the marketing site owns `www.parimaan.app`; `FrontendStack`'s prod variant is hard-wired to the bare apex with a `www → apex` redirect. Decide `app.parimaan.app` vs. alternatives, and move `Parimaan-dev-Marketing` to the prod account when prod exists (`RUNBOOK.md`).
+
+### 31.2 Store and platform readiness
+- [ ] **Sign in with Apple** (App Store Review Guideline 4.8) — the app is Google-only. Decide: add Sign in with Apple, or accept that App Store submission is blocked on it (`RUNBOOK.md` TestFlight section).
+- [ ] **Google Play**: Play Console registration (USD 25 one-time), Android App Bundle (`.aab`) build in addition to the sideload APK, Data Safety form, store listing assets.
+- [ ] **App Store Connect**: App Privacy answers, screenshots (6.7" and 6.5"), age rating, review notes with a working test account.
+- [ ] **GCP OAuth consent screen**: complete the Branding page and move out of "Testing" before the 100-lifetime-user cap or a public launch.
+- [ ] **Back up the Android upload keystore** (`mobile/android/upload-keystore.jks` + `key.properties`) off this machine — founder action, still outstanding.
+- [ ] **Push notifications** (W22): Firebase project, APNs key upload, `aps-environment` entitlement, FCM Lambda.
+
+### 31.3 Beta operations
+- [ ] **Crash/error reporting** (PostHog or Sentry) so the temporary on-screen `[beta debug]` line in `sign_in_screen.dart` can be removed.
+- [ ] **Aurora cold-resume** (~15–30 s on the first request after 5 min idle) is a known rough edge for beta users on dev AWS; tell testers up front, revisit at W25.
+- [ ] **Feedback loop** with the 3–5 beta households (PostHog funnel is W24; until then it is manual).
+- [ ] Android sign-in failure on one tester's phone looked like a device-level DNS block on `*.amazoncognito.com` (Private DNS / security-app web protection); outcome of her settings check still not reported.
+
