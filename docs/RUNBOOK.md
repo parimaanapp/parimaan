@@ -297,3 +297,17 @@ _To be filled in W22–W23._
 - **App Privacy questionnaire** in App Store Connect (name, email, photos and user content, linked to the user, not used for tracking) and the **privacy policy URL** `https://www.parimaan.app/privacy.html` (live).
 - **GCP OAuth consent screen** is in Testing status: sign-in is limited to the 100 listed test users (counted over the app's whole lifetime), and its Branding page is incomplete. Both must be dealt with before opening the beta beyond those users.
 - **Push** (W22) will need the Push Notifications capability and an `aps-environment` entitlement — not added yet, deliberately.
+
+#### TestFlight build — what actually went wrong the first time (2026-10-12), so it is not repeated
+
+First signed `.ipa` built after three distinct blockers, in this order:
+
+1. **"Your team has no devices from which to generate a provisioning profile."** Apple will not generate *any* automatic-signing profile — even for an App Store build that never touches a device — until at least one device is registered to the team. Fix: connect an iPhone, make it the run destination in Xcode (Runner › *Amogh's iPhone*), then *Try Again* in Signing & Capabilities. (Or add the UDID by hand at developer.apple.com → Certificates, Identifiers & Profiles → Devices.) One-time.
+2. **Selecting the team writes `DEVELOPMENT_TEAM` for you.** Xcode does not expose the Team ID in its preferences; choosing the team on the Runner target writes it into `project.pbxproj` (Debug, Release, Profile). Team ID `632DT4UQ4R` is committed. Xcode also re-serialises `Info.plist` and bumps `objectVersion` — revert both, they are noise.
+3. **"Dart snapshot generator failed with exit code -9" — not memory.** Flutter installed via Homebrew Cask leaves `com.apple.quarantine` on its engine binaries. The first launch of `engine/ios-release/gen_snapshot_arm64` triggers a Gatekeeper prompt nobody sees, so it hangs at 0 CPU / 0 MB, gets SIGKILLed, and macOS may move the file to the Trash. Symptoms are indistinguishable from an OOM kill; the tell is *zero* resident memory. Diagnose with a launch under a watchdog (`gen_snapshot_arm64 --help` should return in about a second). Fix, run by the human in Terminal: `xattr -dr com.apple.quarantine /opt/homebrew/share/flutter/bin/cache/artifacts/engine/ios-release`. If the file was trashed, restore it from `~/.Trash` or `flutter precache --ios --force`.
+
+Also: close Xcode before building from the command line on this 16 GB machine (it held about 4 GB), and stop leftover Gradle/Kotlin daemons (`./gradlew --stop`).
+
+**Result:** `mobile/build/ios/ipa/mobile.ipa` (27.7 MB), App Store distribution profile, signed `Apple Distribution: Amogh Kulkarni (632DT4UQ4R)`, version 1.0.0 build 10121400. Upload with Apple's **Transporter** app (drag the `.ipa`), or `UPLOAD=1` with an App Store Connect API key.
+
+**Seller name:** the team is an *individual* membership, so the App Store / TestFlight shows "Amogh Kulkarni" as the seller, not Tatva Research. An organization membership (needs a D-U-N-S number and a registered legal entity) is required to show a business name — open decision before the public App Store launch, not a TestFlight blocker.
