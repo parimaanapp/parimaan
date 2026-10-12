@@ -8,6 +8,7 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart'
     hide AuthSession;
 import 'package:amplify_flutter/amplify_flutter.dart' hide AuthSession;
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' show ClientException;
 
 import '../../../app/config/app_config.dart';
 import '../domain/auth_failure.dart';
@@ -281,6 +282,22 @@ class AmplifyAuthRepository implements AuthRepository {
         cause: error,
         stackTrace: stackTrace,
       ),
+      // Found 2026-10-06, during the beta: the OAuth code-for-token exchange
+      // (Hosted UI's own final leg, driven by `package:http`, not Amplify's
+      // own networking stack) throws `http.ClientException` on a plain
+      // connectivity failure — a DNS lookup that failed on-device, not a
+      // real infra problem (the domain and endpoint were both confirmed
+      // live and healthy the moment this was found). Before this case
+      // existed, that fell through to the generic `_` arm below and showed
+      // as "Something went wrong" — scarier and less actionable than the
+      // honest, already-written "Couldn't connect. Check your connection
+      // and try again." `ClientException` is `package:http`'s own catch-all
+      // for a transport-level failure, so every instance of it genuinely
+      // is a connectivity problem, not just this one case.
+      ClientException() => AuthNetworkFailure(
+        cause: error,
+        stackTrace: stackTrace,
+      ),
       _ => AuthUnknownFailure(cause: error, stackTrace: stackTrace),
     };
   }
@@ -288,9 +305,19 @@ class AmplifyAuthRepository implements AuthRepository {
   void _log(String label, Object error, StackTrace stackTrace) {
     // Structured logging (PostHog / CloudWatch) arrives in a later slice; until
     // then the detail must at least not be silently dropped.
-    if (kDebugMode) {
-      debugPrint('[auth] $label: $error\n$stackTrace');
-    }
+    //
+    // Found 2026-10-06, during the beta's own first real-device sign-in
+    // attempt: this was gated on `kDebugMode`, so a release build — every
+    // build a beta tester ever runs — logged nothing at all. The one place
+    // this detail could have surfaced (`adb logcat`) was silently empty,
+    // which is exactly backwards for a pre-telemetry beta that most needs
+    // this signal from builds that are, by definition, never run in debug
+    // mode. `debugPrint` itself works in every build mode (it only
+    // rate-limits long output) — `kDebugMode` was gating something that
+    // didn't need gating. No UI change: `AuthFailure.cause`'s own doc
+    // comment ("never render this in the UI") is unaffected — this only
+    // changes whether the detail reaches the system log, never the screen.
+    debugPrint('[auth] $label: $error\n$stackTrace');
   }
 }
 
