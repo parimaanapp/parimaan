@@ -443,34 +443,6 @@ p {
   color: var(--ink-soft);
 }
 
-.questions {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(20px, 3vw, 40px);
-}
-.questions li {
-  border-top: 2px solid var(--ink);
-  padding-top: 18px;
-}
-.questions h3 {
-  font-size: 1.75rem;
-}
-.questions p {
-  margin-top: 10px;
-  color: var(--ink-soft);
-  font-size: 1rem;
-}
-.closer {
-  margin-top: clamp(28px, 4vw, 44px);
-  font-family: var(--serif);
-  font-size: 1.75rem;
-  line-height: 1.25;
-  max-width: 30ch;
-}
-
 /* steps — a real sequence, so the numbers carry information */
 .steps {
   list-style: none;
@@ -535,9 +507,6 @@ p {
   background: var(--cardamom);
   color: var(--paper);
 }
-.band .eyebrow {
-  color: var(--cardamom-soft);
-}
 .band h2 em {
   color: var(--haldi-soft);
 }
@@ -553,10 +522,14 @@ p {
 }
 .band ul {
   list-style: none;
-  margin: 0;
+  margin: 28px 0 0;
   padding: 0;
   display: grid;
   gap: 18px;
+}
+.band li strong {
+  font-weight: 600;
+  color: var(--haldi-soft);
 }
 .band li {
   padding-left: 28px;
@@ -635,8 +608,19 @@ p {
 }
 .site-footer .wrap {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr) minmax(0, 1fr);
   gap: 32px;
+}
+.footer-heading {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+}
+.footer-heading:not(:first-child) {
+  margin-top: 20px;
 }
 .site-footer p {
   max-width: 44ch;
@@ -739,7 +723,6 @@ p {
 }
 
 @media (max-width: 680px) {
-  .questions,
   .features,
   .site-footer .wrap {
     grid-template-columns: minmax(0, 1fr);
