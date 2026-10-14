@@ -7,6 +7,7 @@ import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
+import 'package:mobile/features/household/state/create_household_controller.dart';
 import 'package:mobile/features/household/state/household_wizard_controller.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
@@ -39,6 +40,7 @@ Future<WizardHarness> pumpWizardRoute(
   String route, {
   FakeHouseholdRepository? repository,
   bool adoptHousehold = true,
+  List<Override> overrides = const <Override>[],
 }) async {
   final FakeHouseholdRepository repo =
       repository ??
@@ -59,6 +61,9 @@ Future<WizardHarness> pumpWizardRoute(
         stubbedAuthRepository(session: testSignedInSession),
       ),
       householdRepositoryProvider.overrideWithValue(repo),
+      // No real backoff sleep in widget tests.
+      createHouseholdRetryDelayProvider.overrideWithValue(Duration.zero),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);

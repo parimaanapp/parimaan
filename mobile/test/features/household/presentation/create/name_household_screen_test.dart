@@ -257,4 +257,67 @@ void main() {
       expect(find.text('Too many households today.'), findsOne);
     });
   });
+
+  group('NameHouseholdScreen — timeouts and stale errors (A2)', () {
+    testWidgets(
+      'a transient failure shows the waking-up copy, keeps the input, and '
+      'never the generic text',
+      (WidgetTester tester) async {
+        final subject = await _pump(
+          tester,
+          repository: FakeHouseholdRepository(
+            error: const InternalError('An unexpected error occurred.'),
+          ),
+        );
+
+        await _enterName(tester, 'Kulkarni Kitchen');
+        await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text(NameHouseholdScreen.wakingUpMessage), findsOne);
+        expect(find.text('An unexpected error occurred.'), findsNothing);
+        expect(find.text('Kulkarni Kitchen'), findsOne);
+        // One automatic retry, then it stops.
+        expect(subject.repository.calls, hasLength(2));
+      },
+    );
+
+    testWidgets('a failed first attempt is retried automatically and succeeds', (
+      WidgetTester tester,
+    ) async {
+      final repository = FakeHouseholdRepository(result: testHousehold)
+        ..createErrorQueue.add(const InternalError('timeout'));
+      final subject = await _pump(tester, repository: repository);
+
+      await _enterName(tester, 'Kulkarni Kitchen');
+      await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, hasLength(2));
+      expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);
+    });
+
+    testWidgets('error -> back -> re-enter shows no error', (
+      WidgetTester tester,
+    ) async {
+      final subject = await _pump(
+        tester,
+        repository: FakeHouseholdRepository(
+          error: const ValidationError('name must not contain control characters'),
+        ),
+      );
+      await _enterName(tester, 'Kulkarni Kitchen');
+      await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+      expect(find.byKey(WizardStepScaffold.errorKey), findsOne);
+
+      subject.router.go(AppRoutes.firstRun);
+      await tester.pumpAndSettle();
+      subject.router.go(AppRoutes.createHouseholdName);
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(subject.router), AppRoutes.createHouseholdName);
+      expect(find.byKey(WizardStepScaffold.errorKey), findsNothing);
+    });
+  });
 }
