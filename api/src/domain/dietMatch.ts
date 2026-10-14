@@ -1,0 +1,69 @@
+/**
+ * Dietary matching — the single source of truth for "may this household be
+ * served this recipe?" (E2E_MVP_PLAN.md §32.3, founder-approved refinement).
+ *
+ * Tags split into two groups:
+ *  - STYLES    (veg, non_veg, vegan, eggetarian, jain): how the household eats.
+ *  - MODIFIERS (gluten_free, dairy_free): always applied, never optional.
+ *
+ * A recipe is eligible iff
+ *   (household has no styles OR recipe tags intersect the union of
+ *    `expandStyle(style)` over the household's styles)
+ *   AND (every household modifier is among the recipe's tags).
+ *
+ * Styles combine as a UNION. A style also admits the recipes that are
+ * stricter than it: a non-veg household eats veg dishes too (otherwise it
+ * would get no breakfasts), an egg-friendly household eats veg dishes, and
+ * a veg household accepts vegan and jain dishes. Recipes may additionally
+ * carry several tags explicitly.
+ *
+ * This refines §32.3, which said "no hierarchy logic in code": the
+ * expansion table below IS the hierarchy, kept in this one module so the
+ * SQL candidate query, the commit-time re-check and the keyword filter all
+ * share it.
+ */
+
+export const DIET_STYLES = ['veg', 'non_veg', 'vegan', 'eggetarian', 'jain'] as const;
+export const DIET_MODIFIERS = ['gluten_free', 'dairy_free'] as const;
+
+export type DietStyle = (typeof DIET_STYLES)[number];
+export type DietModifier = (typeof DIET_MODIFIERS)[number];
+
+const STYLE_EXPANSION: Readonly<Record<DietStyle, readonly DietStyle[]>> = {
+  veg: ['veg', 'vegan', 'jain'],
+  vegan: ['vegan'],
+  jain: ['jain'],
+  eggetarian: ['eggetarian', 'veg', 'vegan', 'jain'],
+  non_veg: ['non_veg', 'eggetarian', 'veg', 'vegan', 'jain'],
+};
+
+export const isDietStyle = (tag: string): tag is DietStyle => (DIET_STYLES as readonly string[]).includes(tag);
+export const isDietModifier = (tag: string): tag is DietModifier =>
+  (DIET_MODIFIERS as readonly string[]).includes(tag);
+
+/** Recipe style tags a household style accepts. */
+export const expandStyle = (style: DietStyle): readonly DietStyle[] => STYLE_EXPANSION[style];
+
+const unique = <T>(values: readonly T[]): T[] => [...new Set(values)];
+
+/** The household's style tags, deduplicated; unknown values are ignored. */
+export const householdStyles = (householdTags: readonly string[]): DietStyle[] =>
+  unique(householdTags.filter(isDietStyle));
+
+/** The household's modifier tags, deduplicated; unknown values are ignored. */
+export const householdModifiers = (householdTags: readonly string[]): DietModifier[] =>
+  unique(householdTags.filter(isDietModifier));
+
+/** Union of `expandStyle` over the household's styles; empty when it has none. */
+export const eligibleRecipeStyleTags = (householdTags: readonly string[]): DietStyle[] =>
+  unique(householdStyles(householdTags).flatMap((style) => expandStyle(style)));
+
+export const isRecipeEligible = (
+  recipeTags: readonly string[],
+  householdTags: readonly string[],
+): boolean => {
+  const styles = householdStyles(householdTags);
+  const styleOk =
+    styles.length === 0 || eligibleRecipeStyleTags(householdTags).some((tag) => recipeTags.includes(tag));
+  return styleOk && householdModifiers(householdTags).every((modifier) => recipeTags.includes(modifier));
+};

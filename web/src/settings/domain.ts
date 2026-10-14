@@ -40,16 +40,17 @@ export const CUISINE_TIER1_LABELS: Record<CuisineTier1, string> = {
   continental: 'Continental',
 };
 
-export const DIETARY_TAG_OPTIONS = ['veg', 'vegan', 'jain', 'eggetarian', 'gluten_free', 'dairy_free'] as const;
+export const DIETARY_TAG_OPTIONS = ['veg', 'non_veg', 'vegan', 'jain', 'eggetarian', 'gluten_free', 'dairy_free'] as const;
 export type DietaryTag = (typeof DIETARY_TAG_OPTIONS)[number];
 
 export const DIETARY_TAG_LABELS: Record<DietaryTag, string> = {
   veg: 'Vegetarian',
+  non_veg: 'Non-vegetarian',
   vegan: 'Vegan',
   jain: 'Jain',
-  eggetarian: 'Eggetarian',
-  gluten_free: 'Gluten-free',
-  dairy_free: 'Dairy-free',
+  eggetarian: 'Egg friendly',
+  gluten_free: 'Gluten free',
+  dairy_free: 'Dairy free',
 };
 
 export const CUISINE_BIAS_OPTIONS = ['less', 'normal', 'more'] as const;

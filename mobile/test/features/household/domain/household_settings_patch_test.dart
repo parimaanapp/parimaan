@@ -12,6 +12,7 @@ void main() {
         DietaryTag.values.map((DietaryTag t) => t.wireValue).toList(),
         <String>[
           'veg',
+          'non_veg',
           'vegan',
           'jain',
           'eggetarian',
@@ -21,13 +22,14 @@ void main() {
       );
     });
 
-    test('display labels are the wireframe chip copy, not the enum names', () {
-      expect(DietaryTag.veg.displayLabel, 'veg');
-      expect(DietaryTag.vegan.displayLabel, 'vegan');
-      expect(DietaryTag.jain.displayLabel, 'jain');
-      expect(DietaryTag.eggetarian.displayLabel, 'egg-friendly');
-      expect(DietaryTag.glutenFree.displayLabel, 'GF');
-      expect(DietaryTag.dairyFree.displayLabel, 'dairy-free');
+    test('display labels are sentence-case copy (§32.6), not the enum names', () {
+      expect(DietaryTag.veg.displayLabel, 'Vegetarian');
+      expect(DietaryTag.nonVeg.displayLabel, 'Non-vegetarian');
+      expect(DietaryTag.vegan.displayLabel, 'Vegan');
+      expect(DietaryTag.jain.displayLabel, 'Jain');
+      expect(DietaryTag.eggetarian.displayLabel, 'Egg friendly');
+      expect(DietaryTag.glutenFree.displayLabel, 'Gluten free');
+      expect(DietaryTag.dairyFree.displayLabel, 'Dairy free');
     });
 
     test('the wireframe pre-selects veg and egg-friendly', () {
