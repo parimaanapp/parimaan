@@ -5514,8 +5514,22 @@ Things deliberately deferred until the beta is running, so they are not forgotte
 - [ ] **Push notifications** (W22): Firebase project, APNs key upload, `aps-environment` entitlement, FCM Lambda.
 
 ### 31.3 Beta operations
-- [ ] **Crash/error reporting** (PostHog or Sentry) so the temporary on-screen `[beta debug]` line in `sign_in_screen.dart` can be removed.
+- [ ] **Crash/error reporting** so the temporary on-screen `[beta debug]` line in `sign_in_screen.dart` can be removed — delivered by the §31.4 instrumentation slice.
 - [ ] **Aurora cold-resume** (~15–30 s on the first request after 5 min idle) is a known rough edge for beta users on dev AWS; tell testers up front, revisit at W25.
-- [ ] **Feedback loop** with the 3–5 beta households (PostHog funnel is W24; until then it is manual).
+- [ ] **Feedback loop** with the 3–5 beta households: manual (calls/notes + TestFlight's built-in screenshot feedback and crash data) until §31.4 lands, then the PostHog funnel.
 - [ ] Android sign-in failure on one tester's phone looked like a device-level DNS block on `*.amazoncognito.com` (Private DNS / security-app web protection); outcome of her settings check still not reported.
+
+### 31.4 Beta instrumentation slice (PostHog pulled forward from W24; added 2026-10-13)
+Founder decision 2026-10-13: scope product analytics *during* the beta rather than waiting for W24, because the beta's purpose is learning where people drop off. W24 keeps the observability-stack CDK (CloudWatch alarms/dashboards); this slice takes only the client SDK, funnel events and crash/error capture.
+- [ ] **Founder prerequisites**: create the PostHog account (EU cloud, `eu.i.posthog.com`, request the DPA at creation per Q5), hand over the project API key (a public client key, safe in the app).
+- [ ] **SDK integration** on Flutter (iOS + Android), identified by Cognito `sub` only — no email, name or free-text in event properties.
+- [ ] **Funnel events** (SD §11.4): install/first_open → sign_in_started → sign_in_succeeded/failed(reason) → household_created → first_pantry_item_added → plan_generated → shopping_list_generated, plus drop-off context (screen, error class).
+- [ ] **AI acceptance events**: proposal shown / accepted / edited / rejected for freeform parse and photo pantry (closes the manual measurement in W7 §13.5.7 and W20 D9); cook-from-pantry suggestion → saved (W21 D13).
+- [ ] **Crash and error capture**, then remove the `[beta debug]` line and its test assertion.
+- [ ] **Session replay**: founder to decide on/off (recommendation: on for the small known beta, text and inputs masked by default, testers told). Opt-in wording needed in-app.
+- [ ] **Privacy policy update** (`marketing/privacy.html`): name PostHog as a processor, EU-cloud transfer (SCCs), what is collected, replay if enabled. Lawyer review rolls into the §31.1 review.
+- [ ] **Event dictionary** doc (names, properties, owner) so dashboards survive refactors; build the funnel and a day-1/day-7 retention view in PostHog.
+- [ ] **Feature flags** wired for kill-switching risky features without a new TestFlight build (optional, same SDK).
+- **Out of scope** (stay W24): CloudWatch alarms and dashboards, observability CDK, server-side cost tracker.
+- **Ordering**: before inviting any external households; after the first internal TestFlight pass; ahead of W22 Firebase push unless the founder reprioritises.
 
