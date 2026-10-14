@@ -20,8 +20,13 @@ Applied to `src/*.txt`, rebuilt into `ingredients.csv` / `ingredients.md` / `con
 | Curry leaves | Unit is **bunch ≈ 100–120 leaves** (≈ 25 g); `sprig` removed. Recipes use grams ("1 g ≈ 8–10 leaves"). |
 
 ## UI copy rules (apply to every screen, picker and filter)
-- **Ingredient categories, sentence case:** Dal, Grain, Spice, Dairy, Eggs, Produce, Dry goods, Oil, **Meat & Fish**, Condiment, Bakery, Snacks, Beverages, Frozen, Other. (`meat_fish` is the stored value; "Meat & Fish" is the label.)
-- **Diet and cuisine labels as written by the founder:** Vegetarian, Non-Vegetarian, Vegan, Egg Friendly, Jain, Gluten Free, Dairy Free. Cuisines follow the same capitalisation (North Indian, South Indian, Indo-Chinese…).
+- **Ingredient categories:** Dal, Grain, Spice, Dairy, Eggs, Produce, **Dry Goods**, Oil, **Meat & Fish**, Condiment, Bakery, Snacks, Beverages, Frozen, Other. (`meat_fish` / `dry_goods` are stored values; these are the labels.)
+- **Diet labels, sentence case:** Vegetarian, Non-vegetarian, Vegan, Egg friendly, Jain, Gluten free, Dairy free. Cuisines keep proper-noun capitals (North Indian, South Indian, Indo-Chinese).
+
+## Weekly plan layout (decided)
+- **Four meals planned:** option B, a 2×2 block per day with the meal name under the ＋ and in each cell, no column header.
+- **One to three meals planned:** option C, one column per planned meal with a column header.
+- A zoomed-out week overview is not part of Build C unless requested later.
 
 ## Recipes
 - **Methi Thepla** is tagged veg, vegan, dairy free. The sample recipe previously kneaded with curd, which contradicted that, so it now kneads with water.

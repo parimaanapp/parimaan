@@ -246,7 +246,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Val (Field Beans) | vaal; field beans dried; avarekalu dried; dried field beans |
 | White Peas | safed vatana; white vatana; dried white peas |
 
-## Dry goods — 75
+## Dry Goods — 75
 ### flour — 11  ·  units: `g / kg / cup`
 | Canonical name | Also called |
 |---|---|

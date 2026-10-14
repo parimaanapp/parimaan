@@ -49,7 +49,7 @@ SOLID_PIECE_DEFAULT = {}  # piece weights are per ingredient (column piece_g)
 DRY_GOODS_OVERRIDE = re.compile(r'^(Poha|Sooji|Idli Rava|Besan|Vermicelli|Sabudana|Murmura|Roasted Vermicelli|Rice Noodles|Pasta|Noodles|Bread Crumbs|Puffed Millet)')
 BUNCH_G={'Curry Leaves':25}
 NOTES={'Curry Leaves':'1 bunch is about 100-120 leaves (about 25 g)'}
-LABELS={'dal':'Dal','grain':'Grain','spice':'Spice','dairy':'Dairy','eggs':'Eggs','produce':'Produce','dry_goods':'Dry goods','oil':'Oil','meat_fish':'Meat & Fish','condiment':'Condiment','bakery':'Bakery','snacks':'Snacks','beverages':'Beverages','frozen':'Frozen','other':'Other'}
+LABELS={'dal':'Dal','grain':'Grain','spice':'Spice','dairy':'Dairy','eggs':'Eggs','produce':'Produce','dry_goods':'Dry Goods','oil':'Oil','meat_fish':'Meat & Fish','condiment':'Condiment','bakery':'Bakery','snacks':'Snacks','beverages':'Beverages','frozen':'Frozen','other':'Other'}
 PIECE_OVERRIDES={'Cloves':0.1,'Green Cardamom':0.5,'Black Cardamom':2,'Cinnamon Stick':3,'Dried Red Chilli':2,'Bay Leaf':0.5,'Star Anise':1,'Black Pepper (Whole)':0.05}
 rows=[]; seen=collections.OrderedDict(); dups=[]
 for f in sorted(glob.glob(os.path.join(HERE,'src','*.txt'))):
