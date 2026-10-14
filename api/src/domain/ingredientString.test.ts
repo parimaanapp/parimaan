@@ -61,6 +61,33 @@ describe('parseIngredientString', () => {
     expect(result.name).toBe('eggs');
   });
 
+  it.each([
+    ['300 gms chicken', 300, 'g', 'chicken'],
+    ['300gm chicken', 300, 'g', 'chicken'],
+    ['250 grams chicken mince', 250, 'g', 'chicken mince'],
+    ['2 Tablespoons ginger garlic paste', 2, 'tbsp', 'ginger garlic paste'],
+    ['3 pcs onion', 3, 'piece', 'onion'],
+    ['1 piece of cinnamon', 1, 'piece', 'cinnamon'],
+    ['1 litre water', 1, 'l', 'water'],
+  ])('recognises unit spelling in %j', (line, quantity, unit, name) => {
+    const result = parseIngredientString(line);
+    expect(result).toMatchObject({ quantity, unit, name });
+  });
+
+  it('reads an inch mark as a size note, not a unit or name text', () => {
+    const result = parseIngredientString('1" piece of cinnamon');
+    expect(result).toMatchObject({ quantity: 1, unit: 'piece', name: 'cinnamon', notes: '1 inch' });
+  });
+
+  it('reads a hyphenated inch size as a size note', () => {
+    const result = parseIngredientString('1-inch piece ginger');
+    expect(result).toMatchObject({ quantity: 1, unit: 'piece', name: 'ginger', notes: '1 inch' });
+  });
+
+  it('does not treat a word that merely starts like a unit as a unit', () => {
+    expect(parseIngredientString('2 gmo tomatoes')).toMatchObject({ unit: null, name: 'gmo tomatoes' });
+  });
+
   it('degrades a zero-denominator fraction to null quantity rather than Infinity', () => {
     const result = parseIngredientString('1/0 cup sugar');
     expect(result.quantity).toBeNull();

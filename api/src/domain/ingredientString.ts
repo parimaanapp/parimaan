@@ -1,4 +1,4 @@
-import { KNOWN_PANTRY_UNITS } from './pantryUnits.js';
+import { canonicaliseUnit } from './ingredientNormalisation/units.js';
 
 /**
  * A single parsed ingredient. `raw` is kept verbatim on every path — nothing
@@ -79,16 +79,25 @@ export const coerceQuantityText = (text: string): { quantity: number | null; lef
   return quantity === null ? { quantity: null, leftoverText: trimmed } : { quantity, leftoverText: null };
 };
 
-/** Consumes a single leading word from `text` if it matches a known pantry unit (singular or a simple trailing-`s` plural, e.g. "cups" → "cup"). */
+/** Consumes a single leading word from `text` if it is a recognised unit spelling (gms, tablespoons, pcs, ...), see `ingredientNormalisation/units.ts`. */
 const consumeUnit = (text: string): { unit: string | null; rest: string } => {
   const match = /^\s*(\S+)\s*/.exec(text);
   if (!match) {
     return { unit: null, rest: text };
   }
-  const word = match[1]!.toLowerCase();
-  const singular = word.endsWith('s') && word.length > 1 ? word.slice(0, -1) : word;
-  const known = KNOWN_PANTRY_UNITS.find((unit) => unit === word || unit === singular);
-  return known === undefined ? { unit: null, rest: text } : { unit: known, rest: text.slice(match[0].length) };
+  const unit = canonicaliseUnit(match[1]!);
+  return unit === null ? { unit: null, rest: text } : { unit, rest: text.slice(match[0].length) };
+};
+
+/** A size marker right after the quantity: an inch mark (`1"`) or `-inch`/` inch`. Returned as a note so "1\" piece of cinnamon" keeps its size. */
+const INCH_MARKER_PATTERN = /^\s*(?:["\u201d\u2033]|-?\s*inch(?:es)?\b)\s*/i;
+
+const consumeSizeMarker = (text: string, quantity: number | null): { sizeNote: string | null; rest: string } => {
+  const match = INCH_MARKER_PATTERN.exec(text);
+  if (!match || quantity === null) {
+    return { sizeNote: null, rest: text };
+  }
+  return { sizeNote: `${quantity} inch`, rest: text.slice(match[0].length) };
 };
 
 /** Splits the remainder after quantity/unit into a name and optional notes — a trailing "(...)" parenthetical or a comma-separated suffix, e.g. "White Urad Dal (Whole)" or "atta, sifted". */
@@ -125,7 +134,10 @@ export const parseIngredientString = (raw: string): ParsedIngredient => {
 
   const quantity = parseQuantityToken(quantityMatch[1]!);
   const afterQuantity = trimmedRaw.slice(quantityMatch[0].length);
-  const { unit, rest } = consumeUnit(afterQuantity);
-  const { name, notes } = extractNameAndNotes(rest);
+  const { sizeNote, rest: afterSize } = consumeSizeMarker(afterQuantity, quantity);
+  const { unit, rest: afterUnit } = consumeUnit(afterSize);
+  const rest = unit === null ? afterUnit : afterUnit.replace(/^of\s+/i, '');
+  const { name, notes: extractedNotes } = extractNameAndNotes(rest);
+  const notes = [sizeNote, extractedNotes].filter((part): part is string => part !== null).join(', ') || null;
   return { raw: trimmedRaw, name: name === '' ? trimmedRaw : name, quantity, unit, notes };
 };
