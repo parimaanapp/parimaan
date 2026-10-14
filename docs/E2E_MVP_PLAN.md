@@ -5618,3 +5618,10 @@ Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf
 - **Build C**: C1–C3 against the wireframes; founder reviews the plan screen on a device before TestFlight.
 - **Risks**: recipe generation quality and cost (B3); Aurora cold-resume masking real timeouts (#1); catalog alias collisions (Kashmiri vs plain lal mirch) — intended product semantics need founder calls case by case; plan layout density on small phones (C1) — verify on the smallest supported iPhone.
 - **Unchanged from §31**: PostHog slice (§31.4), Firebase/W22, store readiness — scheduled after Build C unless re-prioritised.
+
+### 32.6 Sign-off record — catalog and components
+- **Catalog**: structure approved with the edits in `docs/catalog/decisions.md` (merged chillies, one Milk, one Toor Dal, generic Rice, no fresh/frozen meat split, eggs by piece/dozen, curry-leaf bunch ≈ 100–120 leaves). Remaining ~650 ingredients are generated in Build B and reviewed in batches.
+- **UI copy** (supersedes the labels in §32.1): categories **Dal, Grain, Spice, Dairy, Eggs, Produce, Dry Goods, Oil, Meat & Fish, Condiment, Bakery, Snacks, Beverages, Frozen, Other**; diet labels in sentence case **Vegetarian, Non-vegetarian, Vegan, Egg friendly, Jain, Gluten free, Dairy free**.
+- **Recipes**: sample format approved; Methi Thepla is vegan and dairy free.
+- **Components**: sign-off list items 1–6 and 8 approved (drawn tab icons, "Today" label, centred titles, bold back chevron with 44×44 target, solid-ink chips without ✓, haldi "◆ AI proposal" badge, column header). Item 7 is **decided**: four meals planned → option B (2×2 block per day, meal name under the ＋ and in each cell, no column header); one to three meals planned → option C (one column per planned meal with a column header). Replaces the four-column layout in C1.
+
