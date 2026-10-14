@@ -311,3 +311,41 @@ Also: close Xcode before building from the command line on this 16 GB machine (i
 **Result:** `mobile/build/ios/ipa/mobile.ipa` (27.7 MB), App Store distribution profile, signed `Apple Distribution: Amogh Kulkarni (632DT4UQ4R)`, version 1.0.0 build 10121400. Upload with Apple's **Transporter** app (drag the `.ipa`), or `UPLOAD=1` with an App Store Connect API key.
 
 **Seller name:** the team is an *individual* membership, so the App Store / TestFlight shows "Amogh Kulkarni" as the seller, not Tatva Research. An organization membership (needs a D-U-N-S number and a registered legal entity) is required to show a business name — open decision before the public App Store launch, not a TestFlight blocker.
+
+---
+
+## Account wipe tool (A6, dev only, destructive)
+
+> **WARNING: DESTRUCTIVE AND DEV-ONLY.** This permanently deletes every record tied to a set of email addresses: database rows, S3 objects, DynamoDB cache items and Cognito users. There is no undo. It refuses to run unless `WIPE_ENV=dev` and the bucket/table names end in `-dev`. **The founder must approve the dry-run listing before `--execute` is ever run.** Do not run it until the fixes that must ship first have shipped (`E2E_MVP_PLAN.md` §32.5).
+
+**What it deletes, in this exact order**
+
+1. *Database, one transaction* (`api/src/accountWipe/steps.ts`; the order is asserted against the FK graph derived from `api/migrations`): `shopping_list_items`, `shopping_lists`, `menu_items`, `menus`, `recipe_ingredients`, `recipes`, `pantry_items`, `notification_preferences`, `household_memberships`, `household_settings`, `households`, `users`. If the live DB no longer matches the approved listing, or any step deletes a different count than listed, the transaction rolls back.
+2. *S3*: `pantry-photos/<cognito-sub>/` in the uploads bucket, and `exports/<household-id>/` for each deleted household in the exports bucket.
+3. *DynamoDB cache table*: items whose `PK` contains a wiped user id, Cognito sub, or deleted household id (rate-limit counters, cook-from-pantry cache). The shared staples-note cache is keyed by recipe hash and is left alone.
+4. *Cognito*: `AdminDeleteUser` for every user whose `email` matches (native and federated users). "User not found" counts as success.
+
+**Household rule.** A household is deleted only if every member is in the wipe set (or it has no members). A household shared with anyone else is **kept**: only the wiped users' memberships and notification preferences are removed, `ON DELETE SET NULL` clears the attribution columns on rows they created (reported in the listing), and if the wiped user was the primary the earliest-joined remaining member is promoted to primary.
+
+**Prerequisite: a network path to Aurora.** Aurora is in an isolated subnet and the Data API is disabled (see the W10 section above), so the CLI cannot reach it from a laptop by default. Provide `WIPE_DATABASE_URL` for a connection that can (for example an SSM port-forward through a host inside the VPC, as the cluster admin, not `parimaan_app`: the tables use `FORCE ROW LEVEL SECURITY` and the tool refuses a role that cannot bypass it). A reviewed in-VPC runner Lambda is deliberately not part of this tool.
+
+**Usage** (from `api/`, with `AWS_PROFILE=parimaan-dev`):
+
+```bash
+export WIPE_ENV=dev AWS_REGION=ap-south-1
+export WIPE_USER_POOL_ID=...            # Cognito user pool id (CfnOutput UserPoolId)
+export WIPE_UPLOADS_BUCKET=parimaan-uploads-dev
+export WIPE_EXPORTS_BUCKET=parimaan-exports-dev
+export WIPE_CACHE_TABLE=parimaan-cache-dev
+export WIPE_DATABASE_URL=...            # admin connection URL; never commit or paste it
+
+# 1. Dry run (default, read-only). Prints counts, sample ids and a listing hash.
+pnpm wipe:accounts --emails-file wipe-emails.txt
+
+# 2. Founder reviews the listing and approves it.
+
+# 3. Execute. --confirm must equal the hash of a listing computed right now.
+pnpm wipe:accounts --emails-file wipe-emails.txt --execute --confirm <hash>
+```
+
+The hash covers the whole listing (DB ids, S3 keys, cache keys, Cognito users). If anything changed since the approved dry run, execute refuses; re-run the dry run and re-approve. After deleting it re-runs the listing and fails loudly unless zero items remain. Re-running is safe: an already-clean target is a no-op. Afterwards re-seed curated recipes and verify (steps 4 and 5 of §32.5).
