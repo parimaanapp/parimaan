@@ -260,18 +260,16 @@ class _BackCircleButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: 'Back',
-    child: InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: AppSizing.minTouchTargetWidth,
-        height: AppSizing.minTouchTargetWidth,
-        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.5), shape: BoxShape.circle),
-        child: const Icon(Icons.arrow_back, color: Colors.white),
-      ),
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: Colors.black.withValues(alpha: 0.5),
+      shape: BoxShape.circle,
+    ),
+    child: PTopBarBackButton(
+      semanticLabel: 'Back',
+      onPressed: onTap,
+      color: Colors.white,
+      shape: const CircleBorder(),
     ),
   );
 }

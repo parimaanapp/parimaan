@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/shared/ui/components/p_top_bar.dart';
 import 'package:mobile/app/router.dart';
 import 'package:mobile/features/household/domain/meal_structure.dart';
 import 'package:mobile/features/household/presentation/create/meal_structure_screen.dart';
@@ -221,7 +222,7 @@ void main() {
     ) async {
       final subject = await _pump(tester);
 
-      await tester.tap(find.text('‹'));
+      await tester.tap(find.byType(PTopBarBackButton));
       await tester.pumpAndSettle();
 
       expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);

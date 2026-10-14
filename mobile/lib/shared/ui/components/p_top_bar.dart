@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../tokens.dart';
+import 'p_back_chevron.dart';
 
 /// The screen header from the design source's *Mobile app shell*.
 ///
@@ -31,8 +32,9 @@ class PTopBar extends StatelessWidget {
          'A back control needs a screen-reader label — the glyph is not one.',
        );
 
-  /// The `‹` the design source uses. A glyph, not translatable copy; the
-  /// screen-reader announcement is [backSemanticLabel], which the caller owns.
+  /// Sentinel meaning "draw the bold [PBackChevron]". Any other value is
+  /// rendered as text. The screen-reader announcement is [backSemanticLabel],
+  /// which the caller owns.
   static const String defaultBackGlyph = '‹';
 
   /// Screen title, in the display serif.
@@ -47,8 +49,8 @@ class PTopBar extends StatelessWidget {
   /// Required whenever [onBack] is given.
   final String? backSemanticLabel;
 
-  /// Override the back glyph — e.g. a Phosphor code point once the icon set is
-  /// mapped.
+  /// Override the back glyph with a text glyph. Left at the default, a bold
+  /// drawn chevron is shown.
   final String backGlyph;
 
   /// Optional trailing action, usually a [PIconButton].
@@ -103,23 +105,29 @@ class PTopBar extends StatelessWidget {
 
 /// The top bar's back affordance.
 ///
-/// Public so screens (and tests) can refer to it by name, but only ever built
-/// by [PTopBar]. It carries a *typographic* chevron rather than an [IconData]
-/// because that is what the design source draws and because no Phosphor
-/// code-point mapping exists in the repo yet — [PTopBar.backGlyph] is the seam
-/// for swapping it once one does. The 44pt target, the ripple and the radius
-/// still come from the same tokens every other control uses.
+/// Draws a bold 24px [PBackChevron] by default, in a 44pt target with an ink
+/// response. A non-default [glyph] is rendered as text (backward compatible
+/// with [PTopBar.backGlyph]). Also used outside [PTopBar] (e.g. over the camera
+/// preview) so every back affordance in the app looks and behaves the same.
 class PTopBarBackButton extends StatelessWidget {
   const PTopBarBackButton({
     super.key,
-    required this.glyph,
+    this.glyph = PTopBar.defaultBackGlyph,
     required this.semanticLabel,
     required this.onPressed,
+    this.color = AppColors.ink,
+    this.shape,
   });
 
   final String glyph;
   final String semanticLabel;
   final VoidCallback? onPressed;
+
+  /// Glyph colour; defaults to [AppColors.ink].
+  final Color color;
+
+  /// Optional ink-splash shape, e.g. a circle when over imagery.
+  final ShapeBorder? shape;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -133,12 +141,15 @@ class PTopBarBackButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onPressed,
-            borderRadius: AppRadius.borderM,
+            borderRadius: shape == null ? AppRadius.borderM : null,
+            customBorder: shape,
             child: Center(
-              child: Text(
-                glyph,
-                style: AppTypography.title.copyWith(color: AppColors.ink),
-              ),
+              child: glyph == PTopBar.defaultBackGlyph
+                  ? PBackChevron(color: color)
+                  : Text(
+                      glyph,
+                      style: AppTypography.title.copyWith(color: color),
+                    ),
             ),
           ),
         ),
