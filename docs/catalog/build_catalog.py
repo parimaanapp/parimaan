@@ -18,7 +18,7 @@ UNITS = {  # allowed units (first = default pantry unit)
  'spice_whole':'g|tsp|tbsp|piece','spice_ground':'g|tsp|tbsp','masala_blend':'g|tsp|tbsp|packet',
  'salt_sugar':'g|kg|tsp|tbsp|cup','oil':'ml|l|tbsp|tsp|cup|bottle|packet','ghee_butter':'g|kg|ml|tbsp|tsp',
  'dairy_liquid':'ml|l|cup|packet','dairy_solid':'g|kg|piece|packet','curd':'g|kg|ml|cup|tbsp',
- 'egg':'piece|dozen|tray','vegetable':'g|kg|piece','leafy_herb':'bunch|g|tbsp|sprig','fruit':'g|kg|piece|dozen',
+ 'egg':'piece|dozen','vegetable':'g|kg|piece','leafy_herb':'bunch|g|tbsp','fruit':'g|kg|piece|dozen',
  'nut_seed':'g|kg|cup|tbsp','meat':'g|kg|piece','fish':'g|kg|piece','condiment_sauce':'ml|g|tbsp|tsp|bottle|jar|packet',
  'paste':'g|tbsp|tsp|jar','pickle_chutney':'g|tbsp|tsp|jar|bottle','bakery':'piece|slice|pack|loaf|g',
  'snack':'packet|g|piece','beverage':'g|ml|l|cup|tsp|tbsp|packet|bottle','frozen':'g|kg|packet|piece',
@@ -43,11 +43,14 @@ sc('paste','tsp','g',5); sc('paste','tbsp','g',15)
 sc('pickle_chutney','tsp','g',5); sc('pickle_chutney','tbsp','g',15)
 sc('beverage','tsp','g',3); sc('beverage','tbsp','g',9)
 sc('baking_misc','tsp','g',4.5); sc('baking_misc','tbsp','g',14)
-sc('leafy_herb','bunch','g',100); sc('egg','dozen','piece',12); sc('egg','tray','piece',30); sc('fruit','dozen','piece',12)
-sc('bakery','slice','piece',1); sc('leafy_herb','tbsp','g',4); sc('leafy_herb','sprig','g',1.5); sc('beverage','cup','ml',240)
+sc('leafy_herb','bunch','g',100); sc('egg','dozen','piece',12); sc('fruit','dozen','piece',12)
+sc('bakery','slice','piece',1); sc('leafy_herb','tbsp','g',4); sc('beverage','cup','ml',240)
 SOLID_PIECE_DEFAULT = {}  # piece weights are per ingredient (column piece_g)
 DRY_GOODS_OVERRIDE = re.compile(r'^(Poha|Sooji|Idli Rava|Besan|Vermicelli|Sabudana|Murmura|Roasted Vermicelli|Rice Noodles|Pasta|Noodles|Bread Crumbs|Puffed Millet)')
-PIECE_OVERRIDES={'Cloves':0.1,'Green Cardamom':0.5,'Black Cardamom':2,'Cinnamon Stick':3,'Dried Red Chilli':2,'Bay Leaf':0.5,'Star Anise':1,'Kashmiri Red Chilli (Whole)':2,'Black Pepper (Whole)':0.05}
+BUNCH_G={'Curry Leaves':25}
+NOTES={'Curry Leaves':'1 bunch is about 100-120 leaves (about 25 g)'}
+LABELS={'dal':'Dal','grain':'Grain','spice':'Spice','dairy':'Dairy','eggs':'Eggs','produce':'Produce','dry_goods':'Dry goods','oil':'Oil','meat_fish':'Meat & Fish','condiment':'Condiment','bakery':'Bakery','snacks':'Snacks','beverages':'Beverages','frozen':'Frozen','other':'Other'}
+PIECE_OVERRIDES={'Cloves':0.1,'Green Cardamom':0.5,'Black Cardamom':2,'Cinnamon Stick':3,'Dried Red Chilli':2,'Bay Leaf':0.5,'Star Anise':1,'Black Pepper (Whole)':0.05}
 rows=[]; seen=collections.OrderedDict(); dups=[]
 for f in sorted(glob.glob(os.path.join(HERE,'src','*.txt'))):
     sub=None
@@ -69,15 +72,16 @@ for f in sorted(glob.glob(os.path.join(HERE,'src','*.txt'))):
 rows.sort(key=lambda r:(r['app'],r['sub'],r['name']))
 slug=lambda s:re.sub(r'[^a-z0-9]+','_',s.lower()).strip('_')
 with open(os.path.join(HERE,'ingredients.csv'),'w',newline='',encoding='utf8') as fh:
-    w=csv.writer(fh); w.writerow(['id','canonical_name','app_category','subcategory','aliases','allowed_units','default_unit','piece_g','cup_g_override'])
+    w=csv.writer(fh); w.writerow(['id','canonical_name','app_category','app_category_label','subcategory','aliases','allowed_units','default_unit','piece_g','cup_g_override','note'])
     for r in rows:
-        w.writerow([slug(r['name']),r['name'],r['app'],r['sub'],'|'.join(r['aliases']),r['units'],r['units'].split('|')[0],r['piece'],r['cup']])
+        w.writerow([slug(r['name']),r['name'],r['app'],LABELS[r['app']],r['sub'],'|'.join(r['aliases']),r['units'],r['units'].split('|')[0],r['piece'],r['cup'],NOTES.get(r['name'],'')])
 with open(os.path.join(HERE,'conversions.csv'),'w',newline='',encoding='utf8') as fh:
     w=csv.writer(fh); w.writerow(['scope','subcategory_or_ingredient','unit','base_unit','amount_per_unit'])
     for (s,u),(b,a) in sorted(CONV.items()):
         if u in UNITS[s].split('|'): w.writerow(['subcategory',s,u,b,a])
     for r in rows:
         if r['cup']: w.writerow(['ingredient',r['name'],'cup','g' if r['sub'] not in ('oil','dairy_liquid','condiment_sauce') else 'ml',r['cup']])
+        if r['name'] in BUNCH_G: w.writerow(['ingredient',r['name'],'bunch','g',BUNCH_G[r['name']]])
         if r['piece']: w.writerow(['ingredient',r['name'],'piece','g',r['piece']])
 # human-readable
 by=collections.OrderedDict()
@@ -87,7 +91,7 @@ out=['# Ingredient catalog — DRAFT for founder sign-off','',f'{len(rows)} cano
  '`NEW` = an app category that does not exist today.','']
 for app,subs in by.items():
     n=sum(len(v) for v in subs.values())
-    out.append(f'## {app}{" (NEW)" if app in NEW_CATS else ""} — {n}')
+    out.append(f'## {LABELS[app]}{" (NEW)" if app in NEW_CATS else ""} — {n}')
     for sub,items in subs.items():
         out.append(f'### {sub} — {len(items)}  ·  units: `{UNITS[sub].replace("|"," / ")}`')
         out.append('| Canonical name | Also called |'); out.append('|---|---|')

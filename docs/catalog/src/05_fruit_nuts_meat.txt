@@ -2,7 +2,7 @@
 Banana | kela; vazhaipazham; bale hannu; arati pandu; ripe banana; kele | 120 | 
 Banana (Elaichi) | yelakki banana; elaichi kela; poovan | 60 | 
 Apple | seb; sebu; apple (red) | 180 | 
-Mango (Ripe) | aam; mamidi; maambazham; mavinahannu; mango; alphonso; kesar; dasheri | 250 | 
+Mango (Ripe) | aam; mamidi; maambazham; mavinahannu; mango; alphonso; dasheri | 250 | 
 Orange | santra; narangi; kamala; orange (indian) | 150 | 
 Sweet Lime | mosambi; mosambi; sathukudi; battayi; sweet lime juice fruit | 150 | 
 Pomegranate | anar; dalimbe; madhulai; danimma; dadam | 250 | 
@@ -72,8 +72,8 @@ Makhana | fox nuts; lotus seeds; phool makhana; foxnut; gorgon nuts; makhane | |
 Flax Seeds | alsi; alsi ke beej; agasi; avise vidai; linseed; flaxseed | | 160
 Chia Seeds | sabja; sabja seeds; tukmaria; basil seeds; falooda seeds | | 160
 Sunflower Seeds | surajmukhi ke beej | | 140
-Pumpkin Seeds | kaddu ke beej; pepitas; magaz; char magaz | | 130
-Watermelon Seeds | magaz; tarbooz ke beej; char magaz | | 130
+Pumpkin Seeds | kaddu ke beej; pepitas; magaz | | 130
+Watermelon Seeds | magaz; tarbooz ke beej | | 130
 Cantaloupe Seeds | kharbuja ke beej; melon seeds | | 130
 Hemp Seeds | | | 150
 Sesame Seeds (Toasted) | roasted til; roasted sesame | | 
@@ -136,7 +136,7 @@ Mrigal | mrigal carp; mrigala | |
 Singhara Fish | singhi; catfish; magur (catfish) | | 
 Prawns | shrimp; jhinga; chemmeen; konju; yerra; kolambi; kolim | | 
 Prawns (Large) | tiger prawns; king prawns; jumbo prawns | | 
-Crab | kekda; njandu; nandu; kakdi | | 
+Crab | kekda; njandu; nandu | | 
 Squid | calamari; kadamba | | 
 Fish Fillet (Boneless) | boneless fish; fillet; fish fillets | | 
 Fish (Dried) | sukha bombil; dry fish; karuvadu; unakka meen; sukka bangda | | 

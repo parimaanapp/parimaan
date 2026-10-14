@@ -22,8 +22,7 @@ Bay Leaf | tej patta; tejpatta; indian bay leaf; biryani aaku; brinji ilai | |
 Star Anise | chakri phool; anasphal; star phool; anasipoo | | 
 Mace | javitri; japatri; jaipatri | | 
 Nutmeg | jaiphal; jathikai; jajikaya | | 
-Dried Red Chilli | sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai | | 
-Kashmiri Red Chilli (Whole) | kashmiri mirch whole; byadgi chilli; byadgi mirch; dried kashmiri chilli | | 
+Dried Red Chilli | kashmiri mirch whole; kashmiri red chilli whole; byadgi chilli; byadgi mirch; dried kashmiri chilli; guntur chilli; sannam chilli; teja chilli; gundu mulagai; ramnad mundu; resham patti; sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai | | 
 Dry Mango Powder Whole (Amchur Slices) | amchur slices; dried raw mango; mango slices dried | | 
 Kokum | kokam; amsul; punarpuli; garcinia indica | | 
 Tamarind | imli; puli; chinta pandu; hunase; tamarind block | | 
@@ -50,8 +49,7 @@ Dried Lime | nimbu sukha; loomi; black lime | |
 Sichuan Peppercorns | szechuan pepper; sichuan pepper | | 
 ## spice_ground
 Turmeric Powder | haldi; haldi powder; manjal; arishina; pasupu; turmeric | | 
-Red Chilli Powder | lal mirch; laal mirch; lal mirch powder; laal mirch powder; red chili powder; mirchi powder; chilli powder; mulagai podi (chilli) | | 
-Kashmiri Chilli Powder | kashmiri lal mirch; kashmiri lal mirch powder; kashmiri mirch powder; deggi mirch; kashmiri red chilli powder | | 
+Red Chilli Powder | kashmiri chilli powder; kashmiri lal mirch; kashmiri lal mirch powder; kashmiri mirch powder; kashmiri red chilli powder; deggi mirch; lal mirch; laal mirch; lal mirch powder; laal mirch powder; red chili powder; mirchi powder; chilli powder; mulagai podi (chilli) | | 
 Coriander Powder | dhania powder; dhaniya powder; malli podi; kothimbir powder | | 
 Cumin Powder | jeera powder; zeera powder; roasted cumin powder; bhuna jeera powder | | 
 Black Pepper Powder | kali mirch powder; pepper powder; milagu podi | | 

@@ -95,7 +95,7 @@ Jelly | | |
 Honey Ginger | | | 
 Chyawanprash | chyavanprash; chyawanprash | | 
 ## bakery
-Bread (White) | pav; white bread; sandwich bread; milk bread; loaf | | 
+Bread (White) | white bread; sandwich bread; milk bread; bread loaf; loaf | | 
 Bread (Brown) | whole wheat bread; atta bread; multigrain bread; brown bread | | 
 Pav | ladi pav; pao; bun; dinner roll; pav bun | | 
 Burger Bun | | | 
@@ -107,7 +107,7 @@ Paratha (Frozen) | malabar paratha frozen; frozen paratha; lachha paratha frozen
 Roti (Ready) | ready roti; chapati ready; phulka ready | | 
 Tortilla | wrap; wraps; tortilla wrap | | 
 Rusk | toast; rusks; tea toast; suji rusk | | 
-Biscuits | cookies; marie; parle g; digestive | | 
+Biscuits | cookies; marie; parle g; digestive biscuits | | 
 Cake | pound cake; tea cake | | 
 Khari | puff; khari biscuit | | 
 Bread Sticks | | | 
@@ -190,13 +190,11 @@ Ice Cream | kulfi; icecream; vanilla ice cream | |
 Kulfi | | | 
 Frozen Fruit | frozen berries; mix berries; frozen strawberries; frozen mango pulp | | 
 Mango Pulp | aamras; canned mango pulp; alphonso pulp | | 
-Frozen Paneer | | | 
 Frozen Idli Batter | | | 
 Dosa Batter | idli batter; idli dosa batter; fresh batter; ready batter; dosa mix batter | | 
 Appam Batter | | | 
 Puri (Frozen) | | | 
 Pizza (Frozen) | | | 
-Frozen Fish | | | 
 ## baking_misc
 Baking Powder | | | 
 Baking Soda | soda bicarbonate; sodium bicarbonate; khane ka soda; cooking soda; appa soda | | 

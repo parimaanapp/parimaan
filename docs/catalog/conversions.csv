@@ -28,7 +28,6 @@ subcategory,dal_pulse,cup,g,200
 subcategory,dal_pulse,g,g,1
 subcategory,dal_pulse,kg,g,1000
 subcategory,egg,dozen,piece,12
-subcategory,egg,tray,piece,30
 subcategory,fish,g,g,1
 subcategory,fish,kg,g,1000
 subcategory,flour,cup,g,120
@@ -46,7 +45,6 @@ subcategory,ghee_butter,tbsp,g,14
 subcategory,ghee_butter,tsp,g,4.5
 subcategory,leafy_herb,bunch,g,100
 subcategory,leafy_herb,g,g,1
-subcategory,leafy_herb,sprig,g,1.5
 subcategory,leafy_herb,tbsp,g,4
 subcategory,masala_blend,g,g,1
 subcategory,masala_blend,tbsp,g,9
@@ -115,7 +113,6 @@ ingredient,Rice Bean,cup,g,200
 ingredient,Soya Chunks,cup,g,90
 ingredient,Soybean (Whole),cup,g,200
 ingredient,Toor Dal,cup,g,200
-ingredient,Toor Dal (Oily),cup,g,200
 ingredient,"Urad Dal (Split, Black)",cup,g,200
 ingredient,"Urad Dal (Split, White)",cup,g,200
 ingredient,Urad Dal (Whole),cup,g,200
@@ -216,6 +213,7 @@ ingredient,Jasmine Rice,cup,g,185
 ingredient,Kolam Rice,cup,g,185
 ingredient,Raw Rice (Ponni),cup,g,185
 ingredient,Red Rice,cup,g,185
+ingredient,Rice,cup,g,185
 ingredient,Rice (Broken),cup,g,185
 ingredient,Sona Masoori Rice,cup,g,185
 ingredient,Sticky Rice,cup,g,195
@@ -276,6 +274,7 @@ ingredient,Strawberry,piece,g,20
 ingredient,Sweet Lime,piece,g,150
 ingredient,Watermelon,piece,g,3000
 ingredient,Wood Apple,piece,g,150
+ingredient,Curry Leaves,bunch,g,25
 ingredient,Amla,piece,g,20
 ingredient,Artichoke,piece,g,150
 ingredient,Ash Gourd,piece,g,1500
@@ -381,5 +380,4 @@ ingredient,Cinnamon Stick,piece,g,3
 ingredient,Cloves,piece,g,0.1
 ingredient,Dried Red Chilli,piece,g,2
 ingredient,Green Cardamom,piece,g,0.5
-ingredient,Kashmiri Red Chilli (Whole),piece,g,2
 ingredient,Star Anise,piece,g,1

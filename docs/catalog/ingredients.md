@@ -1,18 +1,18 @@
 # Ingredient catalog — DRAFT for founder sign-off
 
-848 canonical ingredients · 2057 aliases · 15 app categories.
+841 canonical ingredients · 2070 aliases · 15 app categories.
 
 Columns: **Canonical name** (what the app stores and shows) · **Also called** (aliases mapped to it on import) · **Units** (first is the default).
 
 `NEW` = an app category that does not exist today.
 
-## bakery (NEW) — 26
+## Bakery (NEW) — 26
 ### bakery — 26  ·  units: `piece / slice / pack / loaf / g`
 | Canonical name | Also called |
 |---|---|
-| Biscuits | cookies; marie; parle g; digestive |
+| Biscuits | cookies; marie; parle g; digestive biscuits |
 | Bread (Brown) | whole wheat bread; atta bread; multigrain bread; brown bread |
-| Bread (White) | pav; white bread; sandwich bread; milk bread; loaf |
+| Bread (White) | white bread; sandwich bread; milk bread; bread loaf; loaf |
 | Bread Sticks |  |
 | Burger Bun |  |
 | Cake | pound cake; tea cake |
@@ -37,7 +37,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Tortilla | wrap; wraps; tortilla wrap |
 | Vadam | vadagam; mor milagai; sun-dried chilli |
 
-## beverages (NEW) — 16
+## Beverages (NEW) — 16
 ### beverage — 16  ·  units: `g / ml / l / cup / tsp / tbsp / packet / bottle`
 | Canonical name | Also called |
 |---|---|
@@ -58,7 +58,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Thandai Syrup |  |
 | Water | drinking water; mineral water |
 
-## condiment — 93
+## Condiment — 93
 ### condiment_sauce — 36  ·  units: `ml / g / tbsp / tsp / bottle / jar / packet`
 | Canonical name | Also called |
 |---|---|
@@ -164,7 +164,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Tomato Pickle | tomato pachadi; thakkali oorugai; tamatar ka achar |
 | Turmeric Pickle | haldi ka achar; fresh haldi achar; kacchi haldi achar |
 
-## dairy — 39
+## Dairy — 36
 ### curd — 7  ·  units: `g / kg / ml / cup / tbsp`
 | Canonical name | Also called |
 |---|---|
@@ -176,7 +176,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Raita (Ready) |  |
 | Shrikhand |  |
 
-### dairy_liquid — 18  ·  units: `ml / l / cup / packet`
+### dairy_liquid — 15  ·  units: `ml / l / cup / packet`
 | Canonical name | Also called |
 |---|---|
 | Almond Milk | badam milk |
@@ -189,10 +189,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Evaporated Milk |  |
 | Flavoured Milk |  |
 | Lassi (Sweet) | sweet lassi |
-| Milk (Double Toned) | double toned milk; skimmed milk; low fat milk |
-| Milk (Full Cream) | whole milk; doodh; paal; haalu; full cream milk; buffalo milk |
-| Milk (Lactose Free) | lactose-free milk |
-| Milk (Toned) | toned milk |
+| Milk | doodh; paal; haalu; whole milk; full cream milk; cow milk; buffalo milk; toned milk; double toned milk; skimmed milk; low fat milk; lactose free milk; lactose-free milk |
 | Milk Powder | dried milk; full cream milk powder; nido |
 | Milkshake Mix |  |
 | Oat Milk |  |
@@ -216,8 +213,8 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Processed Cheese Spread |  |
 | Tofu | soya paneer; bean curd |
 
-## dal — 29
-### dal_pulse — 29  ·  units: `g / kg / cup`
+## Dal — 28
+### dal_pulse — 28  ·  units: `g / kg / cup`
 | Canonical name | Also called |
 |---|---|
 | Cannellini Beans | white kidney beans; navy beans |
@@ -242,15 +239,14 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Rice Bean |  |
 | Soya Chunks | soya nuggets; nutrela; soy chunks; meal maker |
 | Soybean (Whole) | soya beans; whole soybean |
-| Toor Dal | arhar dal; tuvar dal; tur dal; pigeon pea; toovar dal; split pigeon peas |
-| Toor Dal (Oily) | oily toor dal; gujarati toor dal |
+| Toor Dal | oily toor dal; gujarati toor dal; arhar dal; tuvar dal; tur dal; pigeon pea; toovar dal; split pigeon peas |
 | Urad Dal (Split, Black) | urad dal chilka; black urad dal split; split black gram with skin |
 | Urad Dal (Split, White) | urad dal; dhuli urad dal; white urad dal; ulundu paruppu; split black gram skinned |
 | Urad Dal (Whole) | sabut urad; black gram; kala urad; whole urad dal; whole black gram |
 | Val (Field Beans) | vaal; field beans dried; avarekalu dried; dried field beans |
 | White Peas | safed vatana; white vatana; dried white peas |
 
-## dry_goods — 75
+## Dry goods — 75
 ### flour — 11  ·  units: `g / kg / cup`
 | Canonical name | Also called |
 |---|---|
@@ -301,7 +297,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Pine Nuts | chilgoza; chilgoze |
 | Pistachios | pista; pistachio; pista kernels |
 | Prunes | alubukhara dry; dried plums |
-| Pumpkin Seeds | kaddu ke beej; pepitas; magaz; char magaz |
+| Pumpkin Seeds | kaddu ke beej; pepitas; magaz |
 | Raisins | kishmish; kishmish; dried grapes; kismis; drakshi; ular thiratchai; sultanas |
 | Roasted Chana | bhuna chana; dalia (roasted chana); putani; pottukadalai; fried gram; hurigadale; futana; roasted gram |
 | Roasted Chana Dal | pottukadalai dal; dalia chana |
@@ -310,7 +306,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Sunflower Seeds | surajmukhi ke beej |
 | Walnut Halves |  |
 | Walnuts | akhrot; akhrot kernels; walnut halves |
-| Watermelon Seeds | magaz; tarbooz ke beej; char magaz |
+| Watermelon Seeds | magaz; tarbooz ke beej |
 
 ### salt_sugar — 17  ·  units: `g / kg / tsp / tbsp / cup`
 | Canonical name | Also called |
@@ -342,8 +338,8 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Puffed Millet |  |
 | Sabudana | sago; tapioca pearls; javvarisi; sabbakki |
 
-## eggs (NEW) — 6
-### egg — 6  ·  units: `piece / dozen / tray`
+## Eggs (NEW) — 6
+### egg — 6  ·  units: `piece / dozen`
 | Canonical name | Also called |
 |---|---|
 | Egg | anda; eggs; hen egg; mutta; kodi guddu; muttai |
@@ -353,8 +349,8 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Egg Whites | liquid egg whites |
 | Eggless Mayonnaise |  |
 
-## frozen — 25
-### frozen — 25  ·  units: `g / kg / packet / piece`
+## Frozen — 23
+### frozen — 23  ·  units: `g / kg / packet / piece`
 | Canonical name | Also called |
 |---|---|
 | Aloo Tikki (Frozen) | tikki frozen; frozen tikki; veg cutlet frozen |
@@ -364,10 +360,8 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Chicken Seekh Kabab | seekh kabab; chicken kabab frozen |
 | Dosa Batter | idli batter; idli dosa batter; fresh batter; ready batter; dosa mix batter |
 | French Fries | frozen fries; potato fries; frozen french fries |
-| Frozen Fish |  |
 | Frozen Fruit | frozen berries; mix berries; frozen strawberries; frozen mango pulp |
 | Frozen Idli Batter |  |
-| Frozen Paneer |  |
 | Green Peas (Frozen) | frozen peas; frozen matar; peas frozen |
 | Ice Cream | kulfi; icecream; vanilla ice cream |
 | Kulfi |  |
@@ -383,7 +377,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Veg Burger Patty | veg patty; aloo tikki burger |
 | Veg Nuggets | veg nuggets frozen |
 
-## grain — 61
+## Grain — 62
 ### flour — 25  ·  units: `g / kg / cup`
 | Canonical name | Also called |
 |---|---|
@@ -413,7 +407,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Urad Dal Flour | urad flour |
 | Whole Wheat Pastry Flour |  |
 
-### rice — 19  ·  units: `g / kg / cup`
+### rice — 20  ·  units: `g / kg / cup`
 | Canonical name | Also called |
 |---|---|
 | Ambemohar Rice | ambe mohar |
@@ -431,6 +425,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Kolam Rice | kolam; kolam chawal |
 | Raw Rice (Ponni) | ponni; ponni raw rice; raw rice |
 | Red Rice | matta rice; kerala red rice; red rice unpolished |
+| Rice | chawal; chaval; arisi; akki; biyyam; tandul; rice (generic) |
 | Rice (Broken) | broken rice; kanki; tukda chawal |
 | Sona Masoori Rice | sonamasuri; sona masuri; ponni rice (medium); medium grain rice |
 | Sticky Rice | glutinous rice; sweet rice |
@@ -457,7 +452,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Ragi (Finger Millet, Whole) | nachni; finger millet; mandua; kezhvaragu |
 | Wheat (Whole) | gehun; wheat grain; wheat berries; godhuma |
 
-## meat_fish (NEW) — 56
+## Meat & Fish (NEW) — 56
 ### fish — 30  ·  units: `g / kg / piece`
 | Canonical name | Also called |
 |---|---|
@@ -468,7 +463,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Canned Tuna | tuna tin |
 | Catla | katla; bhakur |
 | Clams |  |
-| Crab | kekda; njandu; nandu; kakdi |
+| Crab | kekda; njandu; nandu |
 | Eel |  |
 | Fish (Dried) | sukha bombil; dry fish; karuvadu; unakka meen; sukka bangda |
 | Fish Fillet (Boneless) | boneless fish; fillet; fish fillets |
@@ -522,7 +517,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Rabbit |  |
 | Turkey |  |
 
-## oil — 29
+## Oil — 29
 ### ghee_butter — 10  ·  units: `g / kg / ml / tbsp / tsp`
 | Canonical name | Also called |
 |---|---|
@@ -560,7 +555,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Sunflower Oil | surajmukhi tel; sunflower refined oil |
 | Vegetable Oil | refined oil; cooking oil; refined vegetable oil; palm oil blend |
 
-## other — 22
+## Other — 22
 ### baking_misc — 22  ·  units: `g / tsp / tbsp / packet`
 | Canonical name | Also called |
 |---|---|
@@ -587,7 +582,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Whey Protein | protein powder |
 | Yeast (Dry) | instant yeast; active dry yeast; khamir |
 
-## produce — 196
+## Produce — 196
 ### fruit — 47  ·  units: `g / kg / piece / dozen`
 | Canonical name | Also called |
 |---|---|
@@ -615,7 +610,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Lemon (Sweet) |  |
 | Litchi | lichi; lychee |
 | Mandarin |  |
-| Mango (Ripe) | aam; mamidi; maambazham; mavinahannu; mango; alphonso; kesar; dasheri |
+| Mango (Ripe) | aam; mamidi; maambazham; mavinahannu; mango; alphonso; dasheri |
 | Mulberry | shahtoot; shehtoot |
 | Muskmelon | kharbuja; kharbooja; kharbuza; cantaloupe; sakkarai pattikai |
 | Orange | santra; narangi; kamala; orange (indian) |
@@ -639,7 +634,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Watermelon | tarbooz; kalingad; tarbuj; kallangadi; pucchakaya |
 | Wood Apple | bael; bel; kaith; kath bel; vilam pazham; belada hannu; velaga |
 
-### leafy_herb — 39  ·  units: `bunch / g / tbsp / sprig`
+### leafy_herb — 39  ·  units: `bunch / g / tbsp`
 | Canonical name | Also called |
 |---|---|
 | Agathi Leaves | agati; hummingbird tree; agase soppu |
@@ -796,7 +791,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Yellow Pumpkin | peela kaddu; kaddu yellow |
 | Zucchini | courgette |
 
-## snacks (NEW) — 32
+## Snacks (NEW) — 32
 ### snack — 32  ·  units: `packet / g / piece`
 | Canonical name | Also called |
 |---|---|
@@ -833,7 +828,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Thepla | methi thepla; ready thepla |
 | Upma Mix | instant upma |
 
-## spice — 143
+## Spice — 141
 ### masala_blend — 64  ·  units: `g / tsp / tbsp / packet`
 | Canonical name | Also called |
 |---|---|
@@ -902,7 +897,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Vindaloo Masala |  |
 | Xacuti Masala | cafreal masala |
 
-### spice_ground — 30  ·  units: `g / tsp / tbsp`
+### spice_ground — 29  ·  units: `g / tsp / tbsp`
 | Canonical name | Also called |
 |---|---|
 | Amla Powder | amla churna; indian gooseberry powder |
@@ -922,21 +917,20 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Garlic Powder | lehsun powder |
 | Ginger Powder | adrak powder |
 | Hing Powder | asafoetida powder; compounded hing |
-| Kashmiri Chilli Powder | kashmiri lal mirch; kashmiri lal mirch powder; kashmiri mirch powder; deggi mirch; kashmiri red chilli powder |
 | Kasuri Methi Powder |  |
 | Mustard Powder | rai powder; sarson powder |
 | Nutmeg Powder | jaiphal powder |
 | Onion Powder | pyaz powder |
 | Paprika |  |
 | Pudina Powder | mint powder |
-| Red Chilli Powder | lal mirch; laal mirch; lal mirch powder; laal mirch powder; red chili powder; mirchi powder; chilli powder; mulagai podi (chilli) |
+| Red Chilli Powder | kashmiri chilli powder; kashmiri lal mirch; kashmiri lal mirch powder; kashmiri mirch powder; kashmiri red chilli powder; deggi mirch; lal mirch; laal mirch; lal mirch powder; laal mirch powder; red chili powder; mirchi powder; chilli powder; mulagai podi (chilli) |
 | Roasted Cumin Powder | bhuna jeera |
 | Smoked Paprika |  |
 | Turmeric (Black) Powder | kali haldi powder |
 | Turmeric Powder | haldi; haldi powder; manjal; arishina; pasupu; turmeric |
 | White Pepper Powder | safed mirch powder |
 
-### spice_whole — 49  ·  units: `g / tsp / tbsp / piece`
+### spice_whole — 48  ·  units: `g / tsp / tbsp / piece`
 | Canonical name | Also called |
 |---|---|
 | Alum (Edible) | phitkari |
@@ -959,7 +953,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Dried Lime | nimbu sukha; loomi; black lime |
 | Dried Mint | sukha pudina; dried pudina |
 | Dried Oregano | oregano |
-| Dried Red Chilli | sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai |
+| Dried Red Chilli | kashmiri mirch whole; kashmiri red chilli whole; byadgi chilli; byadgi mirch; dried kashmiri chilli; guntur chilli; sannam chilli; teja chilli; gundu mulagai; ramnad mundu; resham patti; sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai |
 | Dried Rosemary |  |
 | Dried Thyme |  |
 | Dry Mango Powder Whole (Amchur Slices) | amchur slices; dried raw mango; mango slices dried |
@@ -969,7 +963,6 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Fenugreek Seeds | methi dana; methi seeds; uluva; menthulu; venthayam |
 | Green Cardamom | choti elaichi; elaichi; elakkai; yalakki; cardamom; green elaichi |
 | Italian Seasoning | mixed herbs; pizza seasoning |
-| Kashmiri Red Chilli (Whole) | kashmiri mirch whole; byadgi chilli; byadgi mirch; dried kashmiri chilli |
 | Kokum | kokam; amsul; punarpuli; garcinia indica |
 | Long Pepper | pippali; pipli; thippili |
 | Mace | javitri; japatri; jaipatri |

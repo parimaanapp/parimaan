@@ -1,7 +1,6 @@
 # format: Name | alias; alias | piece_g | cup_g      (## subcategory)
 ## dal_pulse
-Toor Dal | arhar dal; tuvar dal; tur dal; pigeon pea; toovar dal; split pigeon peas | | 200
-Toor Dal (Oily) | oily toor dal; gujarati toor dal | | 200
+Toor Dal | oily toor dal; gujarati toor dal; arhar dal; tuvar dal; tur dal; pigeon pea; toovar dal; split pigeon peas | | 200
 Chana Dal | split bengal gram; bengal gram dal; chana dal split; kadalai paruppu | | 200
 Moong Dal (Split, Yellow) | moong dal; yellow moong dal; mung dal; pasi paruppu; split yellow gram | | 200
 Moong Dal (Split, Green) | green moong dal; moong dal chilka; moong chilka; dhuli moong | | 200
@@ -62,6 +61,7 @@ Idli Rice | parboiled idli rice; idli chawal | | 190
 Raw Rice (Ponni) | ponni; ponni raw rice; raw rice | | 185
 Boiled Rice (Parboiled) | ukda chawal; parboiled rice; usna rice; puzhungal arisi | | 185
 Brown Rice | | | 185
+Rice | chawal; chaval; arisi; akki; biyyam; tandul; rice (generic) | | 185
 Red Rice | matta rice; kerala red rice; red rice unpolished | | 185
 Black Rice | forbidden rice; chak-hao | | 185
 Jasmine Rice | | | 185

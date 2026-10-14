@@ -13,7 +13,7 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 - 2 piece — Green Chilli
 - 30 g — Peanuts
 - 1 tsp — Mustard Seeds *
-- 1 sprig — Curry Leaves *
+- 1 g — Curry Leaves * (about 8–10 leaves)
 - 0.5 tsp — Turmeric Powder *
 - 2 tbsp — Vegetable Oil
 - 1 tsp — Sugar *
@@ -27,11 +27,11 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 5. Fold in the poha gently, steam 2 minutes, finish with lemon juice and coriander.
 
 ## 2. Methi Thepla
-`carb` · Gujarati · tags: **veg** · serves 4 · prep 20 · cook 20
+`carb` · Gujarati · tags: **veg, vegan, dairy_free** · serves 4 · prep 20 · cook 20
 - 250 g — Atta (Whole Wheat Flour)
 - 40 g — Besan
 - 1 bunch — Fenugreek Leaves (chopped)
-- 100 g — Curd
+- 100 ml — Water
 - 1 tsp — Red Chilli Powder *
 - 0.5 tsp — Turmeric Powder *
 - 1 tsp — Cumin Seeds *
@@ -39,7 +39,7 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 - 2 tbsp — Vegetable Oil
 - 1 tsp — Sesame Seeds (White)
 1. Mix flours, spices, salt, sesame and methi; rub in 1 tbsp oil.
-2. Knead with curd (and water if needed) into a firm dough; rest 10 minutes.
+2. Knead with water, added a little at a time, into a firm dough; rest 10 minutes.
 3. Roll thin rounds and cook on a hot tawa with a little oil until brown spots form on both sides.
 
 ## 3. Dal Tadka
@@ -52,7 +52,7 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 - 1 tsp — Cumin Seeds *
 - 4 piece — Garlic (Clove) (sliced)
 - 2 piece — Dried Red Chilli
-- 0.5 tsp — Kashmiri Chilli Powder *
+- 0.5 tsp — Red Chilli Powder *
 - 2 tbsp — Coriander Leaves
 - 1 tsp — Salt *
 1. Pressure-cook dal with turmeric, salt and 3 cups of water until soft; whisk smooth.
@@ -82,8 +82,8 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 - 3 piece — Onion (puréed)
 - 3 piece — Tomato (puréed)
 - 2 tbsp — Ginger Garlic Paste *(merged: 1 tbsp marinade + 1 tbsp gravy)*
-- 100 g — Curd
-- 1 tbsp — Kashmiri Chilli Powder
+- 100 ml — Water
+- 1 tbsp — Red Chilli Powder
 - 1 tbsp — Coriander Powder
 - 1 tsp — Cumin Powder
 - 1 tsp — Garam Masala
@@ -127,7 +127,7 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 - 2 tbsp — Sambar Powder
 - 0.5 tsp — Turmeric Powder *
 - 1 tsp — Mustard Seeds *
-- 1 sprig — Curry Leaves *
+- 1 g — Curry Leaves * (about 8–10 leaves)
 - 2 tsp — Vegetable Oil
 - 0.25 tsp — Asafoetida (Hing) *
 - 1 tsp — Salt *
@@ -184,7 +184,7 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 
 ## 11. Masala Chai
 `drink` · Everyday · tags: **veg, gluten_free** · serves 2 · prep 2 · cook 8
-- 250 ml — Milk (Full Cream)
+- 250 ml — Milk
 - 250 ml — Water
 - 2 tsp — Tea Leaves
 - 2 tsp — Sugar
@@ -196,7 +196,7 @@ Line format: `quantity unit — Canonical Name (prep note)` · `*` = staple.
 ## 12. Gajar Halwa
 `sweet` · North Indian · tags: **veg, gluten_free** · serves 4 · prep 15 · cook 40
 - 500 g — Carrot (grated)
-- 500 ml — Milk (Full Cream)
+- 500 ml — Milk
 - 100 g — Sugar
 - 3 tbsp — Ghee
 - 2 piece — Green Cardamom

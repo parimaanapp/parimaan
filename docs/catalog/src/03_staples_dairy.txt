@@ -48,10 +48,7 @@ Shortening | | |
 Lard | | | 
 Peanut Butter | | | 
 ## dairy_liquid
-Milk (Full Cream) | whole milk; doodh; paal; haalu; full cream milk; buffalo milk | | 
-Milk (Toned) | toned milk | | 
-Milk (Double Toned) | double toned milk; skimmed milk; low fat milk | | 
-Milk (Lactose Free) | lactose-free milk | | 
+Milk | doodh; paal; haalu; whole milk; full cream milk; cow milk; buffalo milk; toned milk; double toned milk; skimmed milk; low fat milk; lactose free milk; lactose-free milk | | 
 Almond Milk | badam milk | | 
 Soy Milk | soya milk | | 
 Oat Milk | | | 
