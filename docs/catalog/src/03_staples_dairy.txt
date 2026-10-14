@@ -1,0 +1,98 @@
+## salt_sugar
+Salt | namak; table salt; iodised salt; common salt; uppu; mith | | 
+Rock Salt | sendha namak; saindhava; rock salt; vrat salt; induppu | | 
+Sea Salt | | | 
+Pink Himalayan Salt | himalayan salt | | 
+Sugar | cheeni; shakkar (sugar); white sugar; sakkare; chakkara | | 200
+Brown Sugar | demerara; raw sugar | | 200
+Powdered Sugar | icing sugar; confectioner sugar; pisi hui cheeni; castor sugar | | 130
+Sugar Cubes | | | 
+Mishri | rock sugar; khadi sakar; kalkandu; kal sakkare; sakkar misri | | 
+Palm Jaggery | karupatti; palm sugar; nolen gur; taadgola | | 
+Jaggery | gur; gud; bellam; vellam; bella; jaggery block | | 160
+Jaggery Powder | gur powder; shakkar powder | | 160
+Honey | shahad; madhu; then | | 
+Maple Syrup | | | 
+Molasses | | | 
+Stevia | sugar free; sweetener | | 
+Liquid Jaggery | gur syrup; kakvi; kolhapuri jaggery syrup | | 
+## oil
+Sunflower Oil | surajmukhi tel; sunflower refined oil | | 
+Groundnut Oil | peanut oil; mungfali tel; kadalekayi enne; verkadalai ennai | | 
+Mustard Oil | sarson ka tel; kachi ghani oil; kadugu ennai; sasive enne | | 
+Coconut Oil | nariyal tel; velichenna; khobra tel; thengai ennai; kobbari nune | | 
+Sesame Oil | til oil; gingelly oil; nallennai; nuvvula nune; til ka tel; sesame oil | | 
+Rice Bran Oil | rice bran | | 
+Soybean Oil | soyabean oil; soya oil | | 
+Olive Oil | extra virgin olive oil; evoo; pomace olive oil | | 
+Vegetable Oil | refined oil; cooking oil; refined vegetable oil; palm oil blend | | 
+Safflower Oil | kardi oil; kusum oil | | 
+Palm Oil | | | 
+Cottonseed Oil | | | 
+Corn Oil | | | 
+Canola Oil | rapeseed oil | | 
+Flaxseed Oil | alsi oil; linseed oil | | 
+Avocado Oil | | | 
+Almond Oil | badam tel | | 
+Castor Oil (Edible) | | | 
+Cooking Spray | oil spray | | 
+## ghee_butter
+Ghee | clarified butter; desi ghee; cow ghee; nei; tup; tuppa | | 
+Buffalo Ghee | bhains ka ghee | | 
+Butter (Salted) | salted butter; makhan salted; amul butter | | 
+Butter (Unsalted) | unsalted butter; white butter | | 
+White Butter (Homemade) | makhan; loni; benne; venna; homemade butter | | 
+Vanaspati | dalda; vegetable ghee; hydrogenated fat | | 
+Margarine | | | 
+Shortening | | | 
+Lard | | | 
+Peanut Butter | | | 
+## dairy_liquid
+Milk (Full Cream) | whole milk; doodh; paal; haalu; full cream milk; buffalo milk | | 
+Milk (Toned) | toned milk | | 
+Milk (Double Toned) | double toned milk; skimmed milk; low fat milk | | 
+Milk (Lactose Free) | lactose-free milk | | 
+Almond Milk | badam milk | | 
+Soy Milk | soya milk | | 
+Oat Milk | | | 
+Coconut Milk | nariyal doodh; thengai paal; thengai pal; coconut milk canned | | 
+Coconut Cream | | | 
+Cream (Fresh) | malai; fresh cream; heavy cream; amul cream; double cream; whipping cream | | 
+Cream (Whipping) | whipped cream; whipping cream | | 
+Condensed Milk | milkmaid; sweetened condensed milk | | 
+Evaporated Milk | | | 
+Milk Powder | dried milk; full cream milk powder; nido | | 
+Buttermilk | chaas; chhaas; majjige; mor; moru; taak; lassi (salted) | | 
+Lassi (Sweet) | sweet lassi | | 
+Flavoured Milk | | | 
+Milkshake Mix | | | 
+## dairy_solid
+Paneer | cottage cheese; indian cottage cheese; paneer block; fresh paneer; chenna (firm) | | 
+Chhena | chenna; fresh chhena; cottage cheese crumbled | | 
+Malai Paneer | soft paneer | | 
+Khoya | mawa; khoa; khova; milk solids | | 
+Cheese (Processed) | cheese slice; amul cheese; cheese cubes; cheese block | | 
+Cheese Slices | | | 
+Cheese Spread | | | 
+Mozzarella | mozzarella cheese; pizza cheese | | 
+Cheddar | cheddar cheese | | 
+Parmesan | parmesan cheese; parmigiano | | 
+Cream Cheese | | | 
+Feta | feta cheese | | 
+Processed Cheese Spread | | | 
+Tofu | soya paneer; bean curd | | 
+## curd
+Curd | dahi; yogurt; yoghurt; thayir; mosaru; perugu; plain curd; plain yogurt; dahi (plain) | | 245
+Greek Yogurt | hung curd (thick); strained yogurt | | 245
+Hung Curd | strained curd; thick curd; chakka; shrikhand base | | 245
+Flavoured Yogurt | fruit yogurt | | 245
+Mishti Doi | sweet curd; bengali sweet yogurt | | 
+Shrikhand | | | 
+Raita (Ready) | | | 
+## egg
+Egg | anda; eggs; hen egg; mutta; kodi guddu; muttai | 50 | 
+Egg (Duck) | duck egg; batakh anda | 70 | 
+Egg (Quail) | quail egg | 10 | 
+Egg Whites | liquid egg whites | | 
+Egg (Brown) | | 50 | 
+Eggless Mayonnaise | | | 

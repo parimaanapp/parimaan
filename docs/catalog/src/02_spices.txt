@@ -1,0 +1,146 @@
+## spice_whole
+Cumin Seeds | jeera; zeera; whole cumin; jira; seeragam; jeerige | | 
+Black Cumin Seeds | shahi jeera; kala jeera; caraway (indian); shah jeera | | 
+Mustard Seeds | rai; sarson; black mustard; kadugu; sasive; raee | | 
+Yellow Mustard Seeds | peeli sarson; yellow mustard | | 
+Fenugreek Seeds | methi dana; methi seeds; uluva; menthulu; venthayam | | 
+Coriander Seeds | dhania; sabut dhania; whole coriander; kothamalli vidhai | | 
+Fennel Seeds | saunf; sombu; badishep; variyali; sonf | | 
+Carom Seeds | ajwain; ajwan; omam; ova; bishop's weed | | 
+Nigella Seeds | kalonji; black seed; mangrela; kala jeera (nigella); onion seeds | | 
+Poppy Seeds | khus khus; khus-khus; posto; gasagasa; white poppy seeds | | 
+Sesame Seeds (White) | til; safed til; white til; ellu; nuvvulu; sesame | | 
+Sesame Seeds (Black) | kala til; black til; karuppu ellu | | 
+Black Pepper (Whole) | kali mirch; peppercorns; milagu; menasu; miriyalu; whole black pepper | | 
+White Pepper (Whole) | safed mirch whole; white peppercorns | | 
+Cloves | laung; lavang; lavangam; krambu | | 
+Green Cardamom | choti elaichi; elaichi; elakkai; yalakki; cardamom; green elaichi | | 
+Black Cardamom | badi elaichi; kali elaichi; moti elaichi; big cardamom | | 
+Cinnamon Stick | dalchini; cinnamon; pattai; lavangapatta; darchini | | 
+Cassia Bark | taj; tej bark; cassia | | 
+Bay Leaf | tej patta; tejpatta; indian bay leaf; biryani aaku; brinji ilai | | 
+Star Anise | chakri phool; anasphal; star phool; anasipoo | | 
+Mace | javitri; japatri; jaipatri | | 
+Nutmeg | jaiphal; jathikai; jajikaya | | 
+Dried Red Chilli | sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai | | 
+Kashmiri Red Chilli (Whole) | kashmiri mirch whole; byadgi chilli; byadgi mirch; dried kashmiri chilli | | 
+Dry Mango Powder Whole (Amchur Slices) | amchur slices; dried raw mango; mango slices dried | | 
+Kokum | kokam; amsul; punarpuli; garcinia indica | | 
+Tamarind | imli; puli; chinta pandu; hunase; tamarind block | | 
+Asafoetida (Hing) | hing; heeng; perungayam; inguva; asafetida | | 
+Stone Flower | dagad phool; kalpasi; patthar ke phool; lichen | | 
+Marathi Moggu | kapok buds; moggu | | 
+Long Pepper | pippali; pipli; thippili | | 
+Dried Ginger (Whole) | sonth whole; sukku; dry ginger whole | | 
+Dried Fenugreek Leaves | kasuri methi; dried methi; kasoori methi; kasturi methi | | 
+Dried Curry Leaves | dried kadi patta | | 
+Dried Mint | sukha pudina; dried pudina | | 
+Dried Oregano | oregano | | 
+Dried Basil | | | 
+Dried Thyme | | | 
+Dried Rosemary | | | 
+Italian Seasoning | mixed herbs; pizza seasoning | | 
+Chilli Flakes | red chilli flakes; crushed chilli; pizza chilli flakes; crushed red pepper | | 
+Pomegranate Seeds (Dried) | anardana; anar dana; dried pomegranate seeds | | 
+Dry Rose Petals | gulab patti; dried rose petals | | 
+Saffron | kesar; kesari; zafran; kumkumapoovu | | 
+Edible Camphor | pachai karpooram; khane wala kapur | | 
+Alum (Edible) | phitkari | | 
+Dried Lime | nimbu sukha; loomi; black lime | | 
+Sichuan Peppercorns | szechuan pepper; sichuan pepper | | 
+## spice_ground
+Turmeric Powder | haldi; haldi powder; manjal; arishina; pasupu; turmeric | | 
+Red Chilli Powder | lal mirch; laal mirch; lal mirch powder; laal mirch powder; red chili powder; mirchi powder; chilli powder; mulagai podi (chilli) | | 
+Kashmiri Chilli Powder | kashmiri lal mirch; kashmiri lal mirch powder; kashmiri mirch powder; deggi mirch; kashmiri red chilli powder | | 
+Coriander Powder | dhania powder; dhaniya powder; malli podi; kothimbir powder | | 
+Cumin Powder | jeera powder; zeera powder; roasted cumin powder; bhuna jeera powder | | 
+Black Pepper Powder | kali mirch powder; pepper powder; milagu podi | | 
+White Pepper Powder | safed mirch powder | | 
+Dry Mango Powder | amchur; amchoor; aamchur; mango powder; amchur powder | | 
+Dry Ginger Powder | sonth; saunth; sukku podi; adrak powder | | 
+Garlic Powder | lehsun powder | | 
+Onion Powder | pyaz powder | | 
+Ginger Powder | adrak powder | | 
+Cinnamon Powder | dalchini powder | | 
+Clove Powder | laung powder | | 
+Cardamom Powder | elaichi powder; elaichi pudi | | 
+Nutmeg Powder | jaiphal powder | | 
+Fenugreek Powder | methi powder | | 
+Mustard Powder | rai powder; sarson powder | | 
+Paprika | | | 
+Smoked Paprika | | | 
+Cayenne Pepper | cayenne | | 
+Turmeric (Black) Powder | kali haldi powder | | 
+Black Salt | kala namak; sanchal; kala noon; sanchar | | 
+Citric Acid | nimbu ka satva; lemon salt; sour salt | | 
+Amla Powder | amla churna; indian gooseberry powder | | 
+Kasuri Methi Powder | | | 
+Pudina Powder | mint powder | | 
+Curry Leaf Powder | karuvepilai podi (plain); kadi patta powder | | 
+Roasted Cumin Powder | bhuna jeera | | 
+Hing Powder | asafoetida powder; compounded hing | | 
+## masala_blend
+Garam Masala | garam masala powder; kitchen garam masala | | 
+Chaat Masala | chat masala; chaat powder | | 
+Kitchen King Masala | kitchen king | | 
+Sabzi Masala | sabji masala; vegetable masala; veg masala | | 
+Pav Bhaji Masala | pavbhaji masala; bhaji masala | | 
+Chole Masala | chana masala; chhole masala; chickpea masala | | 
+Rajma Masala | rajmah masala | | 
+Biryani Masala | biriyani masala; biryani spice mix | | 
+Pulao Masala | pulav masala; pilaf masala | | 
+Sambar Powder | sambhar masala; sambar masala; sambar podi; sambhar powder | | 
+Rasam Powder | rasam masala; rasam podi | | 
+Chicken Masala | chicken curry masala | | 
+Meat Masala | mutton masala; lamb masala; mutton curry masala; meat curry masala | | 
+Fish Masala | fish curry masala; fish fry masala | | 
+Tandoori Masala | tandoori chicken masala; tikka masala (dry) | | 
+Tikka Masala (Dry) | tikka masala powder | | 
+Butter Chicken Masala | murgh makhani masala | | 
+Paneer Masala | paneer butter masala powder | | 
+Egg Curry Masala | egg masala; anda masala | | 
+Maggi Magic Masala | magic masala; maggi masala | | 
+Pani Puri Masala | golgappa masala; puchka masala; pani puri powder | | 
+Jaljeera Powder | jal jeera; jaljira | | 
+Sandwich Masala | sandwich chutney masala | | 
+Panch Phoron | panch phoran; bengali five spice; paanch phoron | | 
+Goda Masala | kala masala; maharashtrian goda masala | | 
+Kala Masala | black masala | | 
+Malvani Masala | malvani | | 
+Kolhapuri Masala | kolhapuri chilli masala | | 
+Misal Masala | misal pav masala | | 
+Gunpowder (Idli Podi) | idli podi; milagai podi; gun powder; chutney powder; molagapodi | | 
+Bisi Bele Bath Powder | bisibelebath masala | | 
+Vangi Bath Powder | vangi bhath masala; brinjal rice masala | | 
+Puliyogare Powder | puliyodarai podi; tamarind rice masala | | 
+Chettinad Masala | chettinad powder | | 
+Kerala Garam Masala | | | 
+Thandai Masala | thandai powder; thandai mix | | 
+Chai Masala | tea masala; masala chai powder; chai spice | | 
+Dabeli Masala | | | 
+Vada Pav Chutney Powder | dry garlic chutney; sukha lasun chutney; lasun chutney | | 
+Peri Peri Seasoning | piri piri masala | | 
+Taco Seasoning | | | 
+Schezwan Masala | | | 
+Manchurian Masala | | | 
+Fried Rice Masala | | | 
+Noodles Masala | hakka masala | | 
+Mixed Herbs Seasoning | | | 
+Barbecue Seasoning | bbq seasoning | | 
+Everything Bagel Seasoning | | | 
+Hyderabadi Biryani Masala | | | 
+Lucknowi Biryani Masala | | | 
+Haleem Masala | | | 
+Nihari Masala | | | 
+Korma Masala | | | 
+Kadai Masala | kadhai masala | | 
+Dum Aloo Masala | | | 
+Bhindi Masala (Dry) | | | 
+Undhiyu Masala | | | 
+Dhansak Masala | | | 
+Xacuti Masala | cafreal masala | | 
+Vindaloo Masala | | | 
+Sorpotel Masala | | | 
+Ambat Masala | | | 
+Fish Fry Masala | | | 
+Rasam Mix (Instant) | | | 

@@ -1,0 +1,385 @@
+scope,subcategory_or_ingredient,unit,base_unit,amount_per_unit
+subcategory,bakery,g,g,1
+subcategory,bakery,slice,piece,1
+subcategory,baking_misc,g,g,1
+subcategory,baking_misc,tbsp,g,14
+subcategory,baking_misc,tsp,g,4.5
+subcategory,beverage,cup,ml,240
+subcategory,beverage,g,g,1
+subcategory,beverage,l,ml,1000
+subcategory,beverage,ml,ml,1
+subcategory,beverage,tbsp,g,9
+subcategory,beverage,tsp,g,3
+subcategory,condiment_sauce,g,g,1
+subcategory,condiment_sauce,ml,ml,1
+subcategory,condiment_sauce,tbsp,ml,15
+subcategory,condiment_sauce,tsp,ml,5
+subcategory,curd,cup,g,245
+subcategory,curd,g,g,1
+subcategory,curd,kg,g,1000
+subcategory,curd,ml,ml,1
+subcategory,curd,tbsp,g,15
+subcategory,dairy_liquid,cup,ml,240
+subcategory,dairy_liquid,l,ml,1000
+subcategory,dairy_liquid,ml,ml,1
+subcategory,dairy_solid,g,g,1
+subcategory,dairy_solid,kg,g,1000
+subcategory,dal_pulse,cup,g,200
+subcategory,dal_pulse,g,g,1
+subcategory,dal_pulse,kg,g,1000
+subcategory,egg,dozen,piece,12
+subcategory,egg,tray,piece,30
+subcategory,fish,g,g,1
+subcategory,fish,kg,g,1000
+subcategory,flour,cup,g,120
+subcategory,flour,g,g,1
+subcategory,flour,kg,g,1000
+subcategory,frozen,g,g,1
+subcategory,frozen,kg,g,1000
+subcategory,fruit,dozen,piece,12
+subcategory,fruit,g,g,1
+subcategory,fruit,kg,g,1000
+subcategory,ghee_butter,g,g,1
+subcategory,ghee_butter,kg,g,1000
+subcategory,ghee_butter,ml,g,0.91
+subcategory,ghee_butter,tbsp,g,14
+subcategory,ghee_butter,tsp,g,4.5
+subcategory,leafy_herb,bunch,g,100
+subcategory,leafy_herb,g,g,1
+subcategory,leafy_herb,sprig,g,1.5
+subcategory,leafy_herb,tbsp,g,4
+subcategory,masala_blend,g,g,1
+subcategory,masala_blend,tbsp,g,9
+subcategory,masala_blend,tsp,g,3
+subcategory,meat,g,g,1
+subcategory,meat,kg,g,1000
+subcategory,nut_seed,cup,g,140
+subcategory,nut_seed,g,g,1
+subcategory,nut_seed,kg,g,1000
+subcategory,nut_seed,tbsp,g,9
+subcategory,oil,cup,ml,240
+subcategory,oil,l,ml,1000
+subcategory,oil,ml,ml,1
+subcategory,oil,tbsp,ml,15
+subcategory,oil,tsp,ml,5
+subcategory,paste,g,g,1
+subcategory,paste,tbsp,g,15
+subcategory,paste,tsp,g,5
+subcategory,pickle_chutney,g,g,1
+subcategory,pickle_chutney,tbsp,g,15
+subcategory,pickle_chutney,tsp,g,5
+subcategory,rice,cup,g,185
+subcategory,rice,g,g,1
+subcategory,rice,kg,g,1000
+subcategory,salt_sugar,cup,g,200
+subcategory,salt_sugar,g,g,1
+subcategory,salt_sugar,kg,g,1000
+subcategory,salt_sugar,tbsp,g,15
+subcategory,salt_sugar,tsp,g,5
+subcategory,snack,g,g,1
+subcategory,spice_ground,g,g,1
+subcategory,spice_ground,tbsp,g,8
+subcategory,spice_ground,tsp,g,2.5
+subcategory,spice_whole,g,g,1
+subcategory,spice_whole,tbsp,g,7.5
+subcategory,spice_whole,tsp,g,2.5
+subcategory,vegetable,g,g,1
+subcategory,vegetable,kg,g,1000
+subcategory,whole_grain,cup,g,180
+subcategory,whole_grain,g,g,1
+subcategory,whole_grain,kg,g,1000
+ingredient,Curd,cup,g,245
+ingredient,Flavoured Yogurt,cup,g,245
+ingredient,Greek Yogurt,cup,g,245
+ingredient,Hung Curd,cup,g,245
+ingredient,Cannellini Beans,cup,g,200
+ingredient,Chana Dal,cup,g,200
+ingredient,Green Peas (Dried),cup,g,200
+ingredient,Horse Gram,cup,g,200
+ingredient,Kabuli Chana,cup,g,200
+ingredient,Kala Chana,cup,g,200
+ingredient,Kulthi,cup,g,200
+ingredient,Lima Beans (Dried),cup,g,200
+ingredient,Lobiya (Black),cup,g,200
+ingredient,Lobiya (White),cup,g,200
+ingredient,Masoor (Whole),cup,g,200
+ingredient,Masoor Dal (Red),cup,g,200
+ingredient,Matki,cup,g,200
+ingredient,Moong (Whole),cup,g,200
+ingredient,"Moong Dal (Split, Green)",cup,g,200
+ingredient,"Moong Dal (Split, Yellow)",cup,g,200
+ingredient,Navratan Dal,cup,g,200
+ingredient,Rajma (Chitra),cup,g,200
+ingredient,Rajma (Red),cup,g,200
+ingredient,Rice Bean,cup,g,200
+ingredient,Soya Chunks,cup,g,90
+ingredient,Soybean (Whole),cup,g,200
+ingredient,Toor Dal,cup,g,200
+ingredient,Toor Dal (Oily),cup,g,200
+ingredient,"Urad Dal (Split, Black)",cup,g,200
+ingredient,"Urad Dal (Split, White)",cup,g,200
+ingredient,Urad Dal (Whole),cup,g,200
+ingredient,Val (Field Beans),cup,g,200
+ingredient,White Peas,cup,g,200
+ingredient,Besan,cup,g,100
+ingredient,Bread Crumbs,cup,g,110
+ingredient,Idli Rava,cup,g,170
+ingredient,Noodles (Dry),cup,g,90
+ingredient,Pasta (Dry),cup,g,100
+ingredient,Rice Noodles,cup,g,80
+ingredient,Roasted Vermicelli,cup,g,80
+ingredient,Sabudana Flour,cup,g,140
+ingredient,Sooji,cup,g,170
+ingredient,Sooji (Fine),cup,g,170
+ingredient,Vermicelli,cup,g,80
+ingredient,Almonds,cup,g,140
+ingredient,Almonds (Blanched),cup,g,140
+ingredient,Black Raisins,cup,g,150
+ingredient,Cantaloupe Seeds,cup,g,130
+ingredient,Cashew Nuts,cup,g,140
+ingredient,Cashew Pieces,cup,g,140
+ingredient,Chia Seeds,cup,g,160
+ingredient,Dates (Dry),cup,g,175
+ingredient,Dates (Fresh),cup,g,175
+ingredient,Dates (Seedless),cup,g,175
+ingredient,Dried Apricots,cup,g,130
+ingredient,Dried Cranberries,cup,g,120
+ingredient,Dried Figs,cup,g,150
+ingredient,Flax Seeds,cup,g,160
+ingredient,Hemp Seeds,cup,g,150
+ingredient,Makhana,cup,g,30
+ingredient,Mixed Dry Fruits,cup,g,140
+ingredient,Peanuts,cup,g,150
+ingredient,Peanuts (Skinless),cup,g,150
+ingredient,Pistachios,cup,g,125
+ingredient,Prunes,cup,g,150
+ingredient,Pumpkin Seeds,cup,g,130
+ingredient,Raisins,cup,g,150
+ingredient,Roasted Chana,cup,g,160
+ingredient,Roasted Chana Dal,cup,g,160
+ingredient,Roasted Peanuts,cup,g,150
+ingredient,Sunflower Seeds,cup,g,140
+ingredient,Walnut Halves,cup,g,100
+ingredient,Walnuts,cup,g,100
+ingredient,Watermelon Seeds,cup,g,130
+ingredient,Brown Sugar,cup,g,200
+ingredient,Jaggery,cup,g,160
+ingredient,Jaggery Powder,cup,g,160
+ingredient,Powdered Sugar,cup,g,130
+ingredient,Sugar,cup,g,200
+ingredient,Murmura,cup,g,25
+ingredient,Poha (Thick),cup,g,90
+ingredient,Poha (Thin),cup,g,80
+ingredient,Puffed Millet,cup,g,25
+ingredient,Sabudana,cup,g,160
+ingredient,Egg,piece,g,50
+ingredient,Egg (Brown),piece,g,50
+ingredient,Egg (Duck),piece,g,70
+ingredient,Egg (Quail),piece,g,10
+ingredient,Almond Flour,cup,g,100
+ingredient,Arrowroot Powder,cup,g,120
+ingredient,Atta (Whole Wheat Flour),cup,g,120
+ingredient,Bajra Flour,cup,g,120
+ingredient,Chickpea Flour (Roasted),cup,g,100
+ingredient,Coconut Flour,cup,g,110
+ingredient,Cornflour,cup,g,130
+ingredient,Dhokla Flour,cup,g,115
+ingredient,Jowar Flour,cup,g,130
+ingredient,Kuttu Atta,cup,g,120
+ingredient,Maida,cup,g,125
+ingredient,Makki Atta,cup,g,130
+ingredient,Moong Dal Flour,cup,g,100
+ingredient,Multigrain Atta,cup,g,120
+ingredient,Oat Flour,cup,g,100
+ingredient,Ragi Flour,cup,g,120
+ingredient,Rajgira Atta,cup,g,120
+ingredient,Rava Dosa Mix,cup,g,130
+ingredient,Rice Flour,cup,g,150
+ingredient,Singhara Atta,cup,g,120
+ingredient,Soy Flour,cup,g,90
+ingredient,Tapioca Flour,cup,g,120
+ingredient,Thalipeeth Bhajani,cup,g,125
+ingredient,Urad Dal Flour,cup,g,110
+ingredient,Whole Wheat Pastry Flour,cup,g,115
+ingredient,Ambemohar Rice,cup,g,185
+ingredient,Arborio Rice,cup,g,200
+ingredient,Basmati Rice,cup,g,185
+ingredient,Basmati Rice (Brown),cup,g,185
+ingredient,Basmati Rice (Sella),cup,g,185
+ingredient,Black Rice,cup,g,185
+ingredient,Boiled Rice (Parboiled),cup,g,185
+ingredient,Brown Rice,cup,g,185
+ingredient,Gobindobhog Rice,cup,g,185
+ingredient,Idli Rice,cup,g,190
+ingredient,Indrayani Rice,cup,g,185
+ingredient,Jasmine Rice,cup,g,185
+ingredient,Kolam Rice,cup,g,185
+ingredient,Raw Rice (Ponni),cup,g,185
+ingredient,Red Rice,cup,g,185
+ingredient,Rice (Broken),cup,g,185
+ingredient,Sona Masoori Rice,cup,g,185
+ingredient,Sticky Rice,cup,g,195
+ingredient,Sushi Rice,cup,g,195
+ingredient,Amaranth Seeds,cup,g,180
+ingredient,Bajra,cup,g,190
+ingredient,Barley,cup,g,200
+ingredient,Barnyard Millet,cup,g,190
+ingredient,Buckwheat,cup,g,170
+ingredient,Corn (Dried Kernels),cup,g,170
+ingredient,Dalia (Broken Wheat),cup,g,160
+ingredient,Foxtail Millet,cup,g,190
+ingredient,Jowar,cup,g,190
+ingredient,Kodo Millet,cup,g,190
+ingredient,Little Millet,cup,g,190
+ingredient,Oats (Rolled),cup,g,90
+ingredient,Oats (Steel Cut),cup,g,160
+ingredient,Proso Millet,cup,g,190
+ingredient,Quinoa,cup,g,170
+ingredient,"Ragi (Finger Millet, Whole)",cup,g,190
+ingredient,Wheat (Whole),cup,g,180
+ingredient,Chicken (Whole),piece,g,1200
+ingredient,Chicken Legs,piece,g,100
+ingredient,Chicken Wings,piece,g,50
+ingredient,Apple,piece,g,180
+ingredient,Apricot,piece,g,40
+ingredient,Avocado,piece,g,200
+ingredient,Banana,piece,g,120
+ingredient,Banana (Elaichi),piece,g,60
+ingredient,Chikoo,piece,g,100
+ingredient,Custard Apple,piece,g,250
+ingredient,Dragon Fruit,piece,g,300
+ingredient,Fig (Fresh),piece,g,40
+ingredient,Guava,piece,g,150
+ingredient,Jackfruit (Ripe),piece,g,1500
+ingredient,Jamun,piece,g,10
+ingredient,Karonda,piece,g,8
+ingredient,Kiwi,piece,g,80
+ingredient,Lemon (Sweet),piece,g,100
+ingredient,Litchi,piece,g,15
+ingredient,Mandarin,piece,g,80
+ingredient,Mango (Ripe),piece,g,250
+ingredient,Muskmelon,piece,g,800
+ingredient,Orange,piece,g,150
+ingredient,Orange (Kinnow),piece,g,120
+ingredient,Palm Fruit (Nungu),piece,g,100
+ingredient,Papaya (Ripe),piece,g,800
+ingredient,Peach,piece,g,120
+ingredient,Pear,piece,g,150
+ingredient,Phalsa,piece,g,4
+ingredient,Pineapple,piece,g,1000
+ingredient,Plum,piece,g,60
+ingredient,Pomegranate,piece,g,250
+ingredient,Pomelo,piece,g,600
+ingredient,Raw Berries (Ber),piece,g,10
+ingredient,Star Fruit,piece,g,100
+ingredient,Strawberry,piece,g,20
+ingredient,Sweet Lime,piece,g,150
+ingredient,Watermelon,piece,g,3000
+ingredient,Wood Apple,piece,g,150
+ingredient,Amla,piece,g,20
+ingredient,Artichoke,piece,g,150
+ingredient,Ash Gourd,piece,g,1500
+ingredient,Asparagus,piece,g,20
+ingredient,Baby Corn,piece,g,15
+ingredient,Baby Potato,piece,g,30
+ingredient,Bamboo Shoot,piece,g,100
+ingredient,Banana Flower,piece,g,200
+ingredient,Banana Stem,piece,g,300
+ingredient,Beetroot,piece,g,130
+ingredient,Bhavnagri Chilli,piece,g,25
+ingredient,Bitter Gourd,piece,g,120
+ingredient,Bottle Gourd,piece,g,600
+ingredient,Brinjal (Bharta),piece,g,400
+ingredient,Brinjal (Long),piece,g,120
+ingredient,Brinjal (Round),piece,g,150
+ingredient,Brinjal (Small),piece,g,40
+ingredient,Broad Beans,piece,g,8
+ingredient,Broccoli,piece,g,300
+ingredient,Brussels Sprouts,piece,g,15
+ingredient,Cabbage,piece,g,700
+ingredient,Capsicum (Green),piece,g,120
+ingredient,Capsicum (Red),piece,g,150
+ingredient,Capsicum (Yellow),piece,g,150
+ingredient,Carrot,piece,g,70
+ingredient,Cauliflower,piece,g,500
+ingredient,Celery,piece,g,40
+ingredient,Chayote,piece,g,250
+ingredient,Cherry Tomato,piece,g,15
+ingredient,Cluster Beans,piece,g,5
+ingredient,Coconut (Fresh),piece,g,400
+ingredient,Coconut (Grated),cup,g,90
+ingredient,Colocasia (Arbi),piece,g,40
+ingredient,Corn (Sweet),piece,g,250
+ingredient,Cowpea Pods,piece,g,15
+ingredient,Cucumber,piece,g,250
+ingredient,Cucumber (English),piece,g,300
+ingredient,Drumstick,piece,g,40
+ingredient,Dry Coconut (Copra),piece,g,100
+ingredient,Dry Coconut (Grated),cup,g,90
+ingredient,Fennel Bulb,piece,g,200
+ingredient,French Beans,piece,g,8
+ingredient,Garlic,piece,g,40
+ingredient,Garlic (Baby/Single Clove),piece,g,15
+ingredient,Garlic (Clove),piece,g,4
+ingredient,Gilki,piece,g,80
+ingredient,Ginger,piece,g,20
+ingredient,Green Chilli,piece,g,5
+ingredient,Green Garlic,piece,g,30
+ingredient,Green Mango (Tender),piece,g,150
+ingredient,Green Peas,cup,g,150
+ingredient,Ivy Gourd,piece,g,15
+ingredient,Jalapeno,piece,g,15
+ingredient,Kantola,piece,g,20
+ingredient,Kohlrabi,piece,g,150
+ingredient,Leek,piece,g,150
+ingredient,Lemon,piece,g,40
+ingredient,Lettuce,piece,g,300
+ingredient,Lotus Stem,piece,g,150
+ingredient,Mushroom (Button),piece,g,15
+ingredient,Mushroom (Oyster),piece,g,20
+ingredient,Mushroom (Shiitake),piece,g,15
+ingredient,Okra,piece,g,10
+ingredient,Onion,piece,g,110
+ingredient,Parsnip,piece,g,150
+ingredient,Pearl Onions,piece,g,10
+ingredient,Pink Radish,piece,g,30
+ingredient,Pointed Gourd,piece,g,25
+ingredient,Potato,piece,g,150
+ingredient,Pumpkin,piece,g,1000
+ingredient,Radish (Red),piece,g,20
+ingredient,Radish (White),piece,g,200
+ingredient,Raw Banana,piece,g,150
+ingredient,Raw Jackfruit,piece,g,1500
+ingredient,Raw Mango,piece,g,200
+ingredient,Raw Papaya,piece,g,400
+ingredient,Raw Turmeric Root (Amba Haldi),piece,g,15
+ingredient,Red Cabbage,piece,g,600
+ingredient,Ridge Gourd,piece,g,150
+ingredient,Shallots,piece,g,15
+ingredient,Snake Gourd,piece,g,250
+ingredient,Spaghetti Squash,piece,g,1000
+ingredient,Sponge Gourd,piece,g,150
+ingredient,Spring Onion,piece,g,25
+ingredient,Sweet Potato,piece,g,200
+ingredient,Sword Beans,piece,g,20
+ingredient,Tapioca (Cassava),piece,g,400
+ingredient,Tender Coconut,piece,g,400
+ingredient,Tinda,piece,g,60
+ingredient,Tomato,piece,g,100
+ingredient,Turmeric (Raw),piece,g,15
+ingredient,Turnip,piece,g,100
+ingredient,Water Chestnut (Fresh),piece,g,15
+ingredient,White Onion,piece,g,120
+ingredient,Yam (Elephant Foot),piece,g,500
+ingredient,Yam (Purple),piece,g,300
+ingredient,Yellow Pumpkin,piece,g,1000
+ingredient,Zucchini,piece,g,200
+ingredient,Bay Leaf,piece,g,0.5
+ingredient,Black Cardamom,piece,g,2
+ingredient,Black Pepper (Whole),piece,g,0.05
+ingredient,Cinnamon Stick,piece,g,3
+ingredient,Cloves,piece,g,0.1
+ingredient,Dried Red Chilli,piece,g,2
+ingredient,Green Cardamom,piece,g,0.5
+ingredient,Kashmiri Red Chilli (Whole),piece,g,2
+ingredient,Star Anise,piece,g,1

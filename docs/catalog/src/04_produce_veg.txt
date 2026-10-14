@@ -1,0 +1,151 @@
+## vegetable
+Onion | pyaz; kanda; vengayam; eerulli; ullipaya; red onion; pyaaz | 110 | 
+Spring Onion | green onion; hara pyaz; scallion; kanda patha; spring onion greens | 25 | 
+Shallots | sambar onion; small onion; chinna vengayam; madras onion; sambar onions | 15 | 
+White Onion | safed pyaz | 120 | 
+Tomato | tamatar; thakkali; tamate; tomatoes | 100 | 
+Cherry Tomato | | 15 | 
+Potato | aloo; batata; urulaikizhangu; alugadde; bangaladumpa | 150 | 
+Baby Potato | nainital aloo; chotu aloo; baby aloo | 30 | 
+Sweet Potato | shakarkandi; ratalu; genasu; sakkaravalli kizhangu | 200 | 
+Carrot | gajar; gajjari; mulangi | 70 | 
+Beetroot | chukandar; beet; beetroot | 130 | 
+Radish (White) | mooli; muli; mullangi; mullangi; daikon | 200 | 
+Radish (Red) | | 20 | 
+Turnip | shalgam; shalgam | 100 | 
+Cauliflower | gobi; phool gobi; phoolkopi; hookosu | 500 | 
+Cabbage | patta gobi; band gobi; muttaikose; elekose; bandh gobi | 700 | 
+Red Cabbage | purple cabbage | 600 | 
+Broccoli | hari gobi | 300 | 
+Brinjal (Round) | baingan; eggplant; aubergine; vangi; vankaya; kathirikai; badanekayi | 150 | 
+Brinjal (Long) | long baingan; long eggplant | 120 | 
+Brinjal (Small) | baby brinjal; chhota baingan; bharwa baingan | 40 | 
+Brinjal (Bharta) | bharta baingan; big brinjal; bharit vangi | 400 | 
+Okra | bhindi; ladyfinger; ladies finger; vendakkai; bendekayi; bendakaya | 10 | 
+Bottle Gourd | lauki; dudhi; ghiya; sorakkai; sorekayi; anapakaya; doodhi | 600 | 
+Ridge Gourd | turai; torai; peerkangai; heerekayi; beerakaya; ridged gourd | 150 | 
+Sponge Gourd | nenua; ghosale; sponge gourd | 150 | 
+Bitter Gourd | karela; karle; pavakkai; hagalakayi; kakarakaya; bitter melon | 120 | 
+Snake Gourd | chichinda; padwal; pudalangai; padavalakayi; potlakaya | 250 | 
+Ash Gourd | petha; kaddu (white); poosanikai; boodu gummadikaya; winter melon; kushmanda | 1500 | 
+Pumpkin | kaddu; bhopla; sitaphal; kumro; parangikai; kumbalakayi | 1000 | 
+Pointed Gourd | parwal; patol; kovakkai (parwal) | 25 | 
+Ivy Gourd | tindora; tondli; tindli; kundru; kovakkai; dondakaya; tondekayi | 15 | 
+Cluster Beans | gavar; gawar; guar; kothavarangai; gorikayi; goruchikkudu | 5 | 
+French Beans | farasbi; green beans; beans; fansi | 8 | 
+Broad Beans | sem; avarakkai; chikkudukaya; avarekai; papdi | 8 | 
+Cowpea Pods | lobia pods; long beans; yardlong bean; barbati; chawli pods | 15 | 
+Drumstick | sahjan; saijan; murungakkai; nuggekayi; munagakaya; moringa; shevga | 40 | 
+Green Peas | matar; mutter; hara matar; batani; bataani; fresh peas; peas | | 150
+Corn (Sweet) | bhutta; makka; sweet corn; corn cob; makkai | 250 | 
+Raw Banana | kachha kela; plantain; vazhakkai; kachi kela; bale kayi; raw plantain | 150 | 
+Banana Stem | vazhaithandu; kele ka tana; bale dindu | 300 | 
+Banana Flower | kele ka phool; vazhaipoo; banana blossom; bale hoovu | 200 | 
+Raw Jackfruit | kathal; kathal; phanas; palakkai; halasu; panasa | 1500 | 
+Raw Papaya | kachha papita; pappali; papaya (raw) | 400 | 
+Raw Mango | kachha aam; kairi; maavinakayi; mamidikaya; maangai | 200 | 
+Capsicum (Green) | shimla mirch; bell pepper; green capsicum; dhaba mirch | 120 | 
+Capsicum (Red) | red bell pepper | 150 | 
+Capsicum (Yellow) | yellow bell pepper | 150 | 
+Green Chilli | hari mirch; pachi mirchi; pachai milagai; hasi menasinakayi; mirapakaya; chillies | 5 | 
+Bhavnagri Chilli | bhavnagri mirch; mild chilli; bajji chilli; banana pepper; mirchi bajji chilli | 25 | 
+Jalapeno | jalapeño | 15 | 
+Cucumber | kheera; kakdi; vellarikai; southekayi; dosakaya; kakri | 250 | 
+Cucumber (English) | english cucumber | 300 | 
+Zucchini | courgette | 200 | 
+Ginger | adrak; inji; shunti; allam; fresh ginger | 20 | 
+Garlic | lehsun; lasun; poondu; bellulli; vellulli; garlic bulb | 40 | 
+Garlic (Clove) | garlic clove; lehsun kali | 4 | 
+Garlic (Baby/Single Clove) | ekpothi garlic; single pod garlic; kashmiri garlic | 15 | 
+Green Garlic | hara lehsun; lilva lasan; spring garlic | 30 | 
+Turmeric (Raw) | kacchi haldi; fresh turmeric; pachai manjal; arisina kombu | 15 | 
+Raw Turmeric Root (Amba Haldi) | amba haldi; mango ginger; aam haldi | 15 | 
+Colocasia (Arbi) | arbi; arvi; seppankizhangu; kesavedantu; chaamagadda; taro root; kacchu | 40 | 
+Yam (Elephant Foot) | suran; jimikand; senai kizhangu; suvarna gadde; kanda | 500 | 
+Yam (Purple) | kand; ratalu (purple yam); violet yam | 300 | 
+Tapioca (Cassava) | kappa; maravalli kizhangu; sabudana root; cassava; yuca | 400 | 
+Lotus Stem | kamal kakdi; kamal kakri; nadru; lotus root; thamarai thandu | 150 | 
+Water Chestnut (Fresh) | singhara; singhada; paniphal | 15 | 
+Mushroom (Button) | khumb; button mushroom; mushrooms; khumbi | 15 | 
+Mushroom (Oyster) | oyster mushroom | 20 | 
+Mushroom (Shiitake) | | 15 | 
+Baby Corn | | 15 | 
+Celery | | 40 | 
+Leek | | 150 | 
+Lettuce | iceberg lettuce; romaine; salad leaves | 300 | 
+Asparagus | | 20 | 
+Bell Pepper Mix | | | 
+Kohlrabi | knol khol; ganth gobi; nolkol; navalkol | 150 | 
+Brussels Sprouts | | 15 | 
+Artichoke | | 150 | 
+Fennel Bulb | saunf bulb | 200 | 
+Parsnip | | 150 | 
+Chayote | chow chow; bangalore brinjal; seemai badanekayi; chow chow vegetable | 250 | 
+Tinda | apple gourd; round gourd; indian round gourd; tinde; dhemse; tinda gourd | 60 | 
+Kantola | spiny gourd; kartoli; kakoda; teasel gourd | 20 | 
+Gilki | sponge gourd (small) | 80 | 
+Drumstick Leaves | moringa leaves; murungai keerai; nuggekai soppu | | 
+Sword Beans | | 20 | 
+Ceylon Spinach Stems | | | 
+Raw Peanuts (Fresh) | fresh groundnuts; ola groundnut | | 
+Ambade (Gongura) Stem | | | 
+Tender Coconut | nariyal pani; elaneer; ilaneer; kobbari bondam; young coconut | 400 | 
+Coconut (Fresh) | nariyal; thengai; khobra; kobbari; tenginakayi; fresh coconut | 400 | 
+Coconut (Grated) | nariyal grated; kasu thengai; grated coconut; coconut grated | | 90
+Dry Coconut (Copra) | kopra; khopra; sookha nariyal; copra; dry coconut; kobbari | 100 | 
+Dry Coconut (Grated) | desiccated coconut; dry coconut powder; coconut powder | | 90
+Pearl Onions | | 10 | 
+Lemon | nimbu; limbu; elumichai; nimmakaya; nimbehannu; lime; sweet lime (nimbu) | 40 | 
+Kaffir Lime Leaves | | | 
+Amla | indian gooseberry; amla fresh; nellikai; usirikaya; avla; nelli | 20 | 
+Raw Tamarind | kachchi imli; pachi chintakaya | | 
+Bamboo Shoot | bans ke kopal; kanchi; bamboo shoots | 100 | 
+Green Mango (Tender) | | 150 | 
+Yellow Pumpkin | peela kaddu; kaddu yellow | 1000 | 
+Spaghetti Squash | | 1000 | 
+Pink Radish | | 30 | 
+Methi Dana Sprouts | sprouted methi | | 
+Moong Sprouts | sprouted moong; moong sprouts | | 
+Sprouted Mixed Beans | mixed sprouts; usal sprouts | | 
+Soya Chaap | soy chaap; soya chap | | 
+Seaweed | nori | | 
+## leafy_herb
+Coriander Leaves | dhania patta; cilantro; kothimbir; kothamalli; kothambari; kothimeera; hara dhania; coriander | | 
+Mint Leaves | pudina; pudina patta; pudhina; pudina leaves; mint | | 
+Curry Leaves | kadi patta; kari patta; karivepaku; karuvepilai; kadipatta; curry patta; meetha neem | | 
+Fenugreek Leaves | methi; methi leaves; fresh methi; menthikura; venthaya keerai; menthya soppu | | 
+Spinach | palak; palak leaves; pasalai keerai; palakura; palak bhaji | | 
+Amaranth Leaves | chaulai; lal saag; thotakura; harive soppu; cheera; thandu keerai; math | | 
+Mustard Greens | sarson ka saag; sarson saag; mustard leaves | | 
+Bathua | chenopodium; bathua leaves; bathua saag | | 
+Dill Leaves | suva; sowa; shepu; soya keerai; sabbasige soppu; dill | | 
+Spring Onion Greens | kanda patha; onion greens | | 
+Sorrel Leaves | ambadi; gongura; pulicha keerai; pundi; roselle leaves; khatta palak; chukka; kenaf | | 
+Radish Leaves | mooli ke patte; mullangi keerai; muli leaves | | 
+Colocasia Leaves | arbi ke patte; patra; alu vadi leaves; cheppankizhangu ilai; paatra | | 
+Drumstick Leaves (Fresh) | moringa leaves fresh; sahjan ke patte | | 
+Beetroot Leaves | | | 
+Lettuce Leaves | | | 
+Kale | | | 
+Basil Leaves | tulsi; basil; thai basil; sweet basil; holy basil | | 
+Parsley | | | 
+Lemongrass | hari chai patti; gandhatrina; lemon grass | | 
+Rosemary (Fresh) | | | 
+Thyme (Fresh) | | | 
+Oregano (Fresh) | | | 
+Chinese Cabbage | pak choi; bok choy; napa cabbage | | 
+Cabbage Leaves | | | 
+Betel Leaves | paan; paan ke patte; vetrilai; villedele; tamalapaku | | 
+Banana Leaf | kele ka patta; vazhai ilai; bale yele; arati aku | | 
+Pumpkin Leaves | | | 
+Purslane | kulfa; kulfa saag; paruppu keerai; golibhaji | | 
+Ponnanganni Leaves | alligator weed; dwarf copperleaf; ponnanganni keerai | | 
+Mulla Keerai | | | 
+Gongura (Red) | red sorrel | | 
+Tamarind Leaves | chinta chiguru; imli ke patte; tender tamarind leaves | | 
+Thotakura (Red) | | | 
+Agathi Leaves | agati; hummingbird tree; agase soppu | | 
+Mint Sprigs | | | 
+Spring Garlic Leaves | | | 
+Microgreens | | | 
+Fresh Coriander Roots | coriander root | | 

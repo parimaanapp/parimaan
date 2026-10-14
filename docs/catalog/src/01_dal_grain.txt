@@ -1,0 +1,111 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## dal_pulse
+Toor Dal | arhar dal; tuvar dal; tur dal; pigeon pea; toovar dal; split pigeon peas | | 200
+Toor Dal (Oily) | oily toor dal; gujarati toor dal | | 200
+Chana Dal | split bengal gram; bengal gram dal; chana dal split; kadalai paruppu | | 200
+Moong Dal (Split, Yellow) | moong dal; yellow moong dal; mung dal; pasi paruppu; split yellow gram | | 200
+Moong Dal (Split, Green) | green moong dal; moong dal chilka; moong chilka; dhuli moong | | 200
+Moong (Whole) | whole moong; green gram; sabut moong; green moong; moong beans | | 200
+Urad Dal (Split, White) | urad dal; dhuli urad dal; white urad dal; ulundu paruppu; split black gram skinned | | 200
+Urad Dal (Split, Black) | urad dal chilka; black urad dal split; split black gram with skin | | 200
+Urad Dal (Whole) | sabut urad; black gram; kala urad; whole urad dal; whole black gram | | 200
+Masoor Dal (Red) | red lentils; lal masoor dal; masoor dal; malka masoor | | 200
+Masoor (Whole) | sabut masoor; brown lentils; whole masoor; kali masoor; black masoor | | 200
+Kabuli Chana | chole; chickpeas; white chickpeas; chhole; safed chana; garbanzo | | 200
+Kala Chana | black chickpeas; kale chane; bengal gram whole; desi chana; brown chickpeas | | 200
+Rajma (Red) | kidney beans; red rajma; red kidney beans; rajmah | | 200
+Rajma (Chitra) | chitra rajma; pinto beans; jammu rajma; rajma chitra | | 200
+Lobiya (White) | white lobia; black eyed peas; white cowpea; safed lobia; chawli | | 200
+Lobiya (Black) | black lobia; kala lobia; red chori; cowpea red | | 200
+Matki | moth beans; moth bean; matki sprouts; dew beans | | 200
+Horse Gram | kulthi; kulthi dal; kollu; hurali | | 200
+Navratan Dal | nine gem dal; mixed dal; panchmel dal; five dal mix | | 200
+Green Peas (Dried) | dried green peas; sukha matar; safed matar; dried peas | | 200
+White Peas | safed vatana; white vatana; dried white peas | | 200
+Soya Chunks | soya nuggets; nutrela; soy chunks; meal maker | | 90
+Soybean (Whole) | soya beans; whole soybean | | 200
+Val (Field Beans) | vaal; field beans dried; avarekalu dried; dried field beans | | 200
+Kulthi | | | 200
+Rice Bean | | | 200
+Lima Beans (Dried) | butter beans dried; double beans | | 200
+Cannellini Beans | white kidney beans; navy beans | | 200
+## whole_grain
+Wheat (Whole) | gehun; wheat grain; wheat berries; godhuma | | 180
+Dalia (Broken Wheat) | daliya; cracked wheat; broken wheat; lapsi; fada | | 160
+Jowar | sorghum; jwari; cholam; white millet (jowar) | | 190
+Bajra | pearl millet; sajje; kambu; bajri | | 190
+Ragi (Finger Millet, Whole) | nachni; finger millet; mandua; kezhvaragu | | 190
+Foxtail Millet | kangni; thinai; navane; korra | | 190
+Barnyard Millet | sanwa; samo rice; moraiya; vrat rice; kuthiraivali | | 190
+Little Millet | kutki; samai; saame; same | | 190
+Kodo Millet | kodra; varagu; harka | | 190
+Proso Millet | cheena; panivaragu; baragu | | 190
+Corn (Dried Kernels) | makka dana; dried corn; maize kernels | | 170
+Quinoa | | | 170
+Oats (Rolled) | rolled oats; oatmeal | | 90
+Oats (Steel Cut) | steel cut oats; irish oats | | 160
+Barley | jau; pearl barley | | 200
+Amaranth Seeds | rajgira; ramdana; chaulai seeds | | 180
+Buckwheat | kuttu; kuttu groats | | 170
+Sabudana | sago; tapioca pearls; javvarisi; sabbakki | | 160
+Poha (Thick) | thick poha; jada poha; flattened rice thick; avalakki thick | | 90
+Poha (Thin) | thin poha; patla poha; flattened rice thin; nylon poha | | 80
+Murmura | puffed rice; kurmura; mamra; borugulu; pori | | 25
+Puffed Millet | | | 25
+## rice
+Basmati Rice | basmati; long grain basmati; basmati chawal | | 185
+Basmati Rice (Sella) | sella basmati; parboiled basmati; golden sella | | 185
+Basmati Rice (Brown) | brown basmati | | 185
+Sona Masoori Rice | sonamasuri; sona masuri; ponni rice (medium); medium grain rice | | 185
+Kolam Rice | kolam; kolam chawal | | 185
+Idli Rice | parboiled idli rice; idli chawal | | 190
+Raw Rice (Ponni) | ponni; ponni raw rice; raw rice | | 185
+Boiled Rice (Parboiled) | ukda chawal; parboiled rice; usna rice; puzhungal arisi | | 185
+Brown Rice | | | 185
+Red Rice | matta rice; kerala red rice; red rice unpolished | | 185
+Black Rice | forbidden rice; chak-hao | | 185
+Jasmine Rice | | | 185
+Sushi Rice | short grain rice | | 195
+Arborio Rice | risotto rice | | 200
+Ambemohar Rice | ambe mohar | | 185
+Indrayani Rice | | | 185
+Gobindobhog Rice | gobindo bhog | | 185
+Rice (Broken) | broken rice; kanki; tukda chawal | | 185
+Sticky Rice | glutinous rice; sweet rice | | 195
+## flour
+Atta (Whole Wheat Flour) | wheat flour; gehun ka atta; chakki atta; aata; whole wheat atta | | 120
+Maida | refined flour; all purpose flour; plain flour; maida flour | | 125
+Besan | gram flour; chickpea flour; chana flour; kadalai maavu | | 100
+Sooji | semolina; rava; suji; rawa; sooji rava; upma rava | | 170
+Sooji (Fine) | bombay rava; fine rava; idli rava (fine) | | 170
+Idli Rava | idli rawa; rice rava | | 170
+Rice Flour | chawal ka atta; arisi maavu; akki hittu; tandulache pith | | 150
+Ragi Flour | nachni flour; finger millet flour; mandua atta; ragi atta | | 120
+Jowar Flour | jowar atta; sorghum flour; jolada hittu | | 130
+Bajra Flour | bajra atta; pearl millet flour | | 120
+Makki Atta | corn flour (makki); maize flour; makki ka atta | | 130
+Cornflour | corn starch; cornstarch; arrowroot (substitute) | | 130
+Multigrain Atta | multigrain flour; 7 grain atta | | 120
+Singhara Atta | water chestnut flour; singhade ka atta | | 120
+Kuttu Atta | buckwheat flour; kuttu ka atta | | 120
+Rajgira Atta | amaranth flour; ramdana atta | | 120
+Sabudana Flour | sago flour | | 140
+Urad Dal Flour | urad flour | | 110
+Moong Dal Flour | moong flour | | 100
+Whole Wheat Pastry Flour | | | 115
+Tapioca Flour | tapioca starch | | 120
+Arrowroot Powder | arrowroot; arrowroot flour | | 120
+Almond Flour | almond meal | | 100
+Coconut Flour | | | 110
+Oat Flour | | | 100
+Soy Flour | soya flour | | 90
+Chickpea Flour (Roasted) | roasted besan; bhuna besan | | 100
+Thalipeeth Bhajani | bhajani; bhajani flour | | 125
+Dhokla Flour | khaman flour; dhokla mix flour | | 115
+Rava Dosa Mix | | | 130
+Pasta (Dry) | spaghetti; penne; macaroni; fusilli; dried pasta | | 100
+Noodles (Dry) | hakka noodles; chowmein noodles; egg noodles dry | | 90
+Vermicelli | semiya; sewai; seviyan; seviya | | 80
+Roasted Vermicelli | roasted semiya; bhuna sewai | | 80
+Rice Noodles | rice vermicelli; sevai (rice); idiyappam sev | | 80
+Bread Crumbs | breadcrumbs; panko | | 110

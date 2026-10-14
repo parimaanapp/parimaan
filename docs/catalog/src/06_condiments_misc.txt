@@ -1,0 +1,222 @@
+## condiment_sauce
+Tomato Ketchup | ketchup; tomato sauce; red sauce | | 
+Soy Sauce | soya sauce; dark soy sauce; light soy sauce | | 
+Green Chilli Sauce | green chilli sauce; chilli sauce green | | 
+Red Chilli Sauce | red chilli sauce; hot sauce; chilli sauce | | 
+Schezwan Sauce | szechuan sauce; schezwan chutney | | 
+Vinegar | sirka; white vinegar; synthetic vinegar; kadai vinegar | | 
+Apple Cider Vinegar | acv | | 
+Rice Vinegar | | | 
+Balsamic Vinegar | | | 
+Worcestershire Sauce | | | 
+Mayonnaise | mayo; veg mayonnaise; eggless mayo | | 
+Mustard Sauce | kasundi (sauce); yellow mustard sauce; kasundi | | 
+Mustard (Dijon) | dijon mustard | | 
+Pizza Sauce | pizza pasta sauce; pizza topping sauce | | 
+Pasta Sauce | marinara; arrabbiata; red pasta sauce | | 
+White Sauce | bechamel | | 
+Peri Peri Sauce | | | 
+BBQ Sauce | barbecue sauce | | 
+Hot Sauce | tabasco; sriracha; sriracha | | 
+Oyster Sauce | | | 
+Fish Sauce | | | 
+Hoisin Sauce | | | 
+Sweet Chilli Sauce | thai sweet chilli | | 
+Tahini | sesame paste | | 
+Hummus | | | 
+Salsa | | | 
+Pesto | | | 
+Maple Syrup (Pancake) | | | 
+Chocolate Syrup | | | 
+Rose Syrup | rooh afza; gulkand syrup | | 
+Sharbat | kala khatta; khus syrup; sarbat | | 
+Tomato Puree | tomato paste; tamatar puree; canned tomatoes; tomato purée | | 
+Coconut Cream Canned | | | 
+Kokum Syrup | kokum agal; kokum sharbat | | 
+Tamarind Paste | imli paste; imli ka pulp; tamarind concentrate; tamarind pulp | | 
+Jaggery Tamarind Chutney | meethi chutney; sweet chutney; saunth chutney; imli gur chutney | | 
+## paste
+Ginger Garlic Paste | adrak lehsun paste; ginger-garlic paste; ginger garlic masala | | 
+Ginger Paste | adrak paste | | 
+Garlic Paste | lehsun paste | | 
+Green Chilli Paste | hari mirch paste | | 
+Cashew Paste | kaju paste | | 
+Almond Paste | badam paste | | 
+Onion Paste | pyaz paste; onion puree; fried onion paste | | 
+Tomato Paste | | | 
+Coconut Paste | nariyal paste; ground coconut paste | | 
+Poppy Seed Paste | posto paste; khus khus paste | | 
+Curry Paste (Red) | thai red curry paste | | 
+Curry Paste (Green) | thai green curry paste | | 
+Miso Paste | | | 
+Kimchi Paste | | | 
+Gochujang | korean chilli paste | | 
+Harissa | | | 
+Wasabi | | | 
+Peanut Paste | | | 
+Sesame Paste (Til Paste) | til paste | | 
+## pickle_chutney
+Mango Pickle | aam ka achar; mango achar; mavinakayi uppinakayi; avakaya; maangai oorugai; mango thokku | | 
+Lime Pickle | nimbu ka achar; lemon pickle; elumichai oorugai; nimmakaya pachadi; limbu athanu; nimbu achar | | 
+Mixed Vegetable Pickle | mix achar; mix veg pickle; sabzi ka achar; mixed pickle | | 
+Green Chilli Pickle | hari mirch ka achar; mirchi achar; mirchi ka achar; pachi mirchi pachadi; mirchi thokku | | 
+Red Chilli Pickle | lal mirch ka achar; stuffed chilli pickle; bharwa mirch achar | | 
+Garlic Pickle | lehsun ka achar; poondu oorugai; vellulli oorugai; lasun lonche | | 
+Ginger Pickle | adrak ka achar; inji oorugai; allam pachadi | | 
+Amla Pickle | amla ka achar; nellikai oorugai; usirikaya pachadi; avla lonche | | 
+Gongura Pickle | gongura pachadi; pulicha keerai thokku; gongura oorugai | | 
+Tomato Pickle | tomato pachadi; thakkali oorugai; tamatar ka achar | | 
+Carrot Pickle | gajar ka achar | | 
+Chicken Pickle | chicken achar; kozhi oorugai; chicken pachadi | | 
+Mutton Pickle | mutton achar; gosht achar | | 
+Fish Pickle | machhi ka achar; meen oorugai; prawn pickle; prawn achar | | 
+Jackfruit Pickle | kathal ka achar; jackfruit achar | | 
+Sweet Lime Pickle | meetha nimbu achar; sweet lemon pickle | | 
+Sweet Mango Pickle | meetha aam ka achar; chhunda; gor keri; aam ka murabba pickle; sweet mango achar | | 
+Raw Mango Chhunda | chunda; gujarati chhundo; gujarati chunda | | 
+Sweet Pickle (Ber) | meetha ber pickle; ber ka achar; ber ka khatta meetha achar | | 
+Radish Pickle | mooli ka achar; mullangi oorugai | | 
+Turmeric Pickle | haldi ka achar; fresh haldi achar; kacchi haldi achar | | 
+Kimchi | radish kimchi | | 
+Kasundi | bengali mustard sauce; kashundi; mustard pickle | | 
+Coconut Chutney (Packaged) | | | 
+Coriander Chutney | green chutney; dhania chutney; hari chutney; pudina chutney; mint chutney | | 
+Peanut Chutney Powder | shenga chutney pudi; palli podi; verkadalai podi; groundnut chutney powder | | 
+Garlic Chutney (Dry) | lasun chutney; dry garlic chutney; lehsun chutney; chutney powder garlic | | 
+Flaxseed Chutney (Dry) | javas chutney; alsi chutney powder; agasi chutney pudi | | 
+Karnataka Gunpowder | | | 
+Murabba (Amla) | amla murabba | | 
+Murabba (Mango) | aam murabba | | 
+Gulkand | rose petal jam; gulkhand | | 
+Jam (Mixed Fruit) | fruit jam; mixed fruit jam; kissan jam | | 
+Jam (Strawberry) | | | 
+Marmalade | orange marmalade | | 
+Jelly | | | 
+Honey Ginger | | | 
+Chyawanprash | chyavanprash; chyawanprash | | 
+## bakery
+Bread (White) | pav; white bread; sandwich bread; milk bread; loaf | | 
+Bread (Brown) | whole wheat bread; atta bread; multigrain bread; brown bread | | 
+Pav | ladi pav; pao; bun; dinner roll; pav bun | | 
+Burger Bun | | | 
+Hot Dog Bun | | | 
+Pizza Base | pizza crust; pizza bread | | 
+Naan (Ready) | | | 
+Kulcha (Ready) | | | 
+Paratha (Frozen) | malabar paratha frozen; frozen paratha; lachha paratha frozen | | 
+Roti (Ready) | ready roti; chapati ready; phulka ready | | 
+Tortilla | wrap; wraps; tortilla wrap | | 
+Rusk | toast; rusks; tea toast; suji rusk | | 
+Biscuits | cookies; marie; parle g; digestive | | 
+Cake | pound cake; tea cake | | 
+Khari | puff; khari biscuit | | 
+Bread Sticks | | | 
+Croissant | | | 
+Papad (Ready Cooked) | | | 
+Papad (Uncooked) | papadum; appalam; papadam; appalam | | 
+Papad (Lijjat Moong) | moong papad; urad papad; punjabi masala papad; sabudana papad | | 
+Sabudana Papad | | | 
+Rice Papad | arisi appalam; rice appalam; chawal papad; aluchi papad | | 
+Fryums | rice fryums; wheel fryums; fryum | | 
+Kurdai | rice kurdai; wheat kurdai | | 
+Sandige | sandge; rice sandige; ragi sandige | | 
+Vadam | vadagam; mor milagai; sun-dried chilli | | 
+## snack
+Namkeen (Mixture) | mixture; chivda; mix namkeen; bombay mix | | 
+Sev | besan sev; nylon sev; ratlami sev; sev (fine); sev bhujia | | 
+Bhujia | bikaneri bhujia; aloo bhujia | | 
+Chakli | murukku; chakri; chakkali; murukku (rice) | | 
+Chips (Potato) | potato chips; wafers; lays; banana chips | | 
+Banana Chips | nendran chips; kerala chips; vazhakkai chips | | 
+Tapioca Chips | kappa chips; maravalli chips | | 
+Popcorn | corn popcorn; microwave popcorn | | 
+Roasted Makhana | | | 
+Chana Jor Garam | | | 
+Khakhra | thepla khakhra; methi khakhra; masala khakhra; gujarati khakhra | | 
+Thepla | methi thepla; ready thepla | | 
+Dhokla Mix | khaman mix; instant dhokla mix | | 
+Idli Mix | instant idli mix | | 
+Dosa Mix | instant dosa mix | | 
+Upma Mix | instant upma | | 
+Poha Mix | | | 
+Maggi Noodles | instant noodles; maggi; noodles instant; yippee; top ramen | | 
+Pasta (Instant) | | | 
+Oats (Instant) | instant oats; masala oats | | 
+Cornflakes | corn flakes; breakfast cereal | | 
+Muesli | granola | | 
+Chocolate | dark chocolate; cooking chocolate; chocolate bar | | 
+Cocoa Powder | cocoa; baking cocoa | | 
+Choco Chips | chocolate chips | | 
+Chikki | peanut chikki; gajak; rewri; til chikki | | 
+Ladoo (Ready) | | | 
+Khakhra (Plain) | | | 
+Soan Papdi | | | 
+Gulab Jamun Mix | gulab jamun powder | | 
+Rasgulla (Canned) | rasgulla tin | | 
+Halwa Mix | | | 
+## beverage
+Tea Leaves | chai patti; chai; tea; black tea; cha; chaha; tea powder; assam tea; dust tea | | 
+Green Tea | green tea leaves; green tea bags | | 
+Tea Bags | tea bag; lipton | | 
+Coffee Powder | coffee; instant coffee; filter coffee powder; nescafe; kaapi; bru | | 
+Filter Coffee Decoction | decoction | | 
+Chicory | | | 
+Cocoa Drink Mix | bournvita; horlicks; boost; health drink powder; malt drink | | 
+Soda | club soda; sparkling water | | 
+Soft Drink | coke; pepsi; thums up; sprite | | 
+Packaged Juice | fruit juice; tropicana; real juice | | 
+Coconut Water | tender coconut water; nariyal pani packaged | | 
+Water | drinking water; mineral water | | 
+Thandai Syrup | | | 
+Lemonade Mix | | | 
+Rooh Afza | | | 
+Sattu | sattu powder; roasted gram flour; sattu atta; chhatua | | 
+## frozen
+Green Peas (Frozen) | frozen peas; frozen matar; peas frozen | | 
+Sweet Corn (Frozen) | frozen corn; corn kernels frozen; corn frozen | | 
+Mixed Vegetables (Frozen) | frozen mix veg; frozen veg | | 
+Paratha (Frozen Plain) | | | 
+French Fries | frozen fries; potato fries; frozen french fries | | 
+Aloo Tikki (Frozen) | tikki frozen; frozen tikki; veg cutlet frozen | | 
+Veg Nuggets | veg nuggets frozen | | 
+Chicken Nuggets | | | 
+Chicken Seekh Kabab | seekh kabab; chicken kabab frozen | | 
+Mutton Seekh Kabab | | | 
+Veg Burger Patty | veg patty; aloo tikki burger | | 
+Chicken Burger Patty | | | 
+Momos (Frozen) | frozen momos; veg momos; chicken momos | | 
+Spring Rolls (Frozen) | frozen spring roll; samosa frozen; frozen samosa | | 
+Ice Cream | kulfi; icecream; vanilla ice cream | | 
+Kulfi | | | 
+Frozen Fruit | frozen berries; mix berries; frozen strawberries; frozen mango pulp | | 
+Mango Pulp | aamras; canned mango pulp; alphonso pulp | | 
+Frozen Paneer | | | 
+Frozen Idli Batter | | | 
+Dosa Batter | idli batter; idli dosa batter; fresh batter; ready batter; dosa mix batter | | 
+Appam Batter | | | 
+Puri (Frozen) | | | 
+Pizza (Frozen) | | | 
+Frozen Fish | | | 
+## baking_misc
+Baking Powder | | | 
+Baking Soda | soda bicarbonate; sodium bicarbonate; khane ka soda; cooking soda; appa soda | | 
+Yeast (Dry) | instant yeast; active dry yeast; khamir | | 
+Eno | fruit salt; eno powder | | 
+Vanilla Essence | vanilla extract; vanilla | | 
+Food Colour | food color; yellow colour; red colour; orange colour | | 
+Rose Water | gulab jal; panneer | | 
+Kewra Water | kewda water; kewra essence; kewda | | 
+Gelatin | agar agar; china grass; agar | | 
+Custard Powder | | | 
+Jelly Crystals | jelly powder | | 
+Cream of Tartar | | | 
+Edible Silver Leaf | varak; chandi varak | | 
+Tutti Frutti | | | 
+Sprinkles | | | 
+Gum Arabic (Edible) | gond; dink; goond; edible gum; gond katira | | 
+Katira Gond | katira; tragacanth | | 
+Cooking Chocolate | | | 
+Corn Syrup | glucose syrup | | 
+Liquid Glucose | | | 
+Whey Protein | protein powder | | 
+Oil (Edible) Spray | | | 

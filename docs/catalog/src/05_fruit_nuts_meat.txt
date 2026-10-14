@@ -1,0 +1,149 @@
+## fruit
+Banana | kela; vazhaipazham; bale hannu; arati pandu; ripe banana; kele | 120 | 
+Banana (Elaichi) | yelakki banana; elaichi kela; poovan | 60 | 
+Apple | seb; sebu; apple (red) | 180 | 
+Mango (Ripe) | aam; mamidi; maambazham; mavinahannu; mango; alphonso; kesar; dasheri | 250 | 
+Orange | santra; narangi; kamala; orange (indian) | 150 | 
+Sweet Lime | mosambi; mosambi; sathukudi; battayi; sweet lime juice fruit | 150 | 
+Pomegranate | anar; dalimbe; madhulai; danimma; dadam | 250 | 
+Grapes (Green) | angoor; draksh; thirakshai; dhrakshi; seedless grapes | | 
+Grapes (Black) | kale angoor; black grapes | | 
+Papaya (Ripe) | papita; pappali; parangi kai; papaya | 800 | 
+Watermelon | tarbooz; kalingad; tarbuj; kallangadi; pucchakaya | 3000 | 
+Muskmelon | kharbuja; kharbooja; kharbuza; cantaloupe; sakkarai pattikai | 800 | 
+Pineapple | ananas; annasi; ananasa | 1000 | 
+Guava | amrud; peru; jama; koyya; seebe hannu; sheebe | 150 | 
+Pear | nashpati; nashpati; pear (indian) | 150 | 
+Plum | aloo bukhara; alubukhara; plums | 60 | 
+Peach | aadu; shaftalu | 120 | 
+Apricot | khubani; fresh apricot | 40 | 
+Litchi | lichi; lychee | 15 | 
+Chikoo | sapota; sapodilla; chiku | 100 | 
+Custard Apple | sitaphal; sharifa; seetha phal; ramphal | 250 | 
+Jamun | black plum; java plum; jambul; naval; neredu | 10 | 
+Fig (Fresh) | anjeer fresh; anjir fresh; athipazham | 40 | 
+Kiwi | | 80 | 
+Strawberry | | 20 | 
+Blueberry | | | 
+Cranberry (Fresh) | | | 
+Avocado | | 200 | 
+Dragon Fruit | pitaya | 300 | 
+Jackfruit (Ripe) | pakka kathal; ripe kathal; pazhaporam; halasina hannu | 1500 | 
+Jackfruit (Seeds) | kathal beej; chakkakuru; halasina beeja | | 
+Pomelo | chakotra; chakotra; bombay fruit | 600 | 
+Raw Berries (Ber) | ber; bor; elanthai; regu pandlu; jujube | 10 | 
+Star Fruit | kamrakh; carambola | 100 | 
+Wood Apple | bael; bel; kaith; kath bel; vilam pazham; belada hannu; velaga | 150 | 
+Palm Fruit (Nungu) | ice apple; taadgola; tati munjalu; thati nungu | 100 | 
+Tamarind Fruit (Fresh) | | | 
+Mulberry | shahtoot; shehtoot | | 
+Gooseberry (Cape) | rasbhari; makoi | | 
+Karonda | karonda; karwanda; kalakkai | 8 | 
+Phalsa | falsa; phalsa berry | 4 | 
+Orange (Kinnow) | kinnow; kinnow mandarin | 120 | 
+Mandarin | | 80 | 
+Lemon (Sweet) | | 100 | 
+Cherry | | | 
+Peach (Canned) | | | 
+Raisin (Fresh Grapes Dried) | | | 
+## nut_seed
+Cashew Nuts | kaju; mundiri; godambi; jeedipappu; cashews; cashewnuts; kaju whole | | 140
+Cashew Pieces | kaju tukda; broken cashews; kaju pieces | | 140
+Almonds | badam; badham; almond; california almonds; mamra almonds (premium) | | 140
+Almonds (Blanched) | peeled badam; blanched almond | | 140
+Pistachios | pista; pistachio; pista kernels | | 125
+Walnuts | akhrot; akhrot kernels; walnut halves | | 100
+Peanuts | moongfali; mungfali; shengdana; verkadalai; kadalekai; groundnuts; verkadalai; peanut | | 150
+Roasted Peanuts | bhuna moongfali; roasted groundnuts; fried peanuts; shengdana roasted | | 150
+Peanuts (Skinless) | blanched peanuts; peeled peanuts | | 150
+Raisins | kishmish; kishmish; dried grapes; kismis; drakshi; ular thiratchai; sultanas | | 150
+Black Raisins | kali kishmish; munakka; dried black grapes | | 150
+Dates (Dry) | khajoor; khajur; peechampazham; kharjura; dried dates; dates | | 175
+Dates (Fresh) | fresh khajoor; ajwa; medjool | | 175
+Dates (Seedless) | | | 175
+Dried Figs | anjeer; anjir; athi pazham; dry figs | | 150
+Dried Apricots | khubani; sukhe khubani; dry apricot | | 130
+Prunes | alubukhara dry; dried plums | | 150
+Dried Cranberries | | | 120
+Dried Mango (Aam Papad) | amchur strips; mango bar; aam papad | | 
+Chironji | charoli; chiraunji; achar seeds; piyal seeds | | 
+Pine Nuts | chilgoza; chilgoze | | 
+Makhana | fox nuts; lotus seeds; phool makhana; foxnut; gorgon nuts; makhane | | 30
+Flax Seeds | alsi; alsi ke beej; agasi; avise vidai; linseed; flaxseed | | 160
+Chia Seeds | sabja; sabja seeds; tukmaria; basil seeds; falooda seeds | | 160
+Sunflower Seeds | surajmukhi ke beej | | 140
+Pumpkin Seeds | kaddu ke beej; pepitas; magaz; char magaz | | 130
+Watermelon Seeds | magaz; tarbooz ke beej; char magaz | | 130
+Cantaloupe Seeds | kharbuja ke beej; melon seeds | | 130
+Hemp Seeds | | | 150
+Sesame Seeds (Toasted) | roasted til; roasted sesame | | 
+Roasted Chana | bhuna chana; dalia (roasted chana); putani; pottukadalai; fried gram; hurigadale; futana; roasted gram | | 160
+Roasted Chana Dal | pottukadalai dal; dalia chana | | 160
+Peanut Chikki | | | 
+Mixed Dry Fruits | dry fruits mix; trail mix; meva | | 140
+Coconut Chips | | | 
+Dry Dates Paste | | | 
+Walnut Halves | | | 100
+Brazil Nuts | | | 
+Hazelnuts | | | 
+Pecans | | | 
+Macadamia | | | 
+Coconut (Dried, Slices) | | | 
+## meat
+Chicken (Whole) | murgi; whole chicken; kozhi | 1200 | 
+Chicken (Curry Cut) | chicken curry cut; bone-in chicken; chicken pieces; chicken bone-in | | 
+Chicken Breast (Boneless) | boneless chicken breast; chicken breast; chicken boneless | | 
+Chicken Thigh (Boneless) | boneless chicken thigh; chicken thighs; chicken leg boneless | | 
+Chicken Legs | chicken drumsticks; drumstick (chicken); chicken leg piece; chicken lollipop | 100 | 
+Chicken Wings | | 50 | 
+Chicken Mince | chicken keema; minced chicken; ground chicken; chicken kheema; chicken kima | | 
+Chicken Liver | | | 
+Chicken Gizzard | | | 
+Chicken Salami | chicken sausage; chicken cold cuts; chicken ham | | 
+Mutton (Curry Cut) | goat meat; mutton; bakra; lamb curry cut; mutton bone-in | | 
+Mutton (Boneless) | boneless mutton; goat boneless | | 
+Mutton Mince | mutton keema; lamb mince; minced mutton; kheema | | 
+Mutton Chops | mutton ribs; chops | | 
+Mutton Liver | kaleji; mutton kaleji; goat liver | | 
+Mutton Paya | trotters; goat trotters | | 
+Mutton Brain | bheja; goat brain | | 
+Lamb (Leg) | | | 
+Beef | | | 
+Pork | pig meat; pork belly | | 
+Pork Sausage | | | 
+Bacon | | | 
+Turkey | | | 
+Duck | | | 
+Quail | bater; bhatera | | 
+Rabbit | | | 
+## fish
+Rohu | rohu fish; rui; roho labeo | | 
+Catla | katla; bhakur | | 
+Hilsa | ilish; pulasa; palla; ilish machh | | 
+Pomfret (Black) | halwa; kala paplet; black pomfret | | 
+Pomfret (White) | white pomfret; safed paplet; avoli; vavval; vaval | | 
+Surmai | kingfish; seer fish; king mackerel; neymeen; vanjaram; nei meen | | 
+Bombil | bombay duck; bummalo | | 
+Mackerel | bangda; ayala; kanangeluthi; bangude; kuppa | | 
+Sardine | tarli; mathi; chaala; galmo | | 
+Basa | basa fish; pangasius; swai | | 
+Tilapia | | | 
+Salmon | | | 
+Tuna | | | 
+Ravas | indian salmon; rawas; kala | | 
+Bangda | | | 
+Mrigal | mrigal carp; mrigala | | 
+Singhara Fish | singhi; catfish; magur (catfish) | | 
+Prawns | shrimp; jhinga; chemmeen; konju; yerra; kolambi; kolim | | 
+Prawns (Large) | tiger prawns; king prawns; jumbo prawns | | 
+Crab | kekda; njandu; nandu; kakdi | | 
+Squid | calamari; kadamba | | 
+Fish Fillet (Boneless) | boneless fish; fillet; fish fillets | | 
+Fish (Dried) | sukha bombil; dry fish; karuvadu; unakka meen; sukka bangda | | 
+Canned Tuna | tuna tin | | 
+Anchovies | | | 
+Eel | | | 
+Lobster | | | 
+Clams | | | 
+Mussels | | | 
+Oysters | | | 
