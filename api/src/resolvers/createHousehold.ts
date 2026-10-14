@@ -1,5 +1,5 @@
 import type { AppSyncResolverEvent } from 'aws-lambda';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { extractCallerIdentity } from '../auth/identity.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
@@ -8,6 +8,8 @@ import {
   insertDefaultSettings as insertDefaultSettingsRepo,
   insertHousehold,
   insertMembership,
+  findRecentPrimaryHouseholdByName,
+  lockUserForHouseholdCreate,
 } from '../repositories/householdRepository.js';
 import type { MembershipRow, SettingsRow } from '../repositories/householdRepository.js';
 import {
@@ -24,7 +26,17 @@ import { createHouseholdArgsSchema } from '../validation/createHousehold.js';
 import { getCuratedRecipesFromCorpus, getCuratedRecipesNotYetWired } from '../curatedRecipes.js';
 import type { CuratedRecipeInput, GetCuratedRecipesFn } from '../curatedRecipes.js';
 import { ValidationError } from '../errors.js';
+import { buildGraphQLHousehold } from './householdView.js';
 import { withErrorHandling } from './withErrorHandling.js';
+
+/**
+ * A repeat `createHousehold` with the same name from the same primary user
+ * inside this window is treated as a retry of the first call and returns that
+ * household instead of creating another. Long enough to cover a cold-resume
+ * timeout plus client retries; short enough that deliberately re-using a name
+ * later still creates a new household.
+ */
+export const CREATE_RETRY_WINDOW_MS = 10 * 60 * 1000;
 
 export interface CreateHouseholdResolverDeps {
   getPool: () => Promise<Pool>;
@@ -117,6 +129,66 @@ const toInsertCuratedRecipeIngredientInput = (
   sortOrder,
 });
 
+/** Inserts the household and everything seeded with it, in the caller's open transaction. */
+const createFreshHousehold = async (
+  txClient: PoolClient,
+  deps: CreateHouseholdResolverDeps,
+  callerId: string,
+  graphQLUser: ReturnType<typeof toGraphQLUser>,
+  name: string,
+): Promise<GraphQLHousehold> => {
+    // Generate-then-insert (not generate-then-UPDATE): `invite_code` is
+    // `NOT NULL UNIQUE`, so it cannot be inserted as null and filled in
+    // afterward — the retry has to wrap the insert itself.
+    const household = await attemptWithFreshInviteCode(
+      txClient,
+      (inviteCode) =>
+        insertHousehold(txClient, { name, inviteCode, primaryUserId: callerId }),
+      deps.randomInt,
+    );
+
+    const membershipRow: MembershipRow = await insertMembership(txClient, {
+      householdId: household.id,
+      userId: callerId,
+      role: 'primary',
+    });
+
+    const insertSettings = deps.insertDefaultSettings ?? insertDefaultSettingsRepo;
+    const settings: SettingsRow = await insertSettings(txClient, household.id);
+
+    // Fifth step (W16 §22.2.2 D2): curated-recipe seeding. Runs after
+    // settings, inside this same transaction — recipes' own RLS policy
+    // is household-membership-scoped exactly like settings', so it
+    // inherits the identical "membership must exist first" ordering
+    // constraint. `getCuratedRecipes` returning/throwing is what
+    // determines this step's own success/failure; a throw here (a
+    // fixture list function that throws, or a downstream `insertRecipe`
+    // failure) propagates out of `withUserTransaction`'s callback and
+    // rolls back the ENTIRE transaction — no household, no membership,
+    // no settings, no partial recipes survive.
+    const getCuratedRecipes = deps.getCuratedRecipes ?? getCuratedRecipesNotYetWired;
+    const curatedRecipes = getCuratedRecipes();
+    for (const curatedRecipe of curatedRecipes) {
+      const recipe = await insertRecipe(
+        txClient,
+        toInsertCuratedRecipeInput(household.id, curatedRecipe, callerId),
+      );
+      for (const [index, ingredient] of curatedRecipe.ingredients.entries()) {
+        await insertRecipeIngredientRepo(
+          txClient,
+          toInsertCuratedRecipeIngredientInput(recipe.id, ingredient, index),
+        );
+      }
+    }
+
+    const membership = toGraphQLMembership(
+      { ...membershipRow, household, settings },
+      graphQLUser,
+    );
+
+    return toGraphQLHousehold(household, [membership], settings);
+};
+
 /**
  * Direct-Lambda resolver for `Mutation.createHousehold`. Flow: validate the
  * caller's identity → validate `{ name }` → resolve/upsert the caller's
@@ -155,56 +227,20 @@ export const createCreateHouseholdHandler =
     return withUserTransaction(
       callerUser.id,
       async (txClient) => {
-        // Generate-then-insert (not generate-then-UPDATE): `invite_code` is
-        // `NOT NULL UNIQUE`, so it cannot be inserted as null and filled in
-        // afterward — the retry has to wrap the insert itself.
-        const household = await attemptWithFreshInviteCode(
+        // Idempotency: serialize this user's creates, then return an
+        // already-created same-name household (a retry) instead of a second.
+        await lockUserForHouseholdCreate(txClient, callerUser.id);
+        const existing = await findRecentPrimaryHouseholdByName(
           txClient,
-          (inviteCode) =>
-            insertHousehold(txClient, { name, inviteCode, primaryUserId: callerUser.id }),
-          deps.randomInt,
+          callerUser.id,
+          name,
+          new Date(Date.now() - CREATE_RETRY_WINDOW_MS),
         );
-
-        const membershipRow: MembershipRow = await insertMembership(txClient, {
-          householdId: household.id,
-          userId: callerUser.id,
-          role: 'primary',
-        });
-
-        const insertSettings = deps.insertDefaultSettings ?? insertDefaultSettingsRepo;
-        const settings: SettingsRow = await insertSettings(txClient, household.id);
-
-        // Fifth step (W16 §22.2.2 D2): curated-recipe seeding. Runs after
-        // settings, inside this same transaction — recipes' own RLS policy
-        // is household-membership-scoped exactly like settings', so it
-        // inherits the identical "membership must exist first" ordering
-        // constraint. `getCuratedRecipes` returning/throwing is what
-        // determines this step's own success/failure; a throw here (a
-        // fixture list function that throws, or a downstream `insertRecipe`
-        // failure) propagates out of `withUserTransaction`'s callback and
-        // rolls back the ENTIRE transaction — no household, no membership,
-        // no settings, no partial recipes survive.
-        const getCuratedRecipes = deps.getCuratedRecipes ?? getCuratedRecipesNotYetWired;
-        const curatedRecipes = getCuratedRecipes();
-        for (const curatedRecipe of curatedRecipes) {
-          const recipe = await insertRecipe(
-            txClient,
-            toInsertCuratedRecipeInput(household.id, curatedRecipe, callerUser.id),
-          );
-          for (const [index, ingredient] of curatedRecipe.ingredients.entries()) {
-            await insertRecipeIngredientRepo(
-              txClient,
-              toInsertCuratedRecipeIngredientInput(recipe.id, ingredient, index),
-            );
-          }
+        if (existing !== null) {
+          return buildGraphQLHousehold(txClient, existing);
         }
 
-        const membership = toGraphQLMembership(
-          { ...membershipRow, household, settings },
-          graphQLUser,
-        );
-
-        return toGraphQLHousehold(household, [membership], settings);
+        return createFreshHousehold(txClient, deps, callerUser.id, graphQLUser, name);
       },
       pool,
     );
