@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/ui/colors.dart';
+import '../../pantry/domain/category_units.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
@@ -58,6 +59,8 @@ class IngredientRowEditor extends StatelessWidget {
   static Key quantityFieldKey(int index) =>
       Key('ingredient-row-quantity-$index');
   static Key unitFieldKey(int index) => Key('ingredient-row-unit-$index');
+  static Key unitChipKey(int index, String unit) =>
+      Key('ingredient-row-unit-$index-$unit');
   static Key stapleChipKey(int index) => Key('ingredient-row-staple-$index');
   static Key removeButtonKey(int index) => Key('ingredient-row-remove-$index');
 
@@ -129,6 +132,23 @@ class IngredientRowEditor extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: AppSpacing.s1),
+        ListenableBuilder(
+          listenable: unitController,
+          builder: (BuildContext context, Widget? _) => Wrap(
+            spacing: AppSpacing.s1,
+            runSpacing: AppSpacing.s1,
+            children: <Widget>[
+              for (final String unit in recipeUnits)
+                PChip(
+                  key: unitChipKey(index, unit),
+                  label: unit,
+                  selected: unitController.text.trim() == unit,
+                  onTap: enabled ? () => unitController.text = unit : null,
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.s1),
         PChip(

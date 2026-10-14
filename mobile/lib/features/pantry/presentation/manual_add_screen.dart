@@ -5,6 +5,7 @@ import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
+import '../domain/category_units.dart';
 import '../domain/pantry_category.dart';
 import '../domain/pantry_item.dart';
 import '../domain/pantry_item_draft.dart';
@@ -38,6 +39,7 @@ class ManualAddScreen extends ConsumerStatefulWidget {
   static const Key nameFieldKey = Key('manual-add-name');
   static const Key quantityFieldKey = Key('manual-add-quantity');
   static const Key unitFieldKey = Key('manual-add-unit');
+  static Key unitChipKey(String unit) => Key('manual-add-unit-chip-$unit');
   static const Key categoryChipsKey = Key('manual-add-category');
   static const Key stapleChipKey = Key('manual-add-staple');
   static const Key expiryFieldKey = Key('manual-add-expiry');
@@ -96,6 +98,25 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   }
 
   void _onFieldChanged() => setState(() {});
+
+  /// Toggles [category]. Picking one pre-fills its default unit when the
+  /// unit is empty or not valid for it — except an existing item's own unit,
+  /// which is never overwritten (nothing may silently change in edit mode).
+  void _selectCategory(String category) {
+    setState(() {
+      _category = _category == category ? null : category;
+      final String? selected = _category;
+      if (selected == null) {
+        return;
+      }
+      final String unit = _unit.text.trim();
+      final bool valid = unitsForCategory(selected).contains(unit) ||
+          unit == widget.initialItem?.unit;
+      if (unit.isEmpty || !valid) {
+        _unit.text = defaultUnitForCategory(selected) ?? unit;
+      }
+    });
+  }
 
   /// Drops a trailing `.0` — `2.0` reads oddly in a quantity field a user is
   /// about to edit further.
@@ -237,6 +258,23 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                       controller: _unit,
                       enabled: !isBusy,
                     ),
+                    const SizedBox(height: AppSpacing.s1),
+                    Wrap(
+                      spacing: AppSpacing.s1,
+                      runSpacing: AppSpacing.s1,
+                      children: <Widget>[
+                        for (final String unit in unitsWithCurrent(
+                          _category,
+                          widget.initialItem?.unit,
+                        ))
+                          PChip(
+                            key: ManualAddScreen.unitChipKey(unit),
+                            label: unit,
+                            selected: _unit.text.trim() == unit,
+                            onTap: isBusy ? null : () => _unit.text = unit,
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: AppSpacing.s2),
                     Text(
                       'CATEGORY',
@@ -254,10 +292,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                             selected: _category == category,
                             onTap: isBusy
                                 ? null
-                                : () => setState(
-                                    () => _category =
-                                        _category == category ? null : category,
-                                  ),
+                                : () => _selectCategory(category),
                           ),
                       ],
                     ),
