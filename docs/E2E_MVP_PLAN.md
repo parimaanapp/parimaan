@@ -5533,3 +5533,88 @@ Founder decision 2026-10-13: scope product analytics *during* the beta rather th
 - **Out of scope** (stay W24): CloudWatch alarms and dashboards, observability CDK, server-side cost tracker.
 - **Ordering**: before inviting any external households; after the first internal TestFlight pass; ahead of W22 Firebase push unless the founder reprioritises.
 
+
+## 32. Beta feedback round 1 — triage and build plan (2026-10-14)
+
+Source: founder's first on-device TestFlight/simulator pass (16 items + screenshots). Every decision below was answered by the founder on 2026-10-14; nothing here is built yet. Wireframes consulted: `docs/wireframes/Parimaan Wireframes v2 (standalone).html` (6.1 Weekly plan, 6.2 picker, 10.1 Shopping list).
+
+### 32.1 Decisions (founder answers)
+| Topic | Decision |
+|---|---|
+| Data wipe | Delete everything tied to `amoghjkulkarni@gmail.com`, `parimaanapp@gmail.com`, `drishti.goel@gmail.com`, `drishti.goel.1993@gmail.com` (DB rows **and** Cognito users). **Fix the cause of the stray household first, then wipe.** |
+| Diet model | Two groups. *Eating style* (multi-select, **union**): Vegetarian, Non-vegetarian, Vegan, Egg friendly, Jain. *Must also be* (always applied): Gluten free, Dairy free. Household-wide only. Copy: "Gluten free", "Dairy free", "Egg friendly", "Non-vegetarian". |
+| Recipe tagging | Every recipe carries **one or more** diet tags (a recipe may be veg + vegan + dairy free). Matching uses the tags — no hierarchy logic ("veg includes vegan") at query time. |
+| Dinner | Setup step "Dinner: same structure as lunch" — default **on**; on → skip; off → one extra page, identical to the lunch structure page, for dinner. |
+| Snacks | One snack slot per day (Setup "Which meals?" gains Snacks). Sweet and Drink recipes are **not** snacks. |
+| Setup title | "Setup your Household" on all setup steps. |
+| Auto-fill | Prefer in-rotation recipes; when exhausted, fall back to out-of-rotation recipes; never fail for lack of rotation; repeats allowed. |
+| Names | Canonical ingredient names in English (Toor dal); aliases (arhar, tuvar…) map to it. |
+| Sizes | ~1,500 ingredients, ~500 recipes (North/South Indian + Gujarati, Maharashtrian, Bengali, Indo-Chinese), AI-generated original recipes with founder sampling (~50). |
+| URL import | Duplicates merged by **summing**; quantities stored in canonical units only; recipe steps rewritten with canonical quantities; salt and pepper are the "to taste" items → staples. |
+| Plan layout | Option 1: days as rows, meals as columns, compact chips, tap to expand (matches wireframe 6.1). |
+| Sequencing | Build A (bugs + copy) → Build B (catalog + recipes) → Build C (plan + shopping redesign), one TestFlight update each. |
+
+### 32.2 Triage
+**Bugs / defects — Build A**
+| # | Item | Diagnosis | Fix and acceptance |
+|---|---|---|---|
+| 10 | Auto-fill "0 of 56" | `findInRotationRecipesForAutoFill` requires `recipe.dietary_tags @> household tags` and only `in_rotation = TRUE`. Setup pre-selects veg + egg-friendly, so a recipe tagged only `veg` fails. Same root as #7. | New diet matcher (§32.3) + rotation-then-fallback ordering. Acceptance: a fresh veg household with the shipped curated set fills ≥90% of empty slots; never returns 0 while any diet-matching recipe exists. |
+| 1 | "An unexpected error occurred" ×2 on create household | Screenshot 1 shows the error while "Setting up your kitchen…" — consistent with an Aurora cold-resume (15–30 s) timeout surfaced as a generic error. To be confirmed in CloudWatch. | Longer/explicit timeout, one automatic retry, a specific "Kitchen is waking up, retrying…" state; error cleared on retry. |
+| 2 | Error persists after back → forward | Error lives in a controller that outlives the screen. | Reset create-household state on screen entry/exit. Widget test. |
+| 9 | Landed in "Kulkarni Kitchen 2" | Likely **not** an app defect: one Google account = one Cognito user = one household, and the founder created it on the simulator with the same account. The real gap is that sign-in drops you into an existing household silently. | Read-only diagnosis first (who/when created). UX: after sign-in, name the household you are in ("You're in Kulkarni Kitchen 2 — switch / leave"). Then the wipe (§32.5). |
+| 8 | Back button too small | `‹` glyph at ~16 px. | 44×44 hit target, bold chevron, app-wide via the shared `TopBar`/back component. |
+| 5 | "Setup" title | copy | "Setup your Household" on steps 1–4 (+ dinner-structure page). |
+| 6 | Diet chip copy | `dietary_tag.dart` display labels | Gluten free, Dairy free, Egg friendly; add Non-vegetarian (wire value `non_veg`, schema enum + migration of the CHECK/enum). |
+| 7 | Multi-select semantics | see §32.3 | implemented with #6/#10. |
+| 3 | Dinner structure not in setup | Setup shows "edit it from Settings → Dinner structure" only. | Toggle + conditional page (§32.1). Wizard step count becomes 4 or 5. |
+| 4 | Snacks missing from "Which meals?" | meals step lists Breakfast/Lunch/Dinner only | Add Snacks (1 slot/day); plan, auto-fill and shopping list honour it. |
+| 12 | Add item → unit list irrelevant (Toor dal offered l, ml, piece) | Units are a global list, not per ingredient | Per-category unit allow-list (Build B owns the data; Build A ships an interim category→units map for existing pantry catalog). |
+| 14 | URL import (Chicken Rara) | Seen: wrong units ("cup" for 300 g chicken, cloves), `&quot;` leaking, "salt or to taste" as a name, same ingredient listed twice. | HTML-entity decode; "to taste" → staple with no quantity (salt, pepper); merge duplicates by summing in canonical units; canonical-unit rewrite of steps. Full canonicalisation depends on Build B tables; Build A ships entity decode, to-taste, duplicate merge. |
+| 13 | Recipes empty/slow | Screenshots 7–8 had a role filter selected (Accompaniment/Carb) so the empty state may be the filter; the household-scoped recipe set also differed between households. Slow load unmeasured. | Empty-state copy for filtered views ("No Carb recipes — clear filter"); measure and fix load time. Library volume solved in Build B. |
+| 16 | Cook from Pantry | **Already built and deployed (W21)**; not post-beta. Reached from the pantry flow; needs a more discoverable entry point. | Verify entry point and surface it in Build C's navigation pass. |
+
+**New creations — Build B**
+- **B1 Ingredient catalog**: ~1,500 canonical ingredients, category, default unit, allowed units per category, alias table (arhar/tuvar → Toor dal; lal mirch / laal mirch / red chilli powder / Kashmiri lal mirch powder → one canonical entry per intended product).
+- **B2 Conversion table**: per category × unit grams (or ml) equivalents (e.g. 1 cup dal ≈ 200 g), used by pantry, shopping-list totals and URL/text import canonicalisation.
+- **B3 Recipe library**: ~500 original recipes, each with role, cuisine, **diet tags (≥1)**, canonical ingredients with canonical quantities, steps in canonical quantities; sampling QA by the founder.
+- **B4 Full import canonicalisation** (#14) on top of B1/B2.
+
+**New creations — Build C**
+- **C1 Weekly plan redesign** (hero): days as rows, meal columns (Breakfast · Lunch · Snack · Dinner), compact chips, tap to expand/open picker sheet (6.2); this-week navigation chevrons and "Today" highlight per 6.1; minimal vertical scrolling. Lunch/dinner cells stack multiple type chips (carb, sabzi/dal, accompaniment) compactly.
+- **C2 Shopping list redesign** per 10.1–10.3 (categorised list, staples check, swipe have-it/bought, share image).
+- **C3 Cook from Pantry** entry point.
+
+### 32.3 Dietary matching spec
+- Recipe side: `dietary_tags` is a set ⊆ {veg, non_veg, vegan, egg, jain, gluten_free, dairy_free}; at least one *style* tag required (validated on write and by the curation lint).
+- Household side: `styles` (≥1) and `modifiers` (0..2).
+- A recipe is eligible iff (`recipe.styles ∩ household.styles ≠ ∅`) **and** (`household.modifiers ⊆ recipe.tags`).
+- Tagging is explicit per recipe (a vegan recipe is tagged veg + vegan), so the matcher stays a plain set test; no "veg includes vegan" rules in code.
+- Existing recipes are re-tagged by migration using their current tag + AI classification, then spot-checked.
+
+### 32.4 Draft: allowed units by ingredient category (for founder approval)
+| Category | Units | Notes for review |
+|---|---|---|
+| Dal / pulses / grains / flour | g, kg, cup | no ml/l/piece |
+| Rice / poha / sooji | g, kg, cup | |
+| Spices (whole & ground) | g, tsp, tbsp | |
+| Salt, pepper | g, tsp, tbsp, **to taste (staple)** | only items allowed "to taste" |
+| Oils, ghee | ml, l, g, tbsp, tsp | ghee also g |
+| Milk, curd, cream | ml, l, cup, g | paneer/cheese: g, kg, piece |
+| Fresh vegetables | g, kg, piece | onion/tomato/potato also piece |
+| Leafy / herbs | bunch, g | curry leaves: sprig |
+| Ginger, garlic | g, piece (clove / inch) | |
+| Fruits | g, kg, piece | lemon/lime: piece |
+| Eggs | piece, dozen | anomaly: no grams |
+| Meat / fish | g, kg, piece | |
+| Sugar, jaggery | g, kg, tsp, tbsp | |
+| Sauces, pastes | g, ml, tbsp, tsp | |
+| Bread, packaged | piece, pack, g | anomaly: loaf/slice for bread |
+Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf), coconut (piece vs g), ginger/garlic (inch vs clove), curry leaves (sprig vs g), items with both liquid and solid forms (coconut milk, honey, curd).
+
+### 32.5 Build slotting, sequencing and risks
+- **Build A (first)**: #1, 2, 3, 4, 5, 6, 7, 8, 9 (UX + diagnosis), 10, 12 (interim), 14-lite, 13 (empty state/perf), 16 (verify). Includes schema/enum migration for `non_veg`, diet matcher, rotation fallback, setup wizard changes. TestFlight update + refreshed Android APK.
+- **Wipe procedure (before Build A ships to testers)**: (1) read-only dry run that lists every household, membership, menu, pantry/shopping/recipe row and Cognito user tied to the four emails; (2) founder approves the list; (3) execute in one transaction + `AdminDeleteUser` per Cognito user; (4) re-seed curated recipes; (5) verify counts = 0. Dev AWS only; prod does not exist yet. Testers sign in fresh afterwards (Google test-user list unchanged).
+- **Build B**: B1–B4; needs founder review of the unit table (§32.4) and a 50-recipe sample; AI generation cost estimated and approved before the run.
+- **Build C**: C1–C3 against the wireframes; founder reviews the plan screen on a device before TestFlight.
+- **Risks**: recipe generation quality and cost (B3); Aurora cold-resume masking real timeouts (#1); catalog alias collisions (Kashmiri vs plain lal mirch) — intended product semantics need founder calls case by case; plan layout density on small phones (C1) — verify on the smallest supported iPhone.
+- **Unchanged from §31**: PostHog slice (§31.4), Firebase/W22, store readiness — scheduled after Build C unless re-prioritised.
