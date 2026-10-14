@@ -55,3 +55,11 @@ export const DELETE_STEPS: readonly DeleteStep[] = [
   { table: 'households', keyExpr: 'id::text', where: `id = ANY($1::uuid[])` },
   { table: 'users', keyExpr: 'id::text', where: `id = ANY($2::uuid[])` },
 ];
+
+/**
+ * Postgres rejects a statement whose bound parameter is never referenced, and
+ * most steps only use one of `$1`/`$2`. This always references both (a no-op
+ * predicate) so every step can be run with the same two parameters.
+ */
+export const scopedWhere = (step: DeleteStep): string =>
+  `(${step.where}) AND $1::uuid[] IS NOT NULL AND $2::uuid[] IS NOT NULL`;
