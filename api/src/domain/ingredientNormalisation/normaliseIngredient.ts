@@ -39,16 +39,9 @@ const stripNameDebris = (name: string): string => {
   return withoutPieceOf.replace(/^of\s+/i, '').trim();
 };
 
-const normaliseUnit = (unit: string | null): string | null => {
-  if (unit === null) {
-    return null;
-  }
-  const cleaned = cleanText(unit);
-  if (cleaned === '') {
-    return null;
-  }
-  return canonicaliseUnit(cleaned) ?? cleaned.toLowerCase();
-};
+/** Canonical spelling for a known unit; an unrecognised non-empty unit is kept lowercased (never replaced by a default); blank is null. */
+const normaliseUnit = (cleanedUnit: string): string | null =>
+  cleanedUnit === '' ? null : (canonicaliseUnit(cleanedUnit) ?? cleanedUnit.toLowerCase());
 
 /**
  * The per-row half of the shared import normalisation (URL JSON-LD and
@@ -59,20 +52,19 @@ const normaliseUnit = (unit: string | null): string | null => {
 export const normaliseIngredient = (input: ParsedIngredient): NormalisedIngredient => {
   const raw = cleanText(input.raw);
   const cleanedName = cleanText(input.name);
-  const cleanedNotes = input.notes === null ? '' : cleanText(input.notes);
-  const cleanedUnit = input.unit === null ? '' : cleanText(input.unit);
+  const cleanedNotes = cleanText(input.notes ?? '');
+  const cleanedUnit = cleanText(input.unit ?? '');
 
   const toTaste = [cleanedName, cleanedNotes, cleanedUnit].some((text) => TASTE_PHRASE.test(text));
+  const strip = (text: string): string => (toTaste ? stripTastePhrase(text) : text);
 
-  const strippedName = stripNameDebris(toTaste ? stripTastePhrase(cleanedName) : cleanedName);
+  const strippedName = stripNameDebris(strip(cleanedName));
   const name = strippedName === '' ? raw : strippedName;
-  const notes = toTaste ? stripTastePhrase(cleanedNotes) : cleanedNotes;
+  const notes = strip(cleanedNotes) === '' ? null : strip(cleanedNotes);
 
   if (toTaste) {
-    return { raw, name, quantity: null, unit: null, notes: notes === '' ? null : notes, isStaple: isSaltOrPepper(name) };
+    return { raw, name, quantity: null, unit: null, notes, isStaple: isSaltOrPepper(name) };
   }
-
-  const quantity = input.quantity;
-  const unit = normaliseUnit(input.unit) ?? (quantity !== null ? 'piece' : null);
-  return { raw, name, quantity, unit, notes: notes === '' ? null : notes, isStaple: false };
+  const unit = normaliseUnit(cleanedUnit) ?? (input.quantity === null ? null : 'piece');
+  return { raw, name, quantity: input.quantity, unit, notes, isStaple: false };
 };

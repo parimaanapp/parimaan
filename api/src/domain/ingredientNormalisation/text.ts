@@ -56,9 +56,8 @@ export const decodeHtmlEntities = (input: string): string => {
   return current;
 };
 
-/** Decodes entities, converts non-breaking spaces, collapses all whitespace runs to one space and trims. */
+/** Decodes entities, collapses (JS \s includes NBSP) all whitespace runs to one space and trims. */
 export const cleanText = (input: string): string =>
   decodeHtmlEntities(input)
-    .replace(/[  ​]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

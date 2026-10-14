@@ -28,7 +28,18 @@ interface Amount {
   readonly unit: string | null;
 }
 
-const sumConvertible = (a: Amount & { quantity: number }, b: Amount & { quantity: number }): Amount | null => {
+type QuantifiedAmount = Amount & { quantity: number };
+
+/** cup + ml/l: the sum is expressed in the ml/l row's own unit; null when `volume` is not ml/l or `cup` is not a cup. */
+const sumCupWithVolume = (cup: QuantifiedAmount, volume: QuantifiedAmount): Amount | null => {
+  const volumeDim = dimensionOf(volume.unit);
+  if (cup.unit !== 'cup' || volumeDim === null || volumeDim.family !== 'volume') {
+    return null;
+  }
+  return { quantity: round((cup.quantity * ML_PER_CUP) / volumeDim.factor + volume.quantity), unit: volume.unit };
+};
+
+const sumConvertible = (a: QuantifiedAmount, b: QuantifiedAmount): Amount | null => {
   if (a.unit === b.unit) {
     return { quantity: round(a.quantity + b.quantity), unit: a.unit };
   }
@@ -37,16 +48,7 @@ const sumConvertible = (a: Amount & { quantity: number }, b: Amount & { quantity
   if (dimA !== null && dimB !== null && dimA.family === dimB.family) {
     return { quantity: round(a.quantity + (b.quantity * dimB.factor) / dimA.factor), unit: a.unit };
   }
-  // cup <-> ml/l: the result is expressed in the ml/l row's unit.
-  const cupIsA = a.unit === 'cup' && dimB?.family === 'volume';
-  const cupIsB = b.unit === 'cup' && dimA?.family === 'volume';
-  if (cupIsA && dimB !== null) {
-    return { quantity: round((a.quantity * ML_PER_CUP) / dimB.factor + b.quantity), unit: b.unit };
-  }
-  if (cupIsB && dimA !== null) {
-    return { quantity: round(a.quantity + (b.quantity * ML_PER_CUP) / dimA.factor), unit: a.unit };
-  }
-  return null;
+  return sumCupWithVolume(a, b) ?? sumCupWithVolume(b, a);
 };
 
 /** Combines two amounts, or returns null when the units are not safely addable. A quantity-less side defers to the other. */

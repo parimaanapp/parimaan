@@ -1422,6 +1422,9 @@ type RecipeIngredientDraft {
   quantity: Float
   unit: String
   notes: String
+
+  """True for salt/pepper written "to taste"-style; the import normaliser sets it, the user may still change it before saving. Additive and nullable so older clients are unaffected."""
+  isStaple: Boolean
 }
 
 """
