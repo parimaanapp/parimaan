@@ -1,0 +1,57 @@
+/**
+ * FK-safe deletion order for the account wipe (E2E_MVP_PLAN.md §32.5).
+ *
+ * Children before parents, derived from `api/migrations` (the FK graph is
+ * re-derived and asserted against this list in `steps.test.ts`, so adding a
+ * table or FK without updating this file fails the suite).
+ *
+ * Parameters in every `where`: `$1` = uuid[] of households being deleted,
+ * `$2` = uuid[] of users being deleted. The same predicate is used to list
+ * the rows (dry run) and to delete them, inside the same transaction, so the
+ * listing is exactly what gets deleted.
+ *
+ * Table names are constants here, never user input.
+ */
+export interface DeleteStep {
+  readonly table: string;
+  /** SQL expression yielding the row's identifying key as text. */
+  readonly keyExpr: string;
+  readonly where: string;
+}
+
+const RECIPES_OF_DELETED_HOUSEHOLDS = `SELECT id FROM recipes WHERE household_id = ANY($1::uuid[])`;
+
+export const DELETE_STEPS: readonly DeleteStep[] = [
+  {
+    table: 'shopping_list_items',
+    keyExpr: 'id::text',
+    where: `shopping_list_id IN (SELECT id FROM shopping_lists WHERE household_id = ANY($1::uuid[]))`,
+  },
+  { table: 'shopping_lists', keyExpr: 'id::text', where: `household_id = ANY($1::uuid[])` },
+  {
+    table: 'menu_items',
+    keyExpr: 'id::text',
+    where: `menu_id IN (SELECT id FROM menus WHERE household_id = ANY($1::uuid[])) OR recipe_id IN (${RECIPES_OF_DELETED_HOUSEHOLDS})`,
+  },
+  { table: 'menus', keyExpr: 'id::text', where: `household_id = ANY($1::uuid[])` },
+  {
+    table: 'recipe_ingredients',
+    keyExpr: 'id::text',
+    where: `recipe_id IN (${RECIPES_OF_DELETED_HOUSEHOLDS})`,
+  },
+  { table: 'recipes', keyExpr: 'id::text', where: `household_id = ANY($1::uuid[])` },
+  { table: 'pantry_items', keyExpr: 'id::text', where: `household_id = ANY($1::uuid[])` },
+  {
+    table: 'notification_preferences',
+    keyExpr: `user_id::text || ':' || household_id::text`,
+    where: `household_id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[])`,
+  },
+  {
+    table: 'household_memberships',
+    keyExpr: 'id::text',
+    where: `household_id = ANY($1::uuid[]) OR user_id = ANY($2::uuid[])`,
+  },
+  { table: 'household_settings', keyExpr: 'household_id::text', where: `household_id = ANY($1::uuid[])` },
+  { table: 'households', keyExpr: 'id::text', where: `id = ANY($1::uuid[])` },
+  { table: 'users', keyExpr: 'id::text', where: `id = ANY($2::uuid[])` },
+];
