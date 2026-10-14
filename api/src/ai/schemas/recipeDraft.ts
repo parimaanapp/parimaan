@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { coerceQuantityText } from '../../domain/ingredientString.js';
+import type { ParsedIngredient } from '../../domain/ingredientString.js';
+import { cleanText, normaliseIngredientList } from '../../domain/ingredientNormalisation/index.js';
 import { CUISINE_TIER1_VALUES } from '../../domain/cuisineTiers.js';
 import type { CuisineTier1 } from '../../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../../domain/dietaryTags.js';
@@ -71,6 +73,8 @@ export interface RecipeDraftIngredientResult {
   quantity: number | null;
   unit: string | null;
   notes: string | null;
+  /** True for salt/pepper written "to taste" — set by the shared import normalisation, never by the model. */
+  isStaple: boolean;
 }
 
 /**
@@ -147,7 +151,7 @@ const buildRawIngredientLine = (ingredient: GeminiRecipeDraft['ingredients'][num
  * a draft the review screen shows as clean must not fail validation the
  * moment the user confirms it unmodified.
  */
-const toIngredientDraft = (ingredient: GeminiRecipeDraft['ingredients'][number]): RecipeDraftIngredientResult => {
+const toParsedIngredient = (ingredient: GeminiRecipeDraft['ingredients'][number]): ParsedIngredient => {
   const { quantity, leftoverText } = coerceQuantityText(ingredient.quantity ?? '');
   const name = leftoverText === null ? ingredient.name : `${ingredient.name} (${leftoverText})`.slice(0, MAX_INGREDIENT_NAME_LENGTH);
   return {
@@ -157,6 +161,11 @@ const toIngredientDraft = (ingredient: GeminiRecipeDraft['ingredients'][number])
     unit: ingredient.unit ?? null,
     notes: ingredient.notes ?? null,
   };
+};
+
+const cleanNullable = (value: string | null | undefined): string | null => {
+  const cleaned = cleanText(value ?? '');
+  return cleaned === '' ? null : cleaned;
 };
 
 /**
@@ -181,8 +190,8 @@ export const toRecipeDraft = (raw: GeminiRecipeDraft): RecipeDraftResult => {
     .filter((warning): warning is string => warning !== null);
 
   return {
-    title: raw.title ?? null,
-    description: raw.description ?? null,
+    title: cleanNullable(raw.title),
+    description: cleanNullable(raw.description),
     servings: raw.servings ?? null,
     prepMin: raw.prepMin ?? null,
     cookMin: raw.cookMin ?? null,
@@ -190,8 +199,8 @@ export const toRecipeDraft = (raw: GeminiRecipeDraft): RecipeDraftResult => {
     cuisineTier2: raw.cuisineTier2 ?? null,
     dietaryTags,
     role,
-    ingredients: raw.ingredients.map(toIngredientDraft),
-    steps: raw.steps,
+    ingredients: normaliseIngredientList(raw.ingredients.map(toParsedIngredient)),
+    steps: raw.steps.map(cleanText).filter((step) => step !== ''),
     sourceUrl: null,
     warnings,
   };

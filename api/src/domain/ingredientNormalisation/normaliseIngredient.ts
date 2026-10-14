@@ -28,12 +28,16 @@ const stripTastePhrase = (text: string): string =>
     .replace(/\(\s*\)/g, '')
     .trim();
 
-/** Removes quote/inch-mark debris and a leading "of" ("\" piece of cinnamon" style leftovers). */
-const stripNameDebris = (name: string): string =>
-  name
-    .replace(/^[\s"'“”‘’″′,;:.-]+/, '')
-    .replace(/^of\s+/i, '')
-    .trim();
+const QUOTE_DEBRIS = /^[\s"'“”‘’″′,;:.-]+/;
+
+/** Removes quote/inch-mark debris, and the "piece of" it leaves behind ("\" piece of cinnamon"), plus a bare leading "of". */
+const stripNameDebris = (name: string): string => {
+  const debris = QUOTE_DEBRIS.exec(name)?.[0] ?? '';
+  const hadQuote = /["“”″]/.test(debris);
+  const withoutDebris = name.slice(debris.length);
+  const withoutPieceOf = hadQuote ? withoutDebris.replace(/^(?:pieces?|pcs?)\s+of\s+/i, '') : withoutDebris;
+  return withoutPieceOf.replace(/^of\s+/i, '').trim();
+};
 
 const normaliseUnit = (unit: string | null): string | null => {
   if (unit === null) {

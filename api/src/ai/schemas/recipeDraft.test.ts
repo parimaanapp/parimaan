@@ -79,10 +79,10 @@ describe('toRecipeDraft — D4 enum leniency + quantity coercion (§13.2.5, §13
     expect(draft.role).toBe('sabzi_dal');
     expect(draft.dietaryTags).toEqual(['veg', 'gluten_free']);
     expect(draft.ingredients).toEqual([
-      { raw: '1 cup rajma', name: 'rajma', quantity: 1, unit: 'cup', notes: 'soaked overnight' },
-      { raw: '2 onion', name: 'onion', quantity: 2, unit: null, notes: null },
+      { raw: '1 cup rajma', name: 'rajma', quantity: 1, unit: 'cup', notes: 'soaked overnight', isStaple: false },
+      { raw: '2 onion', name: 'onion', quantity: 2, unit: 'piece', notes: null, isStaple: false },
     ]);
-    expect(draft.steps).toBe(wellFormed.steps);
+    expect(draft.steps).toEqual(wellFormed.steps);
     expect(draft.warnings).toEqual([]);
     expect(draft.sourceUrl).toBeNull();
   });
@@ -161,5 +161,46 @@ describe('toRecipeDraft — D4 enum leniency + quantity coercion (§13.2.5, §13
       ingredients: [{ name: 'x'.repeat(MAX_INGREDIENT_NAME_LENGTH), quantity: 'y'.repeat(200), unit: null, notes: null }],
     });
     expect(draft.ingredients[0]!.name.length).toBeLessThanOrEqual(MAX_INGREDIENT_NAME_LENGTH);
+  });
+});
+
+describe('toRecipeDraft — shared import normalisation (A4)', () => {
+  const ingredients = (...rows: Array<[string, string | null, string | null, string | null]>) =>
+    rows.map(([name, quantity, unit, notes]) => ({ name, quantity, unit, notes }));
+
+  it('merges duplicates, canonicalises units, flags salt as staple and decodes entities (text-paste path)', () => {
+    const draft = toRecipeDraft({
+      ...wellFormed,
+      title: 'Chicken &amp; Rice',
+      description: 'A  &quot;rich&quot; curry',
+      ingredients: ingredients(
+        ['Chicken', '300', 'gms', null],
+        ['Ginger garlic paste', '1', 'tbsp', 'marinade'],
+        ['Salt', null, null, 'to taste'],
+        ['Water', '1/2', 'cup', null],
+        ['ginger garlic paste', '1', 'Tablespoon', 'gravy'],
+        ['salt or to taste', null, null, null],
+        ['Water', '0.5', 'cups', null],
+        ['Cloves', '6', null, null],
+        ['&quot; piece of cinnamon', '1', null, null],
+      ),
+      steps: ['Mix&nbsp;well &amp;   serve.'],
+    });
+    expect(draft.title).toBe('Chicken & Rice');
+    expect(draft.description).toBe('A "rich" curry');
+    expect(draft.steps).toEqual(['Mix well & serve.']);
+    expect(draft.ingredients.map(({ name, quantity, unit, notes, isStaple }) => ({ name, quantity, unit, notes, isStaple }))).toEqual([
+      { name: 'Chicken', quantity: 300, unit: 'g', notes: null, isStaple: false },
+      { name: 'Ginger garlic paste', quantity: 2, unit: 'tbsp', notes: 'marinade, gravy', isStaple: false },
+      { name: 'Salt', quantity: null, unit: null, notes: null, isStaple: true },
+      { name: 'Water', quantity: 1, unit: 'cup', notes: null, isStaple: false },
+      { name: 'Cloves', quantity: 6, unit: 'piece', notes: null, isStaple: false },
+      { name: 'cinnamon', quantity: 1, unit: 'piece', notes: null, isStaple: false },
+    ]);
+  });
+
+  it('treats a "to taste" quantity phrase as no quantity rather than folding it into the name', () => {
+    const draft = toRecipeDraft({ ...wellFormed, ingredients: ingredients(['Salt', 'to taste', null, null]) });
+    expect(draft.ingredients[0]).toMatchObject({ name: 'Salt', quantity: null, unit: null, isStaple: true });
   });
 });
