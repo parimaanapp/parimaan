@@ -61,6 +61,43 @@ void main() {
       expect(find.text('Sign out'), findsOne);
     });
 
+    testWidgets('shows "You belong to N households" only when N > 1 (A9)', (
+      WidgetTester tester,
+    ) async {
+      await pumpHouseholdRoute(
+        tester,
+        _route,
+        repository: FakeHouseholdRepository(
+          result: testHousehold,
+          fetchResult: testHouseholdWithMembers,
+          myHouseholdsResult: <Household>[
+            testHousehold,
+            testHouseholdWithMembers,
+          ],
+        ),
+      );
+
+      expect(find.byKey(SettingsHubScreen.householdCountRowKey), findsOne);
+      expect(find.text('You belong to 2 households'), findsOne);
+      expect(find.text('Kulkarni Kitchen'), findsOne);
+    });
+
+    testWidgets('hides the household count row for a single household', (
+      WidgetTester tester,
+    ) async {
+      await pumpHouseholdRoute(
+        tester,
+        _route,
+        repository: FakeHouseholdRepository(
+          result: testHousehold,
+          fetchResult: testHouseholdWithMembers,
+          myHouseholdsResult: <Household>[testHousehold],
+        ),
+      );
+
+      expect(find.byKey(SettingsHubScreen.householdCountRowKey), findsNothing);
+    });
+
     testWidgets('Members navigates to the members list', (
       WidgetTester tester,
     ) async {
@@ -72,54 +109,53 @@ void main() {
       expect(location(harness.router), '/household/household-1/members');
     });
 
-    testWidgets(
-      'the preference rows reach the wizard screens in edit mode',
-      (WidgetTester tester) async {
-        // A list of records rather than a map: `Key` overrides `==`, so it
-        // cannot be a const map key.
-        const List<(Key, String)> expected = <(Key, String)>[
-          (
-            SettingsHubScreen.mealsRowKey,
-            '/household/household-1/settings/meals',
-          ),
-          (
-            SettingsHubScreen.lunchStructureRowKey,
-            '/household/household-1/settings/meal-structure/lunch',
-          ),
-          (
-            SettingsHubScreen.dinnerStructureRowKey,
-            '/household/household-1/settings/meal-structure/dinner',
-          ),
-          (
-            SettingsHubScreen.cuisineRowKey,
-            '/household/household-1/settings/cuisine',
-          ),
-          (
-            SettingsHubScreen.dietaryRowKey,
-            '/household/household-1/settings/dietary',
-          ),
-          // Two rows, one destination: screen 2.6 owns dietary tags, allergens
-          // and the skip list together, in a single patch.
-          (
-            SettingsHubScreen.allergensRowKey,
-            '/household/household-1/settings/dietary',
-          ),
-        ];
+    testWidgets('the preference rows reach the wizard screens in edit mode', (
+      WidgetTester tester,
+    ) async {
+      // A list of records rather than a map: `Key` overrides `==`, so it
+      // cannot be a const map key.
+      const List<(Key, String)> expected = <(Key, String)>[
+        (
+          SettingsHubScreen.mealsRowKey,
+          '/household/household-1/settings/meals',
+        ),
+        (
+          SettingsHubScreen.lunchStructureRowKey,
+          '/household/household-1/settings/meal-structure/lunch',
+        ),
+        (
+          SettingsHubScreen.dinnerStructureRowKey,
+          '/household/household-1/settings/meal-structure/dinner',
+        ),
+        (
+          SettingsHubScreen.cuisineRowKey,
+          '/household/household-1/settings/cuisine',
+        ),
+        (
+          SettingsHubScreen.dietaryRowKey,
+          '/household/household-1/settings/dietary',
+        ),
+        // Two rows, one destination: screen 2.6 owns dietary tags, allergens
+        // and the skip list together, in a single patch.
+        (
+          SettingsHubScreen.allergensRowKey,
+          '/household/household-1/settings/dietary',
+        ),
+      ];
 
-        for (final (Key key, String path) in expected) {
-          final HouseholdHarness harness = await pumpHouseholdRoute(
-            tester,
-            _route,
-          );
+      for (final (Key key, String path) in expected) {
+        final HouseholdHarness harness = await pumpHouseholdRoute(
+          tester,
+          _route,
+        );
 
-          await _reveal(tester, key);
-          await tester.tap(find.byKey(key));
-          await tester.pumpAndSettle();
+        await _reveal(tester, key);
+        await tester.tap(find.byKey(key));
+        await tester.pumpAndSettle();
 
-          expect(location(harness.router), path);
-        }
-      },
-    );
+        expect(location(harness.router), path);
+      }
+    });
 
     testWidgets(
       'Notifications navigates to the real four-toggle screen (W8 S9), not '
