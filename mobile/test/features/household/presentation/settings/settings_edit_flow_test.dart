@@ -15,6 +15,7 @@ import 'package:mobile/features/household/presentation/create/wizard_step_scaffo
 import 'package:mobile/features/household/state/current_household_controller.dart';
 import 'package:mobile/features/household/state/household_wizard_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/ui/components/p_top_bar.dart';
 
 import '../../../../support/fake_household_repository.dart';
 import '../../../../support/household_fixtures.dart';
@@ -196,7 +197,7 @@ void main() {
         _mealStructureRoute,
       );
 
-      await tester.tap(find.text('‹'));
+      await tester.tap(find.byType(PTopBarBackButton));
       await tester.pumpAndSettle();
 
       expect(location(harness.router), _settingsRoute);

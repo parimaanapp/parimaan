@@ -4,8 +4,13 @@ import 'package:mobile/shared/ui/components/p_icon_button.dart';
 import 'package:mobile/shared/ui/components/p_top_bar.dart';
 
 import '../../../support/golden_harness.dart';
+import '../../../support/tolerant_golden_comparator.dart';
 
 void main() {
+  // The back chevron is a drawn path whose anti-aliasing differs between macOS
+  // and the CI runner; tolerate <= 0.5% diff for this file only.
+  useTolerantGoldenComparator();
+
   goldenTest(
     'PTopBar renders with and without its optional slots',
     fileName: 'p_top_bar',
