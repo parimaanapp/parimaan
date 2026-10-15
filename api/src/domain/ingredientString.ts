@@ -15,7 +15,7 @@ export interface ParsedIngredient {
 }
 
 /** Matches a mixed number ("1 1/2"), a simple fraction ("1/2"), or a plain int/decimal ("2", "1.5") — the only quantity shapes seen across S1's 20 real fixtures. */
-const NUMERIC_TOKEN_SOURCE = '\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d+(?:\\.\\d+)?';
+const NUMERIC_TOKEN_SOURCE = '\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d+(?:\\.\\d+)?';
 const LEADING_QUANTITY_PATTERN = new RegExp(`^\\s*(${NUMERIC_TOKEN_SOURCE})\\s*`);
 const PURE_NUMERIC_TOKEN_PATTERN = new RegExp(`^(${NUMERIC_TOKEN_SOURCE})$`);
 
@@ -60,7 +60,7 @@ const parseQuantityToken = (token: string): number | null => {
     }
     return sanitizeQuantity(Number(fractionMatch[1]) / denominator);
   }
-  return sanitizeQuantity(Number(token));
+  return sanitizeQuantity(Number(token.replace(/,/g, '')));
 };
 
 const sanitizeQuantity = (value: number): number | null => (Number.isFinite(value) && value >= 0 && value <= MAX_REASONABLE_QUANTITY ? value : null);
@@ -77,12 +77,13 @@ const sanitizeQuantity = (value: number): number | null => (Number.isFinite(valu
  * finding on this). One utility, two call sites, not two designs.
  */
 export const coerceQuantityText = (text: string): { quantity: number | null; leftoverText: string | null } => {
-  const trimmed = text.trim();
-  if (trimmed === '') {
+  const original = text.trim();
+  if (original === '') {
     return { quantity: null, leftoverText: null };
   }
+  const trimmed = normaliseUnicodeFractions(original).replace(/\s+/g, ' ').trim();
   if (!PURE_NUMERIC_TOKEN_PATTERN.test(trimmed)) {
-    return { quantity: null, leftoverText: trimmed };
+    return { quantity: null, leftoverText: original };
   }
   // A numeric-shaped token (e.g. "1/0", or a digit run past
   // `MAX_REASONABLE_QUANTITY`) that `parseQuantityToken` itself rejects
@@ -90,16 +91,35 @@ export const coerceQuantityText = (text: string): { quantity: number | null; lef
   // silently losing it — the same "never drop the source text" contract
   // this module documents everywhere else.
   const quantity = parseQuantityToken(trimmed);
-  return quantity === null ? { quantity: null, leftoverText: trimmed } : { quantity, leftoverText: null };
+  return quantity === null ? { quantity: null, leftoverText: original } : { quantity, leftoverText: null };
 };
 
-/** Consumes a single leading word from `text` if it is a recognised unit spelling (gms, tablespoons, pcs, ...), see `ingredientNormalisation/units.ts`. */
+const FULL_RANGE_PATTERN = new RegExp(`^(${NUMERIC_TOKEN_SOURCE})\\s*(?:-|\\u2013|\\u2014|to)\\s*(${NUMERIC_TOKEN_SOURCE})$`, 'i');
+
+/** A whole quantity string that is a range ("2-3", "2 to 3", "1/2-1"): the lower bound plus the range as a note, or null when it is not a range. */
+export const parseQuantityRange = (text: string): { quantity: number; rangeNote: string } | null => {
+  const match = FULL_RANGE_PATTERN.exec(normaliseUnicodeFractions(text.trim()).replace(/\s+/g, ' '));
+  const quantity = match ? parseQuantityToken(match[1]!) : null;
+  return match && quantity !== null ? { quantity, rangeNote: `${match[1]}-${match[2]}` } : null;
+};
+
+/** Words that, right after "no", make it the English "no" ("no salt added", "no sugar") rather than the count abbreviation "no."/"nos". */
+const NO_MODIFIER_WORDS = new Set(['salt', 'added', 'sugar', 'fat', 'sodium', 'free', 'low', 'reduced', 'preservative', 'preservatives', 'oil', 'dairy', 'gluten', 'seeds', 'skin', 'bone', 'stock', 'cream']);
+const COUNT_ABBREVIATION_PATTERN = /^nos?\.?$/i;
+
+/** Consumes a single leading word from `text` if it is a recognised unit spelling (gms, tablespoons, pcs, ...), see `ingredientNormalisation/units.ts`. Called only directly after a numeric quantity. */
 const consumeUnit = (text: string): { unit: string | null; rest: string } => {
   const match = /^\s*(\S+)\s*/.exec(text);
   if (!match) {
     return { unit: null, rest: text };
   }
-  const unit = canonicaliseUnit(match[1]!);
+  const word = match[1]!;
+  if (COUNT_ABBREVIATION_PATTERN.test(word)) {
+    const nextWord = /^\s*([^\s.,;]+)/.exec(text.slice(match[0].length))?.[1]?.toLowerCase();
+    const isCount = nextWord !== undefined && !NO_MODIFIER_WORDS.has(nextWord);
+    return isCount ? { unit: 'piece', rest: text.slice(match[0].length) } : { unit: null, rest: text };
+  }
+  const unit = canonicaliseUnit(word);
   return unit === null ? { unit: null, rest: text } : { unit, rest: text.slice(match[0].length) };
 };
 
@@ -129,6 +149,32 @@ const extractNameAndNotes = (text: string): { name: string; notes: string | null
   return { name: trimmed, notes: null };
 };
 
+/** "x 400 g" / "x 400g" right after a count: a multipack's per-pack size, kept as a note. */
+const MULTIPACK_PATTERN = /^\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*([a-zA-Z]+)\.?\s+/;
+
+const consumeMultipack = (text: string): { packNote: string | null; rest: string } => {
+  const match = MULTIPACK_PATTERN.exec(text);
+  const packUnit = match ? canonicaliseUnit(match[2]!) : null;
+  return match && packUnit !== null ? { packNote: `${match[1]} ${packUnit}`, rest: text.slice(match[0].length) } : { packNote: null, rest: text };
+};
+
+const joinNotes = (parts: ReadonlyArray<string | null>): string | null => parts.filter((part): part is string => part !== null && part !== '').join(', ') || null;
+
+/** Shared tail of parsing once the leading quantity (and optional range note) has been consumed. A unit word is only taken when a name remains after it, so "6 cloves" keeps "cloves" as the name. */
+const parseAfterQuantity = (raw: string, afterQuantity: string, quantity: number | null, rangeNote: string | null): ParsedIngredient => {
+  const { packNote, rest: afterPack } = consumeMultipack(afterQuantity);
+  const { sizeNote, rest: afterSize } = consumeSizeMarker(afterPack, quantity);
+  const consumed = consumeUnit(afterSize);
+  const unitHasName = consumed.unit !== null && (packNote !== null || consumed.rest.replace(/^of\s+/i, '').trim() !== '');
+  const unit = unitHasName ? consumed.unit : null;
+  const rest = unitHasName ? consumed.rest.replace(/^of\s+/i, '') : afterSize;
+  const { name, notes: extractedNotes } = extractNameAndNotes(rest);
+  return { raw, name: name === '' ? raw : name, quantity, unit, notes: joinNotes([rangeNote, packNote, sizeNote, extractedNotes]) };
+};
+
+/** No real ingredient line is this long; longer input is truncated so every regex below runs on bounded text. */
+const MAX_INGREDIENT_LINE_LENGTH = 1000;
+
 /**
  * Parses a free-text ingredient line ("2 cups atta, sifted") into its
  * quantity/unit/name/notes parts. Never drops the line: a string with no
@@ -138,21 +184,6 @@ const extractNameAndNotes = (text: string): { name: string; notes: string | null
  * AI parse that can't fully structure a line, same "never discard the
  * source text" contract described on `ParsedIngredient.raw`.
  */
-/** Shared tail of parsing once the leading quantity (and optional range note) has been consumed. A unit word is only taken when a name remains after it, so "6 cloves" keeps "cloves" as the name. */
-const parseAfterQuantity = (raw: string, afterQuantity: string, quantity: number | null, rangeNote: string | null): ParsedIngredient => {
-  const { sizeNote, rest: afterSize } = consumeSizeMarker(afterQuantity, quantity);
-  const consumed = consumeUnit(afterSize);
-  const unitHasName = consumed.unit !== null && consumed.rest.replace(/^of\s+/i, '').trim() !== '';
-  const unit = unitHasName ? consumed.unit : null;
-  const rest = unitHasName ? consumed.rest.replace(/^of\s+/i, '') : afterSize;
-  const { name, notes: extractedNotes } = extractNameAndNotes(rest);
-  const notes = [rangeNote, sizeNote, extractedNotes].filter((part): part is string => part !== null).join(', ') || null;
-  return { raw, name: name === '' ? raw : name, quantity, unit, notes };
-};
-
-/** No real ingredient line is this long; longer input is truncated so every regex below runs on bounded text. */
-const MAX_INGREDIENT_LINE_LENGTH = 1000;
-
 export const parseIngredientString = (raw: string): ParsedIngredient => {
   const trimmedRaw = raw.slice(0, MAX_INGREDIENT_LINE_LENGTH).trim();
   const workingText = normaliseUnicodeFractions(trimmedRaw);

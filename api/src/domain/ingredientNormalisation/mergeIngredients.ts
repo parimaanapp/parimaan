@@ -86,13 +86,15 @@ const isPrepNote = (inner: string): boolean =>
  * "Dal (whole)" and "Dal (split)" never merge. Input is capped and the
  * parenthetical pattern excludes "(" so keying is linear-time.
  */
-export const ingredientMergeKey = (name: string): string =>
-  name
-    .slice(0, MAX_KEY_SOURCE_LENGTH)
-    .toLowerCase()
+export const ingredientMergeKey = (name: string): string => {
+  const capped = name.slice(0, MAX_KEY_SOURCE_LENGTH).normalize('NFC').toLowerCase();
+  const key = capped
     .replace(/\(([^()]*)\)/g, (_match, inner: string) => (isPrepNote(inner) ? ' ' : ` ${inner} `))
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ')
     .trim();
+  // Names with no letters/digits at all (emoji, "???") must never collapse into one shared empty key.
+  return key === '' ? capped.trim() : key;
+};
 
 const joinDistinct = (parts: readonly (string | null)[], separator: string): string | null => {
   const seen = new Set<string>();

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { coerceQuantityText } from '../../domain/ingredientString.js';
+import { coerceQuantityText, parseQuantityRange } from '../../domain/ingredientString.js';
 import type { ParsedIngredient } from '../../domain/ingredientString.js';
 import { cleanText, normaliseIngredientList } from '../../domain/ingredientNormalisation/index.js';
 import { CUISINE_TIER1_VALUES } from '../../domain/cuisineTiers.js';
@@ -151,15 +151,22 @@ const buildRawIngredientLine = (ingredient: GeminiRecipeDraft['ingredients'][num
  * a draft the review screen shows as clean must not fail validation the
  * moment the user confirms it unmodified.
  */
+/** A model quantity string: a range gives its lower bound plus a range note; otherwise `coerceQuantityText` (fractions, thousands separators, vague text). */
+const coerceModelQuantity = (text: string): { quantity: number | null; leftoverText: string | null; rangeNote: string | null } => {
+  const range = parseQuantityRange(text);
+  return range === null ? { ...coerceQuantityText(text), rangeNote: null } : { quantity: range.quantity, leftoverText: null, rangeNote: range.rangeNote };
+};
+
 const toParsedIngredient = (ingredient: GeminiRecipeDraft['ingredients'][number]): ParsedIngredient => {
-  const { quantity, leftoverText } = coerceQuantityText(ingredient.quantity ?? '');
+  const { quantity, leftoverText, rangeNote } = coerceModelQuantity(ingredient.quantity ?? '');
   const name = leftoverText === null ? ingredient.name : `${ingredient.name} (${leftoverText})`.slice(0, MAX_INGREDIENT_NAME_LENGTH);
+  const notes = [rangeNote, ingredient.notes ?? null].filter((part): part is string => part !== null && part !== '').join(', ');
   return {
     raw: buildRawIngredientLine(ingredient) || ingredient.name,
     name,
     quantity,
     unit: ingredient.unit ?? null,
-    notes: ingredient.notes ?? null,
+    notes: notes === '' ? null : notes,
   };
 };
 
