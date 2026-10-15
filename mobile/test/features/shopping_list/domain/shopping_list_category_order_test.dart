@@ -127,10 +127,13 @@ void main() {
       });
     });
 
-    test('an unknown snake_case value falls back to a spaced, capitalised label', () {
-      expect(shoppingListCategoryLabel('fresh_herbs'), 'Fresh herbs');
-      expect(shoppingListCategoryLabel(''), '');
-    });
+    test(
+      'an unknown snake_case value falls back to a spaced, capitalised label',
+      () {
+        expect(shoppingListCategoryLabel('fresh_herbs'), 'Fresh herbs');
+        expect(shoppingListCategoryLabel(''), '');
+      },
+    );
   });
 
   group('approved categories all have a defined slot', () {
@@ -150,10 +153,15 @@ void main() {
       ).map((ShoppingListCategoryGroup g) => g.category).toList();
       expect(order.last, 'other');
       expect(order[order.length - 2], 'zzz_unknown');
-      expect(
-        order.sublist(0, 7).toSet(),
-        <String>{'spice', 'eggs', 'oil', 'meat_fish', 'bakery', 'snacks', 'beverages'},
-      );
+      expect(order.sublist(0, 7).toSet(), <String>{
+        'spice',
+        'eggs',
+        'oil',
+        'meat_fish',
+        'bakery',
+        'snacks',
+        'beverages',
+      });
     });
   });
 }

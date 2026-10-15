@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/shopping_list/data/shopping_list_repository.dart';
@@ -563,9 +562,13 @@ void main() {
         find.byKey(ChecklistCheckBox.boxKey('item-1')),
       );
       expect(box, const Size(18, 18));
-      final BoxDecoration decoration = tester
-          .widget<Container>(find.byKey(ChecklistCheckBox.boxKey('item-1')))
-          .decoration! as BoxDecoration;
+      final BoxDecoration decoration =
+          tester
+                  .widget<Container>(
+                    find.byKey(ChecklistCheckBox.boxKey('item-1')),
+                  )
+                  .decoration!
+              as BoxDecoration;
       expect(decoration.borderRadius, BorderRadius.circular(6));
       expect(decoration.color, isNot(AppColors.cardamom));
 
@@ -586,9 +589,13 @@ void main() {
         item: testPurchasedShoppingListItem,
       );
 
-      final BoxDecoration decoration = tester
-          .widget<Container>(find.byKey(ChecklistCheckBox.boxKey('item-1')))
-          .decoration! as BoxDecoration;
+      final BoxDecoration decoration =
+          tester
+                  .widget<Container>(
+                    find.byKey(ChecklistCheckBox.boxKey('item-1')),
+                  )
+                  .decoration!
+              as BoxDecoration;
       expect(decoration.color, AppColors.cardamom);
       expect(
         tester.widget<Text>(find.text('Rice')).style!.decoration,

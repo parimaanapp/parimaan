@@ -86,10 +86,11 @@ class ShoppingListShareImageContent extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s1),
                       for (final ShoppingListItem item in group.items)
                         Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppSpacing.s0,
+                          padding: const EdgeInsets.only(bottom: AppSpacing.s0),
+                          child: Text(
+                            _itemLine(item),
+                            style: AppTypography.body,
                           ),
-                          child: Text(_itemLine(item), style: AppTypography.body),
                         ),
                     ],
                   ),

@@ -129,9 +129,7 @@ void main() {
 
       await pumpScreen(tester, launcher: launcher);
 
-      await tester.tap(
-        find.byKey(ShoppingListShareImageScreen.shareButtonKey),
-      );
+      await tester.tap(find.byKey(ShoppingListShareImageScreen.shareButtonKey));
       await tester.pumpAndSettle();
 
       // The share sheet was invoked exactly once, with exactly one file.
@@ -156,50 +154,45 @@ void main() {
   // W17 S4 RED test #3 (E2E_MVP_PLAN.md §23.3 S4): "a failed
   // `exportShoppingListImage` call never blocks or errors the share-sheet
   // flow (D8's own 'fire-and-forget' requirement, directly tested)."
-  testWidgets(
-    'a failing exportShoppingListImage backup upload never blocks or '
-    'surfaces an error on the share action',
-    (tester) async {
-      final _FakeShareSheetLauncher launcher = _FakeShareSheetLauncher();
+  testWidgets('a failing exportShoppingListImage backup upload never blocks or '
+      'surfaces an error on the share action', (tester) async {
+    final _FakeShareSheetLauncher launcher = _FakeShareSheetLauncher();
 
-      Object? observedBackupError;
-      await pumpScreen(
-        tester,
-        launcher: launcher,
-        // The stub/failing repository throws unconditionally — this is
-        // exactly the "S3 not merged yet" state described in
-        // shopping_list_image_export_repository.dart.
-        exportRepository: const _FailingImageExportRepository(),
-        onBackupUploadError: (Object error, StackTrace stackTrace) {
-          observedBackupError = error;
-        },
-      );
+    Object? observedBackupError;
+    await pumpScreen(
+      tester,
+      launcher: launcher,
+      // The stub/failing repository throws unconditionally — this is
+      // exactly the "S3 not merged yet" state described in
+      // shopping_list_image_export_repository.dart.
+      exportRepository: const _FailingImageExportRepository(),
+      onBackupUploadError: (Object error, StackTrace stackTrace) {
+        observedBackupError = error;
+      },
+    );
 
-      await tester.tap(
-        find.byKey(ShoppingListShareImageScreen.shareButtonKey),
-      );
-      // The share action itself (tap -> capture -> share sheet) completes
-      // here; the fire-and-forget backup upload is intentionally NOT
-      // awaited by the production code before that completes — it resolves
-      // on its own during this same settle.
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ShoppingListShareImageScreen.shareButtonKey));
+    // The share action itself (tap -> capture -> share sheet) completes
+    // here; the fire-and-forget backup upload is intentionally NOT
+    // awaited by the production code before that completes — it resolves
+    // on its own during this same settle.
+    await tester.pumpAndSettle();
 
-      // The share sheet was still invoked normally — the widget never
-      // entered an error state, never showed a SnackBar/dialog, and the
-      // Share button is interactable again (not stuck disabled/loading).
-      expect(launcher.callCount, 1);
-      expect(find.byType(SnackBar), findsNothing);
-      final PButton shareButton = tester.widget<PButton>(
-        find.byKey(ShoppingListShareImageScreen.shareButtonKey),
-      );
-      expect(shareButton.onPressed, isNotNull);
-      expect(shareButton.isLoading, isFalse);
-      // The failure genuinely happened (and was observed only by this test
-      // hook, never surfaced to the widget) — proving this is a real,
-      // exercised fire-and-forget path, not a no-op.
-      expect(observedBackupError, isNotNull);
-    },
-  );
+    // The share sheet was still invoked normally — the widget never
+    // entered an error state, never showed a SnackBar/dialog, and the
+    // Share button is interactable again (not stuck disabled/loading).
+    expect(launcher.callCount, 1);
+    expect(find.byType(SnackBar), findsNothing);
+    final PButton shareButton = tester.widget<PButton>(
+      find.byKey(ShoppingListShareImageScreen.shareButtonKey),
+    );
+    expect(shareButton.onPressed, isNotNull);
+    expect(shareButton.isLoading, isFalse);
+    // The failure genuinely happened (and was observed only by this test
+    // hook, never surfaced to the widget) — proving this is a real,
+    // exercised fire-and-forget path, not a no-op.
+    expect(observedBackupError, isNotNull);
+  });
 
   group('captureRepaintBoundaryPng (the real implementation)', () {
     testWidgets(
