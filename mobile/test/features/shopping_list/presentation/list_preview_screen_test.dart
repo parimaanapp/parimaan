@@ -107,7 +107,7 @@ void main() {
       );
 
       expect(find.text('Shopping list preview'), findsOneWidget);
-      expect(find.text('◆ Generated from 2 recipes'), findsOneWidget);
+      expect(find.text('Generated from 2 recipes'), findsOneWidget);
       expect(
         find.text('Aggregated ingredients. Already in pantry are excluded.'),
         findsOneWidget,

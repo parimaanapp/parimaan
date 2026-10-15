@@ -37,37 +37,38 @@ class ChecklistCheckBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
-    button: true,
     checked: isChecked,
     enabled: onChanged != null,
     label: semanticLabel,
-    onTap: onChanged,
-    excludeSemantics: true,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onChanged,
-      child: SizedBox(
-        width: AppSizing.minTouchTargetWidth,
-        height: AppSizing.minTouchTargetHeight,
-        child: Center(
-          child: Container(
-            key: boxKey(itemId),
-            width: boxSize,
-            height: boxSize,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: isChecked ? AppColors.cardamom : null,
-              borderRadius: BorderRadius.circular(boxRadius),
-              border: Border.all(
-                color: isChecked
-                    ? AppColors.cardamom
-                    : AppColors.ink.withValues(alpha: 0.25),
-                width: 1.5,
+    // InkWell supplies the tap action and keyboard / switch-access focus.
+    child: Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onChanged,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: AppSizing.minTouchTargetWidth,
+          height: AppSizing.minTouchTargetHeight,
+          child: Center(
+            child: Container(
+              key: boxKey(itemId),
+              width: boxSize,
+              height: boxSize,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isChecked ? AppColors.cardamom : null,
+                borderRadius: BorderRadius.circular(boxRadius),
+                border: Border.all(
+                  color: isChecked
+                      ? AppColors.cardamom
+                      : AppColors.ink.withValues(alpha: 0.25),
+                  width: 1.5,
+                ),
               ),
+              child: isChecked
+                  ? const Icon(Icons.check, size: 14, color: AppColors.card)
+                  : null,
             ),
-            child: isChecked
-                ? const Icon(Icons.check, size: 14, color: AppColors.card)
-                : null,
           ),
         ),
       ),

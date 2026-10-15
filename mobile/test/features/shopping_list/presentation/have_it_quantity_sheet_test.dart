@@ -201,12 +201,12 @@ void main() {
       );
     });
 
-    testWidgets('confirm reads "✓ Have it" and is at least 44 pt tall', (
+    testWidgets('confirm reads "Have it" and is at least 44 pt tall', (
       WidgetTester tester,
     ) async {
       await _pumpAndGetConfirmedQuantities(tester, item: testShoppingListItem);
 
-      expect(find.text('✓ Have it'), findsOneWidget);
+      expect(find.text('Have it'), findsOneWidget);
       expect(
         tester.getSize(find.byKey(HaveItQuantitySheet.confirmButtonKey)).height,
         greaterThanOrEqualTo(44),

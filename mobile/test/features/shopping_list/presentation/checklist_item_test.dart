@@ -647,8 +647,9 @@ void main() {
           isChecked: false,
           hasEnabledState: true,
           isEnabled: true,
-          isButton: true,
           hasTapAction: true,
+          hasFocusAction: true,
+          isFocusable: true,
         ),
       );
       handle.dispose();

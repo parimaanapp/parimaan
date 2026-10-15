@@ -242,7 +242,7 @@ void main() {
   });
 
   group('share image preview layout (wireframe 10.4, C2)', () {
-    testWidgets('titled "Share list" with a hint and a "↗ Share to…" action', (
+    testWidgets('titled "Share list" with a hint and a "Share to…" action', (
       WidgetTester tester,
     ) async {
       await pumpScreen(tester, launcher: _FakeShareSheetLauncher());
@@ -252,7 +252,7 @@ void main() {
         find.text('Preview image · share it to WhatsApp or any app'),
         findsOneWidget,
       );
-      expect(find.text('↗ Share to…'), findsOneWidget);
+      expect(find.text('Share to…'), findsOneWidget);
     });
 
     testWidgets('the preview image is in a bordered card with caps sections', (
@@ -278,7 +278,7 @@ void main() {
             .height,
         greaterThanOrEqualTo(44),
       );
-      expect(find.bySemanticsLabel('↗ Share to…'), findsOneWidget);
+      expect(find.bySemanticsLabel('Share to…'), findsOneWidget);
       handle.dispose();
     });
 

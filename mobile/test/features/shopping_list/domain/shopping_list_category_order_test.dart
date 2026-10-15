@@ -137,7 +137,7 @@ void main() {
   });
 
   group('approved categories all have a defined slot', () {
-    test('spice, eggs, oil, meat_fish, bakery, snacks, beverages group ahead of unknowns and "other"', () {
+    test('every approved category sorts in its defined order, then unknowns, then other', () {
       final List<String> order = groupShoppingListItemsByCategory(
         <ShoppingListItem>[
           _item('1', 'other'),
@@ -149,11 +149,11 @@ void main() {
           _item('7', 'oil'),
           _item('8', 'eggs'),
           _item('9', 'spice'),
+          _item('10', 'produce'),
         ],
       ).map((ShoppingListCategoryGroup g) => g.category).toList();
-      expect(order.last, 'other');
-      expect(order[order.length - 2], 'zzz_unknown');
-      expect(order.sublist(0, 7).toSet(), <String>{
+      expect(order, <String>[
+        'produce',
         'spice',
         'eggs',
         'oil',
@@ -161,7 +161,39 @@ void main() {
         'bakery',
         'snacks',
         'beverages',
-      });
+        'zzz_unknown',
+        'other',
+      ]);
+    });
+  });
+
+  group('category normalisation', () {
+    test('grains and grain share one group, keyed "grain"', () {
+      final List<ShoppingListCategoryGroup> groups =
+          groupShoppingListItemsByCategory(<ShoppingListItem>[
+            _item('1', 'grains'),
+            _item('2', 'grain'),
+          ]);
+      expect(groups.length, 1);
+      expect(groups.single.category, 'grain');
+      expect(groups.single.items.length, 2);
+    });
+
+    test('case, whitespace and spaced variants fold into the known value', () {
+      final List<ShoppingListCategoryGroup> groups =
+          groupShoppingListItemsByCategory(<ShoppingListItem>[
+            _item('1', ' Produce '),
+            _item('2', 'PRODUCE'),
+            _item('3', 'Dry Goods'),
+            _item('4', 'dry_goods'),
+            _item('5', 'Meat & Fish'),
+            _item('6', '   '),
+          ]);
+      expect(
+        groups.map((ShoppingListCategoryGroup g) => g.category).toList(),
+        <String>['produce', 'dry_goods', 'meat_fish', 'other'],
+      );
+      expect(groups.first.items.length, 2);
     });
   });
 }

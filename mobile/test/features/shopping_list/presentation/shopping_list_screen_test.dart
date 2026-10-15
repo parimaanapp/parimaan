@@ -499,7 +499,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('↗ Share'), findsOneWidget);
+      expect(find.text('Share'), findsOneWidget);
       final Size size = tester.getSize(
         find.byKey(ShoppingListScreen.shareButtonKey),
       );
@@ -543,7 +543,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('◆ Staples check'), findsOneWidget);
+      expect(find.text('Staples check'), findsOneWidget);
       expect(
         find.text('Check: Kitchen King Masala, hing, ghee'),
         findsOneWidget,

@@ -11,6 +11,7 @@ import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_category_order.dart';
 import '../domain/shopping_list_item.dart';
+import '../domain/shopping_quantity_format.dart';
 import '../state/current_shopping_list_controller.dart';
 import 'checklist_check_box.dart';
 import 'have_it_quantity_sheet.dart';
@@ -26,44 +27,27 @@ export 'checklist_check_box.dart';
 /// as `pantry_list_screen.dart`'s own category-chip-filtered rows never
 /// repeating the active filter's name on every row.
 ///
-/// **Swipe-to-"Have it" (S7, wireframe 38/49).** Enabled only when [menuId]
-/// is non-null — the persistent Shopping List screen's own usage. The List
-/// preview screen (`list_preview_screen.dart`) passes no [menuId] and
-/// renders a plain, non-swipeable row: a freshly generated preview is not
-/// the same "act on it now" surface the persistent list is, and S6's own
-/// RED-test list never exercised a swipe there. Swiping [PCard.padding]'s
-/// own doc-mandated direction ("do not nest links or buttons inside a
-/// tappable card; use swipe actions") calls up
-/// [showHaveItQuantitySheet] — it never calls
-/// `CurrentShoppingListController.haveIt` directly (S7's own confirm-gate
-/// RED test). `Dismissible.confirmDismiss` always returns `false` here,
-/// deliberately: a successful `haveIt` already drops this item out of
-/// `ShoppingList.toBuy`, which removes this row by rebuilding the parent
-/// list from controller state — letting `Dismissible` ALSO remove the row
-/// itself would race that rebuild. Returning `false` unconditionally means
-/// a cancelled or failed attempt leaves the row exactly where it was, and a
-/// successful one is removed exactly once, by the state rebuild alone.
+/// **Swipes (wireframe 10.2).** Enabled only when [menuId] is non-null —
+/// the persistent Shopping List screen's own usage; the List preview passes
+/// no [menuId] and renders a plain, non-swipeable row. Swipe LEFT
+/// (`endToStart`) is "Have it": it opens [showHaveItQuantitySheet] and never
+/// calls `CurrentShoppingListController.haveIt` directly (S7's confirm
+/// gate). Swipe RIGHT (`startToEnd`) marks the item bought. (Before C2 the
+/// right swipe was Have it; the directions were reversed to match the
+/// approved wireframe.) `Dismissible.confirmDismiss` always returns `false`:
+/// a successful call drops the item out of `ShoppingList.toBuy`, which
+/// removes the row through the parent's rebuild — letting `Dismissible` also
+/// remove it would race that rebuild, and a cancelled or failed attempt
+/// leaves the row exactly where it was.
 ///
-/// **Leading "bought" checkbox (D6, E2E_MVP_PLAN.md §18.2.6, W12 S6).**
-/// A SEPARATE affordance from the swipe gesture above, sitting to the left
-/// of the row's name/quantity content — locked over a second swipe
-/// direction specifically to avoid "two different swipe gestures mean two
-/// different consequential actions" (this class's own swipe-gesture doc
-/// already cites `p_button.dart`'s "never rely on gesture-direction-alone
-/// semantics" rule; a second, oppositely-coloured swipe on the identical
-/// row would repeat that exact mistake). Gated on the identical
-/// `menuId != null` condition as the swipe gesture — same row, same
-/// "persistent Shopping List screen only" reasoning. Tapping it calls
-/// [CurrentShoppingListController.markPurchased] directly, no confirmation
-/// sheet: D5 already established `markPurchased` needs no quantity input,
-/// which is what makes a bare tap safe here, unlike `haveIt`'s
-/// quantity-sheet flow. Shows an immediate optimistic-checked state,
-/// reverting on failure with a visible error — mirroring
-/// `have_it_quantity_sheet.dart`'s own "honest UI feedback, never a silent
-/// no-op" convention. A successful call is never locally hidden by this
-/// widget — same "never let the widget remove itself" discipline as the
-/// swipe gesture above: the parent list rebuilds from
-/// `ShoppingList.toBuy`, which already excludes a just-purchased item.
+/// **Check box (D6, E2E_MVP_PLAN.md §18.2.6).** A tap target to the left of
+/// the name that calls [CurrentShoppingListController.markPurchased], the
+/// same action as swipe right, with no confirmation (D5: `markPurchased`
+/// needs no quantity). It shows an optimistic done state (green fill,
+/// strike-through) and reverts with a visible error on failure. The row is
+/// never hidden locally; the parent list's rebuild removes it. Because the
+/// optimistic flag lives in this State, rows are keyed by item id wherever
+/// they are listed, so it cannot be inherited by a neighbouring row.
 ///
 /// **Shared in-flight guard.** [_isProcessing] below guards BOTH triggers
 /// on this one row, not just the swipe gesture alone — a checkbox tap and a
@@ -124,9 +108,7 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
     if (quantity == null && unit == null) return '';
     final String quantityPart = quantity == null
         ? ''
-        : (quantity == quantity.roundToDouble()
-              ? quantity.toStringAsFixed(0)
-              : quantity.toString());
+        : formatShoppingQuantity(quantity);
     if (unit == null) return quantityPart;
     return quantityPart.isEmpty ? unit : '$quantityPart $unit';
   }
@@ -182,7 +164,14 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
       // the parent list (`ShoppingList.toBuy` no longer includes it) — see
       // this class's own doc for why this widget never hides itself. If
       // this instance somehow survives that rebuild, just clear the guard.
-      if (mounted) setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          // If this instance survives the parent's rebuild, do not leave a
+          // stale done state behind.
+          _isOptimisticallyChecked = false;
+        });
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -222,32 +211,35 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
                 semanticLabel: 'Mark ${widget.item.name} as bought',
                 onChanged: _isProcessing ? null : _handleMarkPurchased,
               ),
-            Expanded(
-              child: Text(
-                widget.item.name,
-                style: AppTypography.body.copyWith(
-                  color: isDone ? AppColors.inkMid : AppColors.ink,
-                  decoration: isDone ? TextDecoration.lineThrough : null,
+            Flexible(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s1),
+                child: Text(
+                  widget.item.name,
+                  style: AppTypography.body.copyWith(
+                    color: isDone ? AppColors.inkMid : AppColors.ink,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: AppSpacing.s1),
-            if (quantity.isNotEmpty)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 112),
+            if (quantity.isNotEmpty) ...<Widget>[
+              const SizedBox(width: AppSpacing.s1),
+              // Never truncated: quantity and unit wrap rather than
+              // ellipsize, so "0.33 cup" can never read as "0.33 c…".
+              Flexible(
+                flex: 2,
                 child: Text(
                   quantity,
                   textAlign: TextAlign.end,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.mono.copyWith(
                     color: AppColors.inkMid,
                     decoration: isDone ? TextDecoration.lineThrough : null,
                   ),
                 ),
               ),
+            ],
           ],
         ),
       ),
@@ -261,13 +253,13 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
       confirmDismiss: _handleSwipe,
       background: const _SwipeBackground(
         label: 'Bought',
-        alignment: Alignment.centerLeft,
+        alignment: AlignmentDirectional.centerStart,
         color: AppColors.cardamomSoft,
         foreground: AppColors.cardamomSoftForeground,
       ),
       secondaryBackground: const _SwipeBackground(
         label: 'Have it',
-        alignment: Alignment.centerRight,
+        alignment: AlignmentDirectional.centerEnd,
         color: AppColors.cardamom,
         foreground: AppColors.card,
       ),
@@ -294,7 +286,7 @@ class _SwipeBackground extends StatelessWidget {
   });
 
   final String label;
-  final Alignment alignment;
+  final AlignmentGeometry alignment;
   final Color color;
   final Color foreground;
 
@@ -355,6 +347,7 @@ class CategorizedChecklist extends StatelessWidget {
         ...?header,
         for (final ShoppingListCategoryGroup group in groups)
           Padding(
+            key: ValueKey<String>('checklist-group-${group.category}'),
             padding: const EdgeInsets.only(bottom: AppSpacing.s3),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,8 +358,13 @@ class CategorizedChecklist extends StatelessWidget {
                 ),
                 for (final ShoppingListItem item in group.items)
                   Padding(
+                    key: ValueKey<String>('checklist-pad-${item.id}'),
                     padding: const EdgeInsets.only(bottom: AppSpacing.s1),
-                    child: ChecklistItem(item: item, menuId: menuId),
+                    child: ChecklistItem(
+                      key: ValueKey<String>('checklist-${item.id}'),
+                      item: item,
+                      menuId: menuId,
+                    ),
                   ),
               ],
             ),
