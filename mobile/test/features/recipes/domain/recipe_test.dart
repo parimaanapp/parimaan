@@ -45,23 +45,26 @@ void main() {
       expect(_recipe(prepMin: 10), _recipe(prepMin: 10));
     });
 
-    test('recipes with a different ingredients-fetched-state are not equal', () {
-      final Recipe fetched = Recipe(
-        id: 'recipe-1',
-        householdId: 'household-1',
-        sourceType: RecipeSource.user,
-        title: 'Toor Dal',
-        servings: 4,
-        dietaryTags: const <String>[],
-        role: RecipeRole.sabziDal,
-        inRotation: false,
-        isFavorite: false,
-        ingredients: const <RecipeIngredient>[],
-        steps: const <String>['Boil the dal.'],
-        createdAt: DateTime.utc(2026, 8, 25),
-        updatedAt: DateTime.utc(2026, 8, 25),
-      );
-      expect(fetched, isNot(_recipe()));
-    });
+    test(
+      'recipes with a different ingredients-fetched-state are not equal',
+      () {
+        final Recipe fetched = Recipe(
+          id: 'recipe-1',
+          householdId: 'household-1',
+          sourceType: RecipeSource.user,
+          title: 'Toor Dal',
+          servings: 4,
+          dietaryTags: const <String>[],
+          role: RecipeRole.sabziDal,
+          inRotation: false,
+          isFavorite: false,
+          ingredients: const <RecipeIngredient>[],
+          steps: const <String>['Boil the dal.'],
+          createdAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        );
+        expect(fetched, isNot(_recipe()));
+      },
+    );
   });
 }

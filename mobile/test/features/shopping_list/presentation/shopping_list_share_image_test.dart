@@ -73,12 +73,11 @@ void main() {
         expect(shareGroups[i].category, liveScreenGroups[i].category);
         expect(shareGroups[i].items, liveScreenGroups[i].items);
       }
-      // Concretely: 'grain'/'grains' before 'produce'... no — assert the
-      // real known order this codebase defines: produce, then the
-      // grains-family, then the unknown/other tail.
+      // The defined order: produce, then grain (`grains` is folded onto
+      // `grain`), then the unknown/other tail.
       expect(shareGroups.map((g) => g.category).toList(), <String>[
         'produce',
-        'grains',
+        'grain',
         otherShoppingListCategory,
       ]);
     });

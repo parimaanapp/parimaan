@@ -93,6 +93,17 @@ void main() {
       expect(find.text('Week is set!'), findsNothing);
     });
 
+    testWidgets('has a back affordance that returns to the plan', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester);
+
+      await tester.tap(find.bySemanticsLabel('Back to weekly plan'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('open-prompt'), findsOneWidget);
+    });
+
     testWidgets('both buttons are at least 44 pt tall', (
       WidgetTester tester,
     ) async {

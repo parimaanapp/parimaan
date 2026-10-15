@@ -41,19 +41,26 @@ Uint8List compressPantryPhoto(Uint8List bytes) {
   try {
     decoded = img.decodeImage(bytes);
   } catch (cause) {
-    throw FormatException('Could not decode image bytes for pantry photo compression: $cause');
+    throw FormatException(
+      'Could not decode image bytes for pantry photo compression: $cause',
+    );
   }
   if (decoded == null) {
-    throw const FormatException('Could not decode image bytes for pantry photo compression.');
+    throw const FormatException(
+      'Could not decode image bytes for pantry photo compression.',
+    );
   }
 
   final bool needsDownscale =
-      decoded.width > maxPantryPhotoDimension || decoded.height > maxPantryPhotoDimension;
+      decoded.width > maxPantryPhotoDimension ||
+      decoded.height > maxPantryPhotoDimension;
   final img.Image resized = needsDownscale
       ? (decoded.width >= decoded.height
             ? img.copyResize(decoded, width: maxPantryPhotoDimension)
             : img.copyResize(decoded, height: maxPantryPhotoDimension))
       : decoded;
 
-  return Uint8List.fromList(img.encodeJpg(resized, quality: pantryPhotoJpegQuality));
+  return Uint8List.fromList(
+    img.encodeJpg(resized, quality: pantryPhotoJpegQuality),
+  );
 }

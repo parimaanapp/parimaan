@@ -38,7 +38,11 @@ void main() {
     test('lists the default unit first for every category', () {
       categoryUnits.forEach((String category, CategoryUnits units) {
         expect(units.units.first, units.defaultUnit, reason: category);
-        expect(units.units.toSet().length, units.units.length, reason: category);
+        expect(
+          units.units.toSet().length,
+          units.units.length,
+          reason: category,
+        );
       });
     });
 
@@ -48,14 +52,25 @@ void main() {
       }
     });
 
-    test('oil leads with ml and offers ml, l, tbsp, tsp, cup, bottle, packet', () {
-      final List<String> units = unitsForCategory('oil');
-      expect(units.first, 'ml');
-      expect(
-        units,
-        containsAll(<String>['ml', 'l', 'tbsp', 'tsp', 'cup', 'bottle', 'packet']),
-      );
-    });
+    test(
+      'oil leads with ml and offers ml, l, tbsp, tsp, cup, bottle, packet',
+      () {
+        final List<String> units = unitsForCategory('oil');
+        expect(units.first, 'ml');
+        expect(
+          units,
+          containsAll(<String>[
+            'ml',
+            'l',
+            'tbsp',
+            'tsp',
+            'cup',
+            'bottle',
+            'packet',
+          ]),
+        );
+      },
+    );
 
     test('eggs offer piece and dozen only', () {
       expect(unitsForCategory('eggs'), <String>['piece', 'dozen']);
@@ -81,11 +96,14 @@ void main() {
       expect(unitsWithCurrent('dal', null), <String>['g', 'kg', 'cup']);
     });
 
-    test('unitsWithCurrent compares case-insensitively and never rewrites casing', () {
-      expect(unitsWithCurrent('dal', 'KG'), <String>['g', 'kg', 'cup']);
-      expect(unitsWithCurrent('dal', ' Kg '), <String>['g', 'kg', 'cup']);
-      expect(unitsWithCurrent('dal', 'ML'), <String>['g', 'kg', 'cup', 'ML']);
-    });
+    test(
+      'unitsWithCurrent compares case-insensitively and never rewrites casing',
+      () {
+        expect(unitsWithCurrent('dal', 'KG'), <String>['g', 'kg', 'cup']);
+        expect(unitsWithCurrent('dal', ' Kg '), <String>['g', 'kg', 'cup']);
+        expect(unitsWithCurrent('dal', 'ML'), <String>['g', 'kg', 'cup', 'ML']);
+      },
+    );
 
     test('every offered unit is a known pantry unit', () {
       for (final MapEntry<String, CategoryUnits> e in categoryUnits.entries) {
@@ -99,16 +117,30 @@ void main() {
     });
 
     test('pack is not a separate unit (it is packet)', () {
-      expect(
-        unitsForCategory('bakery'),
-        <String>['piece', 'slice', 'loaf', 'g', 'packet'],
-      );
+      expect(unitsForCategory('bakery'), <String>[
+        'piece',
+        'slice',
+        'loaf',
+        'g',
+        'packet',
+      ]);
     });
 
     test('recipe units are the recipe-relevant union', () {
       expect(recipeUnits, <String>[
-        'g', 'kg', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'piece', 'bunch', 'pinch', 'packet',
-        'jar', 'bottle',
+        'g',
+        'kg',
+        'ml',
+        'l',
+        'tsp',
+        'tbsp',
+        'cup',
+        'piece',
+        'bunch',
+        'pinch',
+        'packet',
+        'jar',
+        'bottle',
       ]);
     });
 
@@ -126,9 +158,11 @@ void main() {
       final int defIdx = header.indexOf('default_unit');
       final Map<String, Set<String>> union = <String, Set<String>>{};
       final Map<String, Set<String>> defaults = <String, Set<String>>{};
-      for (final String line in lines.skip(1).where((String l) => l.isNotEmpty)) {
+      for (final String line
+          in lines.skip(1).where((String l) => l.isNotEmpty)) {
         final List<String> cols = _splitCsvLine(line);
-        union.putIfAbsent(cols[catIdx], () => <String>{})
+        union
+            .putIfAbsent(cols[catIdx], () => <String>{})
             .addAll(cols[unitsIdx].split('|').map(_catalogUnit));
         defaults
             .putIfAbsent(cols[catIdx], () => <String>{})

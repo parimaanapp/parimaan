@@ -11,24 +11,47 @@ const _base = AiRecipeDraftIngredient(
 
 void main() {
   group('AiRecipeDraftIngredient equality', () {
-    test('two ingredients with identical fields are equal, with equal hashCodes', () {
-      const other = AiRecipeDraftIngredient(
-        raw: '1 cup rajma',
-        name: 'Rajma',
-        quantity: 1,
-        unit: 'cup',
-        notes: null,
-      );
-      expect(_base, other);
-      expect(_base.hashCode, other.hashCode);
-    });
+    test(
+      'two ingredients with identical fields are equal, with equal hashCodes',
+      () {
+        const other = AiRecipeDraftIngredient(
+          raw: '1 cup rajma',
+          name: 'Rajma',
+          quantity: 1,
+          unit: 'cup',
+          notes: null,
+        );
+        expect(_base, other);
+        expect(_base.hashCode, other.hashCode);
+      },
+    );
 
     test('differing only in quantity is not equal', () {
-      expect(_base, isNot(const AiRecipeDraftIngredient(raw: '1 cup rajma', name: 'Rajma', quantity: 2, unit: 'cup')));
+      expect(
+        _base,
+        isNot(
+          const AiRecipeDraftIngredient(
+            raw: '1 cup rajma',
+            name: 'Rajma',
+            quantity: 2,
+            unit: 'cup',
+          ),
+        ),
+      );
     });
 
     test('differing only in unit is not equal', () {
-      expect(_base, isNot(const AiRecipeDraftIngredient(raw: '1 cup rajma', name: 'Rajma', quantity: 1, unit: 'g')));
+      expect(
+        _base,
+        isNot(
+          const AiRecipeDraftIngredient(
+            raw: '1 cup rajma',
+            name: 'Rajma',
+            quantity: 1,
+            unit: 'g',
+          ),
+        ),
+      );
     });
 
     test('differing only in notes is not equal', () {
@@ -49,7 +72,14 @@ void main() {
     test('differing only in raw is not equal', () {
       expect(
         _base,
-        isNot(const AiRecipeDraftIngredient(raw: '1 cup of rajma', name: 'Rajma', quantity: 1, unit: 'cup')),
+        isNot(
+          const AiRecipeDraftIngredient(
+            raw: '1 cup of rajma',
+            name: 'Rajma',
+            quantity: 1,
+            unit: 'cup',
+          ),
+        ),
       );
     });
   });

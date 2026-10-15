@@ -35,7 +35,11 @@ import '../domain/pantry_photo_compression.dart';
 /// good photo. A warning they can act on or dismiss by proceeding anyway is
 /// the honest amount of confidence this threshold currently deserves.
 class PantryPhotoCaptureScreen extends StatefulWidget {
-  const PantryPhotoCaptureScreen({super.key, required this.onCaptured, this.onBack});
+  const PantryPhotoCaptureScreen({
+    super.key,
+    required this.onCaptured,
+    this.onBack,
+  });
 
   /// Called with the final compressed JPEG bytes once the user captures and
   /// this screen finishes compressing them.
@@ -53,7 +57,8 @@ class PantryPhotoCaptureScreen extends StatefulWidget {
   static const int brightnessSampleEveryNFrames = 10;
 
   @override
-  State<PantryPhotoCaptureScreen> createState() => _PantryPhotoCaptureScreenState();
+  State<PantryPhotoCaptureScreen> createState() =>
+      _PantryPhotoCaptureScreenState();
 }
 
 class _PantryPhotoCaptureScreenState extends State<PantryPhotoCaptureScreen> {
@@ -103,7 +108,8 @@ class _PantryPhotoCaptureScreenState extends State<PantryPhotoCaptureScreen> {
 
   void _onFrame(CameraImage image) {
     _frameCounter++;
-    if (_frameCounter % PantryPhotoCaptureScreen.brightnessSampleEveryNFrames != 0) {
+    if (_frameCounter % PantryPhotoCaptureScreen.brightnessSampleEveryNFrames !=
+        0) {
       return;
     }
     if (image.planes.isEmpty) {
@@ -165,14 +171,18 @@ class _PantryPhotoCaptureScreenState extends State<PantryPhotoCaptureScreen> {
                     Center(
                       child: _initError != null
                           ? const _CameraUnavailable()
-                          : const CircularProgressIndicator(color: Colors.white),
+                          : const CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
                     ),
                   if (_isTooDark)
                     Positioned(
                       top: AppSpacing.s3,
                       left: AppSpacing.s3,
                       right: AppSpacing.s3,
-                      child: const _DarkFrameWarning(key: PantryPhotoCaptureScreen.darkWarningKey),
+                      child: const _DarkFrameWarning(
+                        key: PantryPhotoCaptureScreen.darkWarningKey,
+                      ),
                     ),
                   Positioned(
                     top: AppSpacing.s2,
@@ -235,11 +245,18 @@ class _DarkFrameWarning extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
     ),
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: AppSpacing.s1),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s2,
+        vertical: AppSpacing.s1,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Icon(Icons.wb_incandescent_outlined, color: Colors.white, size: 18),
+          const Icon(
+            Icons.wb_incandescent_outlined,
+            color: Colors.white,
+            size: 18,
+          ),
           const SizedBox(width: AppSpacing.s1),
           Expanded(
             child: Text(

@@ -16,7 +16,12 @@ const int photoReviewBulkCap = 50;
 /// no-mutation convention.
 @immutable
 class PhotoReviewItem {
-  const PhotoReviewItem({required this.id, required this.proposal, required this.selected, this.duplicateNote});
+  const PhotoReviewItem({
+    required this.id,
+    required this.proposal,
+    required this.selected,
+    this.duplicateNote,
+  });
 
   /// Shown under a row whose name matches something already in the pantry.
   static const String alreadyInPantryNote = 'Already in your pantry';
@@ -37,32 +42,46 @@ class PhotoReviewItem {
   /// (an unrecognised unit, say) need the user, not a guess.
   bool get isComplete => (proposal.quantity ?? 0) > 0 && proposal.unit != null;
 
-  PhotoReviewItem copyWith({PantryPhotoProposal? proposal, bool? selected, String? duplicateNote, bool clearDuplicateNote = false}) => PhotoReviewItem(
+  PhotoReviewItem copyWith({
+    PantryPhotoProposal? proposal,
+    bool? selected,
+    String? duplicateNote,
+    bool clearDuplicateNote = false,
+  }) => PhotoReviewItem(
     id: id,
     proposal: proposal ?? this.proposal,
     selected: selected ?? this.selected,
-    duplicateNote: clearDuplicateNote ? null : (duplicateNote ?? this.duplicateNote),
+    duplicateNote: clearDuplicateNote
+        ? null
+        : (duplicateNote ?? this.duplicateNote),
   );
 }
 
 /// Everything proposed across one or more photos, awaiting the user's confirm.
 @immutable
 class PhotoReviewSession {
-  PhotoReviewSession({List<PhotoReviewItem> items = const <PhotoReviewItem>[], this.truncated = false}) : items = List<PhotoReviewItem>.unmodifiable(items);
+  PhotoReviewSession({
+    List<PhotoReviewItem> items = const <PhotoReviewItem>[],
+    this.truncated = false,
+  }) : items = List<PhotoReviewItem>.unmodifiable(items);
 
   final List<PhotoReviewItem> items;
 
   /// A photo showed more than 40 items and the tail was cut.
   final bool truncated;
 
-  int get selectedCount => items.where((PhotoReviewItem i) => i.selected).length;
+  int get selectedCount =>
+      items.where((PhotoReviewItem i) => i.selected).length;
 
   bool get overBulkCap => selectedCount > photoReviewBulkCap;
 
   /// Every ticked item has an amount and a unit.
-  bool get allSelectedComplete => items.where((PhotoReviewItem i) => i.selected).every((PhotoReviewItem i) => i.isComplete);
+  bool get allSelectedComplete => items
+      .where((PhotoReviewItem i) => i.selected)
+      .every((PhotoReviewItem i) => i.isComplete);
 
-  bool get canConfirm => selectedCount > 0 && allSelectedComplete && !overBulkCap;
+  bool get canConfirm =>
+      selectedCount > 0 && allSelectedComplete && !overBulkCap;
 
   /// Exactly the ticked items, as pantry drafts. Category is kept — the
   /// curated picker's selections carry none, but a photo's items do, and the
@@ -70,6 +89,11 @@ class PhotoReviewSession {
   List<PantryItemDraft> toDrafts() => <PantryItemDraft>[
     for (final PhotoReviewItem item in items)
       if (item.selected && item.isComplete)
-        PantryItemDraft(name: item.proposal.name, quantity: item.proposal.quantity!, unit: item.proposal.unit!, category: item.proposal.category),
+        PantryItemDraft(
+          name: item.proposal.name,
+          quantity: item.proposal.quantity!,
+          unit: item.proposal.unit!,
+          category: item.proposal.category,
+        ),
   ];
 }

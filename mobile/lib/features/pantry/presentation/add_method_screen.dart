@@ -81,10 +81,8 @@ class AddMethodScreen extends StatelessWidget {
   }
 
   Future<void> _openCuratedFlow(BuildContext context) async {
-    final List<CuratedPantrySelection>? selections = await showCuratedPantryFlow(
-      context: context,
-      onFreeText: onManual,
-    );
+    final List<CuratedPantrySelection>? selections =
+        await showCuratedPantryFlow(context: context, onFreeText: onManual);
     if (selections == null || selections.isEmpty) {
       return;
     }

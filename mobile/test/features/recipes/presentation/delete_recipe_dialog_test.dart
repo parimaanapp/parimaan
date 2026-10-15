@@ -34,7 +34,9 @@ Future<({ProviderContainer container, ValueNotifier<bool?> result})> _pump(
   required FakeRecipeRepository repository,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      recipeRepositoryProvider.overrideWithValue(repository),
+    ],
   );
   addTearDown(container.dispose);
 
@@ -100,19 +102,20 @@ void main() {
       expect(find.byType(DeleteRecipeDialog), findsNothing);
     });
 
-    testWidgets('a failed delete keeps the dialog open and shows the server message', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        deleteError: const NotFoundError('Recipe not found.'),
-      );
-      await _pump(tester, repository: repository);
+    testWidgets(
+      'a failed delete keeps the dialog open and shows the server message',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          deleteError: const NotFoundError('Recipe not found.'),
+        );
+        await _pump(tester, repository: repository);
 
-      await tester.tap(find.byKey(DeleteRecipeDialog.confirmButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(DeleteRecipeDialog.confirmButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(DeleteRecipeDialog), findsOneWidget);
-      expect(find.textContaining('Recipe not found.'), findsOneWidget);
-    });
+        expect(find.byType(DeleteRecipeDialog), findsOneWidget);
+        expect(find.textContaining('Recipe not found.'), findsOneWidget);
+      },
+    );
   });
 }

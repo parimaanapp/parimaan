@@ -238,7 +238,8 @@ class _ShoppingListShareImageScreenState
               padding: const EdgeInsets.all(AppSpacing.s3),
               child: PButton(
                 key: ShoppingListShareImageScreen.shareButtonKey,
-                label: '↗ Share to…',
+                label: 'Share to…',
+                icon: Icons.ios_share,
                 isLoading: _isSharing,
                 expand: true,
                 onPressed: _isSharing ? null : _onSharePressed,

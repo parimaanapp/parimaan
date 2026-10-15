@@ -36,7 +36,10 @@ void main() {
           container: container,
           child: MembershipRevocationGuard(
             onRevoked: (BuildContext _) => revokedCalls++,
-            child: const Text('household screen', textDirection: TextDirection.ltr),
+            child: const Text(
+              'household screen',
+              textDirection: TextDirection.ltr,
+            ),
           ),
         ),
       );
@@ -64,7 +67,10 @@ void main() {
           container: container,
           child: MembershipRevocationGuard(
             onRevoked: (BuildContext _) => revokedCalls++,
-            child: const Text('household screen', textDirection: TextDirection.ltr),
+            child: const Text(
+              'household screen',
+              textDirection: TextDirection.ltr,
+            ),
           ),
         ),
       );

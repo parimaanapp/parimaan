@@ -63,7 +63,9 @@ Future<ProviderContainer> _pumpPushed(
   RecipeSource? reviewSourceType,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      recipeRepositoryProvider.overrideWithValue(repository),
+    ],
   );
   addTearDown(container.dispose);
 
@@ -83,13 +85,14 @@ Future<ProviderContainer> _pumpPushed(
       ),
       GoRoute(
         path: '/form',
-        builder: (BuildContext context, GoRouterState state) => RecipeFormScreen(
-          householdId: householdId,
-          initialRecipe: initialRecipe,
-          initialDraft: initialDraft,
-          sourceUrl: sourceUrl,
-          reviewSourceType: reviewSourceType,
-        ),
+        builder: (BuildContext context, GoRouterState state) =>
+            RecipeFormScreen(
+              householdId: householdId,
+              initialRecipe: initialRecipe,
+              initialDraft: initialDraft,
+              sourceUrl: sourceUrl,
+              reviewSourceType: reviewSourceType,
+            ),
       ),
     ],
   );
@@ -110,102 +113,144 @@ const AiRecipeDraft _rajmaDraft = AiRecipeDraft(
   servings: 4,
   role: RecipeRole.sabziDal,
   ingredients: <AiRecipeDraftIngredient>[
-    AiRecipeDraftIngredient(raw: '1 cup rajma', name: 'Rajma', quantity: 1, unit: 'cup'),
+    AiRecipeDraftIngredient(
+      raw: '1 cup rajma',
+      name: 'Rajma',
+      quantity: 1,
+      unit: 'cup',
+    ),
   ],
   steps: <String>['Soak the rajma overnight.'],
   warnings: <String>['Could not determine cuisineTier2.'],
 );
 
 bool _submitEnabled(WidgetTester tester) =>
-    tester.widget<PButton>(find.byKey(RecipeFormScreen.submitButtonKey)).onPressed != null;
+    tester
+        .widget<PButton>(find.byKey(RecipeFormScreen.submitButtonKey))
+        .onPressed !=
+    null;
 
 void main() {
   group('RecipeFormScreen — create mode', () {
-    testWidgets('submit is disabled until a title is filled and a role is chosen', (
+    testWidgets(
+      'submit is disabled until a title is filled and a role is chosen',
+      (WidgetTester tester) async {
+        await _pumpPushed(tester, repository: FakeRecipeRepository());
+
+        expect(_submitEnabled(tester), isFalse);
+
+        await tester.enterText(
+          find.byKey(RecipeFormScreen.titleFieldKey),
+          'Toor Dal',
+        );
+        await tester.pump();
+
+        // Title alone is not enough — role has no default and is required.
+        expect(_submitEnabled(tester), isFalse);
+
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
+
+        expect(_submitEnabled(tester), isTrue);
+      },
+    );
+
+    testWidgets(
+      'tapping a selected role chip again deselects it and blocks submit',
+      (WidgetTester tester) async {
+        await _pumpPushed(tester, repository: FakeRecipeRepository());
+
+        await tester.enterText(
+          find.byKey(RecipeFormScreen.titleFieldKey),
+          'Toor Dal',
+        );
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
+        expect(_submitEnabled(tester), isTrue);
+
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
+
+        expect(_submitEnabled(tester), isFalse);
+      },
+    );
+
+    testWidgets(
+      'adding then removing an ingredient row preserves the other rows\' values',
+      (WidgetTester tester) async {
+        await _pumpPushed(tester, repository: FakeRecipeRepository());
+
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.addIngredientButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+        await tester.pump();
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.addIngredientButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+        await tester.pump();
+
+        await tester.ensureVisible(
+          find.byKey(IngredientRowEditor.nameFieldKey(0)),
+        );
+        await tester.enterText(
+          find.byKey(IngredientRowEditor.nameFieldKey(0)),
+          'Toor Dal',
+        );
+        await tester.ensureVisible(
+          find.byKey(IngredientRowEditor.nameFieldKey(1)),
+        );
+        await tester.enterText(
+          find.byKey(IngredientRowEditor.nameFieldKey(1)),
+          'Rice',
+        );
+        await tester.pump();
+
+        await tester.ensureVisible(
+          find.byKey(IngredientRowEditor.removeButtonKey(0)),
+        );
+        await tester.tap(find.byKey(IngredientRowEditor.removeButtonKey(0)));
+        await tester.pump();
+
+        expect(
+          tester
+              .widget<TextField>(
+                find.descendant(
+                  of: find.byKey(IngredientRowEditor.nameFieldKey(0)),
+                  matching: find.byType(TextField),
+                ),
+              )
+              .controller
+              ?.text,
+          'Rice',
+        );
+      },
+    );
+
+    testWidgets('a blank unit shows a neutral hint, never a real unit name', (
       WidgetTester tester,
     ) async {
       await _pumpPushed(tester, repository: FakeRecipeRepository());
-
-      expect(_submitEnabled(tester), isFalse);
-
-      await tester.enterText(
-        find.byKey(RecipeFormScreen.titleFieldKey),
-        'Toor Dal',
+      await tester.ensureVisible(
+        find.byKey(RecipeFormScreen.addIngredientButtonKey),
       );
-      await tester.pump();
-
-      // Title alone is not enough — role has no default and is required.
-      expect(_submitEnabled(tester), isFalse);
-
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.pump();
-
-      expect(_submitEnabled(tester), isTrue);
-    });
-
-    testWidgets('tapping a selected role chip again deselects it and blocks submit', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPushed(tester, repository: FakeRecipeRepository());
-
-      await tester.enterText(
-        find.byKey(RecipeFormScreen.titleFieldKey),
-        'Toor Dal',
-      );
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.pump();
-      expect(_submitEnabled(tester), isTrue);
-
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.pump();
-
-      expect(_submitEnabled(tester), isFalse);
-    });
-
-    testWidgets('adding then removing an ingredient row preserves the other rows\' values', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPushed(tester, repository: FakeRecipeRepository());
-
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.addIngredientButtonKey));
       await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
       await tester.pump();
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.pump();
 
-      await tester.ensureVisible(find.byKey(IngredientRowEditor.nameFieldKey(0)));
-      await tester.enterText(
-        find.byKey(IngredientRowEditor.nameFieldKey(0)),
-        'Toor Dal',
+      final TextField field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(IngredientRowEditor.unitFieldKey(0)),
+          matching: find.byType(TextField),
+        ),
       );
-      await tester.ensureVisible(find.byKey(IngredientRowEditor.nameFieldKey(1)));
-      await tester.enterText(
-        find.byKey(IngredientRowEditor.nameFieldKey(1)),
-        'Rice',
-      );
-      await tester.pump();
-
-      await tester.ensureVisible(find.byKey(IngredientRowEditor.removeButtonKey(0)));
-      await tester.tap(find.byKey(IngredientRowEditor.removeButtonKey(0)));
-      await tester.pump();
-
-      expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: find.byKey(IngredientRowEditor.nameFieldKey(0)),
-                matching: find.byType(TextField),
-              ),
-            )
-            .controller
-            ?.text,
-        'Rice',
-      );
+      expect(field.controller?.text, isEmpty);
+      expect(field.decoration?.hintText, 'unit');
+      expect(recipeUnits, isNot(contains(field.decoration?.hintText)));
     });
 
     testWidgets(
-      'a blank unit shows a neutral hint, never a real unit name',
+      'an ingredient row offers only recipe units and a tap fills the unit',
       (WidgetTester tester) async {
         await _pumpPushed(tester, repository: FakeRecipeRepository());
         await tester.ensureVisible(
@@ -214,135 +259,164 @@ void main() {
         await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
         await tester.pump();
 
-        final TextField field = tester.widget<TextField>(
-          find.descendant(
-            of: find.byKey(IngredientRowEditor.unitFieldKey(0)),
-            matching: find.byType(TextField),
-          ),
+        for (final String unit in recipeUnits) {
+          expect(
+            find.byKey(IngredientRowEditor.unitChipKey(0, unit)),
+            findsOneWidget,
+            reason: '$unit should be offered',
+          );
+        }
+        expect(
+          find.byKey(IngredientRowEditor.unitChipKey(0, 'dozen')),
+          findsNothing,
         );
-        expect(field.controller?.text, isEmpty);
-        expect(field.decoration?.hintText, 'unit');
-        expect(recipeUnits, isNot(contains(field.decoration?.hintText)));
+        expect(
+          find.byKey(IngredientRowEditor.unitChipKey(0, 'slice')),
+          findsNothing,
+        );
+
+        final Finder chip = find.byKey(
+          IngredientRowEditor.unitChipKey(0, 'tbsp'),
+        );
+        await tester.ensureVisible(chip);
+        await tester.tap(chip);
+        await tester.pump();
+        expect(
+          tester
+              .widget<TextField>(
+                find.descendant(
+                  of: find.byKey(IngredientRowEditor.unitFieldKey(0)),
+                  matching: find.byType(TextField),
+                ),
+              )
+              .controller
+              ?.text,
+          'tbsp',
+        );
       },
     );
 
-    testWidgets('an ingredient row offers only recipe units and a tap fills the unit', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPushed(tester, repository: FakeRecipeRepository());
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.pump();
-
-      for (final String unit in recipeUnits) {
-        expect(
-          find.byKey(IngredientRowEditor.unitChipKey(0, unit)),
-          findsOneWidget,
-          reason: '$unit should be offered',
+    testWidgets(
+      'reordering the ingredient rows changes the order sent on submit',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          createResult: _dalRecipe,
         );
-      }
-      expect(find.byKey(IngredientRowEditor.unitChipKey(0, 'dozen')), findsNothing);
-      expect(find.byKey(IngredientRowEditor.unitChipKey(0, 'slice')), findsNothing);
+        await _pumpPushed(tester, repository: repository);
 
-      final Finder chip = find.byKey(IngredientRowEditor.unitChipKey(0, 'tbsp'));
-      await tester.ensureVisible(chip);
-      await tester.tap(chip);
-      await tester.pump();
-      expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: find.byKey(IngredientRowEditor.unitFieldKey(0)),
-                matching: find.byType(TextField),
-              ),
-            )
-            .controller
-            ?.text,
-        'tbsp',
-      );
-    });
+        await tester.enterText(
+          find.byKey(RecipeFormScreen.titleFieldKey),
+          'Toor Dal',
+        );
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.addIngredientButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+        await tester.pump();
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.addIngredientButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+        await tester.pump();
 
-    testWidgets('reordering the ingredient rows changes the order sent on submit', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        createResult: _dalRecipe,
-      );
-      await _pumpPushed(tester, repository: repository);
+        await tester.ensureVisible(
+          find.byKey(IngredientRowEditor.nameFieldKey(0)),
+        );
+        await tester.enterText(
+          find.byKey(IngredientRowEditor.nameFieldKey(0)),
+          'Ingredient A',
+        );
+        await tester.ensureVisible(
+          find.byKey(IngredientRowEditor.nameFieldKey(1)),
+        );
+        await tester.enterText(
+          find.byKey(IngredientRowEditor.nameFieldKey(1)),
+          'Ingredient B',
+        );
+        await tester.pump();
 
-      await tester.enterText(find.byKey(RecipeFormScreen.titleFieldKey), 'Toor Dal');
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.pump();
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.pump();
+        // The drag handle icon, not the text field — a plain `drag` gesture
+        // is enough since the rows use `ReorderableDragStartListener` (no
+        // long-press required, unlike `ReorderableDelayedDragStartListener`).
+        await tester.ensureVisible(find.byIcon(Icons.drag_handle).first);
+        await tester.drag(
+          find.byIcon(Icons.drag_handle).first,
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.byKey(IngredientRowEditor.nameFieldKey(0)));
-      await tester.enterText(find.byKey(IngredientRowEditor.nameFieldKey(0)), 'Ingredient A');
-      await tester.ensureVisible(find.byKey(IngredientRowEditor.nameFieldKey(1)));
-      await tester.enterText(find.byKey(IngredientRowEditor.nameFieldKey(1)), 'Ingredient B');
-      await tester.pump();
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.submitButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
 
-      // The drag handle icon, not the text field — a plain `drag` gesture
-      // is enough since the rows use `ReorderableDragStartListener` (no
-      // long-press required, unlike `ReorderableDelayedDragStartListener`).
-      await tester.ensureVisible(find.byIcon(Icons.drag_handle).first);
-      await tester.drag(find.byIcon(Icons.drag_handle).first, const Offset(0, 200));
-      await tester.pumpAndSettle();
+        expect(repository.createCalls, hasLength(1));
+        final List<String> submittedNames = repository
+            .createCalls
+            .single
+            .draft
+            .ingredients
+            .map((ingredient) => ingredient.name)
+            .toList();
+        expect(submittedNames, <String>['Ingredient B', 'Ingredient A']);
+      },
+    );
 
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'submitting calls createRecipe with the built draft and pops back',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          createResult: _dalRecipe,
+        );
+        await _pumpPushed(tester, repository: repository);
 
-      expect(repository.createCalls, hasLength(1));
-      final List<String> submittedNames = repository.createCalls.single.draft.ingredients
-          .map((ingredient) => ingredient.name)
-          .toList();
-      expect(submittedNames, <String>['Ingredient B', 'Ingredient A']);
-    });
+        await tester.enterText(
+          find.byKey(RecipeFormScreen.titleFieldKey),
+          'Toor Dal',
+        );
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.enterText(
+          find.byKey(RecipeFormScreen.servingsFieldKey),
+          '4',
+        );
+        await tester.pump();
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.submitButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
 
-    testWidgets('submitting calls createRecipe with the built draft and pops back', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        createResult: _dalRecipe,
-      );
-      await _pumpPushed(tester, repository: repository);
+        expect(repository.createCalls, hasLength(1));
+        final call = repository.createCalls.single;
+        expect(call.householdId, 'household-1');
+        expect(call.draft.title, 'Toor Dal');
+        expect(call.draft.role, RecipeRole.sabziDal);
+        expect(call.draft.servings, 4);
+        // A structured create must never send a `source` attribution — that
+        // argument exists only for the review-mode confirm path (W7 S10).
+        expect(call.source, isNull);
+        expect(find.byType(RecipeFormScreen), findsNothing);
+        expect(find.text('open'), findsOneWidget);
+      },
+    );
 
-      await tester.enterText(find.byKey(RecipeFormScreen.titleFieldKey), 'Toor Dal');
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.enterText(find.byKey(RecipeFormScreen.servingsFieldKey), '4');
-      await tester.pump();
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders no AI-proposal badge — that treatment is review-mode only',
+      (WidgetTester tester) async {
+        await _pumpPushed(tester, repository: FakeRecipeRepository());
 
-      expect(repository.createCalls, hasLength(1));
-      final call = repository.createCalls.single;
-      expect(call.householdId, 'household-1');
-      expect(call.draft.title, 'Toor Dal');
-      expect(call.draft.role, RecipeRole.sabziDal);
-      expect(call.draft.servings, 4);
-      // A structured create must never send a `source` attribution — that
-      // argument exists only for the review-mode confirm path (W7 S10).
-      expect(call.source, isNull);
-      expect(find.byType(RecipeFormScreen), findsNothing);
-      expect(find.text('open'), findsOneWidget);
-    });
+        await tester.enterText(
+          find.byKey(RecipeFormScreen.titleFieldKey),
+          'Toor Dal',
+        );
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
 
-    testWidgets('renders no AI-proposal badge — that treatment is review-mode only', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPushed(tester, repository: FakeRecipeRepository());
-
-      await tester.enterText(find.byKey(RecipeFormScreen.titleFieldKey), 'Toor Dal');
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.pump();
-
-      expect(find.byKey(AIProposal.proposedBadgeKey), findsNothing);
-    });
+        expect(find.byKey(AIProposal.proposedBadgeKey), findsNothing);
+      },
+    );
 
     testWidgets('a server VALIDATION error renders inline and does not pop', (
       WidgetTester tester,
@@ -352,7 +426,10 @@ void main() {
       );
       await _pumpPushed(tester, repository: repository);
 
-      await tester.enterText(find.byKey(RecipeFormScreen.titleFieldKey), 'Toor Dal');
+      await tester.enterText(
+        find.byKey(RecipeFormScreen.titleFieldKey),
+        'Toor Dal',
+      );
       await tester.tap(find.text('Sabzi/Dal'));
       await tester.pump();
       await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
@@ -366,7 +443,10 @@ void main() {
       final FakeRecipeRepository repository = FakeRecipeRepository();
       await _pumpPushed(tester, repository: repository);
 
-      await tester.enterText(find.byKey(RecipeFormScreen.titleFieldKey), 'Toor Dal');
+      await tester.enterText(
+        find.byKey(RecipeFormScreen.titleFieldKey),
+        'Toor Dal',
+      );
       await tester.tap(find.byType(PTopBarBackButton));
       await tester.pumpAndSettle();
 
@@ -376,17 +456,18 @@ void main() {
   });
 
   group('RecipeFormScreen — edit mode', () {
-    testWidgets('renders no AI-proposal badge — that treatment is review-mode only', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPushed(
-        tester,
-        repository: FakeRecipeRepository(),
-        initialRecipe: _dalRecipe,
-      );
+    testWidgets(
+      'renders no AI-proposal badge — that treatment is review-mode only',
+      (WidgetTester tester) async {
+        await _pumpPushed(
+          tester,
+          repository: FakeRecipeRepository(),
+          initialRecipe: _dalRecipe,
+        );
 
-      expect(find.byKey(AIProposal.proposedBadgeKey), findsNothing);
-    });
+        expect(find.byKey(AIProposal.proposedBadgeKey), findsNothing);
+      },
+    );
 
     testWidgets('seeds every field from the existing recipe', (
       WidgetTester tester,
@@ -434,136 +515,140 @@ void main() {
       );
     });
 
-    testWidgets('submitting with only the title changed sends a patch with only that field', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        updateResult: _dalRecipe,
-      );
-      await _pumpPushed(
-        tester,
-        repository: repository,
-        initialRecipe: _dalRecipe,
-      );
+    testWidgets(
+      'submitting with only the title changed sends a patch with only that field',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          updateResult: _dalRecipe,
+        );
+        await _pumpPushed(
+          tester,
+          repository: repository,
+          initialRecipe: _dalRecipe,
+        );
 
-      await tester.enterText(
-        find.byKey(RecipeFormScreen.titleFieldKey),
-        'Toor Dal (updated)',
-      );
-      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(RecipeFormScreen.titleFieldKey),
+          'Toor Dal (updated)',
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(repository.updateCalls, hasLength(1));
-      final patch = repository.updateCalls.single.patch;
-      expect(patch.title, 'Toor Dal (updated)');
-      expect(patch.description, isNull);
-      expect(patch.servings, isNull);
-      expect(patch.role, isNull);
-      expect(patch.ingredients, isNull);
-      expect(patch.steps, isNull);
-    });
+        expect(repository.updateCalls, hasLength(1));
+        final patch = repository.updateCalls.single.patch;
+        expect(patch.title, 'Toor Dal (updated)');
+        expect(patch.description, isNull);
+        expect(patch.servings, isNull);
+        expect(patch.role, isNull);
+        expect(patch.ingredients, isNull);
+        expect(patch.steps, isNull);
+      },
+    );
 
-    testWidgets('editing the ingredient list sends the whole current list even though nothing else changed', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        updateResult: _dalRecipe,
-      );
-      await _pumpPushed(
-        tester,
-        repository: repository,
-        initialRecipe: _dalRecipe,
-      );
+    testWidgets(
+      'editing the ingredient list sends the whole current list even though nothing else changed',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          updateResult: _dalRecipe,
+        );
+        await _pumpPushed(
+          tester,
+          repository: repository,
+          initialRecipe: _dalRecipe,
+        );
 
-      await tester.enterText(
-        find.byKey(IngredientRowEditor.nameFieldKey(0)),
-        'Toor dal (organic)',
-      );
-      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(IngredientRowEditor.nameFieldKey(0)),
+          'Toor dal (organic)',
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(repository.updateCalls, hasLength(1));
-      final patch = repository.updateCalls.single.patch;
-      expect(patch.title, isNull);
-      expect(patch.ingredients, isNotNull);
-      expect(patch.ingredients!.single.name, 'Toor dal (organic)');
-      // `category`/`notes` aren't editable by this form (no UI for either),
-      // but `ingredients` is a whole-list-replace patch field — round-trip
-      // regression coverage for the bug found by `code-reviewer` where an
-      // edited ingredient list silently nulled out both on every ingredient
-      // in the recipe, not just the row actually touched.
-      expect(patch.ingredients!.single.category, 'dal');
-      expect(patch.ingredients!.single.notes, 'Split, not whole.');
-      expect(patch.steps, isNull);
-    });
+        expect(repository.updateCalls, hasLength(1));
+        final patch = repository.updateCalls.single.patch;
+        expect(patch.title, isNull);
+        expect(patch.ingredients, isNotNull);
+        expect(patch.ingredients!.single.name, 'Toor dal (organic)');
+        // `category`/`notes` aren't editable by this form (no UI for either),
+        // but `ingredients` is a whole-list-replace patch field — round-trip
+        // regression coverage for the bug found by `code-reviewer` where an
+        // edited ingredient list silently nulled out both on every ingredient
+        // in the recipe, not just the row actually touched.
+        expect(patch.ingredients!.single.category, 'dal');
+        expect(patch.ingredients!.single.notes, 'Split, not whole.');
+        expect(patch.steps, isNull);
+      },
+    );
 
-    testWidgets('submitting with nothing changed sends no request and just pops', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        updateResult: _dalRecipe,
-      );
-      await _pumpPushed(
-        tester,
-        repository: repository,
-        initialRecipe: _dalRecipe,
-      );
+    testWidgets(
+      'submitting with nothing changed sends no request and just pops',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          updateResult: _dalRecipe,
+        );
+        await _pumpPushed(
+          tester,
+          repository: repository,
+          initialRecipe: _dalRecipe,
+        );
 
-      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(repository.updateCalls, isEmpty);
-      expect(find.byType(RecipeFormScreen), findsNothing);
-    });
+        expect(repository.updateCalls, isEmpty);
+        expect(find.byType(RecipeFormScreen), findsNothing);
+      },
+    );
   });
 
   group('RecipeFormScreen — review mode (W7 S10)', () {
-    testWidgets('seeds every populated draft field and leaves absent ones empty', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPushed(
-        tester,
-        repository: FakeRecipeRepository(),
-        initialDraft: _rajmaDraft,
-      );
+    testWidgets(
+      'seeds every populated draft field and leaves absent ones empty',
+      (WidgetTester tester) async {
+        await _pumpPushed(
+          tester,
+          repository: FakeRecipeRepository(),
+          initialDraft: _rajmaDraft,
+        );
 
-      expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: find.byKey(RecipeFormScreen.titleFieldKey),
-                matching: find.byType(TextField),
-              ),
-            )
-            .controller
-            ?.text,
-        'Rajma Chawal',
-      );
-      expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: find.byKey(RecipeFormScreen.descriptionFieldKey),
-                matching: find.byType(TextField),
-              ),
-            )
-            .controller
-            ?.text,
-        '',
-      );
-      expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: find.byKey(IngredientRowEditor.nameFieldKey(0)),
-                matching: find.byType(TextField),
-              ),
-            )
-            .controller
-            ?.text,
-        'Rajma',
-      );
-    });
+        expect(
+          tester
+              .widget<TextField>(
+                find.descendant(
+                  of: find.byKey(RecipeFormScreen.titleFieldKey),
+                  matching: find.byType(TextField),
+                ),
+              )
+              .controller
+              ?.text,
+          'Rajma Chawal',
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.descendant(
+                  of: find.byKey(RecipeFormScreen.descriptionFieldKey),
+                  matching: find.byType(TextField),
+                ),
+              )
+              .controller
+              ?.text,
+          '',
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.descendant(
+                  of: find.byKey(IngredientRowEditor.nameFieldKey(0)),
+                  matching: find.byType(TextField),
+                ),
+              )
+              .controller
+              ?.text,
+          'Rajma',
+        );
+      },
+    );
 
     testWidgets('proposed fields render with the AI-suggests badge', (
       WidgetTester tester,
@@ -583,14 +668,18 @@ void main() {
       );
     });
 
-    testWidgets('editing a proposed field loses its badge', (WidgetTester tester) async {
+    testWidgets('editing a proposed field loses its badge', (
+      WidgetTester tester,
+    ) async {
       await _pumpPushed(
         tester,
         repository: FakeRecipeRepository(),
         initialDraft: _rajmaDraft,
       );
 
-      final int badgesBefore = tester.widgetList(find.byKey(AIProposal.proposedBadgeKey)).length;
+      final int badgesBefore = tester
+          .widgetList(find.byKey(AIProposal.proposedBadgeKey))
+          .length;
 
       await tester.enterText(
         find.byKey(RecipeFormScreen.titleFieldKey),
@@ -598,7 +687,9 @@ void main() {
       );
       await tester.pump();
 
-      final int badgesAfter = tester.widgetList(find.byKey(AIProposal.proposedBadgeKey)).length;
+      final int badgesAfter = tester
+          .widgetList(find.byKey(AIProposal.proposedBadgeKey))
+          .length;
       expect(badgesAfter, badgesBefore - 1);
     });
 
@@ -611,33 +702,44 @@ void main() {
         initialDraft: _rajmaDraft,
       );
 
-      final int badgesBefore = tester.widgetList(find.byKey(AIProposal.proposedBadgeKey)).length;
+      final int badgesBefore = tester
+          .widgetList(find.byKey(AIProposal.proposedBadgeKey))
+          .length;
 
       await tester.enterText(find.byKey(RecipeFormScreen.servingsFieldKey), '');
       await tester.pump();
 
-      final int badgesAfter = tester.widgetList(find.byKey(AIProposal.proposedBadgeKey)).length;
+      final int badgesAfter = tester
+          .widgetList(find.byKey(AIProposal.proposedBadgeKey))
+          .length;
       expect(badgesAfter, badgesBefore - 1);
     });
 
-    testWidgets('adding an ingredient row in review mode loses the ingredients badge', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPushed(
-        tester,
-        repository: FakeRecipeRepository(),
-        initialDraft: _rajmaDraft,
-      );
+    testWidgets(
+      'adding an ingredient row in review mode loses the ingredients badge',
+      (WidgetTester tester) async {
+        await _pumpPushed(
+          tester,
+          repository: FakeRecipeRepository(),
+          initialDraft: _rajmaDraft,
+        );
 
-      final int badgesBefore = tester.widgetList(find.byKey(AIProposal.proposedBadgeKey)).length;
+        final int badgesBefore = tester
+            .widgetList(find.byKey(AIProposal.proposedBadgeKey))
+            .length;
 
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
-      await tester.pump();
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.addIngredientButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+        await tester.pump();
 
-      final int badgesAfter = tester.widgetList(find.byKey(AIProposal.proposedBadgeKey)).length;
-      expect(badgesAfter, badgesBefore - 1);
-    });
+        final int badgesAfter = tester
+            .widgetList(find.byKey(AIProposal.proposedBadgeKey))
+            .length;
+        expect(badgesAfter, badgesBefore - 1);
+      },
+    );
 
     testWidgets(
       'role is not silently pre-selected — submit stays blocked until affirmatively confirmed or changed',
@@ -680,7 +782,10 @@ void main() {
         expect(
           tester
               .widget<PChip>(
-                find.ancestor(of: find.text('Breakfast'), matching: find.byType(PChip)),
+                find.ancestor(
+                  of: find.text('Breakfast'),
+                  matching: find.byType(PChip),
+                ),
               )
               .selected,
           isTrue,
@@ -705,7 +810,10 @@ void main() {
         expect(
           tester
               .widget<PChip>(
-                find.ancestor(of: find.text('Sabzi/Dal'), matching: find.byType(PChip)),
+                find.ancestor(
+                  of: find.text('Sabzi/Dal'),
+                  matching: find.byType(PChip),
+                ),
               )
               .selected,
           isFalse,
@@ -718,7 +826,10 @@ void main() {
         expect(
           tester
               .widget<PChip>(
-                find.ancestor(of: find.text('Sabzi/Dal'), matching: find.byType(PChip)),
+                find.ancestor(
+                  of: find.text('Sabzi/Dal'),
+                  matching: find.byType(PChip),
+                ),
               )
               .selected,
           isTrue,
@@ -727,7 +838,9 @@ void main() {
       },
     );
 
-    testWidgets('warnings render as non-blocking notes', (WidgetTester tester) async {
+    testWidgets('warnings render as non-blocking notes', (
+      WidgetTester tester,
+    ) async {
       await _pumpPushed(
         tester,
         repository: FakeRecipeRepository(),
@@ -752,7 +865,9 @@ void main() {
 
         await tester.tap(find.text('Sabzi/Dal'));
         await tester.pump();
-        await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.submitButtonKey),
+        );
         await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
         await tester.pumpAndSettle();
 
@@ -768,7 +883,9 @@ void main() {
     testWidgets(
       'confirm sends createRecipe with the explicit reviewSourceType (W21 D9) when supplied, overriding the sourceUrl-based default',
       (WidgetTester tester) async {
-        final FakeRecipeRepository repository = FakeRecipeRepository(createResult: _dalRecipe);
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          createResult: _dalRecipe,
+        );
         await _pumpPushed(
           tester,
           repository: repository,
@@ -778,7 +895,9 @@ void main() {
 
         await tester.tap(find.text('Sabzi/Dal'));
         await tester.pump();
-        await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.submitButtonKey),
+        );
         await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
         await tester.pumpAndSettle();
 
@@ -789,54 +908,65 @@ void main() {
       },
     );
 
-    testWidgets('confirm sends createRecipe with source url and sourceUrl when importing from a URL', (
+    testWidgets(
+      'confirm sends createRecipe with source url and sourceUrl when importing from a URL',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          createResult: _dalRecipe,
+        );
+        await _pumpPushed(
+          tester,
+          repository: repository,
+          initialDraft: _rajmaDraft,
+          sourceUrl: 'https://example.com/rajma-chawal',
+        );
+
+        expect(
+          find.text('From https://example.com/rajma-chawal'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.submitButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(repository.createCalls, hasLength(1));
+        final call = repository.createCalls.single;
+        expect(call.source!.sourceType, RecipeSource.url);
+        expect(call.source!.sourceUrl, 'https://example.com/rajma-chawal');
+      },
+    );
+
+    testWidgets(
+      'a VALIDATION error from createRecipe renders inline without losing the draft',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          createError: const ValidationError('title must not be empty'),
+        );
+        await _pumpPushed(
+          tester,
+          repository: repository,
+          initialDraft: _rajmaDraft,
+        );
+
+        await tester.tap(find.text('Sabzi/Dal'));
+        await tester.pump();
+        await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text('title must not be empty'), findsOneWidget);
+        expect(find.byType(RecipeFormScreen), findsOneWidget);
+        expect(find.text('Rajma Chawal'), findsOneWidget);
+      },
+    );
+
+    testWidgets('cancel discards without writing anything', (
       WidgetTester tester,
     ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(createResult: _dalRecipe);
-      await _pumpPushed(
-        tester,
-        repository: repository,
-        initialDraft: _rajmaDraft,
-        sourceUrl: 'https://example.com/rajma-chawal',
-      );
-
-      expect(find.text('From https://example.com/rajma-chawal'), findsOneWidget);
-
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.pump();
-      await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.pumpAndSettle();
-
-      expect(repository.createCalls, hasLength(1));
-      final call = repository.createCalls.single;
-      expect(call.source!.sourceType, RecipeSource.url);
-      expect(call.source!.sourceUrl, 'https://example.com/rajma-chawal');
-    });
-
-    testWidgets('a VALIDATION error from createRecipe renders inline without losing the draft', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        createError: const ValidationError('title must not be empty'),
-      );
-      await _pumpPushed(
-        tester,
-        repository: repository,
-        initialDraft: _rajmaDraft,
-      );
-
-      await tester.tap(find.text('Sabzi/Dal'));
-      await tester.pump();
-      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
-      await tester.pumpAndSettle();
-
-      expect(find.text('title must not be empty'), findsOneWidget);
-      expect(find.byType(RecipeFormScreen), findsOneWidget);
-      expect(find.text('Rajma Chawal'), findsOneWidget);
-    });
-
-    testWidgets('cancel discards without writing anything', (WidgetTester tester) async {
       final FakeRecipeRepository repository = FakeRecipeRepository();
       await _pumpPushed(
         tester,

@@ -39,13 +39,14 @@ void main() {
       );
     });
 
-    testWidgets('does not mention opaque containers — a quiet fallback, not a pre-camera tip', (
-      WidgetTester tester,
-    ) async {
-      await _pump(tester, onContinue: () {});
+    testWidgets(
+      'does not mention opaque containers — a quiet fallback, not a pre-camera tip',
+      (WidgetTester tester) async {
+        await _pump(tester, onContinue: () {});
 
-      expect(find.textContaining('opaque'), findsNothing);
-    });
+        expect(find.textContaining('opaque'), findsNothing);
+      },
+    );
 
     testWidgets('tapping the continue action calls onContinue exactly once', (
       WidgetTester tester,
@@ -53,7 +54,10 @@ void main() {
       int continueTaps = 0;
       await _pump(tester, onContinue: () => continueTaps++);
 
-      expect(find.byKey(PantryPhotoTipsScreen.continueButtonKey), findsOneWidget);
+      expect(
+        find.byKey(PantryPhotoTipsScreen.continueButtonKey),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(PantryPhotoTipsScreen.continueButtonKey));
       await tester.pumpAndSettle();
 

@@ -77,28 +77,32 @@ void main() {
       expect(find.text('cook ${testHousehold.id}'), findsOneWidget);
     });
 
-    testWidgets('the labelled action is also present when the pantry has items', (
-      WidgetTester tester,
-    ) async {
-      await _pump(
-        tester,
-        items: <PantryItem>[
-          PantryItem(
-            id: 'item-1',
-            householdId: testHousehold.id,
-            name: 'Toor Dal',
-            quantity: 2,
-            unit: 'kg',
-            category: 'dal',
-            isStaple: true,
-            addedBy: 'user-1',
-            addedAt: DateTime.utc(2026, 8, 25),
-            updatedAt: DateTime.utc(2026, 8, 25),
-          ),
-        ],
-      );
+    testWidgets(
+      'the labelled action is also present when the pantry has items',
+      (WidgetTester tester) async {
+        await _pump(
+          tester,
+          items: <PantryItem>[
+            PantryItem(
+              id: 'item-1',
+              householdId: testHousehold.id,
+              name: 'Toor Dal',
+              quantity: 2,
+              unit: 'kg',
+              category: 'dal',
+              isStaple: true,
+              addedBy: 'user-1',
+              addedAt: DateTime.utc(2026, 8, 25),
+              updatedAt: DateTime.utc(2026, 8, 25),
+            ),
+          ],
+        );
 
-      expect(find.byKey(PantryListScreen.cookLabelledButtonKey), findsOneWidget);
-    });
+        expect(
+          find.byKey(PantryListScreen.cookLabelledButtonKey),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

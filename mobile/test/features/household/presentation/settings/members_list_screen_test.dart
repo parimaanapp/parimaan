@@ -166,10 +166,7 @@ void main() {
         await tester.pump();
 
         expect(written, <String>['ABC123']);
-        expect(
-          location(harness.router),
-          '/household/household-1/members',
-        );
+        expect(location(harness.router), '/household/household-1/members');
       },
     );
   });

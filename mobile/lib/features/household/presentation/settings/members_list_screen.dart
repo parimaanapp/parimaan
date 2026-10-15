@@ -58,7 +58,9 @@ class MembersListScreen extends ConsumerWidget {
     // `AuthSession.userId` (a comparison against `membership.user.id`, which
     // is a `users.id`, would then never match — the concrete bug that made
     // "· you" never appear on the caller's own row).
-    final String? userId = ref.watch(currentUserIdControllerProvider).valueOrNull;
+    final String? userId = ref
+        .watch(currentUserIdControllerProvider)
+        .valueOrNull;
     // Copied directly rather than navigated to: `AppRoutes.createHouseholdInvite`
     // is `InviteCodeScreen` (wireframe 2.7), which reads the create-wizard's
     // own in-memory `householdWizardControllerProvider` state — empty for

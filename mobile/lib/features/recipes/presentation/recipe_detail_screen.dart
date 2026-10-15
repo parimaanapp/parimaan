@@ -55,10 +55,15 @@ class _RecipeDetailForHousehold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<Recipe> detail = ref.watch(recipeDetailControllerProvider(arg));
+    final AsyncValue<Recipe> detail = ref.watch(
+      recipeDetailControllerProvider(arg),
+    );
 
     Future<void> openOverflowMenu() async {
-      final bool deleted = await showRecipeOverflowMenu(context: context, arg: arg);
+      final bool deleted = await showRecipeOverflowMenu(
+        context: context,
+        arg: arg,
+      );
       if (deleted && context.mounted) {
         context.pop();
       }
@@ -86,7 +91,8 @@ class _RecipeDetailForHousehold extends ConsumerWidget {
                 action: PButton(
                   label: 'Try again',
                   variant: PButtonVariant.secondary,
-                  onPressed: () => ref.invalidate(recipeDetailControllerProvider(arg)),
+                  onPressed: () =>
+                      ref.invalidate(recipeDetailControllerProvider(arg)),
                 ),
               ),
             ),
@@ -107,7 +113,8 @@ class _RecipeDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int? totalTimeMin = recipe.totalTimeMin;
-    final List<RecipeIngredient> ingredients = recipe.ingredients ?? const <RecipeIngredient>[];
+    final List<RecipeIngredient> ingredients =
+        recipe.ingredients ?? const <RecipeIngredient>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,7 +140,9 @@ class _RecipeDetailBody extends StatelessWidget {
                   Expanded(
                     child: Text(
                       recipe.role.displayLabel,
-                      style: AppTypography.label.copyWith(color: AppColors.inkMid),
+                      style: AppTypography.label.copyWith(
+                        color: AppColors.inkMid,
+                      ),
                     ),
                   ),
                   if (recipe.isFavorite)
@@ -193,16 +202,24 @@ class _RecipeDetailBody extends StatelessWidget {
                         Expanded(
                           child: Text(
                             _ingredientLabel(ingredient),
-                            style: AppTypography.body.copyWith(color: AppColors.ink),
+                            style: AppTypography.body.copyWith(
+                              color: AppColors.ink,
+                            ),
                           ),
                         ),
                         if (ingredient.isStaple)
-                          const PBadge(label: 'Staple', tone: PBadgeTone.neutral),
+                          const PBadge(
+                            label: 'Staple',
+                            tone: PBadgeTone.neutral,
+                          ),
                       ],
                     ),
                   ),
               const SizedBox(height: AppSpacing.s3),
-              Text('Steps', style: AppTypography.title.copyWith(color: AppColors.ink)),
+              Text(
+                'Steps',
+                style: AppTypography.title.copyWith(color: AppColors.ink),
+              ),
               const SizedBox(height: AppSpacing.s1),
               for (int i = 0; i < recipe.steps.length; i++)
                 Padding(

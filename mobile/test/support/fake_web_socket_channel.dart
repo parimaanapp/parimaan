@@ -7,10 +7,13 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// A [WebSocketChannel] double for [AppSyncSubscriptionClient] tests — no
 /// real socket, no real network. [emit] plays a server frame; [sentFrames]
 /// asserts what the client under test sent.
-class FakeWebSocketChannel with StreamChannelMixin<Object?> implements WebSocketChannel {
+class FakeWebSocketChannel
+    with StreamChannelMixin<Object?>
+    implements WebSocketChannel {
   FakeWebSocketChannel();
 
-  final StreamController<Object?> _incoming = StreamController<Object?>.broadcast();
+  final StreamController<Object?> _incoming =
+      StreamController<Object?>.broadcast();
   final List<Map<String, Object?>> sentFrames = <Map<String, Object?>>[];
   bool closed = false;
 
@@ -71,7 +74,9 @@ class _FakeWebSocketSink implements WebSocketSink {
 
   @override
   void add(dynamic event) {
-    _channel.sentFrames.add(jsonDecode(event as String) as Map<String, Object?>);
+    _channel.sentFrames.add(
+      jsonDecode(event as String) as Map<String, Object?>,
+    );
   }
 
   @override

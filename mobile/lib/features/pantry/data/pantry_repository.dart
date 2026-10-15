@@ -203,10 +203,11 @@ class FerryPantryRepository with FerryExecuteMixin implements PantryRepository {
     List<PantryItemDraft> items,
   ) async {
     final GBulkAddPantryItemsReq request = GBulkAddPantryItemsReq(
-      (GBulkAddPantryItemsReqBuilder b) => b
-        ..vars = (GBulkAddPantryItemsVarsBuilder()
-          ..householdId = householdId
-          ..items.addAll(items.map(_pantryItemInputFromDraft))),
+      (GBulkAddPantryItemsReqBuilder b) =>
+          b
+            ..vars = (GBulkAddPantryItemsVarsBuilder()
+              ..householdId = householdId
+              ..items.addAll(items.map(_pantryItemInputFromDraft))),
     );
 
     final GBulkAddPantryItemsData data = await execute(request);
@@ -218,16 +219,17 @@ class FerryPantryRepository with FerryExecuteMixin implements PantryRepository {
   @override
   Future<PantryItem> updatePantryItem(String id, PantryItemPatch patch) async {
     final GUpdatePantryItemReq request = GUpdatePantryItemReq(
-      (GUpdatePantryItemReqBuilder b) => b
-        ..vars = (GUpdatePantryItemVarsBuilder()
-          ..id = id
-          ..input.name = patch.name
-          ..input.quantity = patch.quantity
-          ..input.unit = patch.unit
-          ..input.category = patch.category
-          ..input.isStaple = patch.isStaple
-          ..input.expiryDate = _awsDateBuilder(patch.expiryDate)
-          ..input.lowThreshold = patch.lowThreshold),
+      (GUpdatePantryItemReqBuilder b) =>
+          b
+            ..vars = (GUpdatePantryItemVarsBuilder()
+              ..id = id
+              ..input.name = patch.name
+              ..input.quantity = patch.quantity
+              ..input.unit = patch.unit
+              ..input.category = patch.category
+              ..input.isStaple = patch.isStaple
+              ..input.expiryDate = _awsDateBuilder(patch.expiryDate)
+              ..input.lowThreshold = patch.lowThreshold),
     );
 
     final GUpdatePantryItemData data = await execute(request);
@@ -237,8 +239,8 @@ class FerryPantryRepository with FerryExecuteMixin implements PantryRepository {
   @override
   Future<PantryItem> deletePantryItem(String id) async {
     final GDeletePantryItemReq request = GDeletePantryItemReq(
-      (GDeletePantryItemReqBuilder b) => b
-        ..vars = (GDeletePantryItemVarsBuilder()..id = id),
+      (GDeletePantryItemReqBuilder b) =>
+          b..vars = (GDeletePantryItemVarsBuilder()..id = id),
     );
 
     final GDeletePantryItemData data = await execute(request);
@@ -252,7 +254,11 @@ class FerryPantryRepository with FerryExecuteMixin implements PantryRepository {
           b..vars = (GOnPantryChangedVarsBuilder()..householdId = householdId),
     );
 
-    await for (final OperationResponse<GOnPantryChangedData, GOnPantryChangedVars> response
+    await for (final OperationResponse<
+          GOnPantryChangedData,
+          GOnPantryChangedVars
+        >
+        response
         in client.request(request)) {
       if (response.hasErrors) {
         throw mapOperationFailure(
@@ -271,5 +277,6 @@ class FerryPantryRepository with FerryExecuteMixin implements PantryRepository {
 /// shape as `householdRepositoryProvider`.
 final Provider<PantryRepository> pantryRepositoryProvider =
     Provider<PantryRepository>(
-      (Ref ref) => FerryPantryRepository(client: ref.watch(ferryClientProvider)),
+      (Ref ref) =>
+          FerryPantryRepository(client: ref.watch(ferryClientProvider)),
     );

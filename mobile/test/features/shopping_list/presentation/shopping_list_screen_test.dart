@@ -586,4 +586,126 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('ShoppingListScreen — review fixes (C2)', () {
+    ShoppingListItem item(String id, {bool purchased = false}) =>
+        ShoppingListItem(
+          id: id,
+          name: 'Item $id',
+          quantity: 1,
+          unit: 'kg',
+          category: 'produce',
+          sourceRecipeId: 'r1',
+          purchased: purchased,
+          purchasedBy: null,
+          purchasedAt: null,
+          movedToPantry: false,
+        );
+
+    ShoppingList list(List<ShoppingListItem> items) => ShoppingList(
+      id: 'shopping-list-1',
+      householdId: 'household-1',
+      generatedFromMenuId: _menuId,
+      createdAt: DateTime.utc(2026, 9, 1),
+      closedAt: null,
+      aiStaplesNote: null,
+      items: items,
+    );
+
+    testWidgets('the subtitle counts the whole list, not just what is left', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[
+            item('a'),
+            item('b', purchased: true),
+            item('c', purchased: true),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 items · from 1 recipe'), findsOneWidget);
+    });
+
+    testWidgets('top bar does not overflow at 320 pt and 2x text', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(() {
+        tester.view.reset();
+        tester.platformDispatcher.clearAllTestValues();
+      });
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[item('a')]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(ShoppingListScreen.shareButtonKey), findsOneWidget);
+      expect(
+        find.byKey(ShoppingListScreen.regenerateButtonKey),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Share is keyboard focusable and named without the glyph', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[item('a')]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(ShoppingListScreen.shareButtonKey),
+          matching: find.byType(InkWell),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getSemantics(find.byKey(ShoppingListScreen.shareButtonKey))
+            .label,
+        'Share shopping list as image',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the staples card heading name has no decorative glyph', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: ShoppingList(
+            id: 'shopping-list-1',
+            householdId: 'household-1',
+            generatedFromMenuId: _menuId,
+            createdAt: DateTime.utc(2026, 9, 1),
+            closedAt: null,
+            aiStaplesNote: 'Check: hing',
+            items: <ShoppingListItem>[item('a')],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel(RegExp('◆')), findsNothing);
+      handle.dispose();
+    });
+  });
 }

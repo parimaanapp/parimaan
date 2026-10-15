@@ -138,24 +138,27 @@ void main() {
       expect(activity.value, isFalse);
     });
 
-    test('zero recipes, pantry items and menu items resolves to false', () async {
-      final ProviderContainer container = _container(
-        households: <Household>[testHousehold],
-        recipeRepository: FakeRecipeRepository(result: const <Recipe>[]),
-        pantryRepository: FakePantryRepository(result: const <PantryItem>[]),
-        menuRepository: FakeMenuRepository(fetchResult: _emptyMenu),
-      );
-      addTearDown(container.dispose);
+    test(
+      'zero recipes, pantry items and menu items resolves to false',
+      () async {
+        final ProviderContainer container = _container(
+          households: <Household>[testHousehold],
+          recipeRepository: FakeRecipeRepository(result: const <Recipe>[]),
+          pantryRepository: FakePantryRepository(result: const <PantryItem>[]),
+          menuRepository: FakeMenuRepository(fetchResult: _emptyMenu),
+        );
+        addTearDown(container.dispose);
 
-      await container.read(meHouseholdsControllerProvider.future);
-      await _awaitActivitySources(container, testHousehold.id);
+        await container.read(meHouseholdsControllerProvider.future);
+        await _awaitActivitySources(container, testHousehold.id);
 
-      final AsyncValue<bool> activity = container.read(
-        householdHasActivityProvider,
-      );
-      expect(activity.hasValue, isTrue);
-      expect(activity.value, isFalse);
-    });
+        final AsyncValue<bool> activity = container.read(
+          householdHasActivityProvider,
+        );
+        expect(activity.hasValue, isTrue);
+        expect(activity.value, isFalse);
+      },
+    );
 
     test('exactly one recipe (nothing else) resolves to true', () async {
       final ProviderContainer container = _container(
@@ -176,7 +179,9 @@ void main() {
     test('exactly one pantry item (nothing else) resolves to true', () async {
       final ProviderContainer container = _container(
         households: <Household>[testHousehold],
-        pantryRepository: FakePantryRepository(result: <PantryItem>[_pantryItem]),
+        pantryRepository: FakePantryRepository(
+          result: <PantryItem>[_pantryItem],
+        ),
       );
       addTearDown(container.dispose);
 
@@ -189,21 +194,24 @@ void main() {
       expect(activity.value, isTrue);
     });
 
-    test('exactly one planned menu item (nothing else) resolves to true', () async {
-      final ProviderContainer container = _container(
-        households: <Household>[testHousehold],
-        menuRepository: FakeMenuRepository(fetchResult: _menuWithOneItem()),
-      );
-      addTearDown(container.dispose);
+    test(
+      'exactly one planned menu item (nothing else) resolves to true',
+      () async {
+        final ProviderContainer container = _container(
+          households: <Household>[testHousehold],
+          menuRepository: FakeMenuRepository(fetchResult: _menuWithOneItem()),
+        );
+        addTearDown(container.dispose);
 
-      await container.read(meHouseholdsControllerProvider.future);
-      await _awaitActivitySources(container, testHousehold.id);
+        await container.read(meHouseholdsControllerProvider.future);
+        await _awaitActivitySources(container, testHousehold.id);
 
-      final AsyncValue<bool> activity = container.read(
-        householdHasActivityProvider,
-      );
-      expect(activity.value, isTrue);
-    });
+        final AsyncValue<bool> activity = container.read(
+          householdHasActivityProvider,
+        );
+        expect(activity.value, isTrue);
+      },
+    );
 
     test(
       'a still-resolving source holds (loading), regardless of the other two',
@@ -231,45 +239,42 @@ void main() {
       },
     );
 
-    test(
-      'an errored source holds (loading) — treated as unknown, never as '
-      'empty (the OPPOSITE of how the household-existence check treats an '
-      'error)',
-      () async {
-        final ProviderContainer container = _container(
-          households: <Household>[testHousehold],
-          pantryRepository: FakePantryRepository(
-            error: StateError('network error'),
-          ),
-        );
-        addTearDown(container.dispose);
+    test('an errored source holds (loading) — treated as unknown, never as '
+        'empty (the OPPOSITE of how the household-existence check treats an '
+        'error)', () async {
+      final ProviderContainer container = _container(
+        households: <Household>[testHousehold],
+        pantryRepository: FakePantryRepository(
+          error: StateError('network error'),
+        ),
+      );
+      addTearDown(container.dispose);
 
-        await container.read(meHouseholdsControllerProvider.future);
-        // Only the two sources that actually resolve — awaiting the
-        // errored pantry provider's own `.future` would rethrow here in
-        // the test body itself, rather than exercising how
-        // `householdHasActivityProvider` reads its error state.
-        await container.read(
-          recipeLibraryControllerProvider(testHousehold.id).future,
-        );
-        await container.read(
-          currentMenuControllerProvider(
-            menuKeyFor(testHousehold.id, currentWeekStartDate()),
-          ).future,
-        );
-        // One more microtask turn for the pantry fetch's own rejection to
-        // land in its `AsyncNotifier` state.
-        await Future<void>.delayed(Duration.zero);
+      await container.read(meHouseholdsControllerProvider.future);
+      // Only the two sources that actually resolve — awaiting the
+      // errored pantry provider's own `.future` would rethrow here in
+      // the test body itself, rather than exercising how
+      // `householdHasActivityProvider` reads its error state.
+      await container.read(
+        recipeLibraryControllerProvider(testHousehold.id).future,
+      );
+      await container.read(
+        currentMenuControllerProvider(
+          menuKeyFor(testHousehold.id, currentWeekStartDate()),
+        ).future,
+      );
+      // One more microtask turn for the pantry fetch's own rejection to
+      // land in its `AsyncNotifier` state.
+      await Future<void>.delayed(Duration.zero);
 
-        final AsyncValue<bool> activity = container.read(
-          householdHasActivityProvider,
-        );
-        expect(
-          activity.hasValue,
-          isFalse,
-          reason: 'an errored source must hold, never be read as empty',
-        );
-      },
-    );
+      final AsyncValue<bool> activity = container.read(
+        householdHasActivityProvider,
+      );
+      expect(
+        activity.hasValue,
+        isFalse,
+        reason: 'an errored source must hold, never be read as empty',
+      );
+    });
   });
 }

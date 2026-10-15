@@ -147,20 +147,22 @@ void main() {
 
   group('LunchMealStructure serialization — explicit meal type (W13 S2)', () {
     test('toJson(MealType.dinner) nests under the dinner key, not lunch', () {
-      expect(LunchMealStructure.defaults.toJson(MealType.dinner), <String, Object?>{
-        'dinner': <String, Object?>{
-          'carb': 2,
-          'sabzi_dal': 2,
-          'accompaniment': 1,
+      expect(
+        LunchMealStructure.defaults.toJson(MealType.dinner),
+        <String, Object?>{
+          'dinner': <String, Object?>{
+            'carb': 2,
+            'sabzi_dal': 2,
+            'accompaniment': 1,
+          },
         },
-      });
+      );
     });
 
     test('carries no lunch key when serialized for dinner', () {
-      expect(
-        LunchMealStructure.defaults.toJson(MealType.dinner).keys,
-        <String>['dinner'],
-      );
+      expect(LunchMealStructure.defaults.toJson(MealType.dinner).keys, <String>[
+        'dinner',
+      ]);
     });
 
     test('toWireJson(MealType.dinner) is a JSON string keyed dinner', () {

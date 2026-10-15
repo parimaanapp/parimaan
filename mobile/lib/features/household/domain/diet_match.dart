@@ -40,16 +40,12 @@ Set<String> _effectiveRecipeTags(List<String> recipeTags) => <String>{
 List<String> _householdStyles(List<String> householdTags) =>
     householdTags.where(dietStyles.contains).toSet().toList(growable: false);
 
-List<String> _householdModifiers(List<String> householdTags) => householdTags
-    .where(dietModifiers.contains)
-    .toSet()
-    .toList(growable: false);
+List<String> _householdModifiers(List<String> householdTags) =>
+    householdTags.where(dietModifiers.contains).toSet().toList(growable: false);
 
 bool _styleSatisfied(Set<String> tags, List<String> styles) =>
     styles.isEmpty ||
-    styles.any(
-      (String style) => _styleExpansion[style]!.any(tags.contains),
-    );
+    styles.any((String style) => _styleExpansion[style]!.any(tags.contains));
 
 /// Whether a recipe carrying [recipeTags] may be served to a household whose
 /// settings carry [householdTags].

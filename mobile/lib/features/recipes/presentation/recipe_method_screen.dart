@@ -68,7 +68,8 @@ class RecipeMethodScreen extends StatelessWidget {
                 _MethodCard(
                   itemKey: freeformButtonKey,
                   title: 'Paste recipe text',
-                  body: 'Paste text from anywhere and let Parimaan structure it.',
+                  body:
+                      'Paste text from anywhere and let Parimaan structure it.',
                   onTap: () =>
                       context.push(AppRoutes.recipeFreeformInput(householdId)),
                 ),

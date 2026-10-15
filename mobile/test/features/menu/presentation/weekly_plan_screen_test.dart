@@ -302,53 +302,55 @@ void main() {
       },
     );
 
-    testWidgets('tapping an empty slot navigates to the recipe picker, carrying that slot\'s own coordinates', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping an empty slot navigates to the recipe picker, carrying that slot\'s own coordinates',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(MealSlotCard).first);
-      await tester.pumpAndSettle();
+        await tester.tap(find.byType(MealSlotCard).first);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(RecipePickerScreen), findsOneWidget);
-      // Monday's first slot in plannedSlotsForDay's own emission order is
-      // breakfast (MealType.values' own order) — the transposition class
-      // §15.6 exists to catch, asserted directly rather than assumed.
-      final RecipePickerScreen picker = tester.widget(
-        find.byType(RecipePickerScreen),
-      );
-      expect(picker.extra.dayOfWeek, 0);
-      expect(picker.extra.mealSlot, 'breakfast');
-    });
+        expect(find.byType(RecipePickerScreen), findsOneWidget);
+        // Monday's first slot in plannedSlotsForDay's own emission order is
+        // breakfast (MealType.values' own order) — the transposition class
+        // §15.6 exists to catch, asserted directly rather than assumed.
+        final RecipePickerScreen picker = tester.widget(
+          find.byType(RecipePickerScreen),
+        );
+        expect(picker.extra.dayOfWeek, 0);
+        expect(picker.extra.mealSlot, 'breakfast');
+      },
+    );
 
-    testWidgets('tapping the Auto-fill week action navigates to the auto-fill preview screen', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping the Auto-fill week action navigates to the auto-fill preview screen',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(WeeklyPlanScreen.autoFillButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(WeeklyPlanScreen.autoFillButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(AutoFillPreviewScreen), findsOneWidget);
-      // The screen this pushed to is keyed by the CURRENT week — the very
-      // first thing it does is call `previewAutoFill()` against the SAME
-      // `CurrentMenuController` family member this screen reads, not a
-      // freshly re-resolved one.
-      expect(repository.previewCalls, hasLength(1));
-    });
+        expect(find.byType(AutoFillPreviewScreen), findsOneWidget);
+        // The screen this pushed to is keyed by the CURRENT week — the very
+        // first thing it does is call `previewAutoFill()` against the SAME
+        // `CurrentMenuController` family member this screen reads, not a
+        // freshly re-resolved one.
+        expect(repository.previewCalls, hasLength(1));
+      },
+    );
   });
 
   group('WeeklyPlanScreen meal-instance headers (W13 S5)', () {
@@ -428,10 +430,7 @@ void main() {
         // No Snacks header anywhere in the tree, not just at this key —
         // asserted against the header's own display text too, across
         // every day the ListView has built so far.
-        expect(
-          find.widgetWithText(MealInstanceHeader, 'Snacks'),
-          findsNothing,
-        );
+        expect(find.widgetWithText(MealInstanceHeader, 'Snacks'), findsNothing);
       },
     );
 
@@ -470,9 +469,7 @@ void main() {
         // Dinner's own header belongs to the Lunch group — count them
         // directly rather than trusting the domain module's own unit test
         // to cover this screen's wiring too.
-        final Iterable<Element> allCards = find
-            .byType(MealSlotCard)
-            .evaluate();
+        final Iterable<Element> allCards = find.byType(MealSlotCard).evaluate();
         final int cardsUnderLunch = allCards.where((Element element) {
           final double top = (element.renderObject! as RenderBox)
               .localToGlobal(Offset.zero)
@@ -694,10 +691,7 @@ void main() {
           find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
           findsNothing,
         );
-        expect(
-          find.widgetWithText(MealInstanceHeader, 'Snacks'),
-          findsNothing,
-        );
+        expect(find.widgetWithText(MealInstanceHeader, 'Snacks'), findsNothing);
       },
     );
 
@@ -765,10 +759,7 @@ void main() {
         expect(find.byKey(WeeklyPlanScreen.errorKey), findsNothing);
         expect(find.byType(MealSlotCard), findsNothing);
         expect(find.byType(MealInstanceHeader), findsNothing);
-        expect(
-          find.text('No meals configured for this day.'),
-          findsWidgets,
-        );
+        expect(find.text('No meals configured for this day.'), findsWidgets);
       },
     );
   });

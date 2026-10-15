@@ -38,10 +38,15 @@ void main() {
 
     tearDown(() => db.close());
 
-    test('readPantryItems returns an empty list when nothing is cached', () async {
-      final List<PantryItem> items = await db.pantryDao.readPantryItems('household-1');
-      expect(items, isEmpty);
-    });
+    test(
+      'readPantryItems returns an empty list when nothing is cached',
+      () async {
+        final List<PantryItem> items = await db.pantryDao.readPantryItems(
+          'household-1',
+        );
+        expect(items, isEmpty);
+      },
+    );
 
     test('replaceAll then readPantryItems round-trips every field, including nulls', () async {
       final PantryItem item = _item(
@@ -52,27 +57,43 @@ void main() {
       );
       await db.pantryDao.replaceAll('household-1', <PantryItem>[item]);
 
-      final List<PantryItem> items = await db.pantryDao.readPantryItems('household-1');
+      final List<PantryItem> items = await db.pantryDao.readPantryItems(
+        'household-1',
+      );
       expect(items, <PantryItem>[item]);
     });
 
-    test('round-trips a populated expiryDate (DATE) and lowThreshold', () async {
-      final PantryItem item = _item(expiryDate: '2027-03-01', lowThreshold: 0.5);
-      await db.pantryDao.replaceAll('household-1', <PantryItem>[item]);
+    test(
+      'round-trips a populated expiryDate (DATE) and lowThreshold',
+      () async {
+        final PantryItem item = _item(
+          expiryDate: '2027-03-01',
+          lowThreshold: 0.5,
+        );
+        await db.pantryDao.replaceAll('household-1', <PantryItem>[item]);
 
-      final List<PantryItem> items = await db.pantryDao.readPantryItems('household-1');
-      expect(items.single.expiryDate, '2027-03-01');
-      expect(items.single.lowThreshold, 0.5);
-    });
+        final List<PantryItem> items = await db.pantryDao.readPantryItems(
+          'household-1',
+        );
+        expect(items.single.expiryDate, '2027-03-01');
+        expect(items.single.lowThreshold, 0.5);
+      },
+    );
 
     test('replaceAll only touches the given household — another household is untouched', () async {
-      await db.pantryDao.replaceAll('household-1', <PantryItem>[_item(id: 'item-1')]);
+      await db.pantryDao.replaceAll('household-1', <PantryItem>[
+        _item(id: 'item-1'),
+      ]);
       await db.pantryDao.replaceAll('household-2', <PantryItem>[
         _item(id: 'item-2', householdId: 'household-2'),
       ]);
 
-      final List<PantryItem> household1 = await db.pantryDao.readPantryItems('household-1');
-      final List<PantryItem> household2 = await db.pantryDao.readPantryItems('household-2');
+      final List<PantryItem> household1 = await db.pantryDao.readPantryItems(
+        'household-1',
+      );
+      final List<PantryItem> household2 = await db.pantryDao.readPantryItems(
+        'household-2',
+      );
       expect(household1.map((PantryItem i) => i.id), <String>['item-1']);
       expect(household2.map((PantryItem i) => i.id), <String>['item-2']);
     });
@@ -83,14 +104,20 @@ void main() {
         _item(id: 'item-2'),
       ]);
 
-      await db.pantryDao.replaceAll('household-1', <PantryItem>[_item(id: 'item-2')]);
+      await db.pantryDao.replaceAll('household-1', <PantryItem>[
+        _item(id: 'item-2'),
+      ]);
 
-      final List<PantryItem> items = await db.pantryDao.readPantryItems('household-1');
+      final List<PantryItem> items = await db.pantryDao.readPantryItems(
+        'household-1',
+      );
       expect(items.map((PantryItem i) => i.id), <String>['item-2']);
     });
 
     test('clearHousehold evicts only that household', () async {
-      await db.pantryDao.replaceAll('household-1', <PantryItem>[_item(id: 'item-1')]);
+      await db.pantryDao.replaceAll('household-1', <PantryItem>[
+        _item(id: 'item-1'),
+      ]);
       await db.pantryDao.replaceAll('household-2', <PantryItem>[
         _item(id: 'item-2', householdId: 'household-2'),
       ]);
@@ -102,7 +129,9 @@ void main() {
     });
 
     test('clearAll evicts every household', () async {
-      await db.pantryDao.replaceAll('household-1', <PantryItem>[_item(id: 'item-1')]);
+      await db.pantryDao.replaceAll('household-1', <PantryItem>[
+        _item(id: 'item-1'),
+      ]);
       await db.pantryDao.replaceAll('household-2', <PantryItem>[
         _item(id: 'item-2', householdId: 'household-2'),
       ]);

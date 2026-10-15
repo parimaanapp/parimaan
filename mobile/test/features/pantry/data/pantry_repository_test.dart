@@ -67,7 +67,10 @@ void main() {
       'a non-member gets a mapped ForbiddenError, same as fetchHousehold',
       () async {
         final subject = _subject(
-          (Request _) => _errorBody('FORBIDDEN', 'You are not a member of this household.'),
+          (Request _) => _errorBody(
+            'FORBIDDEN',
+            'You are not a member of this household.',
+          ),
         );
 
         await expectLater(
@@ -119,22 +122,25 @@ void main() {
       unit: 'kg',
     );
 
-    test('sends the AddPantryItem operation with householdId and input', () async {
-      final subject = _subject(
-        (Request _) => <String, dynamic>{'data': addPantryItemWireData()},
-      );
+    test(
+      'sends the AddPantryItem operation with householdId and input',
+      () async {
+        final subject = _subject(
+          (Request _) => <String, dynamic>{'data': addPantryItemWireData()},
+        );
 
-      await subject.repository.addPantryItem('household-1', draft);
+        await subject.repository.addPantryItem('household-1', draft);
 
-      final Request sent = subject.link.requests.single;
-      expect(sent.operation.operationName, 'AddPantryItem');
-      expect(sent.variables['householdId'], 'household-1');
-      final Map<String, dynamic> input =
-          sent.variables['input'] as Map<String, dynamic>;
-      expect(input['name'], 'Toor Dal');
-      expect(input['quantity'], 2);
-      expect(input['unit'], 'kg');
-    });
+        final Request sent = subject.link.requests.single;
+        expect(sent.operation.operationName, 'AddPantryItem');
+        expect(sent.variables['householdId'], 'household-1');
+        final Map<String, dynamic> input =
+            sent.variables['input'] as Map<String, dynamic>;
+        expect(input['name'], 'Toor Dal');
+        expect(input['quantity'], 2);
+        expect(input['unit'], 'kg');
+      },
+    );
 
     test('maps the wire payload to a domain PantryItem', () async {
       final subject = _subject(
@@ -172,39 +178,24 @@ void main() {
       PantryItemDraft(name: 'Moong Dal', quantity: 1, unit: 'kg'),
     ];
 
-    test(
-      'sends the BulkAddPantryItems operation with householdId and one items array',
-      () async {
-        final subject = _subject(
-          (Request _) => <String, dynamic>{'data': bulkAddPantryItemsWireData()},
-        );
+    test('sends the BulkAddPantryItems operation with householdId and one items array', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': bulkAddPantryItemsWireData()},
+      );
 
-        await subject.repository.bulkAddPantryItems('household-1', items);
+      await subject.repository.bulkAddPantryItems('household-1', items);
 
-        expect(subject.link.requests, hasLength(1));
-        final Request sent = subject.link.requests.single;
-        expect(sent.operation.operationName, 'BulkAddPantryItems');
-        expect(sent.variables['householdId'], 'household-1');
-        final List<dynamic> sentItems = sent.variables['items'] as List<dynamic>;
-        expect(sentItems, hasLength(2));
-        expect(
-          (sentItems[0] as Map<String, dynamic>)['name'],
-          'Toor Dal',
-        );
-        expect(
-          (sentItems[0] as Map<String, dynamic>)['quantity'],
-          2,
-        );
-        expect(
-          (sentItems[0] as Map<String, dynamic>)['unit'],
-          'kg',
-        );
-        expect(
-          (sentItems[1] as Map<String, dynamic>)['name'],
-          'Moong Dal',
-        );
-      },
-    );
+      expect(subject.link.requests, hasLength(1));
+      final Request sent = subject.link.requests.single;
+      expect(sent.operation.operationName, 'BulkAddPantryItems');
+      expect(sent.variables['householdId'], 'household-1');
+      final List<dynamic> sentItems = sent.variables['items'] as List<dynamic>;
+      expect(sentItems, hasLength(2));
+      expect((sentItems[0] as Map<String, dynamic>)['name'], 'Toor Dal');
+      expect((sentItems[0] as Map<String, dynamic>)['quantity'], 2);
+      expect((sentItems[0] as Map<String, dynamic>)['unit'], 'kg');
+      expect((sentItems[1] as Map<String, dynamic>)['name'], 'Moong Dal');
+    });
 
     test('maps the wire payload to a list of domain PantryItems', () async {
       final subject = _subject(
@@ -230,7 +221,8 @@ void main() {
 
     test('a VALIDATION failure (e.g. the server-side 50-item cap) maps to ValidationError', () async {
       final subject = _subject(
-        (Request _) => _errorBody('VALIDATION', 'items must have 50 or fewer entries'),
+        (Request _) =>
+            _errorBody('VALIDATION', 'items must have 50 or fewer entries'),
       );
 
       await expectLater(
@@ -272,10 +264,7 @@ void main() {
         },
       );
 
-      final result = await subject.repository.updatePantryItem(
-        'item-1',
-        patch,
-      );
+      final result = await subject.repository.updatePantryItem('item-1', patch);
       expect(result.quantity, 5);
     });
 
@@ -330,17 +319,20 @@ void main() {
   });
 
   group('FerryPantryRepository.watchPantryChanges', () {
-    test('sends the OnPantryChanged operation with the householdId variable', () async {
-      final subject = _subject(
-        (Request _) => <String, dynamic>{'data': onPantryChangedWireData()},
-      );
+    test(
+      'sends the OnPantryChanged operation with the householdId variable',
+      () async {
+        final subject = _subject(
+          (Request _) => <String, dynamic>{'data': onPantryChangedWireData()},
+        );
 
-      await subject.repository.watchPantryChanges('household-1').first;
+        await subject.repository.watchPantryChanges('household-1').first;
 
-      final Request sent = subject.link.requests.single;
-      expect(sent.operation.operationName, 'OnPantryChanged');
-      expect(sent.variables['householdId'], 'household-1');
-    });
+        final Request sent = subject.link.requests.single;
+        expect(sent.operation.operationName, 'OnPantryChanged');
+        expect(sent.variables['householdId'], 'household-1');
+      },
+    );
 
     test('emits (a pure signal — the pushed item is not surfaced)', () async {
       final subject = _subject(
@@ -355,10 +347,8 @@ void main() {
 
     test('a subscribe-time FORBIDDEN denial maps to ForbiddenError', () async {
       final subject = _subject(
-        (Request _) => _errorBody(
-          'FORBIDDEN',
-          'You are not a member of this household.',
-        ),
+        (Request _) =>
+            _errorBody('FORBIDDEN', 'You are not a member of this household.'),
       );
 
       await expectLater(

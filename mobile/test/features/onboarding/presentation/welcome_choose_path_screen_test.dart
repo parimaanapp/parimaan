@@ -74,16 +74,13 @@ void main() {
       expect(find.text('What would you like to do first?'), findsOneWidget);
     });
 
-    testWidgets(
-      'renders no loading or error state of its own — structural, it '
-      'performs no async work (D1)',
-      (WidgetTester tester) async {
-        await _pump(tester);
+    testWidgets('renders no loading or error state of its own — structural, it '
+        'performs no async work (D1)', (WidgetTester tester) async {
+      await _pump(tester);
 
-        expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(find.byIcon(Icons.error_outline), findsNothing);
-      },
-    );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byIcon(Icons.error_outline), findsNothing);
+    });
 
     testWidgets('"Add to Pantry" navigates to the pantry add-method chooser', (
       WidgetTester tester,

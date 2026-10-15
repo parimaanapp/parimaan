@@ -87,7 +87,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('renders ingredients and steps in order', (WidgetTester tester) async {
+    testWidgets('renders ingredients and steps in order', (
+      WidgetTester tester,
+    ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
         detailResult: _recipe(),
       );
@@ -111,11 +113,16 @@ void main() {
       await _pump(tester, recipeRepository: repository);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(RecipeDetailScreen.ingredientsEmptyKey), findsOneWidget);
+      expect(
+        find.byKey(RecipeDetailScreen.ingredientsEmptyKey),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('shows the favorite and in-rotation badges', (WidgetTester tester) async {
+    testWidgets('shows the favorite and in-rotation badges', (
+      WidgetTester tester,
+    ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
         detailResult: _recipe(),
       );
@@ -130,7 +137,9 @@ void main() {
       WidgetTester tester,
     ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
-        detailError: const ForbiddenError('You are not a member of this household.'),
+        detailError: const ForbiddenError(
+          'You are not a member of this household.',
+        ),
       );
       await _pump(tester, recipeRepository: repository);
       await tester.pumpAndSettle();

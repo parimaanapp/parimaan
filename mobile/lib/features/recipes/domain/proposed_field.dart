@@ -35,7 +35,8 @@ class ProposedField<T> {
 
   /// No value at all — the result of [reject], or the starting state for
   /// a field the draft never populated.
-  const ProposedField.empty() : this._(null, isProposed: false, isUserModified: false);
+  const ProposedField.empty()
+    : this._(null, isProposed: false, isUserModified: false);
 
   const ProposedField._(
     this.value, {
@@ -68,12 +69,11 @@ class ProposedField<T> {
   /// [newValue] substituted for [value] — used by `AIProposal` to hand its
   /// builder a truncated display copy of an absurdly long value without
   /// losing the field's own status in the process.
-  ProposedField<T> withValue(T? newValue) =>
-      ProposedField<T>._(
-        newValue,
-        isProposed: isProposed,
-        isUserModified: isUserModified,
-      );
+  ProposedField<T> withValue(T? newValue) => ProposedField<T>._(
+    newValue,
+    isProposed: isProposed,
+    isUserModified: isUserModified,
+  );
 
   /// `T` is sometimes list-shaped (`dietaryTags`/`ingredients`/`steps` on
   /// `AiRecipeDraftState`) — Dart's default `List` equality is identity,

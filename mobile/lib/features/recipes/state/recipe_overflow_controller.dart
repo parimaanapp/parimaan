@@ -68,23 +68,32 @@ class RecipeOverflowController
     ref.onDispose(() => _disposed = true);
   }
 
-  Future<bool> setFavorite(bool favorite) =>
-      _run(RecipeOverflowAction.favorite, () async {
-        final Recipe updated = await _repository.favoriteRecipe(arg.id, favorite);
-        if (_disposed) {
-          return;
-        }
-        ref.read(recipeDetailControllerProvider(arg).notifier).applyUpdatedRecipe(updated);
-        ref.invalidate(recipeLibraryControllerProvider(arg.householdId));
-      });
+  Future<bool> setFavorite(bool favorite) => _run(
+    RecipeOverflowAction.favorite,
+    () async {
+      final Recipe updated = await _repository.favoriteRecipe(arg.id, favorite);
+      if (_disposed) {
+        return;
+      }
+      ref
+          .read(recipeDetailControllerProvider(arg).notifier)
+          .applyUpdatedRecipe(updated);
+      ref.invalidate(recipeLibraryControllerProvider(arg.householdId));
+    },
+  );
 
   Future<bool> setInRotation(bool inRotation) =>
       _run(RecipeOverflowAction.rotation, () async {
-        final Recipe updated = await _repository.setInRotation(arg.id, inRotation);
+        final Recipe updated = await _repository.setInRotation(
+          arg.id,
+          inRotation,
+        );
         if (_disposed) {
           return;
         }
-        ref.read(recipeDetailControllerProvider(arg).notifier).applyUpdatedRecipe(updated);
+        ref
+            .read(recipeDetailControllerProvider(arg).notifier)
+            .applyUpdatedRecipe(updated);
         ref.invalidate(recipeLibraryControllerProvider(arg.householdId));
       });
 
@@ -114,8 +123,12 @@ class RecipeOverflowController
   }
 }
 
-final AutoDisposeAsyncNotifierProviderFamily<RecipeOverflowController, void, RecipeDetailArg>
-recipeOverflowControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<RecipeOverflowController, void, RecipeDetailArg>(
+final AutoDisposeAsyncNotifierProviderFamily<
+  RecipeOverflowController,
+  void,
+  RecipeDetailArg
+>
+recipeOverflowControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<RecipeOverflowController, void, RecipeDetailArg>(
       RecipeOverflowController.new,
     );

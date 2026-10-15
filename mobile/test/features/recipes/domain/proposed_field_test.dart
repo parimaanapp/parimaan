@@ -26,13 +26,16 @@ void main() {
       expect(accepted.hasProposal, isFalse);
     });
 
-    test('editing marks it confirmed AND user-modified, with the new value', () {
-      const proposed = ProposedField<String>.proposed('Rajma Chawal');
-      final edited = proposed.edit('Chole Chawal');
-      expect(edited.value, 'Chole Chawal');
-      expect(edited.isProposed, isFalse);
-      expect(edited.isUserModified, isTrue);
-    });
+    test(
+      'editing marks it confirmed AND user-modified, with the new value',
+      () {
+        const proposed = ProposedField<String>.proposed('Rajma Chawal');
+        final edited = proposed.edit('Chole Chawal');
+        expect(edited.value, 'Chole Chawal');
+        expect(edited.isProposed, isFalse);
+        expect(edited.isUserModified, isTrue);
+      },
+    );
 
     test('editing an already-confirmed field still marks it user-modified', () {
       const confirmed = ProposedField<String>.confirmed('Rajma Chawal');
@@ -77,7 +80,9 @@ void main() {
       expect(truncated.isProposed, isTrue);
       expect(truncated.hasProposal, isTrue);
 
-      final editedThenTruncated = proposed.edit('user typed this').withValue('user typed…');
+      final editedThenTruncated = proposed
+          .edit('user typed this')
+          .withValue('user typed…');
       expect(editedThenTruncated.isUserModified, isTrue);
       expect(editedThenTruncated.value, 'user typed…');
     });

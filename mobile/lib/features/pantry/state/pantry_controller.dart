@@ -142,7 +142,9 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
   /// not produce a request per keystroke.
   void setSearch(String? search) {
     final String? trimmed = search?.trim();
-    _searchDebouncer?.update(trimmed == null || trimmed.isEmpty ? null : trimmed);
+    _searchDebouncer?.update(
+      trimmed == null || trimmed.isEmpty ? null : trimmed,
+    );
   }
 
   /// Applies (or clears, with `null`) a category filter and refetches
@@ -161,7 +163,11 @@ class PantryController extends FamilyAsyncNotifier<List<PantryItem>, String> {
 
     final AsyncValue<List<PantryItem>> result =
         await AsyncValue.guard<List<PantryItem>>(
-          () => _repository.fetchPantry(arg, search: _search, category: _category),
+          () => _repository.fetchPantry(
+            arg,
+            search: _search,
+            category: _category,
+          ),
         );
 
     state = result.hasError ? result.copyWithPrevious(previous) : result;

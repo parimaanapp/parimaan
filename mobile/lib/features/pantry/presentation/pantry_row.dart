@@ -46,7 +46,9 @@ class PantryRow extends StatelessWidget {
               children: <Widget>[
                 Text(
                   item.name,
-                  style: AppTypography.bodyStrong.copyWith(color: AppColors.ink),
+                  style: AppTypography.bodyStrong.copyWith(
+                    color: AppColors.ink,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.s0),
                 Text(
@@ -58,7 +60,9 @@ class PantryRow extends StatelessWidget {
                   Text(
                     'Expires $expiryDate',
                     key: expiryKey,
-                    style: AppTypography.label.copyWith(color: AppColors.inkMid),
+                    style: AppTypography.label.copyWith(
+                      color: AppColors.inkMid,
+                    ),
                   ),
                 ],
               ],

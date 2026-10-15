@@ -13,6 +13,7 @@ import '../domain/shopping_list_item.dart';
 import '../domain/shopping_list_summary.dart';
 import '../state/current_shopping_list_controller.dart';
 import 'checklist_item.dart';
+import 'glyph_label.dart';
 
 /// Wireframe "List preview" (36/49, E2E_MVP_PLAN.md §17.1/§17.3 S6) — the
 /// categorized preview of a freshly generated shopping list.
@@ -146,8 +147,8 @@ class _ListPreviewScreenState extends ConsumerState<ListPreviewScreen> {
 
 String _generatedFromLabel(List<ShoppingListItem> items) {
   final int recipes = shoppingListSourceRecipeCount(items);
-  if (recipes == 0) return '◆ Generated from this week\'s menu';
-  return '◆ Generated from $recipes ${recipes == 1 ? 'recipe' : 'recipes'}';
+  if (recipes == 0) return 'Generated from this week\'s menu';
+  return 'Generated from $recipes ${recipes == 1 ? 'recipe' : 'recipes'}';
 }
 
 class _Loaded extends StatelessWidget {
@@ -195,8 +196,9 @@ class _Loaded extends StatelessWidget {
                       horizontal: AppSpacing.s2,
                       vertical: AppSpacing.s0,
                     ),
-                    child: Text(
-                      _generatedFromLabel(list.items),
+                    child: GlyphLabel(
+                      glyph: '◆',
+                      text: _generatedFromLabel(list.items),
                       style: AppTypography.label.copyWith(
                         color: AppColors.ink,
                         fontWeight: FontWeight.w600,

@@ -35,7 +35,11 @@ Future<void> _tick(WidgetTester tester, String name) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _setQuantity(WidgetTester tester, String name, String value) async {
+Future<void> _setQuantity(
+  WidgetTester tester,
+  String name,
+  String value,
+) async {
   final Finder finder = find.byKey(CuratedItemsSheet.quantityFieldKey(name));
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
@@ -75,24 +79,41 @@ void main() {
           tester.getTopLeft(find.byKey(CuratedItemsSheet.itemRowKey(name))).dy,
       ];
       final List<double> sortedTops = List<double>.from(tops)..sort();
-      expect(tops, sortedTops, reason: 'rows must render in curatedPantryItems\' order');
+      expect(
+        tops,
+        sortedTops,
+        reason: 'rows must render in curatedPantryItems\' order',
+      );
     });
 
-    testWidgets('ticking an item raises the stepper for that item specifically', (
-      WidgetTester tester,
-    ) async {
-      await _pumpSheet(tester, category: 'dal');
-      final String first = curatedPantryItems['dal']!.first;
-      final String second = curatedPantryItems['dal']![1];
+    testWidgets(
+      'ticking an item raises the stepper for that item specifically',
+      (WidgetTester tester) async {
+        await _pumpSheet(tester, category: 'dal');
+        final String first = curatedPantryItems['dal']!.first;
+        final String second = curatedPantryItems['dal']![1];
 
-      expect(find.byKey(CuratedItemsSheet.quantityFieldKey(first)), findsNothing);
-      expect(find.byKey(CuratedItemsSheet.quantityFieldKey(second)), findsNothing);
+        expect(
+          find.byKey(CuratedItemsSheet.quantityFieldKey(first)),
+          findsNothing,
+        );
+        expect(
+          find.byKey(CuratedItemsSheet.quantityFieldKey(second)),
+          findsNothing,
+        );
 
-      await _tick(tester, first);
+        await _tick(tester, first);
 
-      expect(find.byKey(CuratedItemsSheet.quantityFieldKey(first)), findsOneWidget);
-      expect(find.byKey(CuratedItemsSheet.quantityFieldKey(second)), findsNothing);
-    });
+        expect(
+          find.byKey(CuratedItemsSheet.quantityFieldKey(first)),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(CuratedItemsSheet.quantityFieldKey(second)),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('a Toor Dal add offers only g, kg and cup', (
       WidgetTester tester,
@@ -155,7 +176,8 @@ void main() {
     testWidgets('an item ticked and then unticked contributes nothing', (
       WidgetTester tester,
     ) async {
-      final List<List<CuratedPantrySelection>> emissions = <List<CuratedPantrySelection>>[];
+      final List<List<CuratedPantrySelection>> emissions =
+          <List<CuratedPantrySelection>>[];
       await _pumpSheet(
         tester,
         category: 'dal',
@@ -175,40 +197,41 @@ void main() {
 
       // Confirm button reflects the same contributes-nothing state.
       expect(
-        tester.widget<PButton>(find.byKey(CuratedItemsSheet.confirmButtonKey)).onPressed,
+        tester
+            .widget<PButton>(find.byKey(CuratedItemsSheet.confirmButtonKey))
+            .onPressed,
         isNull,
       );
     });
 
-    testWidgets('multiple ticked items each retain their own quantity/unit independently', (
-      WidgetTester tester,
-    ) async {
-      final List<List<CuratedPantrySelection>> emissions = <List<CuratedPantrySelection>>[];
-      await _pumpSheet(
-        tester,
-        category: 'dal',
-        onSelectionChanged: emissions.add,
-      );
-      final String first = curatedPantryItems['dal']![0];
-      final String second = curatedPantryItems['dal']![1];
+    testWidgets(
+      'multiple ticked items each retain their own quantity/unit independently',
+      (WidgetTester tester) async {
+        final List<List<CuratedPantrySelection>> emissions =
+            <List<CuratedPantrySelection>>[];
+        await _pumpSheet(
+          tester,
+          category: 'dal',
+          onSelectionChanged: emissions.add,
+        );
+        final String first = curatedPantryItems['dal']![0];
+        final String second = curatedPantryItems['dal']![1];
 
-      await _tick(tester, first);
-      await _setQuantity(tester, first, '3');
-      await _setUnit(tester, first, 'kg');
+        await _tick(tester, first);
+        await _setQuantity(tester, first, '3');
+        await _setUnit(tester, first, 'kg');
 
-      await _tick(tester, second);
-      await _setQuantity(tester, second, '500');
-      await _setUnit(tester, second, 'g');
+        await _tick(tester, second);
+        await _setQuantity(tester, second, '500');
+        await _setUnit(tester, second, 'g');
 
-      final Set<CuratedPantrySelection> last = emissions.last.toSet();
-      expect(
-        last,
-        <CuratedPantrySelection>{
+        final Set<CuratedPantrySelection> last = emissions.last.toSet();
+        expect(last, <CuratedPantrySelection>{
           CuratedPantrySelection(name: first, quantity: 3, unit: 'kg'),
           CuratedPantrySelection(name: second, quantity: 500, unit: 'g'),
-        },
-      );
-    });
+        });
+      },
+    );
 
     testWidgets('a freshly ticked item starts with no pre-filled quantity', (
       WidgetTester tester,
@@ -227,7 +250,9 @@ void main() {
       expect(field.controller!.text, isEmpty);
     });
 
-    testWidgets('a category with no curated entries has no rows', (WidgetTester tester) async {
+    testWidgets('a category with no curated entries has no rows', (
+      WidgetTester tester,
+    ) async {
       await _pumpSheet(tester, category: 'produce');
       expect(find.byType(Checkbox), findsNothing);
     });

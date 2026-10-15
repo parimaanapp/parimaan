@@ -26,7 +26,9 @@ final Recipe _dalRecipe = Recipe(
 
 ProviderContainer _container(FakeRecipeRepository repository) {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      recipeRepositoryProvider.overrideWithValue(repository),
+    ],
   );
   addTearDown(container.dispose);
   return container;
@@ -46,12 +48,21 @@ void main() {
       );
 
       expect(recipes, <Recipe>[_dalRecipe]);
-      expect(
-        repository.calls,
-        <({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>[
-          (householdId: 'household-1', role: null, isFavorite: null, inRotation: null),
-        ],
-      );
+      expect(repository.calls, <
+        ({
+          String householdId,
+          RecipeRole? role,
+          bool? isFavorite,
+          bool? inRotation,
+        })
+      >[
+        (
+          householdId: 'household-1',
+          role: null,
+          isFavorite: null,
+          inRotation: null,
+        ),
+      ]);
     });
 
     test('two ids are independent caches, not one shared slot', () async {
@@ -78,28 +89,33 @@ void main() {
       );
       expect(initial, isA<AsyncLoading<List<Recipe>>>());
 
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+      await container.read(
+        recipeLibraryControllerProvider('household-1').future,
+      );
       expect(
         container.read(recipeLibraryControllerProvider('household-1')),
         isA<AsyncData<List<Recipe>>>(),
       );
     });
 
-    test('a fetch failure lands in state with its concrete AppError subtype', () async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        error: const ForbiddenError('Not a member.'),
-      );
-      final ProviderContainer container = _container(repository);
+    test(
+      'a fetch failure lands in state with its concrete AppError subtype',
+      () async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          error: const ForbiddenError('Not a member.'),
+        );
+        final ProviderContainer container = _container(repository);
 
-      await expectLater(
-        container.read(recipeLibraryControllerProvider('household-1').future),
-        throwsA(isA<ForbiddenError>()),
-      );
-      expect(
-        container.read(recipeLibraryControllerProvider('household-1')).error,
-        isA<ForbiddenError>(),
-      );
-    });
+        await expectLater(
+          container.read(recipeLibraryControllerProvider('household-1').future),
+          throwsA(isA<ForbiddenError>()),
+        );
+        expect(
+          container.read(recipeLibraryControllerProvider('household-1')).error,
+          isA<ForbiddenError>(),
+        );
+      },
+    );
   });
 
   group('RecipeLibraryController — setRoleFilter', () {
@@ -108,7 +124,9 @@ void main() {
         result: <Recipe>[_dalRecipe],
       );
       final ProviderContainer container = _container(repository);
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+      await container.read(
+        recipeLibraryControllerProvider('household-1').future,
+      );
 
       await container
           .read(recipeLibraryControllerProvider('household-1').notifier)
@@ -122,7 +140,9 @@ void main() {
         result: <Recipe>[_dalRecipe],
       );
       final ProviderContainer container = _container(repository);
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+      await container.read(
+        recipeLibraryControllerProvider('household-1').future,
+      );
 
       repository.error = const InternalError('network down');
       await container
@@ -138,58 +158,75 @@ void main() {
   });
 
   group('RecipeLibraryController — setFavoritesFilter', () {
-    test('refetches immediately with the favorites filter, no debounce', () async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        result: <Recipe>[_dalRecipe],
-      );
-      final ProviderContainer container = _container(repository);
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+    test(
+      'refetches immediately with the favorites filter, no debounce',
+      () async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[_dalRecipe],
+        );
+        final ProviderContainer container = _container(repository);
+        await container.read(
+          recipeLibraryControllerProvider('household-1').future,
+        );
 
-      await container
-          .read(recipeLibraryControllerProvider('household-1').notifier)
-          .setFavoritesFilter(true);
+        await container
+            .read(recipeLibraryControllerProvider('household-1').notifier)
+            .setFavoritesFilter(true);
 
-      expect(repository.calls.last.isFavorite, isTrue);
-    });
+        expect(repository.calls.last.isFavorite, isTrue);
+      },
+    );
 
-    test('a failed favorites refetch keeps the last good list on screen', () async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        result: <Recipe>[_dalRecipe],
-      );
-      final ProviderContainer container = _container(repository);
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+    test(
+      'a failed favorites refetch keeps the last good list on screen',
+      () async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[_dalRecipe],
+        );
+        final ProviderContainer container = _container(repository);
+        await container.read(
+          recipeLibraryControllerProvider('household-1').future,
+        );
 
-      repository.error = const InternalError('network down');
-      await container
-          .read(recipeLibraryControllerProvider('household-1').notifier)
-          .setFavoritesFilter(true);
+        repository.error = const InternalError('network down');
+        await container
+            .read(recipeLibraryControllerProvider('household-1').notifier)
+            .setFavoritesFilter(true);
 
-      final AsyncValue<List<Recipe>> state = container.read(
-        recipeLibraryControllerProvider('household-1'),
-      );
-      expect(state.hasError, isTrue);
-      expect(state.valueOrNull, <Recipe>[_dalRecipe]);
-    });
+        final AsyncValue<List<Recipe>> state = container.read(
+          recipeLibraryControllerProvider('household-1'),
+        );
+        expect(state.hasError, isTrue);
+        expect(state.valueOrNull, <Recipe>[_dalRecipe]);
+      },
+    );
   });
 
   group('RecipeLibraryController — live updates (S11)', () {
-    test('subscribes to watchRecipeChanges for the household it is keyed on', () async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        result: <Recipe>[_dalRecipe],
-      );
-      final ProviderContainer container = _container(repository);
+    test(
+      'subscribes to watchRecipeChanges for the household it is keyed on',
+      () async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[_dalRecipe],
+        );
+        final ProviderContainer container = _container(repository);
 
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+        await container.read(
+          recipeLibraryControllerProvider('household-1').future,
+        );
 
-      expect(repository.watchCalls, <String>['household-1']);
-    });
+        expect(repository.watchCalls, <String>['household-1']);
+      },
+    );
 
     test('a pushed change event triggers a refetch', () async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
         result: <Recipe>[_dalRecipe],
       );
       final ProviderContainer container = _container(repository);
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+      await container.read(
+        recipeLibraryControllerProvider('household-1').future,
+      );
       expect(repository.calls, hasLength(1));
 
       repository.watchControllers['household-1']!.add(null);
@@ -203,7 +240,9 @@ void main() {
         result: <Recipe>[_dalRecipe],
       );
       final ProviderContainer container = _container(repository);
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+      await container.read(
+        recipeLibraryControllerProvider('household-1').future,
+      );
 
       repository.watchControllers['household-1']!.addError(
         const ForbiddenError('You are not a member of this household.'),
@@ -225,9 +264,13 @@ void main() {
         result: <Recipe>[_dalRecipe],
       );
       final ProviderContainer container = ProviderContainer(
-        overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
+        overrides: <Override>[
+          recipeRepositoryProvider.overrideWithValue(repository),
+        ],
       );
-      await container.read(recipeLibraryControllerProvider('household-1').future);
+      await container.read(
+        recipeLibraryControllerProvider('household-1').future,
+      );
 
       container.dispose();
       // Broadcast controllers accept `.add` with no listeners without
@@ -258,23 +301,26 @@ void _controllerCacheTests() {
       expect(repository.calls.length, 1);
     });
 
-    test('invalidation keeps showing the cached list while it reloads', () async {
-      final FakeRecipeRepository repository = FakeRecipeRepository(
-        result: <Recipe>[_dalRecipe],
-      );
-      final ProviderContainer container = _container(repository);
-      await container.read(recipeLibraryControllerProvider('h').future);
+    test(
+      'invalidation keeps showing the cached list while it reloads',
+      () async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[_dalRecipe],
+        );
+        final ProviderContainer container = _container(repository);
+        await container.read(recipeLibraryControllerProvider('h').future);
 
-      repository.delay = const Duration(milliseconds: 20);
-      container.invalidate(recipeLibraryControllerProvider('h'));
-      final AsyncValue<List<Recipe>> during = container.read(
-        recipeLibraryControllerProvider('h'),
-      );
+        repository.delay = const Duration(milliseconds: 20);
+        container.invalidate(recipeLibraryControllerProvider('h'));
+        final AsyncValue<List<Recipe>> during = container.read(
+          recipeLibraryControllerProvider('h'),
+        );
 
-      expect(during.isLoading, isTrue);
-      expect(during.valueOrNull, <Recipe>[_dalRecipe]);
-      await container.read(recipeLibraryControllerProvider('h').future);
-    });
+        expect(during.isLoading, isTrue);
+        expect(during.valueOrNull, <Recipe>[_dalRecipe]);
+        await container.read(recipeLibraryControllerProvider('h').future);
+      },
+    );
 
     test('a rebuild after invalidation keeps the selected filter', () async {
       final FakeRecipeRepository repository = FakeRecipeRepository(

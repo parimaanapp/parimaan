@@ -202,7 +202,8 @@ class _HaveItQuantitySheetState extends State<HaveItQuantitySheet> {
                 Expanded(
                   child: PButton(
                     key: HaveItQuantitySheet.confirmButtonKey,
-                    label: '✓ Have it',
+                    label: 'Have it',
+                    icon: Icons.check,
                     variant: PButtonVariant.affirmative,
                     isLoading: _isBusy,
                     onPressed: (_isBusy || !_isValid) ? null : _confirm,

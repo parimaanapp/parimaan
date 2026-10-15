@@ -22,7 +22,10 @@ void main() {
   group('MeHouseholdsController — build', () {
     test('fetches every household `Query.me` reports', () async {
       final FakeHouseholdRepository repository = FakeHouseholdRepository(
-        myHouseholdsResult: <Household>[testHousehold, testHouseholdWithMembers],
+        myHouseholdsResult: <Household>[
+          testHousehold,
+          testHouseholdWithMembers,
+        ],
       );
       final ProviderContainer container = _container(repository);
 

@@ -22,13 +22,18 @@ Future<bool> showDeleteRecipeDialog({
 }) async {
   final bool? deleted = await showDialog<bool>(
     context: context,
-    builder: (BuildContext context) => DeleteRecipeDialog(arg: arg, recipe: recipe),
+    builder: (BuildContext context) =>
+        DeleteRecipeDialog(arg: arg, recipe: recipe),
   );
   return deleted ?? false;
 }
 
 class DeleteRecipeDialog extends ConsumerWidget {
-  const DeleteRecipeDialog({super.key, required this.arg, required this.recipe});
+  const DeleteRecipeDialog({
+    super.key,
+    required this.arg,
+    required this.recipe,
+  });
 
   final RecipeDetailArg arg;
   final Recipe recipe;
@@ -38,7 +43,9 @@ class DeleteRecipeDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<void> overflowState = ref.watch(recipeOverflowControllerProvider(arg));
+    final AsyncValue<void> overflowState = ref.watch(
+      recipeOverflowControllerProvider(arg),
+    );
     final bool isBusy =
         overflowState.isLoading &&
         ref.read(recipeOverflowControllerProvider(arg).notifier).action ==

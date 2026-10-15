@@ -52,33 +52,35 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('the back control is reachable and calls onBack even while still initializing', (
-      WidgetTester tester,
-    ) async {
-      int backTaps = 0;
-      await _pump(tester, onCaptured: (_) {}, onBack: () => backTaps++);
+    testWidgets(
+      'the back control is reachable and calls onBack even while still initializing',
+      (WidgetTester tester) async {
+        int backTaps = 0;
+        await _pump(tester, onCaptured: (_) {}, onBack: () => backTaps++);
 
-      await tester.tap(find.byKey(PantryPhotoCaptureScreen.backButtonKey));
-      await tester.pump();
+        await tester.tap(find.byKey(PantryPhotoCaptureScreen.backButtonKey));
+        await tester.pump();
 
-      expect(backTaps, 1);
-    });
+        expect(backTaps, 1);
+      },
+    );
 
-    testWidgets('the back control is a PTopBarBackButton with a white chevron', (
-      WidgetTester tester,
-    ) async {
-      await _pump(tester, onCaptured: (_) {});
+    testWidgets(
+      'the back control is a PTopBarBackButton with a white chevron',
+      (WidgetTester tester) async {
+        await _pump(tester, onCaptured: (_) {});
 
-      final Finder back = find.descendant(
-        of: find.byKey(PantryPhotoCaptureScreen.backButtonKey),
-        matching: find.byType(PTopBarBackButton),
-      );
-      expect(back, findsOneWidget);
-      expect(
-        tester.widget<PBackChevron>(find.byType(PBackChevron)).color,
-        Colors.white,
-      );
-    });
+        final Finder back = find.descendant(
+          of: find.byKey(PantryPhotoCaptureScreen.backButtonKey),
+          matching: find.byType(PTopBarBackButton),
+        );
+        expect(back, findsOneWidget);
+        expect(
+          tester.widget<PBackChevron>(find.byType(PBackChevron)).color,
+          Colors.white,
+        );
+      },
+    );
 
     testWidgets('the back control exposes label and tap action to a11y', (
       WidgetTester tester,

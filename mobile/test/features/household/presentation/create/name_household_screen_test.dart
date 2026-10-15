@@ -136,38 +136,35 @@ void main() {
       );
     });
 
-    testWidgets(
-      'hands the created household to the wizard even on the wizard '
-      "provider's genuinely first-ever touch — `pumpWizardRoute` (used by "
-      'every other test in this file) pre-awaits that provider before the '
-      'screen mounts, which happens to mask a real async-build race a cold '
-      'app session hits: `HouseholdWizardController.build()` is `async` and '
-      'has not resolved yet on its first read, so an unawaited '
-      "`adoptHousehold` lands on a still-`AsyncLoading` state and silently "
-      'no-ops. `pumpHouseholdRoute` boots the real router without ever '
-      'touching the wizard provider, so this test — and only this one — can '
-      'actually catch that regression.',
-      (WidgetTester tester) async {
-        final HouseholdHarness subject = await pumpHouseholdRoute(
-          tester,
-          AppRoutes.createHouseholdName,
-          repository: FakeHouseholdRepository(result: testHousehold),
-        );
+    testWidgets('hands the created household to the wizard even on the wizard '
+        "provider's genuinely first-ever touch — `pumpWizardRoute` (used by "
+        'every other test in this file) pre-awaits that provider before the '
+        'screen mounts, which happens to mask a real async-build race a cold '
+        'app session hits: `HouseholdWizardController.build()` is `async` and '
+        'has not resolved yet on its first read, so an unawaited '
+        "`adoptHousehold` lands on a still-`AsyncLoading` state and silently "
+        'no-ops. `pumpHouseholdRoute` boots the real router without ever '
+        'touching the wizard provider, so this test — and only this one — can '
+        'actually catch that regression.', (WidgetTester tester) async {
+      final HouseholdHarness subject = await pumpHouseholdRoute(
+        tester,
+        AppRoutes.createHouseholdName,
+        repository: FakeHouseholdRepository(result: testHousehold),
+      );
 
-        await _enterName(tester, 'Kulkarni Kitchen');
-        await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
-        await tester.pumpAndSettle();
+      await _enterName(tester, 'Kulkarni Kitchen');
+      await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
+      await tester.pumpAndSettle();
 
-        expect(location(subject.router), AppRoutes.createHouseholdMeals);
-        expect(
-          subject.container
-              .read(householdWizardControllerProvider)
-              .requireValue
-              .householdId,
-          'household-1',
-        );
-      },
-    );
+      expect(location(subject.router), AppRoutes.createHouseholdMeals);
+      expect(
+        subject.container
+            .read(householdWizardControllerProvider)
+            .requireValue
+            .householdId,
+        'household-1',
+      );
+    });
   });
 
   group('NameHouseholdScreen — the Aurora cold start', () {
@@ -282,20 +279,21 @@ void main() {
       },
     );
 
-    testWidgets('a failed first attempt is retried automatically and succeeds', (
-      WidgetTester tester,
-    ) async {
-      final repository = FakeHouseholdRepository(result: testHousehold)
-        ..createErrorQueue.add(const InternalError('timeout'));
-      final subject = await _pump(tester, repository: repository);
+    testWidgets(
+      'a failed first attempt is retried automatically and succeeds',
+      (WidgetTester tester) async {
+        final repository = FakeHouseholdRepository(result: testHousehold)
+          ..createErrorQueue.add(const InternalError('timeout'));
+        final subject = await _pump(tester, repository: repository);
 
-      await _enterName(tester, 'Kulkarni Kitchen');
-      await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
-      await tester.pumpAndSettle();
+        await _enterName(tester, 'Kulkarni Kitchen');
+        await tester.tap(find.byKey(NameHouseholdScreen.continueButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(repository.calls, hasLength(2));
-      expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);
-    });
+        expect(repository.calls, hasLength(2));
+        expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);
+      },
+    );
 
     testWidgets('error -> back -> re-enter shows no error', (
       WidgetTester tester,
@@ -303,7 +301,9 @@ void main() {
       final subject = await _pump(
         tester,
         repository: FakeHouseholdRepository(
-          error: const ValidationError('name must not contain control characters'),
+          error: const ValidationError(
+            'name must not contain control characters',
+          ),
         ),
       );
       await _enterName(tester, 'Kulkarni Kitchen');

@@ -4,6 +4,7 @@ import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/radius.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
+import 'glyph_label.dart';
 
 /// "◆ Staples check" (wireframe 10.1): a haldi-soft card under the list that
 /// says which staples to verify at home. [note] is the server's own
@@ -24,8 +25,9 @@ class StaplesCheckCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            '◆ Staples check',
+          GlyphLabel(
+            glyph: '◆',
+            text: 'Staples check',
             style: AppTypography.label.copyWith(
               color: AppColors.ink,
               fontWeight: FontWeight.w600,

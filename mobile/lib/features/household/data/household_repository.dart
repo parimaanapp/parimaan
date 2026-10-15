@@ -250,11 +250,17 @@ class FerryHouseholdRepository
   @override
   Stream<void> watchHouseholdChanges(String householdId) async* {
     final GOnHouseholdChangedReq request = GOnHouseholdChangedReq(
-      (GOnHouseholdChangedReqBuilder b) => b
-        ..vars = (GOnHouseholdChangedVarsBuilder()..householdId = householdId),
+      (GOnHouseholdChangedReqBuilder b) =>
+          b
+            ..vars = (GOnHouseholdChangedVarsBuilder()
+              ..householdId = householdId),
     );
 
-    await for (final OperationResponse<GOnHouseholdChangedData, GOnHouseholdChangedVars> response
+    await for (final OperationResponse<
+          GOnHouseholdChangedData,
+          GOnHouseholdChangedVars
+        >
+        response
         in client.request(request)) {
       if (response.hasErrors) {
         throw mapOperationFailure(
@@ -366,11 +372,17 @@ class FerryHouseholdRepository
   @override
   Stream<void> watchMembershipRevoked(String householdId) async* {
     final GOnMembershipRevokedReq request = GOnMembershipRevokedReq(
-      (GOnMembershipRevokedReqBuilder b) => b
-        ..vars = (GOnMembershipRevokedVarsBuilder()..householdId = householdId),
+      (GOnMembershipRevokedReqBuilder b) =>
+          b
+            ..vars = (GOnMembershipRevokedVarsBuilder()
+              ..householdId = householdId),
     );
 
-    await for (final OperationResponse<GOnMembershipRevokedData, GOnMembershipRevokedVars> response
+    await for (final OperationResponse<
+          GOnMembershipRevokedData,
+          GOnMembershipRevokedVars
+        >
+        response
         in client.request(request)) {
       if (response.hasErrors) {
         throw mapOperationFailure(

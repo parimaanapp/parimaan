@@ -145,26 +145,24 @@ void main() {
       );
     });
 
-    test(
-      'setSlotCount(dinner, ...) edits dinnerStructure and leaves '
-      'lunchStructure alone',
-      () async {
-        final subject = await _started();
+    test('setSlotCount(dinner, ...) edits dinnerStructure and leaves '
+        'lunchStructure alone', () async {
+      final subject = await _started();
 
-        subject.controller.setSlotCount(MealType.dinner, MealSlot.carb, 5);
+      subject.controller.setSlotCount(MealType.dinner, MealSlot.carb, 5);
 
-        expect(
-          _data(subject.container).dinnerStructure.countFor(MealSlot.carb),
-          5,
-        );
-        expect(
-          _data(subject.container).lunchStructure.countFor(MealSlot.carb),
-          LunchMealStructure.defaults.carb,
-          reason: 'editing Dinner must not touch Lunch — the live bug W13 '
-              'S1 fixed server-side, regression-tested client-side too',
-        );
-      },
-    );
+      expect(
+        _data(subject.container).dinnerStructure.countFor(MealSlot.carb),
+        5,
+      );
+      expect(
+        _data(subject.container).lunchStructure.countFor(MealSlot.carb),
+        LunchMealStructure.defaults.carb,
+        reason:
+            'editing Dinner must not touch Lunch — the live bug W13 '
+            'S1 fixed server-side, regression-tested client-side too',
+      );
+    });
 
     test('toggling a region re-derives the sub-cuisine weight map', () async {
       final subject = await _started();
@@ -302,25 +300,22 @@ void main() {
       },
     );
 
-    test(
-      'submitMealStructure(dinner) sends only the dinner-keyed '
-      'mealStructure',
-      () async {
-        final subject = await _started();
-        subject.controller.setSlotCount(MealType.dinner, MealSlot.carb, 4);
+    test('submitMealStructure(dinner) sends only the dinner-keyed '
+        'mealStructure', () async {
+      final subject = await _started();
+      subject.controller.setSlotCount(MealType.dinner, MealSlot.carb, 4);
 
-        await subject.controller.submitMealStructure(MealType.dinner);
+      await subject.controller.submitMealStructure(MealType.dinner);
 
-        final HouseholdSettingsPatch patch =
-            subject.repository.settingsCalls.single.patch;
-        expect(patch.fieldCount, 1);
-        expect(
-          patch.mealStructureJson,
-          '{"dinner":{"carb":4,"sabzi_dal":2,"accompaniment":1}}',
-        );
-        expect(patch.mealStructureJson, isNot(contains('lunch')));
-      },
-    );
+      final HouseholdSettingsPatch patch =
+          subject.repository.settingsCalls.single.patch;
+      expect(patch.fieldCount, 1);
+      expect(
+        patch.mealStructureJson,
+        '{"dinner":{"carb":4,"sabzi_dal":2,"accompaniment":1}}',
+      );
+      expect(patch.mealStructureJson, isNot(contains('lunch')));
+    });
 
     test('submitCuisineRegions sends only cuisineTier1', () async {
       final subject = await _started();

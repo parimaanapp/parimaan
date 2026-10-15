@@ -38,10 +38,14 @@ class AppSyncWebSocketLink extends Link {
       return forward(request);
     }
 
-    final String? idToken = request.context.entry<HttpLinkHeaders>()?.headers[AuthLink.authorizationHeader];
+    final String? idToken = request.context
+        .entry<HttpLinkHeaders>()
+        ?.headers[AuthLink.authorizationHeader];
     if (idToken == null) {
       return Stream<Response>.error(
-        const UnauthorizedError('You are signed out. Sign in again to continue.'),
+        const UnauthorizedError(
+          'You are signed out. Sign in again to continue.',
+        ),
       );
     }
 
@@ -57,7 +61,8 @@ class AppSyncWebSocketLink extends Link {
         .whereType<OperationDefinitionNode>()
         .where(
           (OperationDefinitionNode d) =>
-              operation.operationName == null || d.name?.value == operation.operationName,
+              operation.operationName == null ||
+              d.name?.value == operation.operationName,
         )
         .firstOrNull;
     return definition?.type == OperationType.subscription;

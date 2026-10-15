@@ -27,7 +27,9 @@ Future<ProviderContainer> _pumpPushed(
   required FakeRecipeRepository repository,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      recipeRepositoryProvider.overrideWithValue(repository),
+    ],
   );
   addTearDown(container.dispose);
 
@@ -40,7 +42,8 @@ Future<ProviderContainer> _pumpPushed(
           body: Builder(
             builder: (BuildContext context) => Center(
               child: ElevatedButton(
-                onPressed: () => context.push('/freeform?householdId=household-1'),
+                onPressed: () =>
+                    context.push('/freeform?householdId=household-1'),
                 child: const Text('open'),
               ),
             ),
@@ -99,7 +102,9 @@ Future<ProviderContainer> _pumpPushed(
 
 void main() {
   group('FreeformInputScreen', () {
-    testWidgets('submit is disabled until text is entered', (WidgetTester tester) async {
+    testWidgets('submit is disabled until text is entered', (
+      WidgetTester tester,
+    ) async {
       await _pumpPushed(tester, repository: FakeRecipeRepository());
 
       expect(
@@ -123,30 +128,33 @@ void main() {
       );
     });
 
-    testWidgets('the counter blocks submit past the 4,000-char bound with no request sent', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository();
-      await _pumpPushed(tester, repository: repository);
+    testWidgets(
+      'the counter blocks submit past the 4,000-char bound with no request sent',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository();
+        await _pumpPushed(tester, repository: repository);
 
-      await tester.enterText(
-        find.byKey(FreeformInputScreen.textFieldKey),
-        'a' * (maxFreeformRecipeTextLength + 1),
-      );
-      await tester.pump();
+        await tester.enterText(
+          find.byKey(FreeformInputScreen.textFieldKey),
+          'a' * (maxFreeformRecipeTextLength + 1),
+        );
+        await tester.pump();
 
-      expect(
-        find.text('${maxFreeformRecipeTextLength + 1} / $maxFreeformRecipeTextLength'),
-        findsOneWidget,
-      );
-      expect(
-        tester
-            .widget<PButton>(find.byKey(FreeformInputScreen.submitButtonKey))
-            .onPressed,
-        isNull,
-      );
-      expect(repository.parseFreeformRecipeCalls, isEmpty);
-    });
+        expect(
+          find.text(
+            '${maxFreeformRecipeTextLength + 1} / $maxFreeformRecipeTextLength',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<PButton>(find.byKey(FreeformInputScreen.submitButtonKey))
+              .onPressed,
+          isNull,
+        );
+        expect(repository.parseFreeformRecipeCalls, isEmpty);
+      },
+    );
 
     testWidgets(
       'a successful parse navigates to the review screen with the parsed draft',
@@ -163,10 +171,9 @@ void main() {
         await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
         await tester.pumpAndSettle();
 
-        expect(
-          repository.parseFreeformRecipeCalls,
-          <String>['Rajma Chawal: soak rajma overnight, pressure cook...'],
-        );
+        expect(repository.parseFreeformRecipeCalls, <String>[
+          'Rajma Chawal: soak rajma overnight, pressure cook...',
+        ]);
         expect(find.byType(RecipeDraftReviewScreen), findsOneWidget);
         expect(find.text('Rajma Chawal'), findsOneWidget);
       },
@@ -208,7 +215,9 @@ void main() {
       WidgetTester tester,
     ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository()
-        ..parseFreeformRecipeError = const ValidationError('text is too short to parse');
+        ..parseFreeformRecipeError = const ValidationError(
+          'text is too short to parse',
+        );
       await _pumpPushed(tester, repository: repository);
 
       await tester.enterText(
@@ -227,7 +236,9 @@ void main() {
     testWidgets(
       'AI_BUSY renders inline with a retry affordance — never routed to the fallback screen',
       (WidgetTester tester) async {
-        const error = AiBusyError('The AI service is busy. Try again in a moment.');
+        const error = AiBusyError(
+          'The AI service is busy. Try again in a moment.',
+        );
         final FakeRecipeRepository repository = FakeRecipeRepository()
           ..parseFreeformRecipeError = error;
         await _pumpPushed(tester, repository: repository);
@@ -249,7 +260,9 @@ void main() {
     testWidgets(
       'AI_TIMEOUT renders inline with a retry affordance — never routed to the fallback screen',
       (WidgetTester tester) async {
-        const error = AiTimeoutError('The AI service took too long to respond.');
+        const error = AiTimeoutError(
+          'The AI service took too long to respond.',
+        );
         final FakeRecipeRepository repository = FakeRecipeRepository()
           ..parseFreeformRecipeError = error;
         await _pumpPushed(tester, repository: repository);
@@ -268,29 +281,30 @@ void main() {
       },
     );
 
-    testWidgets('a rate-limited failure renders inline with no retry affordance', (
-      WidgetTester tester,
-    ) async {
-      final FakeRecipeRepository repository = FakeRecipeRepository()
-        ..parseFreeformRecipeError = const RateLimitedError(
-          "You've reached today's limit for AI recipe parsing.",
+    testWidgets(
+      'a rate-limited failure renders inline with no retry affordance',
+      (WidgetTester tester) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository()
+          ..parseFreeformRecipeError = const RateLimitedError(
+            "You've reached today's limit for AI recipe parsing.",
+          );
+        await _pumpPushed(tester, repository: repository);
+
+        await tester.enterText(
+          find.byKey(FreeformInputScreen.textFieldKey),
+          'Rajma Chawal: soak rajma overnight, pressure cook...',
         );
-      await _pumpPushed(tester, repository: repository);
+        await tester.pump();
+        await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
+        await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byKey(FreeformInputScreen.textFieldKey),
-        'Rajma Chawal: soak rajma overnight, pressure cook...',
-      );
-      await tester.pump();
-      await tester.tap(find.byKey(FreeformInputScreen.submitButtonKey));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text("You've reached today's limit for AI recipe parsing."),
-        findsOneWidget,
-      );
-      expect(find.byKey(FreeformInputScreen.retryButtonKey), findsNothing);
-    });
+        expect(
+          find.text("You've reached today's limit for AI recipe parsing."),
+          findsOneWidget,
+        );
+        expect(find.byKey(FreeformInputScreen.retryButtonKey), findsNothing);
+      },
+    );
 
     testWidgets(
       'AI_UNPARSEABLE routes to the AI failure fallback screen with the pasted text preserved',
@@ -315,7 +329,10 @@ void main() {
           find.text('Rajma Chawal: soak rajma overnight, pressure cook...'),
           findsOneWidget,
         );
-        expect(find.text('Could not understand the AI response.'), findsOneWidget);
+        expect(
+          find.text('Could not understand the AI response.'),
+          findsOneWidget,
+        );
         // No inline error/retry underneath — the fallback screen already
         // owns showing this failure.
         expect(find.byKey(FreeformInputScreen.retryButtonKey), findsNothing);
@@ -340,8 +357,14 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AiFailureScreen), findsOneWidget);
-        expect(find.text("Recipe import isn't available right now"), findsOneWidget);
-        expect(find.text('The AI service is unavailable right now.'), findsOneWidget);
+        expect(
+          find.text("Recipe import isn't available right now"),
+          findsOneWidget,
+        );
+        expect(
+          find.text('The AI service is unavailable right now.'),
+          findsOneWidget,
+        );
       },
     );
 

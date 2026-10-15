@@ -81,66 +81,104 @@ void main() {
       expect(repository.calls, hasLength(2));
     });
 
-    test('returns false and preserves the AppError subtype on failure', () async {
+    test(
+      'returns false and preserves the AppError subtype on failure',
+      () async {
+        final FakePantryRepository repository = FakePantryRepository(
+          addError: const ValidationError('name must not be empty'),
+        );
+        final ProviderContainer container = _container(repository);
+
+        final bool ok = await container
+            .read(pantryFormControllerProvider.notifier)
+            .add('household-1', _draft);
+
+        expect(ok, isFalse);
+        expect(
+          container.read(pantryFormControllerProvider).error,
+          isA<ValidationError>(),
+        );
+      },
+    );
+  });
+
+  group('PantryFormController — bulkAddDrafts (W20 S6: the photo review\'s confirm)', () {
+    test('sends the drafts as ONE bulkAddPantryItems call with every field intact — category included, which bulkAdd(selections) has no way to carry', () async {
       final FakePantryRepository repository = FakePantryRepository(
-        addError: const ValidationError('name must not be empty'),
+        bulkAddResult: <PantryItem>[_dal],
       );
       final ProviderContainer container = _container(repository);
 
       final bool ok = await container
           .read(pantryFormControllerProvider.notifier)
-          .add('household-1', _draft);
+          .bulkAddDrafts('household-1', const <PantryItemDraft>[
+            PantryItemDraft(
+              name: 'Toor Dal',
+              quantity: 2,
+              unit: 'jar',
+              category: 'dal',
+            ),
+            PantryItemDraft(
+              name: 'Ghee',
+              quantity: 1,
+              unit: 'bottle',
+              category: 'oil',
+            ),
+          ]);
+
+      expect(ok, isTrue);
+      expect(repository.bulkAddCalls, hasLength(1));
+      final List<PantryItemDraft> sent = repository.bulkAddCalls.single.items;
+      expect(sent.map((PantryItemDraft d) => d.category), <String?>[
+        'dal',
+        'oil',
+      ]);
+      expect(sent.map((PantryItemDraft d) => d.unit), <String>[
+        'jar',
+        'bottle',
+      ]);
+    });
+
+    test('refuses more than the bulk cap before calling the server', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        bulkAddResult: <PantryItem>[_dal],
+      );
+      final ProviderContainer container = _container(repository);
+
+      final bool ok = await container
+          .read(pantryFormControllerProvider.notifier)
+          .bulkAddDrafts(
+            'household-1',
+            List<PantryItemDraft>.generate(
+              maxBulkAddPantryItems + 1,
+              (int i) =>
+                  PantryItemDraft(name: 'Item $i', quantity: 1, unit: 'piece'),
+            ),
+          );
 
       expect(ok, isFalse);
+      expect(repository.bulkAddCalls, isEmpty);
       expect(
         container.read(pantryFormControllerProvider).error,
         isA<ValidationError>(),
       );
     });
-  });
-
-  group('PantryFormController — bulkAddDrafts (W20 S6: the photo review\'s confirm)', () {
-    test('sends the drafts as ONE bulkAddPantryItems call with every field intact — category included, which bulkAdd(selections) has no way to carry', () async {
-      final FakePantryRepository repository = FakePantryRepository(bulkAddResult: <PantryItem>[_dal]);
-      final ProviderContainer container = _container(repository);
-
-      final bool ok = await container.read(pantryFormControllerProvider.notifier).bulkAddDrafts(
-        'household-1',
-        const <PantryItemDraft>[
-          PantryItemDraft(name: 'Toor Dal', quantity: 2, unit: 'jar', category: 'dal'),
-          PantryItemDraft(name: 'Ghee', quantity: 1, unit: 'bottle', category: 'oil'),
-        ],
-      );
-
-      expect(ok, isTrue);
-      expect(repository.bulkAddCalls, hasLength(1));
-      final List<PantryItemDraft> sent = repository.bulkAddCalls.single.items;
-      expect(sent.map((PantryItemDraft d) => d.category), <String?>['dal', 'oil']);
-      expect(sent.map((PantryItemDraft d) => d.unit), <String>['jar', 'bottle']);
-    });
-
-    test('refuses more than the bulk cap before calling the server', () async {
-      final FakePantryRepository repository = FakePantryRepository(bulkAddResult: <PantryItem>[_dal]);
-      final ProviderContainer container = _container(repository);
-
-      final bool ok = await container.read(pantryFormControllerProvider.notifier).bulkAddDrafts(
-        'household-1',
-        List<PantryItemDraft>.generate(maxBulkAddPantryItems + 1, (int i) => PantryItemDraft(name: 'Item $i', quantity: 1, unit: 'piece')),
-      );
-
-      expect(ok, isFalse);
-      expect(repository.bulkAddCalls, isEmpty);
-      expect(container.read(pantryFormControllerProvider).error, isA<ValidationError>());
-    });
 
     test('a server failure surfaces typed, exactly like bulkAdd', () async {
-      final FakePantryRepository repository = FakePantryRepository(bulkAddError: const NotFoundError('Household not found.'));
+      final FakePantryRepository repository = FakePantryRepository(
+        bulkAddError: const NotFoundError('Household not found.'),
+      );
       final ProviderContainer container = _container(repository);
 
-      final bool ok = await container.read(pantryFormControllerProvider.notifier).bulkAddDrafts('household-1', const <PantryItemDraft>[_draft]);
+      final bool ok = await container
+          .read(pantryFormControllerProvider.notifier)
+          .bulkAddDrafts('household-1', const <PantryItemDraft>[_draft]);
 
       expect(ok, isFalse);
-      expect(container.read(pantryFormControllerProvider).error, isA<NotFoundError>());
+      expect(
+        container.read(pantryFormControllerProvider).error,
+        isA<NotFoundError>(),
+      );
     });
 
     test('the photo review\'s own cap is the same number as the form controller\'s — they are two constants for one server limit', () {
@@ -154,26 +192,23 @@ void main() {
       CuratedPantrySelection(name: 'Moong Dal', quantity: 1, unit: 'kg'),
     ];
 
-    test(
-      'issues exactly one bulkAddPantryItems call carrying every selection, '
-      'never N single addPantryItem calls',
-      () async {
-        final FakePantryRepository repository = FakePantryRepository(
-          bulkAddResult: <PantryItem>[_dal],
-        );
-        final ProviderContainer container = _container(repository);
+    test('issues exactly one bulkAddPantryItems call carrying every selection, '
+        'never N single addPantryItem calls', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        bulkAddResult: <PantryItem>[_dal],
+      );
+      final ProviderContainer container = _container(repository);
 
-        final bool ok = await container
-            .read(pantryFormControllerProvider.notifier)
-            .bulkAdd('household-1', selections);
+      final bool ok = await container
+          .read(pantryFormControllerProvider.notifier)
+          .bulkAdd('household-1', selections);
 
-        expect(ok, isTrue);
-        expect(repository.bulkAddCalls, hasLength(1));
-        expect(repository.bulkAddCalls.single.householdId, 'household-1');
-        expect(repository.bulkAddCalls.single.items, hasLength(2));
-        expect(repository.addCalls, isEmpty);
-      },
-    );
+      expect(ok, isTrue);
+      expect(repository.bulkAddCalls, hasLength(1));
+      expect(repository.bulkAddCalls.single.householdId, 'household-1');
+      expect(repository.bulkAddCalls.single.items, hasLength(2));
+      expect(repository.addCalls, isEmpty);
+    });
 
     test(
       'each item carries the name and the quantity/unit from its own selection',
@@ -197,32 +232,29 @@ void main() {
       },
     );
 
-    test(
-      'a failure surfaces as a typed AppError and never half-invalidates the list',
-      () async {
-        final FakePantryRepository repository = FakePantryRepository(
-          result: <PantryItem>[],
-          bulkAddError: const NotFoundError('Household not found.'),
-        );
-        final ProviderContainer container = _container(repository);
-        await container.read(pantryControllerProvider('household-1').future);
-        expect(repository.calls, hasLength(1));
+    test('a failure surfaces as a typed AppError and never half-invalidates the list', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        result: <PantryItem>[],
+        bulkAddError: const NotFoundError('Household not found.'),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(pantryControllerProvider('household-1').future);
+      expect(repository.calls, hasLength(1));
 
-        final bool ok = await container
-            .read(pantryFormControllerProvider.notifier)
-            .bulkAdd('household-1', selections);
+      final bool ok = await container
+          .read(pantryFormControllerProvider.notifier)
+          .bulkAdd('household-1', selections);
 
-        expect(ok, isFalse);
-        expect(
-          container.read(pantryFormControllerProvider).error,
-          isA<NotFoundError>(),
-        );
-        // No invalidation on failure — the cached list is never touched by
-        // a half-applied commit.
-        await container.read(pantryControllerProvider('household-1').future);
-        expect(repository.calls, hasLength(1));
-      },
-    );
+      expect(ok, isFalse);
+      expect(
+        container.read(pantryFormControllerProvider).error,
+        isA<NotFoundError>(),
+      );
+      // No invalidation on failure — the cached list is never touched by
+      // a half-applied commit.
+      await container.read(pantryControllerProvider('household-1').future);
+      expect(repository.calls, hasLength(1));
+    });
 
     test(
       'a failed selection can be resent unmodified and succeed on retry',
@@ -248,8 +280,10 @@ void main() {
         // built drafts are never the *same instances* as the first
         // attempt's — comparing field-by-field is what "resent unmodified"
         // actually means here, not list/object identity.
-        final List<PantryItemDraft> firstItems = repository.bulkAddCalls[0].items;
-        final List<PantryItemDraft> secondItems = repository.bulkAddCalls[1].items;
+        final List<PantryItemDraft> firstItems =
+            repository.bulkAddCalls[0].items;
+        final List<PantryItemDraft> secondItems =
+            repository.bulkAddCalls[1].items;
         expect(secondItems, hasLength(firstItems.length));
         for (int i = 0; i < firstItems.length; i++) {
           expect(secondItems[i].name, firstItems[i].name);
@@ -265,14 +299,15 @@ void main() {
       () async {
         final FakePantryRepository repository = FakePantryRepository();
         final ProviderContainer container = _container(repository);
-        final List<CuratedPantrySelection> tooMany = List<CuratedPantrySelection>.generate(
-          51,
-          (int i) => CuratedPantrySelection(
-            name: 'Item $i',
-            quantity: 1,
-            unit: 'kg',
-          ),
-        );
+        final List<CuratedPantrySelection> tooMany =
+            List<CuratedPantrySelection>.generate(
+              51,
+              (int i) => CuratedPantrySelection(
+                name: 'Item $i',
+                quantity: 1,
+                unit: 'kg',
+              ),
+            );
 
         final bool ok = await container
             .read(pantryFormControllerProvider.notifier)
@@ -340,22 +375,25 @@ void main() {
       expect(repository.updateCalls.single.id, 'item-1');
     });
 
-    test('returns false and preserves the AppError subtype on failure', () async {
-      final FakePantryRepository repository = FakePantryRepository(
-        updateError: const NotFoundError('Pantry item not found.'),
-      );
-      final ProviderContainer container = _container(repository);
+    test(
+      'returns false and preserves the AppError subtype on failure',
+      () async {
+        final FakePantryRepository repository = FakePantryRepository(
+          updateError: const NotFoundError('Pantry item not found.'),
+        );
+        final ProviderContainer container = _container(repository);
 
-      final bool ok = await container
-          .read(pantryFormControllerProvider.notifier)
-          .updateItem('item-1', patch);
+        final bool ok = await container
+            .read(pantryFormControllerProvider.notifier)
+            .updateItem('item-1', patch);
 
-      expect(ok, isFalse);
-      expect(
-        container.read(pantryFormControllerProvider).error,
-        isA<NotFoundError>(),
-      );
-    });
+        expect(ok, isFalse);
+        expect(
+          container.read(pantryFormControllerProvider).error,
+          isA<NotFoundError>(),
+        );
+      },
+    );
   });
 
   group('PantryFormController — delete', () {
@@ -373,55 +411,55 @@ void main() {
       expect(repository.deleteCalls, <String>['item-1']);
     });
 
-    test('returns false and preserves the AppError subtype on failure', () async {
-      final FakePantryRepository repository = FakePantryRepository(
-        deleteError: const NotFoundError('Pantry item not found.'),
-      );
-      final ProviderContainer container = _container(repository);
+    test(
+      'returns false and preserves the AppError subtype on failure',
+      () async {
+        final FakePantryRepository repository = FakePantryRepository(
+          deleteError: const NotFoundError('Pantry item not found.'),
+        );
+        final ProviderContainer container = _container(repository);
 
-      final bool ok = await container
-          .read(pantryFormControllerProvider.notifier)
-          .delete('item-1');
+        final bool ok = await container
+            .read(pantryFormControllerProvider.notifier)
+            .delete('item-1');
 
-      expect(ok, isFalse);
-      expect(
-        container.read(pantryFormControllerProvider).error,
-        isA<NotFoundError>(),
-      );
-    });
+        expect(ok, isFalse);
+        expect(
+          container.read(pantryFormControllerProvider).error,
+          isA<NotFoundError>(),
+        );
+      },
+    );
   });
 
   group('PantryFormController — action tracking', () {
-    test(
-      'reports which action is/was running, distinguishing add/bulkAdd/update/delete',
-      () async {
-        final FakePantryRepository repository = FakePantryRepository(
-          addResult: _dal,
-          bulkAddResult: <PantryItem>[_dal],
-          updateResult: _dal,
-          deleteResult: _dal,
-        );
-        final ProviderContainer container = _container(repository);
-        final PantryFormController controller = container.read(
-          pantryFormControllerProvider.notifier,
-        );
+    test('reports which action is/was running, distinguishing add/bulkAdd/update/delete', () async {
+      final FakePantryRepository repository = FakePantryRepository(
+        addResult: _dal,
+        bulkAddResult: <PantryItem>[_dal],
+        updateResult: _dal,
+        deleteResult: _dal,
+      );
+      final ProviderContainer container = _container(repository);
+      final PantryFormController controller = container.read(
+        pantryFormControllerProvider.notifier,
+      );
 
-        expect(controller.action, PantryFormAction.none);
+      expect(controller.action, PantryFormAction.none);
 
-        await controller.add('household-1', _draft);
-        expect(controller.action, PantryFormAction.add);
+      await controller.add('household-1', _draft);
+      expect(controller.action, PantryFormAction.add);
 
-        await controller.bulkAdd('household-1', const <CuratedPantrySelection>[
-          CuratedPantrySelection(name: 'Toor Dal', quantity: 2, unit: 'kg'),
-        ]);
-        expect(controller.action, PantryFormAction.bulkAdd);
+      await controller.bulkAdd('household-1', const <CuratedPantrySelection>[
+        CuratedPantrySelection(name: 'Toor Dal', quantity: 2, unit: 'kg'),
+      ]);
+      expect(controller.action, PantryFormAction.bulkAdd);
 
-        await controller.updateItem('item-1', const PantryItemPatch(quantity: 1));
-        expect(controller.action, PantryFormAction.update);
+      await controller.updateItem('item-1', const PantryItemPatch(quantity: 1));
+      expect(controller.action, PantryFormAction.update);
 
-        await controller.delete('item-1');
-        expect(controller.action, PantryFormAction.delete);
-      },
-    );
+      await controller.delete('item-1');
+      expect(controller.action, PantryFormAction.delete);
+    });
   });
 }

@@ -26,7 +26,9 @@ Future<void> _pumpAndOpen(
   required FakePantryRepository repository,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[pantryRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      pantryRepositoryProvider.overrideWithValue(repository),
+    ],
   );
   addTearDown(container.dispose);
 
@@ -39,10 +41,8 @@ Future<void> _pumpAndOpen(
           builder: (BuildContext context) => Scaffold(
             body: Center(
               child: ElevatedButton(
-                onPressed: () => showDeletePantryItemDialog(
-                  context: context,
-                  item: _dal,
-                ),
+                onPressed: () =>
+                    showDeletePantryItemDialog(context: context, item: _dal),
                 child: const Text('open'),
               ),
             ),

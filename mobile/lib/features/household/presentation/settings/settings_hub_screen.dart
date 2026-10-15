@@ -161,7 +161,9 @@ class _HubBody extends ConsumerWidget {
     // An unresolved read is treated as "not the primary", which is the safe
     // default: it hides Delete rather than offering an irreversible action
     // to a caller whose identity is not yet established.
-    final String? userId = ref.watch(currentUserIdControllerProvider).valueOrNull;
+    final String? userId = ref
+        .watch(currentUserIdControllerProvider)
+        .valueOrNull;
     final bool isPrimary = userId != null && household.isPrimary(userId);
 
     final AsyncValue<void> settings = ref.watch(

@@ -22,15 +22,18 @@ void main() {
       );
     });
 
-    test('display labels are sentence-case copy (§32.6), not the enum names', () {
-      expect(DietaryTag.veg.displayLabel, 'Vegetarian');
-      expect(DietaryTag.nonVeg.displayLabel, 'Non-vegetarian');
-      expect(DietaryTag.vegan.displayLabel, 'Vegan');
-      expect(DietaryTag.jain.displayLabel, 'Jain');
-      expect(DietaryTag.eggetarian.displayLabel, 'Egg friendly');
-      expect(DietaryTag.glutenFree.displayLabel, 'Gluten free');
-      expect(DietaryTag.dairyFree.displayLabel, 'Dairy free');
-    });
+    test(
+      'display labels are sentence-case copy (§32.6), not the enum names',
+      () {
+        expect(DietaryTag.veg.displayLabel, 'Vegetarian');
+        expect(DietaryTag.nonVeg.displayLabel, 'Non-vegetarian');
+        expect(DietaryTag.vegan.displayLabel, 'Vegan');
+        expect(DietaryTag.jain.displayLabel, 'Jain');
+        expect(DietaryTag.eggetarian.displayLabel, 'Egg friendly');
+        expect(DietaryTag.glutenFree.displayLabel, 'Gluten free');
+        expect(DietaryTag.dairyFree.displayLabel, 'Dairy free');
+      },
+    );
 
     test('the wireframe pre-selects veg and egg-friendly', () {
       expect(defaultDietaryTags, <DietaryTag>{
@@ -111,22 +114,19 @@ void main() {
       );
     });
 
-    test(
-      'mealStructure(dinner, ...) sends only the dinner-keyed mealStructure '
-      'JSON (W13 S2)',
-      () {
-        final HouseholdSettingsPatch patch = HouseholdSettingsPatch.mealStructure(
-          MealType.dinner,
-          LunchMealStructure.defaults,
-        );
+    test('mealStructure(dinner, ...) sends only the dinner-keyed mealStructure '
+        'JSON (W13 S2)', () {
+      final HouseholdSettingsPatch patch = HouseholdSettingsPatch.mealStructure(
+        MealType.dinner,
+        LunchMealStructure.defaults,
+      );
 
-        expect(patch.fieldCount, 1);
-        expect(
-          patch.mealStructureJson,
-          '{"dinner":{"carb":2,"sabzi_dal":2,"accompaniment":1}}',
-        );
-      },
-    );
+      expect(patch.fieldCount, 1);
+      expect(
+        patch.mealStructureJson,
+        '{"dinner":{"carb":2,"sabzi_dal":2,"accompaniment":1}}',
+      );
+    });
 
     test(
       'mealStructure(lunch, ...) matches the lunchStructure factory exactly',

@@ -43,78 +43,79 @@ class ListGeneratedPromptScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.paper,
     body: SafeArea(
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) =>
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.s4),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 2 * AppSpacing.s4,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        'Week is set!',
-                        textAlign: TextAlign.center,
-                        style: AppTypography.displayM.copyWith(
-                          color: AppColors.ink,
-                        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          PTopBar(
+            title: 'Week is set!',
+            onBack: () => _onLater(context),
+            backSemanticLabel: 'Back to weekly plan',
+          ),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) =>
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.s4),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - 2 * AppSpacing.s4,
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.s1),
-                    Text(
-                      'Your meals are confirmed.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.inkSoft,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s3),
-                    DecoratedBox(
-                      key: noteKey,
-                      decoration: const BoxDecoration(
-                        color: AppColors.haldiSoft,
-                        borderRadius: AppRadius.borderM,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s3,
-                          vertical: AppSpacing.s2,
-                        ),
-                        child: Text(
-                          'Shopping list can now be generated from these '
-                          'recipes.',
-                          textAlign: TextAlign.center,
-                          style: AppTypography.label.copyWith(
-                            color: AppColors.ink,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Text(
+                            'Your meals are confirmed.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.body.copyWith(
+                              color: AppColors.inkSoft,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: AppSpacing.s3),
+                          DecoratedBox(
+                            key: noteKey,
+                            decoration: const BoxDecoration(
+                              color: AppColors.haldiSoft,
+                              borderRadius: AppRadius.borderM,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.s3,
+                                vertical: AppSpacing.s2,
+                              ),
+                              child: Text(
+                                'Shopping list can now be generated from these '
+                                'recipes.',
+                                textAlign: TextAlign.center,
+                                style: AppTypography.label.copyWith(
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.s4),
+                          PButton(
+                            key: generateButtonKey,
+                            label: 'Generate shopping list',
+                            onPressed: () => context.push(
+                              AppRoutes.shoppingListPreview,
+                              extra: extra,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.s1),
+                          PButton(
+                            key: laterButtonKey,
+                            label: 'I\'ll do it later',
+                            variant: PButtonVariant.ghost,
+                            onPressed: () => _onLater(context),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.s4),
-                    PButton(
-                      key: generateButtonKey,
-                      label: 'Generate shopping list',
-                      onPressed: () => context.push(
-                        AppRoutes.shoppingListPreview,
-                        extra: extra,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s1),
-                    PButton(
-                      key: laterButtonKey,
-                      label: 'I\'ll do it later',
-                      variant: PButtonVariant.ghost,
-                      onPressed: () => _onLater(context),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
             ),
+          ),
+        ],
       ),
     ),
   );

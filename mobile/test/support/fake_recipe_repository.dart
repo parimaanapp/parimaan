@@ -48,8 +48,18 @@ class FakeRecipeRepository implements RecipeRepository {
   final bool neverCompletes;
 
   /// Every `(householdId, role, isFavorite, inRotation)` quadruple, in order.
-  final List<({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>
-  calls = <({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>[];
+  final List<
+    ({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})
+  >
+  calls =
+      <
+        ({
+          String householdId,
+          RecipeRole? role,
+          bool? isFavorite,
+          bool? inRotation,
+        })
+      >[];
 
   @override
   Future<List<Recipe>> fetchRecipes(
@@ -162,9 +172,17 @@ class FakeRecipeRepository implements RecipeRepository {
 
   Recipe? createResult;
   Object? createError;
-  final List<({String householdId, RecipeDraft draft, RecipeSourceAttribution? source})>
+  final List<
+    ({String householdId, RecipeDraft draft, RecipeSourceAttribution? source})
+  >
   createCalls =
-      <({String householdId, RecipeDraft draft, RecipeSourceAttribution? source})>[];
+      <
+        ({
+          String householdId,
+          RecipeDraft draft,
+          RecipeSourceAttribution? source,
+        })
+      >[];
 
   @override
   Future<Recipe> createRecipe(

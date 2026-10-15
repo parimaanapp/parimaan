@@ -32,15 +32,18 @@ void main() {
       expect(decoded.width, lessThan(maxPantryPhotoDimension));
     });
 
-    test('never upscales a photo already smaller than the target dimension', () {
-      final Uint8List source = _fakeJpeg(width: 400, height: 300);
+    test(
+      'never upscales a photo already smaller than the target dimension',
+      () {
+        final Uint8List source = _fakeJpeg(width: 400, height: 300);
 
-      final Uint8List result = compressPantryPhoto(source);
-      final img.Image decoded = img.decodeJpg(result)!;
+        final Uint8List result = compressPantryPhoto(source);
+        final img.Image decoded = img.decodeJpg(result)!;
 
-      expect(decoded.width, 400);
-      expect(decoded.height, 300);
-    });
+        expect(decoded.width, 400);
+        expect(decoded.height, 300);
+      },
+    );
 
     test('always re-encodes as JPEG, even from a non-JPEG source', () {
       final img.Image image = img.Image(width: 100, height: 100);

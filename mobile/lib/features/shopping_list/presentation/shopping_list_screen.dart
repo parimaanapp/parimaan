@@ -15,6 +15,7 @@ import '../domain/shopping_list_summary.dart';
 import '../state/current_shopping_list_controller.dart';
 import 'checklist_item.dart';
 import 'shopping_list_regenerate_confirm_dialog.dart';
+import 'glyph_label.dart';
 import 'staples_check_card.dart';
 
 /// Wireframe "Shopping List" (37-38/49, E2E_MVP_PLAN.md §17.1/§17.3 S6) —
@@ -249,9 +250,11 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
           children: <Widget>[
             PTopBar(
               title: 'This week',
+              // The whole list, not what is left: the line must not shrink as
+              // the user buys things.
               subtitle: loaded == null
                   ? null
-                  : shoppingListSummary(loaded.toBuy),
+                  : shoppingListSummary(loaded.items),
               onBack: () => context.go(AppRoutes.weeklyPlan),
               backSemanticLabel: 'Back to weekly plan',
               trailing: loaded == null
@@ -400,27 +403,32 @@ class _ShareAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
+    container: true,
     button: true,
     label: 'Share shopping list as image',
     excludeSemantics: true,
     onTap: onPressed,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onPressed,
-      child: Container(
-        constraints: const BoxConstraints(
-          minWidth: AppSizing.minTouchTargetWidth,
-          minHeight: AppSizing.minTouchTargetHeight,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: AppRadius.borderS,
-          border: Border.all(color: AppColors.ink.withValues(alpha: 0.2)),
-        ),
-        child: Text(
-          '↗ Share',
-          style: AppTypography.label.copyWith(color: AppColors.ink),
+    child: Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: AppRadius.borderS,
+        child: Container(
+          constraints: const BoxConstraints(
+            minWidth: AppSizing.minTouchTargetWidth,
+            minHeight: AppSizing.minTouchTargetHeight,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.borderS,
+            border: Border.all(color: AppColors.ink.withValues(alpha: 0.2)),
+          ),
+          child: GlyphLabel(
+            glyph: '↗',
+            text: 'Share',
+            style: AppTypography.label.copyWith(color: AppColors.ink),
+          ),
         ),
       ),
     ),

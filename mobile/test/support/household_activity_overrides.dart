@@ -114,7 +114,9 @@ List<Override> defaultHouseholdActivityOverrides({
     FakeRecipeRepository(result: <Recipe>[_activityRecipe(householdId)]),
   ),
   pantryRepositoryProvider.overrideWithValue(
-    FakePantryRepository(result: <PantryItem>[_activityPantryItem(householdId)]),
+    FakePantryRepository(
+      result: <PantryItem>[_activityPantryItem(householdId)],
+    ),
   ),
   menuRepositoryProvider.overrideWithValue(
     FakeMenuRepository(fetchResult: _activityMenuWithItem(householdId)),
@@ -147,52 +149,57 @@ List<Override> emptyHouseholdActivityOverrides({
 /// Exactly one recipe, nothing else — one arm of Q20's OR, asserted in
 /// isolation (`router_test.dart`'s own RED-test discipline: "all three arms
 /// asserted separately, never inferred from one another").
-List<Override> recipeOnlyActivityOverrides({String householdId = 'household-1'}) =>
-    <Override>[
-      recipeRepositoryProvider.overrideWithValue(
-        FakeRecipeRepository(result: <Recipe>[_activityRecipe(householdId)]),
-      ),
-      pantryRepositoryProvider.overrideWithValue(
-        FakePantryRepository(result: const <PantryItem>[]),
-      ),
-      menuRepositoryProvider.overrideWithValue(
-        FakeMenuRepository(
-          fetchResult: null,
-          createResult: _emptyActivityMenu(householdId),
-        ),
-      ),
-    ];
+List<Override> recipeOnlyActivityOverrides({
+  String householdId = 'household-1',
+}) => <Override>[
+  recipeRepositoryProvider.overrideWithValue(
+    FakeRecipeRepository(result: <Recipe>[_activityRecipe(householdId)]),
+  ),
+  pantryRepositoryProvider.overrideWithValue(
+    FakePantryRepository(result: const <PantryItem>[]),
+  ),
+  menuRepositoryProvider.overrideWithValue(
+    FakeMenuRepository(
+      fetchResult: null,
+      createResult: _emptyActivityMenu(householdId),
+    ),
+  ),
+];
 
 /// Exactly one pantry item, nothing else — the second arm.
-List<Override> pantryOnlyActivityOverrides({String householdId = 'household-1'}) =>
-    <Override>[
-      recipeRepositoryProvider.overrideWithValue(
-        FakeRecipeRepository(result: const <Recipe>[]),
-      ),
-      pantryRepositoryProvider.overrideWithValue(
-        FakePantryRepository(result: <PantryItem>[_activityPantryItem(householdId)]),
-      ),
-      menuRepositoryProvider.overrideWithValue(
-        FakeMenuRepository(
-          fetchResult: null,
-          createResult: _emptyActivityMenu(householdId),
-        ),
-      ),
-    ];
+List<Override> pantryOnlyActivityOverrides({
+  String householdId = 'household-1',
+}) => <Override>[
+  recipeRepositoryProvider.overrideWithValue(
+    FakeRecipeRepository(result: const <Recipe>[]),
+  ),
+  pantryRepositoryProvider.overrideWithValue(
+    FakePantryRepository(
+      result: <PantryItem>[_activityPantryItem(householdId)],
+    ),
+  ),
+  menuRepositoryProvider.overrideWithValue(
+    FakeMenuRepository(
+      fetchResult: null,
+      createResult: _emptyActivityMenu(householdId),
+    ),
+  ),
+];
 
 /// Exactly one planned menu item, nothing else — the third arm.
-List<Override> menuOnlyActivityOverrides({String householdId = 'household-1'}) =>
-    <Override>[
-      recipeRepositoryProvider.overrideWithValue(
-        FakeRecipeRepository(result: const <Recipe>[]),
-      ),
-      pantryRepositoryProvider.overrideWithValue(
-        FakePantryRepository(result: const <PantryItem>[]),
-      ),
-      menuRepositoryProvider.overrideWithValue(
-        FakeMenuRepository(fetchResult: _activityMenuWithItem(householdId)),
-      ),
-    ];
+List<Override> menuOnlyActivityOverrides({
+  String householdId = 'household-1',
+}) => <Override>[
+  recipeRepositoryProvider.overrideWithValue(
+    FakeRecipeRepository(result: const <Recipe>[]),
+  ),
+  pantryRepositoryProvider.overrideWithValue(
+    FakePantryRepository(result: const <PantryItem>[]),
+  ),
+  menuRepositoryProvider.overrideWithValue(
+    FakeMenuRepository(fetchResult: _activityMenuWithItem(householdId)),
+  ),
+];
 
 /// One source (recipes) still resolving, the other two already resolved
 /// empty — the direct regression for "while ANY source is still resolving,
@@ -201,24 +208,25 @@ List<Override> menuOnlyActivityOverrides({String householdId = 'household-1'}) =
 /// test's own teardown trips `flutter_test`'s "a Timer is still pending"
 /// assertion; an uncompleted `Completer` leaves nothing scheduled to trip
 /// on.
-List<Override> resolvingActivityOverrides({String householdId = 'household-1'}) =>
-    <Override>[
-      recipeRepositoryProvider.overrideWithValue(
-        FakeRecipeRepository(
-          result: <Recipe>[_activityRecipe(householdId)],
-          neverCompletes: true,
-        ),
-      ),
-      pantryRepositoryProvider.overrideWithValue(
-        FakePantryRepository(result: const <PantryItem>[]),
-      ),
-      menuRepositoryProvider.overrideWithValue(
-        FakeMenuRepository(
-          fetchResult: null,
-          createResult: _emptyActivityMenu(householdId),
-        ),
-      ),
-    ];
+List<Override> resolvingActivityOverrides({
+  String householdId = 'household-1',
+}) => <Override>[
+  recipeRepositoryProvider.overrideWithValue(
+    FakeRecipeRepository(
+      result: <Recipe>[_activityRecipe(householdId)],
+      neverCompletes: true,
+    ),
+  ),
+  pantryRepositoryProvider.overrideWithValue(
+    FakePantryRepository(result: const <PantryItem>[]),
+  ),
+  menuRepositoryProvider.overrideWithValue(
+    FakeMenuRepository(
+      fetchResult: null,
+      createResult: _emptyActivityMenu(householdId),
+    ),
+  ),
+];
 
 /// One source (pantry) errors, the other two resolve empty — the direct
 /// regression for "an errored source is treated as unknown, hold — never

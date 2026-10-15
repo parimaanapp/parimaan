@@ -241,9 +241,7 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      final Text quantity = tester.widget<Text>(
-        find.text('0.33 tablespoon'),
-      );
+      final Text quantity = tester.widget<Text>(find.text('0.33 tablespoon'));
       expect(quantity.overflow, isNot(TextOverflow.ellipsis));
       expect(quantity.maxLines, isNull);
     });
