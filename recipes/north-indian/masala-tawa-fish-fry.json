@@ -1,0 +1,90 @@
+{
+  "title": "Masala Tawa Fish Fry",
+  "description": "Crisp, spice-crusted pan-fried fish steaks marinated in ginger, garlic, chilli and lemon, made on a flat tawa.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 15,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Surmai",
+      "quantity": 500,
+      "unit": "g",
+      "category": "meat_fish",
+      "notes": "steaks"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Black Pepper Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juiced"
+    },
+    {
+      "name": "Rice Flour",
+      "quantity": 30,
+      "unit": "g",
+      "category": "grain"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Pat the fish dry and mix the ginger garlic paste, chilli powder, coriander powder, turmeric, pepper, lemon juice and salt into a thick marinade.",
+    "Coat the fish steaks well with the marinade and rest 20 minutes.",
+    "Dust each steak lightly in the rice flour.",
+    "Heat 2 tbsp of the oil on a tawa over medium heat.",
+    "Shallow fry the steaks 3 to 4 minutes per side, adding oil as needed, until crisp and golden.",
+    "Serve hot with onion rings and lemon wedges."
+  ]
+}

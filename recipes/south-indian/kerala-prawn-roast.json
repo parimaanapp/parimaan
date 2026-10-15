@@ -1,0 +1,118 @@
+{
+  "title": "Kerala Prawn Roast",
+  "description": "A dry, red Kerala prawn roast with shallots, curry leaves and pepper cooked in coconut oil, an appam or rice favourite.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Prawns",
+      "quantity": 500,
+      "unit": "g",
+      "category": "meat_fish",
+      "notes": "cleaned and deveined"
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Shallots",
+      "quantity": 10,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 10,
+      "unit": "g",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 5,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Black Pepper Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Kerala Garam Masala",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 2,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Toss the prawns with the turmeric, a little chilli powder and the salt and rest for 10 minutes.",
+    "Heat the coconut oil in a wide pan and add the shallots, ginger, garlic, green chillies and curry leaves.",
+    "Cook on medium heat until the shallots turn golden brown.",
+    "Add the tomato, remaining chilli powder and coriander powder and cook until the oil separates.",
+    "Add the prawns and cook on high heat for 5 to 6 minutes, stirring, until they curl and the masala clings.",
+    "Sprinkle the pepper and garam masala and toss for another minute."
+  ]
+}
