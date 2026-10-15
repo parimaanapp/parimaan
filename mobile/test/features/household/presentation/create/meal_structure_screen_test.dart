@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/shared/ui/components/p_top_bar.dart';
 import 'package:mobile/app/router.dart';
 import 'package:mobile/features/household/domain/meal_structure.dart';
 import 'package:mobile/features/household/presentation/create/meal_structure_screen.dart';
@@ -9,6 +8,7 @@ import 'package:mobile/features/household/presentation/create/slot_stepper.dart'
 import 'package:mobile/features/household/presentation/create/wizard_step_scaffold.dart';
 import 'package:mobile/features/household/state/household_wizard_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/ui/components/p_top_bar.dart';
 
 import '../../../../support/fake_household_repository.dart';
 import '../../../../support/household_fixtures.dart';

@@ -25,16 +25,15 @@ class PTopBar extends StatelessWidget {
     this.subtitle,
     this.onBack,
     this.backSemanticLabel,
-    this.backGlyph = defaultBackGlyph,
+    this.backGlyph,
     this.trailing,
   }) : assert(
          onBack == null || backSemanticLabel != null,
          'A back control needs a screen-reader label — the glyph is not one.',
        );
 
-  /// Sentinel meaning "draw the bold [PBackChevron]". Any other value is
-  /// rendered as text. The screen-reader announcement is [backSemanticLabel],
-  /// which the caller owns.
+  /// The design source's typographic `‹`. No longer the default (the bold
+  /// drawn chevron is); kept for callers that want the text glyph explicitly.
   static const String defaultBackGlyph = '‹';
 
   /// Screen title, in the display serif.
@@ -49,9 +48,9 @@ class PTopBar extends StatelessWidget {
   /// Required whenever [onBack] is given.
   final String? backSemanticLabel;
 
-  /// Override the back glyph with a text glyph. Left at the default, a bold
-  /// drawn chevron is shown.
-  final String backGlyph;
+  /// Override the back glyph with a text glyph. Null (the default) draws the
+  /// bold [PBackChevron].
+  final String? backGlyph;
 
   /// Optional trailing action, usually a [PIconButton].
   final Widget? trailing;
@@ -112,14 +111,15 @@ class PTopBar extends StatelessWidget {
 class PTopBarBackButton extends StatelessWidget {
   const PTopBarBackButton({
     super.key,
-    this.glyph = PTopBar.defaultBackGlyph,
+    this.glyph,
     required this.semanticLabel,
     required this.onPressed,
     this.color = AppColors.ink,
     this.shape,
   });
 
-  final String glyph;
+  /// Text glyph override; null draws the bold [PBackChevron].
+  final String? glyph;
   final String semanticLabel;
   final VoidCallback? onPressed;
 
@@ -130,10 +130,13 @@ class PTopBarBackButton extends StatelessWidget {
   final ShapeBorder? shape;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: semanticLabel,
-    child: ExcludeSemantics(
+  Widget build(BuildContext context) {
+    final String? textGlyph = glyph;
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      onTap: onPressed,
+      excludeSemantics: true,
       child: SizedBox(
         width: AppSizing.minTouchTargetWidth,
         height: AppSizing.minTouchTargetHeight,
@@ -144,16 +147,16 @@ class PTopBarBackButton extends StatelessWidget {
             borderRadius: shape == null ? AppRadius.borderM : null,
             customBorder: shape,
             child: Center(
-              child: glyph == PTopBar.defaultBackGlyph
+              child: textGlyph == null
                   ? PBackChevron(color: color)
                   : Text(
-                      glyph,
+                      textGlyph,
                       style: AppTypography.title.copyWith(color: color),
                     ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

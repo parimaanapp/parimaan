@@ -93,7 +93,7 @@ void main() {
       );
     });
 
-    testWidgets('a custom backGlyph still renders as text', (
+    testWidgets('an explicit text glyph renders as text, null draws chevron', (
       WidgetTester tester,
     ) async {
       await pumpFullWidth(
