@@ -18,6 +18,40 @@ export const inferDietStyle = (title: string, ingredientNames: readonly string[]
   return clean('eggetarian') ? 'eggetarian' : 'non_veg';
 };
 
+const MEAT_FREE_STYLES: readonly string[] = ['veg', 'vegan', 'jain'];
+
+/**
+ * F4: tags a MODEL proposed for a draft are untrusted, so they never
+ * override the ingredient evidence. With meat or fish present every other
+ * style is dropped in favour of `non_veg`; with egg (and no meat) the
+ * veg/vegan/jain tags are dropped in favour of `eggetarian`; with neither,
+ * a stray `non_veg` that contradicts a veg-ish tag is dropped. A draft with
+ * no style at all gets the inferred one. Never emits `non_veg` together
+ * with veg/vegan/jain.
+ */
+export const reconcileDraftStyle = (
+  tags: readonly string[],
+  title: string,
+  ingredientNames: readonly string[],
+): string[] => {
+  const evidence = inferDietStyle(title, ingredientNames);
+  const hasMeatFreeTag = tags.some((tag) => MEAT_FREE_STYLES.includes(tag));
+  const keep = (tag: string): boolean => {
+    if (!isDietStyle(tag)) {
+      return true;
+    }
+    if (evidence === 'non_veg') {
+      return false;
+    }
+    if (evidence === 'eggetarian') {
+      return !MEAT_FREE_STYLES.includes(tag);
+    }
+    return tag !== 'non_veg' || !hasMeatFreeTag;
+  };
+  const kept = tags.filter(keep);
+  return kept.some(isDietStyle) ? kept : [...kept, evidence];
+};
+
 /** Returns `tags` unchanged when it already has a style tag; otherwise `tags` plus the inferred style. */
 export const withInferredStyle = (
   tags: readonly string[] | null | undefined,

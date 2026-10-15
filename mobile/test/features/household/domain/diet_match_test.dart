@@ -34,6 +34,38 @@ void main() {
     }
   });
 
+  group('isRecipeEligible vs unmetHouseholdTags — full tag matrix', () {
+    const List<String> all = <String>[
+      'veg',
+      'non_veg',
+      'vegan',
+      'jain',
+      'eggetarian',
+      'gluten_free',
+      'dairy_free',
+    ];
+    List<List<String>> subsets() => <List<String>>[
+      for (int mask = 0; mask < (1 << all.length); mask++)
+        <String>[
+          for (int i = 0; i < all.length; i++)
+            if (mask & (1 << i) != 0) all[i],
+        ],
+    ];
+
+    test('a recipe is eligible exactly when no household tag is unmet', () {
+      final List<List<String>> sets = subsets();
+      for (final List<String> household in sets) {
+        for (final List<String> recipe in sets) {
+          expect(
+            isRecipeEligible(recipe, household),
+            unmetHouseholdTags(recipe, household).isEmpty,
+            reason: 'household $household vs recipe $recipe',
+          );
+        }
+      }
+    });
+  });
+
   group('unmetHouseholdTags', () {
     test('is empty when the recipe is eligible', () {
       expect(

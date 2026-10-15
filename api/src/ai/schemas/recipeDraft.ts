@@ -6,7 +6,7 @@ import { CUISINE_TIER1_VALUES } from '../../domain/cuisineTiers.js';
 import type { CuisineTier1 } from '../../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../../domain/dietaryTags.js';
 import type { DietaryTag } from '../../domain/dietaryTags.js';
-import { withInferredStyle } from '../../domain/inferDietStyle.js';
+import { reconcileDraftStyle } from '../../domain/inferDietStyle.js';
 import { RECIPE_ROLE_VALUES } from '../../domain/recipeRoles.js';
 import type { RecipeRole } from '../../domain/recipeRoles.js';
 import {
@@ -171,9 +171,9 @@ const toParsedIngredient = (ingredient: GeminiRecipeDraft['ingredients'][number]
   };
 };
 
-/** Recognised tags only, plus (H3) an inferred style when the draft has none — explicit tags win. */
+/** Recognised tags only, reconciled with the ingredient evidence and given an inferred style when none is present (H3/F4). */
 const withDraftStyle = (values: readonly (DietaryTag | null)[], raw: GeminiRecipeDraft): DietaryTag[] =>
-  withInferredStyle(
+  reconcileDraftStyle(
     values.filter((tag): tag is DietaryTag => tag !== null),
     raw.title ?? '',
     raw.ingredients.map((ingredient) => ingredient.name),

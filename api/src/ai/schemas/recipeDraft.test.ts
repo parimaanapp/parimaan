@@ -111,6 +111,17 @@ describe('toRecipeDraft — D4 enum leniency + quantity coercion (§13.2.5, §13
     expect(toRecipeDraft({ ...wellFormed, dietaryTags: null }).dietaryTags).toEqual(['veg']);
   });
 
+  it('a model style tag never overrides meat evidence, and veg + non_veg is never emitted (F4)', () => {
+    const chickenIngredients = [{ name: 'chicken', quantity: '500', unit: 'g', notes: null }];
+    expect(toRecipeDraft({ ...wellFormed, dietaryTags: ['veg'], ingredients: chickenIngredients }).dietaryTags).toEqual([
+      'non_veg',
+    ]);
+    expect(
+      toRecipeDraft({ ...wellFormed, dietaryTags: ['veg', 'non_veg'], ingredients: chickenIngredients }).dietaryTags,
+    ).toEqual(['non_veg']);
+    expect(toRecipeDraft({ ...wellFormed, dietaryTags: ['veg', 'non_veg'] }).dietaryTags).toEqual(['veg']);
+  });
+
   it('role absent from the response yields role: null, not a failure and no warning', () => {
     const draft = toRecipeDraft({ ...wellFormed, role: null });
     expect(draft.role).toBeNull();

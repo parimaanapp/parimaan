@@ -156,13 +156,12 @@ describe('updateHouseholdSettingsArgsSchema', () => {
   it.each([
     ['empty', []],
     ['modifiers only', ['gluten_free', 'dairy_free']],
-  ])('rejects dietaryTags that are %s — a household needs an eating style (M3)', (_label, dietaryTags) => {
+  ])('still accepts dietaryTags that are %s — shipped clients send them; the resolver reconciles (F1)', (_label, dietaryTags) => {
     const result = updateHouseholdSettingsArgsSchema.safeParse({
       householdId: VALID_HOUSEHOLD_ID,
       input: { dietaryTags },
     });
-    expect(result.success).toBe(false);
-    expect(JSON.stringify(result.error?.issues)).toContain('eating style');
+    expect(result.success).toBe(true);
   });
 
   it.each([['non_veg'], ['veg', 'gluten_free'], ['vegan', 'jain', 'dairy_free']])(

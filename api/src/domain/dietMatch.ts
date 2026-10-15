@@ -38,8 +38,7 @@ const STYLE_EXPANSION: Readonly<Record<DietStyle, readonly DietStyle[]>> = {
 };
 
 export const isDietStyle = (tag: string): tag is DietStyle => (DIET_STYLES as readonly string[]).includes(tag);
-export const isDietModifier = (tag: string): tag is DietModifier =>
-  (DIET_MODIFIERS as readonly string[]).includes(tag);
+export const isDietModifier = (tag: string): tag is DietModifier => (DIET_MODIFIERS as readonly string[]).includes(tag);
 
 /** Recipe style tags a household style accepts. */
 export const expandStyle = (style: DietStyle): readonly DietStyle[] => STYLE_EXPANSION[style];
@@ -59,12 +58,23 @@ export const eligibleRecipeStyleTags = (householdTags: readonly string[]): DietS
   unique(householdStyles(householdTags).flatMap((style) => expandStyle(style)));
 
 /**
- * A vegan recipe contains no dairy, so it also satisfies the `dairy_free`
- * modifier without carrying the tag. Mirrored in the SQL candidate query
- * (`menuRepository.findAutoFillCandidates`), `cookPreferenceFilter` and the
- * Dart port (`diet_match.dart`); all are pinned by
- * `shared/fixtures/dietMatch-cases.json`.
+ * F1: a household needs an eating style, but shipped clients may send an
+ * empty or modifiers-only `dietaryTags`. Rather than reject, a patch without
+ * a style keeps the STORED styles and applies only the incoming modifiers;
+ * with no stored style either the patch is accepted as sent (a legacy
+ * style-less household is unrestricted at read time).
  */
+export const reconcileHouseholdTags = (incoming: readonly string[], stored: readonly string[]): string[] => {
+  if (incoming.some(isDietStyle)) {
+    return [...incoming];
+  }
+  const storedStyles = stored.filter(isDietStyle);
+  if (storedStyles.length === 0) {
+    return [...incoming];
+  }
+  return [...storedStyles, ...incoming];
+};
+
 /**
  * `non_veg` is the broadest style and already expands to veg dishes at match
  * time, so a recipe carrying it together with veg/vegan/jain is
@@ -75,13 +85,17 @@ export const NON_VEG_CONFLICT_MESSAGE = 'dietaryTags: non_veg cannot be combined
 export const hasNonVegConflict = (tags: readonly string[]): boolean =>
   tags.includes('non_veg') && ['veg', 'vegan', 'jain'].some((tag) => tags.includes(tag));
 
-export const effectiveRecipeTags =(recipeTags: readonly string[]): string[] =>
+/**
+ * A vegan recipe contains no dairy, so it also satisfies the `dairy_free`
+ * modifier without carrying the tag. Mirrored in the SQL candidate query
+ * (`menuRepository.findAutoFillCandidates`), `cookPreferenceFilter` and the
+ * Dart port (`diet_match.dart`); all are pinned by
+ * `shared/fixtures/dietMatch-cases.json`.
+ */
+export const effectiveRecipeTags = (recipeTags: readonly string[]): string[] =>
   recipeTags.includes('vegan') && !recipeTags.includes('dairy_free') ? [...recipeTags, 'dairy_free'] : [...recipeTags];
 
-export const isRecipeEligible = (
-  recipeTags: readonly string[],
-  householdTags: readonly string[],
-): boolean => {
+export const isRecipeEligible = (recipeTags: readonly string[], householdTags: readonly string[]): boolean => {
   const tags = effectiveRecipeTags(recipeTags);
   const styles = householdStyles(householdTags);
   const styleOk = styles.length === 0 || eligibleRecipeStyleTags(householdTags).some((tag) => tags.includes(tag));

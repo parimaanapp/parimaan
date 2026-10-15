@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inferDietStyle, withInferredStyle } from './inferDietStyle.js';
+import { inferDietStyle, reconcileDraftStyle, withInferredStyle } from './inferDietStyle.js';
 
 describe('inferDietStyle', () => {
   it('veg when nothing meat, fish or egg is present', () => {
@@ -68,6 +68,36 @@ describe('inferDietStyle — Indian-language meat, fish and egg names (F3)', () 
 
   it.each(['vegan mayo', 'vegan egg', 'egg replacer', 'eggless cake batter'])('%s does not count as egg', (name) => {
     expect(inferDietStyle('Salad', [name])).toBe('veg');
+  });
+});
+
+describe('reconcileDraftStyle — model tags never override meat/egg evidence (F4)', () => {
+  it('keeps tags that agree with the evidence', () => {
+    expect(reconcileDraftStyle(['veg', 'gluten_free'], 'Dal', ['dal'])).toEqual(['veg', 'gluten_free']);
+    expect(reconcileDraftStyle(['non_veg'], 'Curry', ['chicken'])).toEqual(['non_veg']);
+  });
+
+  it('replaces veg/vegan/jain/eggetarian with non_veg when there is meat evidence', () => {
+    expect(reconcileDraftStyle(['veg', 'vegan', 'jain', 'gluten_free'], 'Chicken Curry', ['chicken'])).toEqual([
+      'gluten_free',
+      'non_veg',
+    ]);
+    expect(reconcileDraftStyle(['eggetarian'], 'Fish Fry', ['fish'])).toEqual(['non_veg']);
+  });
+
+  it('replaces veg/vegan/jain with eggetarian when there is egg evidence but no meat', () => {
+    expect(reconcileDraftStyle(['veg', 'vegan'], 'Egg Curry', ['eggs'])).toEqual(['eggetarian']);
+  });
+
+  it('never emits non_veg together with veg, vegan or jain', () => {
+    const result = reconcileDraftStyle(['veg', 'non_veg'], 'Dal', ['dal']);
+    expect(result).toEqual(['veg']);
+    expect(reconcileDraftStyle(['veg', 'non_veg'], 'Curry', ['chicken'])).toEqual(['non_veg']);
+  });
+
+  it('infers a style when none is present', () => {
+    expect(reconcileDraftStyle([], 'Dal', ['dal'])).toEqual(['veg']);
+    expect(reconcileDraftStyle(['dairy_free'], 'Fry', ['prawns'])).toEqual(['dairy_free', 'non_veg']);
   });
 });
 
