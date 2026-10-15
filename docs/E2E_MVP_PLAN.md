@@ -5675,6 +5675,8 @@ Original v2 bundle remains the component reference; deliberate deviations and th
 | New app version | Cut the TestFlight and Android builds **after Builds A, B and C are all done** (the Build A builds already produced are not to be distributed). |
 | Other beta work | PostHog, Firebase/W22, store readiness and website items wait until after the Build A–C app version. |
 | Catalog | Approved. Bird's-eye chilli merged into Dried Red Chilli; named varieties kept; **English only** — aliases are Latin-script (including transliterations such as "lal mirch"); no native-script aliases, no regional-language pass for now. |
+| Invite codes | **No change for now** (codes stay permanent, multi-use, no approval). **Post-beta:** decide expiry / single-use / owner approval / member removal. |
+| Primary button contrast | Paper on terracotta is ≈3.9:1; fix by raising the filled-button label size to ≥18.7 px at semibold (WCAG large text) rather than changing the token. |
 | Quantity display | Quantities show at most 2 decimals AND long rows wrap so the unit is never truncated (2 decimals alone does not fix a narrow row at large text scale). |
 
 ### 33.6 Household membership guarantee
