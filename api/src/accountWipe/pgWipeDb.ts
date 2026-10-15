@@ -1,5 +1,5 @@
 import { classifyHouseholds } from './households.js';
-import { DELETE_STEPS, scopedWhere } from './steps.js';
+import { DELETE_STEPS, qualifiedTable, scopedWhere } from './steps.js';
 import type {
   DbDeleteResult,
   DbListing,
@@ -39,7 +39,7 @@ const loadUsers = async (
   subs: readonly string[],
 ): Promise<WipeUser[]> => {
   const { rows } = await client.query(
-    `SELECT id, cognito_sub, email FROM users
+    `SELECT id, cognito_sub, email FROM public.users
      WHERE lower(email) = ANY($1::text[]) OR cognito_sub = ANY($2::text[])
      ORDER BY id`,
     [emails, subs],
@@ -56,16 +56,16 @@ const loadTouchedHouseholds = async (
   userIds: readonly string[],
 ): Promise<HouseholdWithMembers[]> => {
   const households = await client.query(
-    `SELECT id, name, primary_user_id FROM households
+    `SELECT id, name, primary_user_id FROM public.households
      WHERE primary_user_id = ANY($1::uuid[])
-        OR id IN (SELECT household_id FROM household_memberships WHERE user_id = ANY($1::uuid[]))
+        OR id IN (SELECT household_id FROM public.household_memberships WHERE user_id = ANY($1::uuid[]))
      ORDER BY id`,
     [userIds],
   );
   const ids = households.rows.map((r) => asString(r['id']));
   const memberRows = await client.query(
     `SELECT id, household_id, user_id, role, joined_at::text AS joined_at
-     FROM household_memberships WHERE household_id = ANY($1::uuid[])
+     FROM public.household_memberships WHERE household_id = ANY($1::uuid[])
      ORDER BY household_id, joined_at, id`,
     [ids],
   );
@@ -95,7 +95,7 @@ const loadTableRows = async (
   const result: TableRows[] = [];
   for (const step of DELETE_STEPS) {
     const { rows } = await client.query(
-      `SELECT ${step.keyExpr} AS key FROM ${step.table} WHERE ${scopedWhere(step)} ORDER BY 1`,
+      `SELECT ${step.keyExpr} AS key FROM ${qualifiedTable(step)} WHERE ${scopedWhere(step)} ORDER BY 1`,
       [householdIds, userIds],
     );
     result.push({ table: step.table, keys: rows.map((r) => asString(r['key'])) });
@@ -111,18 +111,18 @@ const NULLIFIED_REFERENCE_QUERIES: readonly {
   {
     table: 'pantry_items',
     column: 'added_by',
-    sql: `SELECT count(*) AS n FROM pantry_items WHERE added_by = ANY($2::uuid[]) AND household_id <> ALL($1::uuid[])`,
+    sql: `SELECT count(*) AS n FROM public.pantry_items WHERE added_by = ANY($2::uuid[]) AND household_id <> ALL($1::uuid[])`,
   },
   {
     table: 'recipes',
     column: 'created_by',
-    sql: `SELECT count(*) AS n FROM recipes WHERE created_by = ANY($2::uuid[]) AND household_id <> ALL($1::uuid[])`,
+    sql: `SELECT count(*) AS n FROM public.recipes WHERE created_by = ANY($2::uuid[]) AND household_id <> ALL($1::uuid[])`,
   },
   {
     table: 'shopping_list_items',
     column: 'purchased_by',
-    sql: `SELECT count(*) AS n FROM shopping_list_items WHERE purchased_by = ANY($2::uuid[])
-          AND shopping_list_id NOT IN (SELECT id FROM shopping_lists WHERE household_id = ANY($1::uuid[]))`,
+    sql: `SELECT count(*) AS n FROM public.shopping_list_items WHERE purchased_by = ANY($2::uuid[])
+          AND shopping_list_id NOT IN (SELECT id FROM public.shopping_lists WHERE household_id = ANY($1::uuid[]))`,
   },
 ];
 
@@ -165,10 +165,10 @@ const sameListing = (a: DbListing, b: DbListing): boolean =>
 
 const applyPromotions = async (client: SqlClient, listing: DbListing): Promise<number> => {
   for (const p of listing.promotions) {
-    await client.query(`UPDATE household_memberships SET role = 'primary' WHERE id = $1`, [
+    await client.query(`UPDATE public.household_memberships SET role = 'primary' WHERE id = $1`, [
       p.membershipId,
     ]);
-    await client.query(`UPDATE households SET primary_user_id = $1 WHERE id = $2`, [
+    await client.query(`UPDATE public.households SET primary_user_id = $1 WHERE id = $2`, [
       p.newPrimaryUserId,
       p.householdId,
     ]);
@@ -185,7 +185,7 @@ const applyDeletes = async (
   const deleted: { table: string; count: number }[] = [];
   for (const step of DELETE_STEPS) {
     const planned = listing.tables.find((t) => t.table === step.table)?.keys.length ?? 0;
-    const res = await client.query(`DELETE FROM ${step.table} WHERE ${scopedWhere(step)}`, [
+    const res = await client.query(`DELETE FROM ${qualifiedTable(step)} WHERE ${scopedWhere(step)}`, [
       householdIds,
       userIds,
     ]);

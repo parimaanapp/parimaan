@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DELETE_STEPS } from './steps.js';
+import { DELETE_STEPS, qualifiedTable } from './steps.js';
 
 const MIGRATIONS_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '../../migrations');
 
@@ -55,6 +55,27 @@ describe('DELETE_STEPS (FK graph derived from api/migrations)', () => {
       expect(order.indexOf(child), `${child} must precede ${parent}`).toBeLessThan(
         order.indexOf(parent),
       );
+    }
+  });
+});
+
+describe('schema qualification (L6/L7)', () => {
+  it('migrations create tables in the default (public) schema only', () => {
+    const sql = readMigrations();
+    expect(sql).not.toMatch(/CREATE SCHEMA/i);
+    expect(sql).not.toMatch(/SET search_path/i);
+  });
+
+  it('qualifies every step table with public.', () => {
+    for (const step of DELETE_STEPS) {
+      expect(qualifiedTable(step)).toBe(`public.${step.table}`);
+    }
+  });
+
+  it('qualifies every table referenced inside a step predicate', () => {
+    for (const step of DELETE_STEPS) {
+      const refs = [...step.where.matchAll(/\bFROM\s+([\w.]+)/g)].map((m) => m[1] as string);
+      for (const ref of refs) expect(ref, step.table).toMatch(/^public\./);
     }
   });
 });

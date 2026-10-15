@@ -19,19 +19,24 @@ export interface DeleteStep {
   readonly where: string;
 }
 
-const RECIPES_OF_DELETED_HOUSEHOLDS = `SELECT id FROM recipes WHERE household_id = ANY($1::uuid[])`;
+const RECIPES_OF_DELETED_HOUSEHOLDS = `SELECT id FROM public.recipes WHERE household_id = ANY($1::uuid[])`;
+
+/** Migrations create everything in the default `public` schema; never rely on `search_path`. */
+export const SCHEMA = 'public';
+
+export const qualifiedTable = (step: DeleteStep): string => `${SCHEMA}.${step.table}`;
 
 export const DELETE_STEPS: readonly DeleteStep[] = [
   {
     table: 'shopping_list_items',
     keyExpr: 'id::text',
-    where: `shopping_list_id IN (SELECT id FROM shopping_lists WHERE household_id = ANY($1::uuid[]))`,
+    where: `shopping_list_id IN (SELECT id FROM public.shopping_lists WHERE household_id = ANY($1::uuid[]))`,
   },
   { table: 'shopping_lists', keyExpr: 'id::text', where: `household_id = ANY($1::uuid[])` },
   {
     table: 'menu_items',
     keyExpr: 'id::text',
-    where: `menu_id IN (SELECT id FROM menus WHERE household_id = ANY($1::uuid[])) OR recipe_id IN (${RECIPES_OF_DELETED_HOUSEHOLDS})`,
+    where: `menu_id IN (SELECT id FROM public.menus WHERE household_id = ANY($1::uuid[])) OR recipe_id IN (${RECIPES_OF_DELETED_HOUSEHOLDS})`,
   },
   { table: 'menus', keyExpr: 'id::text', where: `household_id = ANY($1::uuid[])` },
   {
