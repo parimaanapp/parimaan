@@ -111,46 +111,48 @@ Future<ProviderContainer> _pump(
 
 void main() {
   group('AutoFillPreviewScreen — never writes on open/regenerate', () {
-    testWidgets('opening the screen calls autoFillPreview exactly once and NEVER autoFillWeek', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'opening the screen calls autoFillPreview exactly once and NEVER autoFillWeek',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      expect(repository.previewCalls, hasLength(1));
-      expect(repository.autoFillCalls, isEmpty);
-    });
+        expect(repository.previewCalls, hasLength(1));
+        expect(repository.autoFillCalls, isEmpty);
+      },
+    );
 
-    testWidgets('tapping Regenerate re-calls autoFillPreview and STILL never autoFillWeek', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping Regenerate re-calls autoFillPreview and STILL never autoFillWeek',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(AutoFillPreviewScreen.regenerateButtonKey));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(AutoFillPreviewScreen.regenerateButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AutoFillPreviewScreen.regenerateButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AutoFillPreviewScreen.regenerateButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(repository.previewCalls, hasLength(3));
-      expect(repository.autoFillCalls, isEmpty);
-    });
+        expect(repository.previewCalls, hasLength(3));
+        expect(repository.autoFillCalls, isEmpty);
+      },
+    );
 
     testWidgets('shows a loading indicator before the first preview resolves', (
       WidgetTester tester,
@@ -172,186 +174,192 @@ void main() {
   });
 
   group('AutoFillPreviewScreen — load/preview failures', () {
-    testWidgets('a menu load failure renders the error state, not a blank screen', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchError: const ForbiddenError('Not a member.'),
-        createError: const ForbiddenError('Not a member.'),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'a menu load failure renders the error state, not a blank screen',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchError: const ForbiddenError('Not a member.'),
+          createError: const ForbiddenError('Not a member.'),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(AutoFillPreviewScreen.errorKey), findsOneWidget);
-      expect(find.text('Not a member.'), findsOneWidget);
-    });
+        expect(find.byKey(AutoFillPreviewScreen.errorKey), findsOneWidget);
+        expect(find.text('Not a member.'), findsOneWidget);
+      },
+    );
 
-    testWidgets('a preview failure renders the error state, and Try again regenerates', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewError: const ValidationError('Could not build a proposal.'),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'a preview failure renders the error state, and Try again regenerates',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewError: const ValidationError('Could not build a proposal.'),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(AutoFillPreviewScreen.errorKey), findsOneWidget);
-      expect(find.text('Could not build a proposal.'), findsOneWidget);
+        expect(find.byKey(AutoFillPreviewScreen.errorKey), findsOneWidget);
+        expect(find.text('Could not build a proposal.'), findsOneWidget);
 
-      repository.previewError = null;
-      repository.previewResult = const AutoFillPreviewResult(
-        items: <ProposedMenuItem>[],
-        filledCount: 0,
-        unfilledSlots: <UnfilledSlot>[],
-      );
-      await tester.tap(find.text('Try again'));
-      await tester.pumpAndSettle();
+        repository.previewError = null;
+        repository.previewResult = const AutoFillPreviewResult(
+          items: <ProposedMenuItem>[],
+          filledCount: 0,
+          unfilledSlots: <UnfilledSlot>[],
+        );
+        await tester.tap(find.text('Try again'));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(AutoFillPreviewScreen.errorKey), findsNothing);
-      expect(repository.previewCalls, hasLength(2));
-    });
+        expect(find.byKey(AutoFillPreviewScreen.errorKey), findsNothing);
+        expect(repository.previewCalls, hasLength(2));
+      },
+    );
   });
 
   group('AutoFillPreviewScreen — full-fill slot count (§16.5.1 cross-language canary)', () {
-    testWidgets('a full preview renders EXACTLY plannedSlotsForDay\'s own total slot count, across all 7 days', (
-      WidgetTester tester,
-    ) async {
-      final List<ProposedMenuItem> fullWeek = _fullWeekProposals(
-        testMenuHousehold.settings,
-      );
-      // testMenuHousehold's settings (menu_fixtures.dart's own doc): 1
-      // breakfast + 4 lunch + 4 dinner = 9 slots/day × 7 days = 63 — asserted
-      // here as a floor-level sanity check on the fixture itself, not on the
-      // widget under test, so a future change to the fixture's own
-      // mealStructure fails loudly here rather than silently changing what
-      // the widget assertion below means.
-      expect(fullWeek, hasLength(63));
+    testWidgets(
+      'a full preview renders EXACTLY plannedSlotsForDay\'s own total slot count, across all 7 days',
+      (WidgetTester tester) async {
+        final List<ProposedMenuItem> fullWeek = _fullWeekProposals(
+          testMenuHousehold.settings,
+        );
+        // testMenuHousehold's settings (menu_fixtures.dart's own doc): 1
+        // breakfast + 4 lunch + 4 dinner = 9 slots/day × 7 days = 63 — asserted
+        // here as a floor-level sanity check on the fixture itself, not on the
+        // widget under test, so a future change to the fixture's own
+        // mealStructure fails loudly here rather than silently changing what
+        // the widget assertion below means.
+        expect(fullWeek, hasLength(63));
 
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: AutoFillPreviewResult(
-          items: fullWeek,
-          filledCount: fullWeek.length,
-          unfilledSlots: const <UnfilledSlot>[],
-        ),
-      );
-      // `_PreviewList` is a lazy `ListView.builder`, same as
-      // `WeeklyPlanScreen`'s own grid — without a tall-enough viewport, only
-      // the first day's rows are actually built (weekly_plan_screen_test.dart's
-      // own comment on this exact laziness). This IS the cross-language
-      // canary, so every one of the 63 rows must actually be built and
-      // counted, not just Monday's — hence the oversized surface.
-      tester.view.physicalSize = const Size(800, 20000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: AutoFillPreviewResult(
+            items: fullWeek,
+            filledCount: fullWeek.length,
+            unfilledSlots: const <UnfilledSlot>[],
+          ),
+        );
+        // `_PreviewList` is a lazy `ListView.builder`, same as
+        // `WeeklyPlanScreen`'s own grid — without a tall-enough viewport, only
+        // the first day's rows are actually built (weekly_plan_screen_test.dart's
+        // own comment on this exact laziness). This IS the cross-language
+        // canary, so every one of the 63 rows must actually be built and
+        // counted, not just Monday's — hence the oversized surface.
+        tester.view.physicalSize = const Size(800, 20000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      expect(_proposedRowCount(tester), fullWeek.length);
-      expect(find.text('Filled all 63 empty slots.'), findsOneWidget);
-    });
+        expect(_proposedRowCount(tester), fullWeek.length);
+        expect(find.text('Filled all 63 empty slots.'), findsOneWidget);
+      },
+    );
   });
 
   group('AutoFillPreviewScreen — honest partial-fill messaging', () {
-    testWidgets('a partial preview renders specific unfilled copy, distinguishable from a full fill', (
-      WidgetTester tester,
-    ) async {
-      final List<ProposedMenuItem> fullWeek = _fullWeekProposals(
-        testMenuHousehold.settings,
-      );
-      final List<ProposedMenuItem> filled = fullWeek.take(40).toList();
-      final List<UnfilledSlot> unfilled = fullWeek
-          .skip(40)
-          .map(
-            (ProposedMenuItem p) => UnfilledSlot(
-              dayOfWeek: p.dayOfWeek,
-              mealSlot: p.mealSlot,
-              slotRole: p.slotRole,
-            ),
-          )
-          .toList();
+    testWidgets(
+      'a partial preview renders specific unfilled copy, distinguishable from a full fill',
+      (WidgetTester tester) async {
+        final List<ProposedMenuItem> fullWeek = _fullWeekProposals(
+          testMenuHousehold.settings,
+        );
+        final List<ProposedMenuItem> filled = fullWeek.take(40).toList();
+        final List<UnfilledSlot> unfilled = fullWeek
+            .skip(40)
+            .map(
+              (ProposedMenuItem p) => UnfilledSlot(
+                dayOfWeek: p.dayOfWeek,
+                mealSlot: p.mealSlot,
+                slotRole: p.slotRole,
+              ),
+            )
+            .toList();
 
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: AutoFillPreviewResult(
-          items: filled,
-          filledCount: filled.length,
-          unfilledSlots: unfilled,
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: AutoFillPreviewResult(
+            items: filled,
+            filledCount: filled.length,
+            unfilledSlots: unfilled,
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Filled 40 of 63 empty slots.'), findsOneWidget);
-      expect(
-        find.textContaining('23 slots could not be filled'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('no recipes match your household'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('in-rotation'), findsNothing);
-      expect(find.text('Filled all 63 empty slots.'), findsNothing);
-    });
+        expect(find.text('Filled 40 of 63 empty slots.'), findsOneWidget);
+        expect(
+          find.textContaining('23 slots could not be filled'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('no recipes match your household'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('in-rotation'), findsNothing);
+        expect(find.text('Filled all 63 empty slots.'), findsNothing);
+      },
+    );
   });
 
   group('AutoFillPreviewScreen — Accept / confirm gate', () {
-    testWidgets('Accept with NO existing unmade items commits straight away — no confirm dialog', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-        autoFillResult: AutoFillResult(
-          menu: testEmptyMenu,
-          filledCount: 0,
-          unfilledSlots: const <UnfilledSlot>[],
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Accept with NO existing unmade items commits straight away — no confirm dialog',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
+          ),
+          autoFillResult: AutoFillResult(
+            menu: testEmptyMenu,
+            filledCount: 0,
+            unfilledSlots: const <UnfilledSlot>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(RegenerateConfirmDialog), findsNothing);
-      expect(repository.autoFillCalls, hasLength(1));
-      expect(repository.autoFillCalls.single.$2, isTrue); // overwrite: true
-    });
+        expect(find.byType(RegenerateConfirmDialog), findsNothing);
+        expect(repository.autoFillCalls, hasLength(1));
+        expect(repository.autoFillCalls.single.$2, isTrue); // overwrite: true
+      },
+    );
 
-    testWidgets('Accept with an existing UNMADE item shows the confirm dialog first', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testMenuWithItems, // testMenuItem has madeAt: null
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-        autoFillResult: AutoFillResult(
-          menu: testMenuWithItems,
-          filledCount: 0,
-          unfilledSlots: const <UnfilledSlot>[],
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Accept with an existing UNMADE item shows the confirm dialog first',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testMenuWithItems, // testMenuItem has madeAt: null
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
+          ),
+          autoFillResult: AutoFillResult(
+            menu: testMenuWithItems,
+            filledCount: 0,
+            unfilledSlots: const <UnfilledSlot>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(RegenerateConfirmDialog), findsOneWidget);
-      expect(repository.autoFillCalls, isEmpty);
-    });
+        expect(find.byType(RegenerateConfirmDialog), findsOneWidget);
+        expect(repository.autoFillCalls, isEmpty);
+      },
+    );
 
     testWidgets('Cancelling the confirm dialog calls autoFillWeek ZERO times', (
       WidgetTester tester,
@@ -415,126 +423,132 @@ void main() {
       );
     });
 
-    testWidgets('a menu with only MADE items (madeAt set) skips the confirm dialog', (
-      WidgetTester tester,
-    ) async {
-      final Menu menuWithMadeItemOnly = Menu(
-        id: 'menu-1',
-        householdId: 'household-1',
-        weekStartDate: DateTime.utc(2026, 9, 7),
-        mealConfigSnapshot: '{}',
-        items: <MenuItem>[
-          MenuItem(
-            id: 'menu-item-made',
-            menuId: 'menu-1',
-            recipe: testMenuRecipe,
-            dayOfWeek: 0,
-            mealSlot: 'lunch',
-            slotRole: testMenuRecipe.role,
-            madeAt: DateTime.utc(2026, 9, 8),
+    testWidgets(
+      'a menu with only MADE items (madeAt set) skips the confirm dialog',
+      (WidgetTester tester) async {
+        final Menu menuWithMadeItemOnly = Menu(
+          id: 'menu-1',
+          householdId: 'household-1',
+          weekStartDate: DateTime.utc(2026, 9, 7),
+          mealConfigSnapshot: '{}',
+          items: <MenuItem>[
+            MenuItem(
+              id: 'menu-item-made',
+              menuId: 'menu-1',
+              recipe: testMenuRecipe,
+              dayOfWeek: 0,
+              mealSlot: 'lunch',
+              slotRole: testMenuRecipe.role,
+              madeAt: DateTime.utc(2026, 9, 8),
+            ),
+          ],
+        );
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: menuWithMadeItemOnly,
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
           ),
-        ],
-      );
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: menuWithMadeItemOnly,
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-        autoFillResult: AutoFillResult(
-          menu: menuWithMadeItemOnly,
-          filledCount: 0,
-          unfilledSlots: const <UnfilledSlot>[],
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+          autoFillResult: AutoFillResult(
+            menu: menuWithMadeItemOnly,
+            filledCount: 0,
+            unfilledSlots: const <UnfilledSlot>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(RegenerateConfirmDialog), findsNothing);
-      expect(repository.autoFillCalls, hasLength(1));
-    });
+        expect(find.byType(RegenerateConfirmDialog), findsNothing);
+        expect(repository.autoFillCalls, hasLength(1));
+      },
+    );
   });
 
   group('AutoFillPreviewScreen — commit under-delivering relative to its own preview', () {
-    testWidgets('the post-commit summary reflects the COMMIT\'s own numbers, not the earlier preview\'s promise', (
-      WidgetTester tester,
-    ) async {
-      final List<ProposedMenuItem> promised = _fullWeekProposals(
-        testMenuHousehold.settings,
-      ).take(10).toList();
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: AutoFillPreviewResult(
-          items: promised,
-          filledCount: promised.length, // preview promised 10
-          unfilledSlots: const <UnfilledSlot>[],
-        ),
-        // The commit's own live re-validation only lands 7 of the 10 —
-        // §16.2.1's re-validation-skip case.
-        autoFillResult: AutoFillResult(
-          menu: testEmptyMenu,
-          filledCount: 7,
-          unfilledSlots: promised
-              .skip(7)
-              .map(
-                (ProposedMenuItem p) => UnfilledSlot(
-                  dayOfWeek: p.dayOfWeek,
-                  mealSlot: p.mealSlot,
-                  slotRole: p.slotRole,
-                ),
-              )
-              .toList(),
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'the post-commit summary reflects the COMMIT\'s own numbers, not the earlier preview\'s promise',
+      (WidgetTester tester) async {
+        final List<ProposedMenuItem> promised = _fullWeekProposals(
+          testMenuHousehold.settings,
+        ).take(10).toList();
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: AutoFillPreviewResult(
+            items: promised,
+            filledCount: promised.length, // preview promised 10
+            unfilledSlots: const <UnfilledSlot>[],
+          ),
+          // The commit's own live re-validation only lands 7 of the 10 —
+          // §16.2.1's re-validation-skip case.
+          autoFillResult: AutoFillResult(
+            menu: testEmptyMenu,
+            filledCount: 7,
+            unfilledSlots: promised
+                .skip(7)
+                .map(
+                  (ProposedMenuItem p) => UnfilledSlot(
+                    dayOfWeek: p.dayOfWeek,
+                    mealSlot: p.mealSlot,
+                    slotRole: p.slotRole,
+                  ),
+                )
+                .toList(),
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
+        await tester.pumpAndSettle();
 
-      // The committed screen shows 7-of-10, not 10-of-10 — the preview's own
-      // promise is never reused for the post-commit summary.
-      expect(find.text('Filled 7 of 10 empty slots.'), findsOneWidget);
-      expect(find.text('Filled all 10 empty slots.'), findsNothing);
-    });
+        // The committed screen shows 7-of-10, not 10-of-10 — the preview's own
+        // promise is never reused for the post-commit summary.
+        expect(find.text('Filled 7 of 10 empty slots.'), findsOneWidget);
+        expect(find.text('Filled all 10 empty slots.'), findsNothing);
+      },
+    );
   });
 
   group('AutoFillPreviewScreen — a failed commit leaves the screen intact', () {
-    testWidgets('a commit failure shows the error and keeps the preview on screen — never blanked', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-        autoFillError: const ConflictError('This meal slot is full.'),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'a commit failure shows the error and keeps the preview on screen — never blanked',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
+          ),
+          autoFillError: const ConflictError('This meal slot is full.'),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AutoFillPreviewScreen.acceptButtonKey));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(AutoFillPreviewScreen.commitErrorKey), findsOneWidget);
-      expect(find.text('This meal slot is full.'), findsOneWidget);
-      // Never blanked: the preview's own summary/regenerate/accept controls
-      // are all still on screen, and the committed view never appears.
-      expect(find.byKey(AutoFillPreviewScreen.summaryKey), findsOneWidget);
-      expect(
-        find.byKey(AutoFillPreviewScreen.regenerateButtonKey),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(AutoFillPreviewScreen.committedSummaryKey),
-        findsNothing,
-      );
-    });
+        expect(
+          find.byKey(AutoFillPreviewScreen.commitErrorKey),
+          findsOneWidget,
+        );
+        expect(find.text('This meal slot is full.'), findsOneWidget);
+        // Never blanked: the preview's own summary/regenerate/accept controls
+        // are all still on screen, and the committed view never appears.
+        expect(find.byKey(AutoFillPreviewScreen.summaryKey), findsOneWidget);
+        expect(
+          find.byKey(AutoFillPreviewScreen.regenerateButtonKey),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(AutoFillPreviewScreen.committedSummaryKey),
+          findsNothing,
+        );
+      },
+    );
   });
 }

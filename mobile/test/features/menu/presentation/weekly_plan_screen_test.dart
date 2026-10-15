@@ -491,7 +491,10 @@ void main() {
         find.byKey(WeeklyPlanGrid.columnHeaderKey(MealType.snacks)),
         findsNothing,
       );
-      expect(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.snacks)), findsNothing);
+      expect(
+        find.byKey(WeeklyPlanGrid.cellKey(0, MealType.snacks)),
+        findsNothing,
+      );
     });
 
     testWidgets(
