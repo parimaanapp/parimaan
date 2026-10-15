@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/ui/components/p_tab_bar.dart';
+import '../../../shared/ui/components/p_tab_glyph.dart';
 
 /// The signed-in app's persistent chrome: an [IndexedStack]-backed bottom
 /// tab bar over the [StatefulShellRoute] branches in `router.dart`.
@@ -17,26 +18,10 @@ class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   static const List<PTabBarItem> _items = <PTabBarItem>[
-    PTabBarItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home,
-      label: 'Home',
-    ),
-    PTabBarItem(
-      icon: Icons.calendar_today_outlined,
-      activeIcon: Icons.calendar_today,
-      label: 'Plan',
-    ),
-    PTabBarItem(
-      icon: Icons.inventory_2_outlined,
-      activeIcon: Icons.inventory_2,
-      label: 'Pantry',
-    ),
-    PTabBarItem(
-      icon: Icons.menu_book_outlined,
-      activeIcon: Icons.menu_book,
-      label: 'Recipes',
-    ),
+    PTabBarItem(glyph: PTabGlyph.today, label: 'Today'),
+    PTabBarItem(glyph: PTabGlyph.plan, label: 'Plan'),
+    PTabBarItem(glyph: PTabGlyph.pantry, label: 'Pantry'),
+    PTabBarItem(glyph: PTabGlyph.recipes, label: 'Recipes'),
   ];
 
   @override

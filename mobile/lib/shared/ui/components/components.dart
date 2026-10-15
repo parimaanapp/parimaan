@@ -38,5 +38,6 @@ export 'p_empty_state.dart';
 export 'p_icon_button.dart';
 export 'p_input.dart';
 export 'p_tab_bar.dart';
+export 'p_tab_glyph.dart';
 export 'p_toast.dart';
 export 'p_top_bar.dart';

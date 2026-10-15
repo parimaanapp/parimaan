@@ -14,6 +14,10 @@ abstract final class AppSizing {
   /// `componentRules.buttons.minHeight`.
   static const double buttonMinHeight = 44;
 
+  /// Bottom tab bar height: the wireframe's 48 at the ~1.17x it scales to on a
+  /// phone (the wireframe frame is 280 wide), and 44pt-clearing.
+  static const double tabBarHeight = 56;
+
   // ---- iconography.sizes (Phosphor Icons, Regular / 1.5px stroke) ------
   /// Inline with text.
   static const double icon16 = 16;
