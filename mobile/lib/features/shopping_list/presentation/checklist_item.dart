@@ -323,6 +323,7 @@ class CategorizedChecklist extends StatelessWidget {
     super.key,
     required this.items,
     this.menuId,
+    this.header,
     this.footer,
   });
 
@@ -331,6 +332,9 @@ class CategorizedChecklist extends StatelessWidget {
   /// Threaded straight through to every [ChecklistItem] row — see that
   /// widget's own doc for what a non-null value enables.
   final String? menuId;
+
+  /// Widgets rendered before the first section, inside the same scroll view.
+  final List<Widget>? header;
 
   /// Widgets rendered after the last section inside the same scroll view
   /// (the screen's Staples check card).
@@ -348,6 +352,7 @@ class CategorizedChecklist extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.s3),
       children: <Widget>[
+        ...?header,
         for (final ShoppingListCategoryGroup group in groups)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.s3),
