@@ -1,0 +1,34 @@
+{
+  "title": "Gobi Paratha",
+  "description": "Punjabi whole wheat flatbread stuffed with a spiced grated cauliflower filling and cooked in ghee.",
+  "servings": 3,
+  "prepMin": 25,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Atta (Whole Wheat Flour)", "quantity": 250, "unit": "g", "category": "grain" },
+    { "name": "Water", "quantity": 130, "unit": "ml", "category": "beverages", "notes": "approximate, for the dough" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "notes": "split between dough and filling", "isStaple": true },
+    { "name": "Cauliflower", "quantity": 200, "unit": "g", "category": "produce", "notes": "finely grated" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger", "quantity": 10, "unit": "g", "category": "produce", "notes": "grated" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Carom Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Dry Mango Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "Knead the atta with about 130 ml of water and half the salt into a soft dough, cover and rest for 15 minutes.",
+    "Squeeze the grated cauliflower in a clean cloth to remove as much moisture as possible.",
+    "Mix it with the green chilli, ginger, coriander leaves, carom seeds, red chilli powder, garam masala, dry mango powder and the remaining salt.",
+    "Divide the dough into 6 balls, roll each into a small round, place a spoon of filling in the centre and seal the edges.",
+    "Roll gently into a 6 inch round, dusting with flour as needed.",
+    "Cook on a hot tawa, brushing both sides with ghee, until golden spots appear on each side.",
+    "Serve hot with curd and pickle."
+  ]
+}

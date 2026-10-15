@@ -1,0 +1,26 @@
+{
+  "title": "Banana Smoothie Bowl",
+  "description": "A thick chilled banana and mango smoothie topped with oats, chia seeds and almonds, ready in ten minutes with no cooking.",
+  "servings": 2,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Banana", "quantity": 2, "unit": "piece", "category": "produce", "notes": "frozen, sliced" },
+    { "name": "Mango (Ripe)", "quantity": 150, "unit": "g", "category": "produce", "notes": "cubed" },
+    { "name": "Curd", "quantity": 150, "unit": "g", "category": "dairy", "notes": "chilled" },
+    { "name": "Oats (Rolled)", "quantity": 30, "unit": "g", "category": "grain" },
+    { "name": "Honey", "quantity": 1, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Chia Seeds", "quantity": 1, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Almonds", "quantity": 15, "unit": "g", "category": "dry_goods", "notes": "chopped" }
+  ],
+  "steps": [
+    "Blend the frozen banana, mango, curd and honey until thick and smooth, adding a splash of cold water only if the blender sticks.",
+    "Pour into two bowls and smooth the top with a spoon.",
+    "Scatter the oats, chia seeds and chopped almonds over each bowl.",
+    "Eat straight away so the toppings stay crunchy."
+  ]
+}

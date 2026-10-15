@@ -1,0 +1,34 @@
+{
+  "title": "Sattu Paratha",
+  "description": "A Bihari stuffed paratha with a roasted gram flour filling spiced with onion, garlic, green chilli and a little mustard oil.",
+  "servings": 3,
+  "prepMin": 25,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bihari",
+  "dietaryTags": ["veg", "vegan", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Atta (Whole Wheat Flour)", "quantity": 250, "unit": "g", "category": "grain" },
+    { "name": "Water", "quantity": 130, "unit": "ml", "category": "beverages", "notes": "approximate, for the dough" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "notes": "split between dough and filling", "isStaple": true },
+    { "name": "Sattu", "quantity": 100, "unit": "g", "category": "beverages" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Garlic (Clove)", "quantity": 3, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Carom Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Mustard Oil", "quantity": 1, "unit": "tbsp", "category": "oil", "notes": "for the filling" },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "Knead the atta with about 130 ml of water and half the salt into a soft dough and rest it for 15 minutes.",
+    "Mix the sattu with the onion, garlic, green chilli, carom seeds, mustard oil, lemon juice, coriander leaves and the remaining salt into a crumbly filling.",
+    "Divide the dough into 6 balls and flatten each into a small cup.",
+    "Put a spoon of the sattu filling inside, pinch the edges to seal and flatten gently.",
+    "Roll out to a 6 inch round without pressing hard so the filling stays inside.",
+    "Cook on a hot tawa with a little of the vegetable oil on both sides until brown and crisp.",
+    "Serve with chokha, pickle or curd."
+  ]
+}
