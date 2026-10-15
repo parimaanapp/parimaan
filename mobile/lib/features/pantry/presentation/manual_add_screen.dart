@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/input/quantity_input_formatter.dart';
+import '../../catalog/domain/catalog_ingredient.dart';
+import '../../catalog/presentation/ingredient_picker_field.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
@@ -60,6 +64,10 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   late final TextEditingController _lowThreshold;
   String? _category;
   bool _isStaple = false;
+
+  /// The catalog row the name was picked as (B2c); `null` for free text.
+  /// Honoured only while the name text still equals its canonical name.
+  CatalogIngredient? _catalog;
 
   @override
   void initState() {
@@ -122,6 +130,19 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
       if (neverUserSet && !isStoredUnit) {
         _unit.text = defaultUnitForCategory(selected) ?? unit;
       }
+    });
+  }
+
+  /// A catalog match was picked: adopt its category (when the pantry knows
+  /// it) and a unit it allows, keeping the current unit when it already is
+  /// one of them.
+  void _selectCatalog(CatalogIngredient ingredient) {
+    setState(() {
+      _catalog = ingredient;
+      if (knownPantryCategories.contains(ingredient.category)) {
+        _category = ingredient.category;
+      }
+      _unit.text = unitAfterSelection(ingredient, _unit.text);
     });
   }
 
@@ -219,6 +240,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     final AsyncValue<void> formState = ref.watch(pantryFormControllerProvider);
     final bool isBusy = formState.isLoading;
     final String? errorMessage = pantryErrorMessage(formState.error);
+    final CatalogIngredient? catalog = selectionFor(_catalog, _name.text);
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -237,13 +259,15 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    PInput(
-                      key: ManualAddScreen.nameFieldKey,
+                    IngredientPickerField(
+                      fieldKey: ManualAddScreen.nameFieldKey,
                       label: 'Name',
                       hintText: 'Toor dal',
                       controller: _name,
                       enabled: !isBusy,
                       autofocus: !widget.isEditMode,
+                      onSelected: _selectCatalog,
+                      onAddAsNew: (_) => setState(() => _catalog = null),
                     ),
                     const SizedBox(height: AppSpacing.s2),
                     PInput(
@@ -255,24 +279,36 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: <TextInputFormatter>[
+                        QuantityInputFormatter(),
+                      ],
                       useMonoFont: true,
                     ),
                     const SizedBox(height: AppSpacing.s2),
-                    PInput(
-                      key: ManualAddScreen.unitFieldKey,
-                      label: 'Unit',
-                      hintText: 'kg',
-                      controller: _unit,
-                      enabled: !isBusy,
-                    ),
-                    const SizedBox(height: AppSpacing.s1),
+                    // The catalog bounds the unit choice, so a picked
+                    // ingredient shows only its chips; free text keeps the
+                    // typed unit field.
+                    if (catalog == null) ...<Widget>[
+                      PInput(
+                        key: ManualAddScreen.unitFieldKey,
+                        label: 'Unit',
+                        hintText: 'kg',
+                        controller: _unit,
+                        enabled: !isBusy,
+                      ),
+                      const SizedBox(height: AppSpacing.s1),
+                    ],
                     Wrap(
                       spacing: AppSpacing.s1,
                       runSpacing: AppSpacing.s1,
                       children: <Widget>[
-                        for (final String unit in unitsWithCurrent(
-                          _category,
-                          widget.initialItem?.unit,
+                        for (final String unit in unitsForIngredient(
+                          catalog,
+                          fallback: unitsWithCurrent(
+                            _category,
+                            widget.initialItem?.unit,
+                          ),
+                          current: catalog == null ? null : _unit.text,
                         ))
                           PChip(
                             key: ManualAddScreen.unitChipKey(unit),
@@ -330,6 +366,9 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: <TextInputFormatter>[
+                        QuantityInputFormatter(),
+                      ],
                       useMonoFont: true,
                     ),
                   ],

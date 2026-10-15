@@ -21,13 +21,16 @@ import '../domain/recipe_source_attribution.dart';
 /// the Detail-scale fragment this type could reuse without over-fetching
 /// the Library (E2E_MVP_PLAN.md §12.2.7/D5). `ingredients` is left `null`
 /// here, matching [Recipe.ingredients]'s own "not fetched" doc.
+///
+/// B2c: the list selection is also slim on `description`, `sourceUrl` and
+/// `steps` (the heaviest columns, only the Detail screen reads them), so a
+/// list-scale [Recipe] carries `null`/`null`/empty for those — same "not
+/// fetched" convention as `ingredients`.
 Recipe recipeFromGraphQL(GRecipesData_recipes data) => Recipe(
   id: data.id,
   householdId: data.householdId,
   sourceType: recipeSourceFromGraphQL(data.sourceType),
-  sourceUrl: data.sourceUrl,
   title: data.title,
-  description: data.description,
   servings: data.servings,
   prepMin: data.prepMin,
   cookMin: data.cookMin,
@@ -42,7 +45,7 @@ Recipe recipeFromGraphQL(GRecipesData_recipes data) => Recipe(
   role: recipeRoleFromGraphQL(data.role),
   inRotation: data.inRotation,
   isFavorite: data.isFavorite,
-  steps: data.steps.toList(growable: false),
+  steps: const <String>[],
   createdAt: data.createdAt,
   updatedAt: data.updatedAt,
 );

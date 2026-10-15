@@ -1,0 +1,16 @@
+# `Query.searchIngredients` — ranked type-ahead over the global ingredient
+# catalog's canonical names and aliases (api/src/domain/ingredientCatalog.ts).
+# Reference data shared by every household, so there is no household argument.
+# `aliases(limit: 10)` is asked for explicitly so the picker can show which
+# alias a query matched ("arhar" -> Toor Dal) without a second round trip.
+query SearchIngredients($query: String!, $limit: Int) {
+  searchIngredients(query: $query, limit: $limit) {
+    id
+    name
+    category
+    categoryLabel
+    allowedUnits
+    defaultUnit
+    aliases(limit: 10)
+  }
+}

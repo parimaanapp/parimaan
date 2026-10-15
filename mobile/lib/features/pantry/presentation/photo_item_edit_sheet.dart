@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
+import '../../../shared/input/quantity_input_formatter.dart';
+import '../../catalog/domain/catalog_ingredient.dart';
+import '../../catalog/presentation/ingredient_picker_field.dart';
 import '../domain/pantry_category.dart';
+import '../domain/category_units.dart';
 import '../domain/pantry_photo_analysis.dart';
 
 /// Units a photo can honestly support — a subset of `knownPantryUnits` (a photo
@@ -80,12 +85,54 @@ class _PhotoItemEditSheetState extends State<PhotoItemEditSheet> {
   late String? _unit = widget.proposal.unit;
   late String _category = widget.proposal.category;
 
+  /// The catalog row the name was picked as (B2c); `null` for free text.
+  CatalogIngredient? _catalog;
+
+  @override
+  void initState() {
+    super.initState();
+    _name.addListener(_onNameChanged);
+  }
+
+  void _onNameChanged() => setState(() {});
+
+  /// A catalog match was picked: take its category and keep to units both the
+  /// catalog allows and a photo can honestly show (a photo cannot show a
+  /// teaspoon); when the two lists do not intersect the catalog's own units
+  /// win.
+  void _selectCatalog(CatalogIngredient ingredient) {
+    setState(() {
+      _catalog = ingredient;
+      if (knownPantryCategories.contains(ingredient.category)) {
+        _category = ingredient.category;
+      }
+      final List<String> units = _unitsFor(ingredient);
+      if (_unit == null || !unitInList(units, _unit)) {
+        _unit = units.contains(ingredient.defaultUnit)
+            ? ingredient.defaultUnit
+            : units.first;
+      }
+    });
+  }
+
+  static List<String> _unitsFor(CatalogIngredient? ingredient) {
+    if (ingredient == null) {
+      return photoProposalUnits;
+    }
+    final List<String> shared = <String>[
+      for (final String u in ingredient.allowedUnits)
+        if (photoProposalUnits.contains(u)) u,
+    ];
+    return shared.isEmpty ? ingredient.allowedUnits : shared;
+  }
+
   static String _format(double? q) => q == null
       ? ''
       : (q == q.roundToDouble() ? q.toInt().toString() : q.toString());
 
   @override
   void dispose() {
+    _name.removeListener(_onNameChanged);
     _name.dispose();
     _quantity.dispose();
     super.dispose();
@@ -132,11 +179,12 @@ class _PhotoItemEditSheetState extends State<PhotoItemEditSheet> {
               children: <Widget>[
                 Text('Edit item', style: AppTypography.displayM),
                 const SizedBox(height: AppSpacing.s3),
-                PInput(
-                  key: PhotoItemEditSheet.nameFieldKey,
+                IngredientPickerField(
+                  fieldKey: PhotoItemEditSheet.nameFieldKey,
                   label: 'Name',
                   controller: _name,
-                  onChanged: (_) => setState(() {}),
+                  onSelected: _selectCatalog,
+                  onAddAsNew: (_) => setState(() => _catalog = null),
                 ),
                 const SizedBox(height: AppSpacing.s2),
                 PInput(
@@ -146,6 +194,9 @@ class _PhotoItemEditSheetState extends State<PhotoItemEditSheet> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  inputFormatters: <TextInputFormatter>[
+                    QuantityInputFormatter(),
+                  ],
                   useMonoFont: true,
                   helperText: 'Count what you can see — a guess is fine, you can change it later.',
                 ),
@@ -156,7 +207,9 @@ class _PhotoItemEditSheetState extends State<PhotoItemEditSheet> {
                   spacing: AppSpacing.s1,
                   runSpacing: AppSpacing.s1,
                   children: <Widget>[
-                    for (final String unit in photoProposalUnits)
+                    for (final String unit in _unitsFor(
+                      selectionFor(_catalog, _name.text),
+                    ))
                       PChip(
                         key: PhotoItemEditSheet.unitChipKey(unit),
                         label: unit,

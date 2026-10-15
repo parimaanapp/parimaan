@@ -80,6 +80,10 @@ export interface FindRecipesFilter {
   isFavorite?: boolean;
   /** Exact match against `in_rotation`. Absent = no filter. W10 §16.2.5. */
   inRotation?: boolean;
+  /** Page size. Absent = no limit (the whole list). B2c. */
+  limit?: number;
+  /** Rows to skip; only meaningful with `limit`. Absent = 0. B2c. */
+  offset?: number;
 }
 
 /**
@@ -106,8 +110,17 @@ export const findRecipes = async (
        AND ($2::text IS NULL OR role = $2)
        AND ($3::boolean IS NULL OR is_favorite = $3)
        AND ($4::boolean IS NULL OR in_rotation = $4)
-     ORDER BY is_favorite DESC, in_rotation DESC, LOWER(title)`,
-    [householdId, filter.role ?? null, filter.isFavorite ?? null, filter.inRotation ?? null],
+     ORDER BY is_favorite DESC, in_rotation DESC, LOWER(title), id
+     LIMIT $5::int OFFSET $6::int`,
+    [
+      householdId,
+      filter.role ?? null,
+      filter.isFavorite ?? null,
+      filter.inRotation ?? null,
+      // `LIMIT NULL` is "no limit" in Postgres, so an unpaged call is unchanged.
+      filter.limit ?? null,
+      filter.offset ?? 0,
+    ],
   );
   return result.rows.map(mapRecipeRow);
 };

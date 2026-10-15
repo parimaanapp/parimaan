@@ -51,13 +51,21 @@ class FakeRecipeRepository implements RecipeRepository {
   final List<({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>
   calls = <({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>[];
 
+  /// The `(limit, offset)` of every [fetchRecipes] call, parallel to
+  /// [calls] — kept separate so the long-standing four-field [calls]
+  /// assertions stay valid.
+  final List<({int? limit, int? offset})> pageCalls = <({int? limit, int? offset})>[];
+
   @override
   Future<List<Recipe>> fetchRecipes(
     String householdId, {
     RecipeRole? role,
     bool? isFavorite,
     bool? inRotation,
+    int? limit,
+    int? offset,
   }) async {
+    pageCalls.add((limit: limit, offset: offset));
     calls.add((
       householdId: householdId,
       role: role,
@@ -79,7 +87,10 @@ class FakeRecipeRepository implements RecipeRepository {
     if (result == null) {
       throw StateError('FakeRecipeRepository needs a `result` or an error.');
     }
-    return result;
+    if (limit == null) {
+      return result;
+    }
+    return result.skip(offset ?? 0).take(limit).toList(growable: false);
   }
 
   // ── watchRecipeChanges ─────────────────────────────────────────────────

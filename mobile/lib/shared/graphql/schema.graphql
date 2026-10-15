@@ -89,8 +89,13 @@ type Query {
   write time and never persisted (E2E_MVP_PLAN.md §12.2.6). This query
   deliberately does not hydrate `Recipe.ingredients` inline — see that
   field's own doc.
+
+  Optional paging (Build B, B2c): `limit` (1..200) and `offset` (>= 0)
+  page the already-filtered, already-ordered list; the order carries an
+  `id` tiebreak so consecutive pages never overlap. Both omitted (or
+  null) returns the whole list, exactly as before — purely additive.
   """
-  recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean, inRotation: Boolean): [Recipe!]!
+  recipes(householdId: ID!, role: RecipeRole, isFavorite: Boolean, inRotation: Boolean, limit: Int, offset: Int): [Recipe!]!
 
   """
   Returns a single recipe by `id` — added in W6 S7 so the Detail screen can

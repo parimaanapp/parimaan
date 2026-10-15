@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/features/catalog/data/catalog_repository.dart';
+import 'package:mobile/features/catalog/presentation/ingredient_picker_field.dart';
 import 'package:mobile/features/pantry/domain/category_units.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,7 @@ import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/components/components.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
+import '../../../support/fake_catalog_repository.dart';
 import '../../../support/fake_recipe_repository.dart';
 
 final Recipe _dalRecipe = Recipe(
@@ -63,7 +66,10 @@ Future<ProviderContainer> _pumpPushed(
   RecipeSource? reviewSourceType,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      recipeRepositoryProvider.overrideWithValue(repository),
+      catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
+    ],
   );
   addTearDown(container.dispose);
 
@@ -341,6 +347,51 @@ void main() {
       expect(call.source, isNull);
       expect(find.byType(RecipeFormScreen), findsNothing);
       expect(find.text('open'), findsOneWidget);
+    });
+
+    testWidgets('a catalog pick submits the canonical name, an allowed unit and '
+        'the catalog category', (WidgetTester tester) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        createResult: _dalRecipe,
+      );
+      await _pumpPushed(tester, repository: repository);
+
+      await tester.enterText(find.byKey(RecipeFormScreen.titleFieldKey), 'Dal');
+      await tester.tap(find.text('Sabzi/Dal'));
+      await tester.ensureVisible(
+        find.byKey(RecipeFormScreen.addIngredientButtonKey),
+      );
+      await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+      await tester.pump();
+
+      await tester.ensureVisible(
+        find.byKey(IngredientRowEditor.nameFieldKey(0)),
+      );
+      await tester.enterText(
+        find.byKey(IngredientRowEditor.nameFieldKey(0)),
+        'arhar',
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureToorDal.id)),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(IngredientRowEditor.quantityFieldKey(0)),
+        '2.5',
+      );
+      await tester.pump();
+
+      await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
+      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+      await tester.pumpAndSettle();
+
+      final ingredient = repository.createCalls.single.draft.ingredients.single;
+      expect(ingredient.name, 'Toor Dal');
+      expect(ingredient.unit, 'g');
+      expect(ingredient.category, 'dal');
+      expect(ingredient.quantity, 2.5);
     });
 
     testWidgets('renders no AI-proposal badge — that treatment is review-mode only', (

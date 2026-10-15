@@ -6,6 +6,7 @@ import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
 import { findRecipes } from '../repositories/recipeRepository.js';
+import type { FindRecipesFilter } from '../repositories/recipeRepository.js';
 import { toGraphQLRecipe } from '../mappers/recipe.js';
 import type { GraphQLRecipe } from '../mappers/recipe.js';
 import { recipesArgsSchema } from '../validation/recipes.js';
@@ -31,7 +32,7 @@ export const productionDeps: RecipesResolverDeps = { getPool };
 export const createRecipesHandler =
   (deps: RecipesResolverDeps) =>
   async (
-    event: AppSyncResolverEvent<{ householdId: unknown; role: unknown; isFavorite: unknown; inRotation: unknown }>,
+    event: AppSyncResolverEvent<{ householdId: unknown; role: unknown; isFavorite: unknown; inRotation: unknown; limit?: unknown; offset?: unknown }>,
   ): Promise<GraphQLRecipe[]> => {
     const identity = extractCallerIdentity(event.identity);
 
@@ -39,7 +40,7 @@ export const createRecipesHandler =
     if (!parsedArgs.success) {
       throw new ValidationError(parsedArgs.error.issues[0]?.message ?? 'Invalid input.');
     }
-    const { householdId, role, isFavorite, inRotation } = parsedArgs.data;
+    const { householdId, role, isFavorite, inRotation, limit, offset } = parsedArgs.data;
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
@@ -54,7 +55,7 @@ export const createRecipesHandler =
         // `null` (key present, explicit null — the real AppSync/Ferry wire
         // shape for an unset nullable variable), and both must mean "no
         // filter" here.
-        const filter: { role?: string; isFavorite?: boolean; inRotation?: boolean } = {};
+        const filter: FindRecipesFilter = {};
         if (role != null) {
           filter.role = role;
         }
@@ -63,6 +64,13 @@ export const createRecipesHandler =
         }
         if (inRotation != null) {
           filter.inRotation = inRotation;
+        }
+
+        if (limit != null) {
+          filter.limit = limit;
+        }
+        if (offset != null) {
+          filter.offset = offset;
         }
 
         const rows = await findRecipes(client, householdId, filter);

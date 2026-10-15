@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../shared/input/quantity_input_formatter.dart';
 import '../../../shared/ui/colors.dart';
+import '../../catalog/domain/catalog_ingredient.dart';
+import '../../catalog/presentation/ingredient_picker_field.dart';
 import '../../pantry/domain/category_units.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/sizing.dart';
@@ -43,6 +47,9 @@ class IngredientRowEditor extends StatelessWidget {
     required this.onRemove,
     required this.enabled,
     this.nameErrorText,
+    this.catalogIngredient,
+    required this.onCatalogSelected,
+    required this.onAddAsNew,
   });
 
   final int index;
@@ -54,6 +61,18 @@ class IngredientRowEditor extends StatelessWidget {
   final VoidCallback onRemove;
   final bool enabled;
   final String? nameErrorText;
+
+  /// The catalog row this ingredient was picked as, or `null` for free text.
+  /// Only honoured while the name text still equals its canonical name (a
+  /// hand edit makes the row free text again) — see [selectionFor].
+  final CatalogIngredient? catalogIngredient;
+
+  /// The user picked a catalog match; the screen stores it and applies the
+  /// default unit.
+  final ValueChanged<CatalogIngredient> onCatalogSelected;
+
+  /// The user chose "Add as new ingredient" for the typed name.
+  final ValueChanged<String> onAddAsNew;
 
   static Key nameFieldKey(int index) => Key('ingredient-row-name-$index');
   static Key quantityFieldKey(int index) =>
@@ -70,15 +89,17 @@ class IngredientRowEditor extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Expanded(
-              child: PInput(
-                key: nameFieldKey(index),
-                label: 'Ingredient',
-                hintText: 'Toor dal',
+              child: IngredientPickerField(
+                fieldKey: nameFieldKey(index),
                 controller: nameController,
+                hintText: 'Toor dal',
                 enabled: enabled,
                 errorText: nameErrorText,
+                onSelected: onCatalogSelected,
+                onAddAsNew: onAddAsNew,
               ),
             ),
             const SizedBox(width: AppSpacing.s1),
@@ -106,53 +127,24 @@ class IngredientRowEditor extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.s1),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: PInput(
-                key: quantityFieldKey(index),
-                label: 'Quantity',
-                hintText: '2',
-                controller: quantityController,
-                enabled: enabled,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                useMonoFont: true,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s1),
-            Expanded(
-              child: PInput(
-                key: unitFieldKey(index),
-                label: 'Unit',
-                // Neutral placeholder: a real unit name here read as a
-                // chosen value on a blank unit.
-                hintText: 'unit',
-                controller: unitController,
-                enabled: enabled,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.s1),
         ListenableBuilder(
-          listenable: unitController,
-          builder: (BuildContext context, Widget? _) => Wrap(
-            spacing: AppSpacing.s1,
-            runSpacing: AppSpacing.s1,
-            children: <Widget>[
-              for (final String unit in recipeUnits)
-                PChip(
-                  key: unitChipKey(index, unit),
-                  label: unit,
-                  selected:
-                      unitController.text.trim().toLowerCase() ==
-                      unit.toLowerCase(),
-                  onTap: enabled ? () => unitController.text = unit : null,
-                ),
-            ],
-          ),
+          listenable: Listenable.merge(<Listenable>[
+            nameController,
+            unitController,
+          ]),
+          builder: (BuildContext context, Widget? _) {
+            final CatalogIngredient? catalog = selectionFor(
+              catalogIngredient,
+              nameController.text,
+            );
+            return _QuantityAndUnits(
+              index: index,
+              quantityController: quantityController,
+              unitController: unitController,
+              enabled: enabled,
+              catalog: catalog,
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.s1),
         PChip(
@@ -164,4 +156,93 @@ class IngredientRowEditor extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Quantity, unit entry and unit chips for one row. Wraps (never a
+/// fixed-width row of chips), so at 320pt or 2x text every unit label stays
+/// whole on its own line instead of being clipped or pushed off screen.
+///
+/// With a [catalog] row the chips are limited to its allowed units (default
+/// first) and the free-text unit field is dropped — the catalog bounds the
+/// choice. Free text keeps the field and the full recipe unit list.
+class _QuantityAndUnits extends StatelessWidget {
+  const _QuantityAndUnits({
+    required this.index,
+    required this.quantityController,
+    required this.unitController,
+    required this.enabled,
+    required this.catalog,
+  });
+
+  final int index;
+  final TextEditingController quantityController;
+  final TextEditingController unitController;
+  final bool enabled;
+  final CatalogIngredient? catalog;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<String> units = unitsForIngredient(
+      catalog,
+      fallback: recipeUnits,
+      // Free text keeps the plain list; typing a half-unit must not mint a chip.
+      current: catalog == null ? null : unitController.text,
+    );
+    final String current = unitController.text.trim().toLowerCase();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Wrap(
+          spacing: AppSpacing.s1,
+          runSpacing: AppSpacing.s1,
+          crossAxisAlignment: WrapCrossAlignment.end,
+          children: <Widget>[
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 120, maxWidth: 200),
+              child: PInput(
+                key: IngredientRowEditor.quantityFieldKey(index),
+                label: 'Quantity',
+                hintText: '2',
+                controller: quantityController,
+                enabled: enabled,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: <TextInputFormatter>[QuantityInputFormatter()],
+                useMonoFont: true,
+              ),
+            ),
+            if (catalog == null)
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 120, maxWidth: 200),
+                child: PInput(
+                  key: IngredientRowEditor.unitFieldKey(index),
+                  label: 'Unit',
+                  // Neutral placeholder: a real unit name here read as a
+                  // chosen value on a blank unit.
+                  hintText: 'unit',
+                  controller: unitController,
+                  enabled: enabled,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.s1),
+        Wrap(
+          spacing: AppSpacing.s1,
+          runSpacing: AppSpacing.s1,
+          children: <Widget>[
+            for (final String unit in units)
+              PChip(
+                key: IngredientRowEditor.unitChipKey(index, unit),
+                label: unit,
+                selected: current == unit.toLowerCase(),
+                onTap: enabled ? () => unitController.text = unit : null,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
 }

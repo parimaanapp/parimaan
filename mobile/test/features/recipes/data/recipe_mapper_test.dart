@@ -19,9 +19,7 @@ GRecipesData_recipes _data({
     ..id = 'recipe-1'
     ..householdId = 'household-1'
     ..sourceType = sourceType
-    ..sourceUrl = null
     ..title = 'Toor Dal'
-    ..description = null
     ..servings = 4
     ..prepMin = 10
     ..cookMin = 20
@@ -31,7 +29,6 @@ GRecipesData_recipes _data({
     ..role = role
     ..inRotation = true
     ..isFavorite = false
-    ..steps.addAll(<String>['Boil the dal.'])
     ..createdAt = DateTime.utc(2026, 8, 25, 10)
     ..updatedAt = DateTime.utc(2026, 8, 25, 11),
 );
@@ -55,10 +52,17 @@ void main() {
       expect(result.role, RecipeRole.sabziDal);
       expect(result.inRotation, isTrue);
       expect(result.isFavorite, isFalse);
-      expect(result.steps, <String>['Boil the dal.']);
       expect(result.createdAt, DateTime.utc(2026, 8, 25, 10));
       expect(result.updatedAt, DateTime.utc(2026, 8, 25, 11));
       expect(result.ingredients, isNull);
+    });
+
+    test('leaves the Detail-only fields empty (slim list selection)', () {
+      final result = recipeFromGraphQL(_data());
+
+      expect(result.steps, isEmpty);
+      expect(result.description, isNull);
+      expect(result.sourceUrl, isNull);
     });
 
     test('maps a null cuisineTier1 through as null', () {

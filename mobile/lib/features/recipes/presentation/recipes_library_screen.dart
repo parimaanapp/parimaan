@@ -33,6 +33,7 @@ class RecipesLibraryScreen extends ConsumerWidget {
   static const Key clearFilterButtonKey = Key('recipes-library-clear-filter');
   static const Key filteredAddButtonKey = Key('recipes-library-filtered-add');
   static const Key staleBannerKey = Key('recipes-library-stale-banner');
+  static const Key loadingMoreKey = Key('recipes-library-loading-more');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -188,11 +189,12 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
                       uppercase: false,
                     ),
                   ),
-                  Expanded(child: _RecipeList(items: items)),
+                  Expanded(child: _RecipeList(items: items, householdId: widget.householdId)),
                 ],
               ),
             (final List<Recipe> items, _) when items.isNotEmpty => _RecipeList(
               items: items,
+              householdId: widget.householdId,
             ),
             // A refetch over an empty previous result is still in flight:
             // never show an empty card for data that has not arrived.
@@ -252,10 +254,18 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
   }
 }
 
-class _RecipeList extends StatelessWidget {
-  const _RecipeList({required this.items});
+/// The recipe list, paged (B2c): when the user scrolls within
+/// [_loadMoreThreshold] of the end it asks the controller for the next page,
+/// and a spinner footer shows while that page is in flight.
+class _RecipeList extends ConsumerWidget {
+  const _RecipeList({required this.items, required this.householdId});
 
   final List<Recipe> items;
+  final String householdId;
+
+  /// Pixels from the end at which the next page is requested — about five
+  /// card heights, so the page usually lands before the user reaches it.
+  static const double _loadMoreThreshold = 400;
 
   // `.builder`, not a plain `ListView(children: ...)`: unlike
   // `PantryListScreen` (a household's pantry, no perf target set for it),
@@ -263,19 +273,42 @@ class _RecipeList extends StatelessWidget {
   // items — recycling only holds if the list is builder-backed from the
   // start, not bolted on after a spike finds it missing.
   @override
-  Widget build(BuildContext context) => ListView.builder(
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
-    itemCount: items.length,
-    itemBuilder: (BuildContext context, int index) {
-      final Recipe recipe = items[index];
-      return Padding(
-        key: ValueKey<String>(recipe.id),
-        padding: const EdgeInsets.only(bottom: AppSpacing.s1),
-        child: RecipeCard(
-          recipe: recipe,
-          onTap: () => context.push(AppRoutes.recipeDetail(recipe.id)),
-        ),
-      );
-    },
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final RecipeLibraryController controller = ref.read(
+      recipeLibraryControllerProvider(householdId).notifier,
+    );
+    final bool showFooter = controller.hasMore || controller.isLoadingMore;
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification notification) {
+        if (notification.metrics.axis == Axis.vertical &&
+            notification.metrics.extentAfter < _loadMoreThreshold) {
+          controller.loadMore();
+        }
+        return false;
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+        itemCount: items.length + (showFooter ? 1 : 0),
+        itemBuilder: (BuildContext context, int index) {
+          if (index >= items.length) {
+            return Padding(
+              key: RecipesLibraryScreen.loadingMoreKey,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          final Recipe recipe = items[index];
+          return Padding(
+            key: ValueKey<String>(recipe.id),
+            padding: const EdgeInsets.only(bottom: AppSpacing.s1),
+            child: RecipeCard(
+              recipe: recipe,
+              onTap: () => context.push(AppRoutes.recipeDetail(recipe.id)),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

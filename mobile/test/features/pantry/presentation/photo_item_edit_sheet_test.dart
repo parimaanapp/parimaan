@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/catalog/data/catalog_repository.dart';
+import 'package:mobile/features/catalog/presentation/ingredient_picker_field.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/pantry/domain/pantry_photo_analysis.dart';
 import 'package:mobile/features/pantry/presentation/photo_item_edit_sheet.dart';
 import 'package:mobile/shared/ui/components/components.dart';
 import 'package:mobile/shared/ui/theme.dart';
+
+import '../../../support/fake_catalog_repository.dart';
 
 PantryPhotoProposal _p({double? quantity = 1, String? unit = 'jar'}) =>
     PantryPhotoProposal(
@@ -22,14 +27,19 @@ Future<PhotoItemEditResult?> _open(
 ) async {
   PhotoItemEditResult? result;
   await tester.pumpWidget(
-    MaterialApp(
-      theme: parimaanTheme(),
-      home: Builder(
-        builder: (BuildContext context) => Scaffold(
-          body: TextButton(
-            onPressed: () async =>
-                result = await showPhotoItemEditSheet(context, proposal),
-            child: const Text('open'),
+    ProviderScope(
+      overrides: <Override>[
+        catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
+      ],
+      child: MaterialApp(
+        theme: parimaanTheme(),
+        home: Builder(
+          builder: (BuildContext context) => Scaffold(
+            body: TextButton(
+              onPressed: () async =>
+                  result = await showPhotoItemEditSheet(context, proposal),
+              child: const Text('open'),
+            ),
           ),
         ),
       ),
@@ -171,5 +181,39 @@ void main() {
     });
 
     expect(result, isNull);
+  });
+
+  testWidgets('picking a catalog match limits units to those a photo can show '
+      'and takes its category', (WidgetTester tester) async {
+    await _open(tester, _p(unit: 'piece'), () async {
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(PhotoItemEditSheet.nameFieldKey),
+          matching: find.byType(TextField),
+        ),
+        'tamatar',
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureTomato.id)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(PhotoItemEditSheet.unitChipKey('piece')),
+        findsOneWidget,
+      );
+      expect(find.byKey(PhotoItemEditSheet.unitChipKey('g')), findsOneWidget);
+      expect(find.byKey(PhotoItemEditSheet.unitChipKey('jar')), findsNothing);
+      expect(
+        tester
+            .widget<PChip>(
+              find.byKey(PhotoItemEditSheet.categoryChipKey('produce')),
+            )
+            .selected,
+        isTrue,
+      );
+    });
   });
 }
