@@ -45,6 +45,7 @@ export const MY_HOUSEHOLDS_QUERY = `
   query MyHouseholds {
     me {
       households {
+        joinedAt
         household {
           id
         }
@@ -56,6 +57,7 @@ export const MY_HOUSEHOLDS_QUERY = `
 export interface MyHouseholdsQueryResult {
   me: {
     households: Array<{
+      joinedAt?: string;
       household: {
         id: string;
       };
