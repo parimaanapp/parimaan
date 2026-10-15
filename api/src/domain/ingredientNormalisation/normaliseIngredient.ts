@@ -50,40 +50,58 @@ const stripNameDebris = (name: string): string => {
 const normaliseUnit = (cleanedUnit: string): string | null =>
   cleanedUnit === '' ? null : (canonicaliseUnit(cleanedUnit) ?? cleanedUnit.toLowerCase());
 
+interface CleanedFields {
+  readonly raw: string;
+  readonly name: string;
+  readonly notes: string;
+  readonly unit: string;
+}
+
+const nullIfEmpty = (text: string): string | null => (text === '' ? null : text);
+
+/** To-taste row with no parsed quantity: phrase removed, quantity/unit absent, salt/pepper become staples. */
+const normaliseQuantityless = (fields: CleanedFields): NormalisedIngredient => {
+  const strippedName = stripNameDebris(stripTastePhrase(fields.name));
+  const name = strippedName === '' ? fields.raw : strippedName;
+  return {
+    raw: fields.raw,
+    name,
+    quantity: null,
+    unit: null,
+    notes: nullIfEmpty(stripTastePhrase(fields.notes)),
+    isStaple: isSaltOrPepper(name),
+  };
+};
+
+/** To-taste phrase on a row that DID parse a quantity: the quantity is kept, the phrase moves into notes, never staple. */
+const normaliseMeasuredToTaste = (fields: CleanedFields, quantity: number): NormalisedIngredient => {
+  const phraseInName = TASTE_PHRASE.exec(fields.name)?.[0] ?? '';
+  const movedPhrase = phraseInName.replace(/^[\s,;(-]+/, '').replace(/^(?:or|and|&)\s+/i, '').replace(/\)$/, '').trim();
+  const strippedName = stripNameDebris(stripTastePhrase(fields.name));
+  const unitText = TASTE_PHRASE.test(fields.unit) ? '' : fields.unit;
+  const amount = toCanonicalAmount(quantity, normaliseUnit(unitText) ?? 'piece');
+  const notes = [fields.notes, movedPhrase].filter((part) => part !== '').join(', ');
+  return { raw: fields.raw, name: strippedName === '' ? fields.raw : strippedName, ...amount, notes: nullIfEmpty(notes), isStaple: false };
+};
+
 /**
  * The per-row half of the shared import normalisation (URL JSON-LD and
  * free-text paste both go through it): entity/whitespace cleanup,
  * canonical units, "to taste" handling and the countable-`piece` default.
- * Never defaults a unit to `cup`. Pure; returns a new object.
+ * Never defaults a unit to `cup` and never drops a parsed quantity. Pure.
  */
 export const normaliseIngredient = (input: ParsedIngredient): NormalisedIngredient => {
-  const raw = cleanText(input.raw.slice(0, MAX_FIELD_LENGTH));
-  const cleanedName = cleanText(input.name.slice(0, MAX_FIELD_LENGTH));
-  const cleanedNotes = cleanText((input.notes ?? '').slice(0, MAX_FIELD_LENGTH));
-  const cleanedUnit = cleanText((input.unit ?? '').slice(0, MAX_FIELD_LENGTH));
-
-  const toTaste = [cleanedName, cleanedNotes, cleanedUnit].some((text) => TASTE_PHRASE.test(text));
-  const hasQuantity = input.quantity !== null;
-
-  if (toTaste && !hasQuantity) {
-    const strippedName = stripNameDebris(stripTastePhrase(cleanedName));
-    const name = strippedName === '' ? raw : strippedName;
-    const notes = stripTastePhrase(cleanedNotes);
-    return { raw, name, quantity: null, unit: null, notes: notes === '' ? null : notes, isStaple: isSaltOrPepper(name) };
-  }
+  const fields: CleanedFields = {
+    raw: cleanText(input.raw.slice(0, MAX_FIELD_LENGTH)),
+    name: cleanText(input.name.slice(0, MAX_FIELD_LENGTH)),
+    notes: cleanText((input.notes ?? '').slice(0, MAX_FIELD_LENGTH)),
+    unit: cleanText((input.unit ?? '').slice(0, MAX_FIELD_LENGTH)),
+  };
+  const toTaste = [fields.name, fields.notes, fields.unit].some((text) => TASTE_PHRASE.test(text));
 
   if (toTaste) {
-    // A parsed quantity is never dropped: the phrase moves out of the name into the notes.
-    const phraseInName = TASTE_PHRASE.test(cleanedName) ? (TASTE_PHRASE.exec(cleanedName)?.[0] ?? '') : '';
-    const movedPhrase = phraseInName.replace(/^[\s,;(-]+/, '').replace(/^(?:or|and|&)\s+/i, '').replace(/\)$/, '').trim();
-    const strippedName = stripNameDebris(stripTastePhrase(cleanedName));
-    const name = strippedName === '' ? raw : strippedName;
-    const notes = [cleanedNotes, movedPhrase].filter((part) => part !== '').join(', ');
-    const unitText = TASTE_PHRASE.test(cleanedUnit) ? '' : cleanedUnit;
-    const amount = toCanonicalAmount(input.quantity, normaliseUnit(unitText) ?? 'piece');
-    return { raw, name, quantity: amount.quantity, unit: amount.unit, notes: notes === '' ? null : notes, isStaple: false };
+    return input.quantity === null ? normaliseQuantityless(fields) : normaliseMeasuredToTaste(fields, input.quantity);
   }
-
-  const amount = toCanonicalAmount(input.quantity, normaliseUnit(cleanedUnit) ?? (hasQuantity ? 'piece' : null));
-  return { raw, name: stripNameDebris(cleanedName) || raw, quantity: amount.quantity, unit: amount.unit, notes: cleanedNotes === '' ? null : cleanedNotes, isStaple: false };
+  const amount = toCanonicalAmount(input.quantity, normaliseUnit(fields.unit) ?? (input.quantity === null ? null : 'piece'));
+  return { raw: fields.raw, name: stripNameDebris(fields.name) || fields.raw, ...amount, notes: nullIfEmpty(fields.notes), isStaple: false };
 };
