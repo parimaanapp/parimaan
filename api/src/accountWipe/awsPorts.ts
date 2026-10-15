@@ -1,6 +1,7 @@
 import {
   AdminDeleteUserCommand,
   AdminDisableUserCommand,
+  AdminUserGlobalSignOutCommand,
   ListUsersCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { DeleteObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
@@ -93,6 +94,13 @@ export const createIdentityPool = (client: SendClient, userPoolId: string): Iden
     disableUser: (username) =>
       notFoundIsSuccess(() =>
         client.send(new AdminDisableUserCommand({ UserPoolId: userPoolId, Username: username })),
+      ),
+
+    globalSignOut: (username) =>
+      notFoundIsSuccess(() =>
+        client.send(
+          new AdminUserGlobalSignOutCommand({ UserPoolId: userPoolId, Username: username }),
+        ),
       ),
 
     deleteUser: (username) =>

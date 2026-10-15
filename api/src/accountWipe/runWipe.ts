@@ -105,6 +105,49 @@ const resolveMissingBySub = async (
   return { users: lookedUp.flatMap((l) => l.hits), warnings };
 };
 
+/** Everything that locates a wiped account's external (S3 / cache) data. */
+interface WipeScope {
+  readonly subs: readonly string[];
+  readonly userIds: readonly string[];
+  readonly householdIds: readonly string[];
+  readonly checks: readonly { readonly kind: string; readonly value: string }[];
+}
+
+const locateScope = (cognito: readonly CognitoUser[], db: DbListing): WipeScope => {
+  const subs = [
+    ...new Set([...cognito.map((u) => u.sub), ...db.users.map((u) => u.cognitoSub)]),
+  ].sort();
+  const userIds = db.users.map((u) => u.id);
+  const householdIds = db.householdsDeleted.map((h) => h.id);
+  return {
+    subs,
+    userIds,
+    householdIds,
+    checks: [
+      ...userIds.map((value) => ({ kind: 'database user id', value })),
+      ...subs.map((value) => ({ kind: 'cognito sub', value })),
+      ...householdIds.map((value) => ({ kind: 'household id', value })),
+    ],
+  };
+};
+
+/** Lists S3 objects and cache items located by `scope`. */
+const findExternal = async (
+  ports: WipePorts,
+  scope: WipeScope,
+): Promise<{ objects: ObjectRef[]; cache: CacheKey[] }> => {
+  const prefixes = [
+    ...scope.subs.map((sub) => ({ bucket: ports.buckets.uploads, prefix: `pantry-photos/${sub}/` })),
+    ...scope.householdIds.map((id) => ({ bucket: ports.buckets.exports, prefix: `exports/${id}/` })),
+  ];
+  const objects: ObjectRef[] =
+    prefixes.length === 0 ? [] : [...(await ports.objects.list(prefixes))];
+  const identifiers = [...scope.userIds, ...scope.subs, ...scope.householdIds];
+  const cache: CacheKey[] =
+    identifiers.length === 0 ? [] : [...(await ports.cache.findByIdentifiers(identifiers))];
+  return { objects, cache };
+};
+
 /** Builds the full, deterministic, read-only listing of everything that would be deleted. */
 export const buildListing = async (
   ports: WipePorts,
@@ -117,30 +160,9 @@ export const buildListing = async (
   const extra = await resolveMissingBySub(ports, byEmail, db);
   const cognito = sortBy(dedupeBy([...byEmail, ...extra.users], (u) => u.username), (u) => u.username);
 
-  const subs = [...new Set([...cognito.map((u) => u.sub), ...db.users.map((u) => u.cognitoSub)])].sort();
-  assertUuidIdentifiers([
-    ...db.users.map((u) => ({ kind: 'database user id', value: u.id })),
-    ...subs.map((value) => ({ kind: 'cognito sub', value })),
-    ...db.householdsDeleted.map((h) => ({ kind: 'household id', value: h.id })),
-  ]);
-
-  const prefixes = [
-    ...subs.map((sub) => ({ bucket: ports.buckets.uploads, prefix: `pantry-photos/${sub}/` })),
-    ...db.householdsDeleted.map((h) => ({
-      bucket: ports.buckets.exports,
-      prefix: `exports/${h.id}/`,
-    })),
-  ];
-  const objects: ObjectRef[] =
-    prefixes.length === 0 ? [] : [...(await ports.objects.list(prefixes))];
-
-  const identifiers = [
-    ...db.users.map((u) => u.id),
-    ...subs,
-    ...db.householdsDeleted.map((h) => h.id),
-  ];
-  const cache: CacheKey[] =
-    identifiers.length === 0 ? [] : [...(await ports.cache.findByIdentifiers(identifiers))];
+  const scope = locateScope(cognito, db);
+  assertUuidIdentifiers(scope.checks);
+  const { objects, cache } = await findExternal(ports, scope);
 
   return {
     target,
@@ -162,6 +184,55 @@ export const countRemaining = (listing: WipeListing): RemainingCounts => {
   return { dbRows, objects, cacheItems, cognitoUsers, total: dbRows + objects + cacheItems + cognitoUsers };
 };
 
+/**
+ * Re-reads the DB immediately before the first destructive step. The hash
+ * check covers the listing computed moments earlier; this closes the window
+ * between that and the external deletions (the in-transaction check in
+ * `db.execute` stays as a backstop, but runs after S3/cache are already gone).
+ */
+const assertDbUnchanged = async (
+  ports: WipePorts,
+  listing: WipeListing,
+  cognitoSubs: readonly string[],
+): Promise<void> => {
+  const current = await ports.db.snapshot(listing.emails, cognitoSubs);
+  if (JSON.stringify(current) !== JSON.stringify(listing.db)) {
+    throw new Error(
+      'Database content changed after the approved listing was computed; nothing was deleted. ' +
+        'Re-run --dry-run and re-approve.',
+    );
+  }
+};
+
+const mergeBy = <T>(a: readonly T[], b: readonly T[], key: (t: T) => string): T[] =>
+  dedupeBy([...a, ...b], key);
+
+/**
+ * Proves zero remain using the PRE-delete identifiers. A fresh listing derives
+ * its S3 prefixes and cache ids from DB users/households, which are empty after
+ * a successful delete, so it would trivially report zero. Here S3 and cache are
+ * re-listed by the original subs, user ids and household ids, the DB is
+ * re-read by the original subs, and Cognito is re-queried by sub as well as email.
+ */
+const countRemainingAfterDelete = async (
+  ports: WipePorts,
+  before: WipeListing,
+  rawEmails: readonly string[],
+): Promise<RemainingCounts> => {
+  const fresh = await buildListing(ports, rawEmails);
+  const scope = locateScope(before.cognito, before.db);
+  const external = await findExternal(ports, scope);
+  const db = await ports.db.snapshot(before.emails, scope.subs);
+  const bySub = (await Promise.all(scope.subs.map((s) => ports.identity.findBySub(s)))).flat();
+  return countRemaining({
+    ...fresh,
+    db,
+    objects: mergeBy(fresh.objects, external.objects, (o) => `${o.bucket}/${o.key}`),
+    cache: mergeBy(fresh.cache, external.cache, (c) => `${c.pk}|${c.sk}`),
+    cognito: mergeBy(fresh.cognito, bySub, (u) => u.username),
+  });
+};
+
 const assertConfirmation = (confirm: string | undefined, actual: string): void => {
   if (confirm === undefined || confirm.length === 0) {
     throw new Error(
@@ -179,17 +250,20 @@ const assertConfirmation = (confirm: string | undefined, actual: string): void =
  * Entry point. `dry-run` is strictly read-only. `execute` recomputes the
  * listing, requires its hash to equal `confirm`, then runs:
  *
- *   1. disable the matched Cognito users (so a login cannot re-provision rows),
+ *   0. re-read the DB and abort unless it still equals the approved listing,
+ *   1. disable the matched Cognito users (so a login cannot re-provision rows)
+ *      and globally sign them out (revoking refresh tokens),
  *   2. delete S3 objects, 3. delete DynamoDB cache items  (both listed from the DB
  *      and Cognito, which still exist at this point),
  *   4. the DB transaction (all or nothing),
  *   5. delete the Cognito users,
  *
- * then re-lists to prove zero remain. External data goes BEFORE the DB commit
+ * then re-lists, by the pre-delete identifiers, to prove zero remain. External data goes BEFORE the DB commit
  * because the DB is the source of the ids that locate it: if a step fails, every
  * later step's input is still discoverable and a re-run (dry-run, re-approve,
  * execute) finishes the job. Every delete is a no-op when its data is already
- * gone, so re-running a completed wipe is safe.
+ * gone. Re-running after a failure is safe; after a completed wipe a stale
+ * --confirm is refused and a fresh dry run reports zero.
  */
 export const runWipe = async (ports: WipePorts, options: RunWipeOptions): Promise<WipeOutcome> => {
   const listing = await buildListing(ports, options.emails);
@@ -201,8 +275,13 @@ export const runWipe = async (ports: WipePorts, options: RunWipeOptions): Promis
 
   assertConfirmation(options.confirm, hash);
 
+  const cognitoSubs = listing.cognito.map((u) => u.sub);
+  await assertDbUnchanged(ports, listing, cognitoSubs);
+
   for (const user of listing.cognito) {
     await ports.identity.disableUser(user.username);
+    // Disable blocks new sign-ins; global sign-out revokes refresh tokens already issued.
+    await ports.identity.globalSignOut(user.username);
   }
   if (listing.objects.length > 0) {
     await ports.objects.delete(listing.objects);
@@ -210,14 +289,12 @@ export const runWipe = async (ports: WipePorts, options: RunWipeOptions): Promis
   if (listing.cache.length > 0) {
     await ports.cache.delete(listing.cache);
   }
-  const cognitoSubs = listing.cognito.map((u) => u.sub);
   const dbResult = await ports.db.execute(listing.emails, cognitoSubs, listing.db);
   for (const user of listing.cognito) {
     await ports.identity.deleteUser(user.username);
   }
 
-  const after = await buildListing(ports, options.emails);
-  const remaining = countRemaining(after);
+  const remaining = await countRemainingAfterDelete(ports, listing, options.emails);
   if (remaining.total !== 0) {
     throw new Error(
       `Verification failed: ${remaining.total} item(s) remain after deletion ` +

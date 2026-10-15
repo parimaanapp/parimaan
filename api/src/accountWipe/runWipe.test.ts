@@ -76,6 +76,7 @@ describe('runWipe', () => {
     const outcome = await runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash });
     expect(world.events).toEqual([
       'cognito:disable',
+      'cognito:signout',
       's3:delete',
       'cache:delete',
       'db:transaction',
@@ -250,6 +251,102 @@ describe('runWipe', () => {
       if (outcome.mode !== 'execute') throw new Error('unreachable');
       expect(outcome.remaining.total).toBe(0);
       expect(world.events.slice(0, before.length)).toEqual(before);
+    });
+  });
+
+  describe('re-check before the first destructive step (N2)', () => {
+    it('aborts with no external deletion when the DB changed after the confirmed listing', async () => {
+      const { ports, world } = seeded();
+      const dry = await runWipe(ports, { mode: 'dry-run', emails: EMAILS });
+      const base = world.snapshots;
+      // snapshot #base+1 is the execute listing (hash matches); #base+2 is the pre-destructive re-check.
+      world.onSnapshot = (n, w) => {
+        if (n === base + 2) {
+          w.dbListing = {
+            ...w.dbListing,
+            tables: w.dbListing.tables.map((t) =>
+              t.table === 'pantry_items' ? { ...t, keys: [...t.keys, 'p3'] } : t,
+            ),
+          };
+        }
+      };
+      await expect(
+        runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash }),
+      ).rejects.toThrow(/changed|no longer matches/i);
+      expect(world.events).toEqual([]);
+      expect(world.disabled).toEqual([]);
+      expect(world.objects).toHaveLength(3);
+      expect(world.cache).toHaveLength(3);
+      expect(world.cognito).toHaveLength(1);
+    });
+
+    it('proceeds when the re-check matches the listing', async () => {
+      const { ports, world } = seeded();
+      const dry = await runWipe(ports, { mode: 'dry-run', emails: EMAILS });
+      await runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash });
+      expect(world.events[0]).toBe('cognito:disable');
+    });
+  });
+
+  describe('session revocation (N3)', () => {
+    it('globally signs out every disabled user, right after disabling it', async () => {
+      const second: CognitoUser = { username: 'Google_9', sub: SUB.replace('1111', '5555'), email: 'b@x.test' };
+      const { ports, world } = createFakePorts({
+        cognito: [cognitoUser, second],
+        dbListing: populatedDb(),
+      });
+      const dry = await runWipe(ports, { mode: 'dry-run', emails: EMAILS });
+      await runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash });
+      expect(world.events.slice(0, 4)).toEqual([
+        'cognito:disable',
+        'cognito:signout',
+        'cognito:disable',
+        'cognito:signout',
+      ]);
+      expect([...world.signedOut].sort()).toEqual(['Google_1', 'Google_9']);
+    });
+
+    it('fails at signout before touching any data, and a re-run completes', async () => {
+      const { ports, world } = seeded();
+      world.failOn = 'cognito:signout';
+      const dry = await runWipe(ports, { mode: 'dry-run', emails: EMAILS });
+      await expect(
+        runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash }),
+      ).rejects.toThrow(/cognito:signout/);
+      expect(world.events).toEqual(['cognito:disable']);
+      expect(world.objects).toHaveLength(3);
+      world.failOn = undefined;
+      const outcome = await runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash });
+      if (outcome.mode !== 'execute') throw new Error('unreachable');
+      expect(outcome.remaining.total).toBe(0);
+    });
+  });
+
+  describe('post-delete verification uses the pre-delete identifiers (N4)', () => {
+    it('fails when an S3 object under a pre-delete sub is left behind', async () => {
+      const { ports, world } = seeded();
+      world.retain.objects = true;
+      const dry = await runWipe(ports, { mode: 'dry-run', emails: EMAILS });
+      await expect(
+        runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash }),
+      ).rejects.toThrow(/Verification failed.*objects 2/s);
+    });
+
+    it('fails when a cache item for a pre-delete user id is left behind', async () => {
+      const { ports, world } = seeded();
+      world.retain.cache = true;
+      const dry = await runWipe(ports, { mode: 'dry-run', emails: EMAILS });
+      await expect(
+        runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash }),
+      ).rejects.toThrow(/Verification failed.*cache 2/s);
+    });
+
+    it('still passes when nothing is left behind', async () => {
+      const { ports } = seeded();
+      const dry = await runWipe(ports, { mode: 'dry-run', emails: EMAILS });
+      const outcome = await runWipe(ports, { mode: 'execute', emails: EMAILS, confirm: dry.hash });
+      if (outcome.mode !== 'execute') throw new Error('unreachable');
+      expect(outcome.remaining.total).toBe(0);
     });
   });
 

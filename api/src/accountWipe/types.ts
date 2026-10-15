@@ -148,6 +148,8 @@ export interface IdentityPool {
   findBySub(sub: string): Promise<readonly CognitoUser[]>;
   /** Blocks sign-in so a login cannot re-provision rows. Must treat "user does not exist" as success. */
   disableUser(username: string): Promise<void>;
+  /** Revokes refresh tokens (`AdminUserGlobalSignOut`). Must treat "user does not exist" as success. */
+  globalSignOut(username: string): Promise<void>;
   /** Must treat "user does not exist" as success (idempotent). */
   deleteUser(username: string): Promise<void>;
 }
