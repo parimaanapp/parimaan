@@ -4,6 +4,7 @@ import type {
   CognitoUser,
   DbDeleteResult,
   DbListing,
+  IdentityPool,
   ObjectRef,
   TargetInfo,
   WipeDb,
@@ -25,6 +26,11 @@ export const FAKE_TARGET: TargetInfo = {
   userPoolId: 'pool-1',
   userPoolName: 'parimaan-dev',
   dbHost: 'db.dev.rds.test',
+  dbName: 'parimaan',
+  region: 'ap-south-1',
+  uploadsBucket: 'uploads-bucket',
+  exportsBucket: 'exports-bucket',
+  cacheTable: 'cache-dev',
 };
 
 export const emptyListing = (emails: readonly string[]): WipeListing => ({
@@ -47,6 +53,13 @@ export interface FakeWorld {
   /** Names a step ('cognito:disable' | 's3:delete' | 'cache:delete' | 'db:transaction' | 'cognito:delete') that throws once reached. */
   failOn: string | undefined;
   disabled: string[];
+  signedOut: string[];
+  /** Number of `db.snapshot` calls so far. */
+  snapshots: number;
+  /** Runs at the START of the n-th (1-based) `db.snapshot`, so tests can change the DB between reads. */
+  onSnapshot: ((n: number, world: FakeWorld) => void) | undefined;
+  /** Deletes that silently do nothing, so tests can prove post-delete verification catches leftovers. */
+  retain: { objects: boolean; cache: boolean };
   /** Identifier lists passed to cache scans / S3 listings, so tests can prove nothing ran. */
   scans: string[][];
   listings: string[];
@@ -65,6 +78,8 @@ class FakeDb implements WipeDb {
   constructor(private readonly world: FakeWorld) {}
 
   async snapshot(): Promise<DbListing> {
+    this.world.snapshots += 1;
+    this.world.onSnapshot?.(this.world.snapshots, this.world);
     return this.world.dbListing;
   }
 
@@ -110,8 +125,34 @@ const createWorld = (options: FakePortsOptions): FakeWorld => ({
   dbListing: options.dbListing ?? emptyDbListing(),
   failOn: options.failOn,
   disabled: [],
+  signedOut: [],
+  snapshots: 0,
+  onSnapshot: undefined,
+  retain: { objects: false, cache: false },
   scans: [],
   listings: [],
+});
+
+const buildIdentity = (world: FakeWorld): IdentityPool => ({
+    // Case-sensitive on purpose: that is how Cognito's email filter behaves.
+    findByEmail: async (email) => world.cognito.filter((u) => u.email === email),
+    findBySub: async (sub) => world.cognito.filter((u) => u.sub === sub),
+    disableUser: async (username) => {
+      failIfRequested(world, 'cognito:disable');
+      world.events.push('cognito:disable');
+      world.disabled = [...world.disabled, username];
+    },
+    globalSignOut: async (username) => {
+      failIfRequested(world, 'cognito:signout');
+      world.events.push('cognito:signout');
+      world.signedOut = [...world.signedOut, username];
+    },
+    deleteUser: async (username) => {
+      failIfRequested(world, 'cognito:delete');
+      world.events.push('cognito:delete');
+      world.cognito = world.cognito.filter((u) => u.username !== username);
+    },
+  
 });
 
 const buildPorts = (world: FakeWorld, options: FakePortsOptions): WipePorts => ({
@@ -127,7 +168,7 @@ const buildPorts = (world: FakeWorld, options: FakePortsOptions): WipePorts => (
     delete: async (objs) => {
       failIfRequested(world, 's3:delete');
       world.events.push('s3:delete');
-      world.objects = withoutDeleted(world.objects, objs);
+      if (!world.retain.objects) world.objects = withoutDeleted(world.objects, objs);
     },
   },
   cache: {
@@ -138,24 +179,10 @@ const buildPorts = (world: FakeWorld, options: FakePortsOptions): WipePorts => (
     delete: async (keys) => {
       failIfRequested(world, 'cache:delete');
       world.events.push('cache:delete');
-      world.cache = withoutDeleted(world.cache, keys);
+      if (!world.retain.cache) world.cache = withoutDeleted(world.cache, keys);
     },
   },
-  identity: {
-    // Case-sensitive on purpose: that is how Cognito's email filter behaves.
-    findByEmail: async (email) => world.cognito.filter((u) => u.email === email),
-    findBySub: async (sub) => world.cognito.filter((u) => u.sub === sub),
-    disableUser: async (username) => {
-      failIfRequested(world, 'cognito:disable');
-      world.events.push('cognito:disable');
-      world.disabled = [...world.disabled, username];
-    },
-    deleteUser: async (username) => {
-      failIfRequested(world, 'cognito:delete');
-      world.events.push('cognito:delete');
-      world.cognito = world.cognito.filter((u) => u.username !== username);
-    },
-  },
+  identity: buildIdentity(world),
   target: {
     verify: async () => {
       if (options.targetError !== undefined) {

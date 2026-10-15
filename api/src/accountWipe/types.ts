@@ -87,6 +87,11 @@ export interface TargetInfo {
   readonly userPoolId: string;
   readonly userPoolName: string;
   readonly dbHost: string;
+  readonly dbName: string;
+  readonly region: string;
+  readonly uploadsBucket: string;
+  readonly exportsBucket: string;
+  readonly cacheTable: string;
 }
 
 /** Resolves and verifies the target; must throw (fail closed) on any mismatch. */
@@ -143,6 +148,8 @@ export interface IdentityPool {
   findBySub(sub: string): Promise<readonly CognitoUser[]>;
   /** Blocks sign-in so a login cannot re-provision rows. Must treat "user does not exist" as success. */
   disableUser(username: string): Promise<void>;
+  /** Revokes refresh tokens (`AdminUserGlobalSignOut`). Must treat "user does not exist" as success. */
+  globalSignOut(username: string): Promise<void>;
   /** Must treat "user does not exist" as success (idempotent). */
   deleteUser(username: string): Promise<void>;
 }

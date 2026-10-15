@@ -78,13 +78,22 @@ export const parseCliArgs = (
   return { mode: 'execute', emails, confirm, ...extra };
 };
 
+export interface DatabaseConnectionParts {
+  readonly host: string;
+  readonly port: number;
+  readonly user: string;
+  readonly password: string;
+  readonly name: string;
+}
+
 export interface WipeConfig {
   readonly region: string;
   readonly userPoolId: string;
   readonly uploadsBucket: string;
   readonly exportsBucket: string;
   readonly cacheTable: string;
-  readonly databaseUrl: string;
+  /** Parsed from WIPE_DATABASE_URL. The raw URL is never kept or passed to `pg`. */
+  readonly database: DatabaseConnectionParts;
   /** The host the connection really terminates at: the servername override, else the URL host. */
   readonly dbHost: string;
   /** TLS servername used to verify the certificate; set when the URL host is a port-forward (localhost). */
@@ -102,11 +111,19 @@ const REQUIRED = [
   'WIPE_EXPECTED_ACCOUNT_ID',
   'WIPE_EXPECTED_POOL_NAME',
   'WIPE_EXPECTED_DB_HOST',
+  'WIPE_EXPECTED_DB_NAME',
 ] as const;
 
 const ACCOUNT_ID_PATTERN = /^\d{12}$/;
+const DEFAULT_PG_PORT = 5432;
 
-const parseDatabaseUrl = (databaseUrl: string): URL => {
+/**
+ * `pg` lets connection-string parameters (`host`, `port`, `ssl`, `sslrootcert`,
+ * `options`, `uselibpqcompat`, ...) override explicit config, which would bypass
+ * the host guard and TLS. So the URL may carry NO query string; it is only a
+ * carrier for host, port, user, password and database name.
+ */
+const parseDatabaseUrl = (databaseUrl: string): DatabaseConnectionParts => {
   let url: URL;
   try {
     url = new URL(databaseUrl);
@@ -114,24 +131,68 @@ const parseDatabaseUrl = (databaseUrl: string): URL => {
     // Deliberately not echoing the value: it contains credentials.
     throw new Error('WIPE_DATABASE_URL is not a valid connection URL.');
   }
-  if (url.searchParams.has('sslmode')) {
+  assertNoUrlOverrides(url, databaseUrl);
+  return extractParts(url);
+};
+
+const assertNoUrlOverrides = (url: URL, databaseUrl: string): void => {
+  if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+    throw new Error('WIPE_DATABASE_URL must be a postgres:// or postgresql:// URL.');
+  }
+  if (url.search.length > 0 || databaseUrl.includes('?')) {
+    const names = [...new Set([...url.searchParams.keys()])];
     throw new Error(
-      'WIPE_DATABASE_URL must not contain sslmode: TLS is always verified against the RDS CA bundle. ' +
-        'Remove it (use WIPE_DATABASE_SERVERNAME for a port-forward).',
+      'WIPE_DATABASE_URL must not contain a query string: parameters override the verified connection ' +
+        'settings (host, port, TLS, options). TLS is always verified against the RDS CA bundle; ' +
+        'use WIPE_DATABASE_SERVERNAME for a port-forward.' +
+        (names.length > 0 ? ` Found parameter(s): ${names.join(', ')}.` : ''),
     );
   }
-  return url;
+  if (url.hash.length > 0 || databaseUrl.includes('#')) {
+    throw new Error('WIPE_DATABASE_URL must not contain a fragment.');
+  }
+};
+
+const extractParts = (url: URL): DatabaseConnectionParts => {
+  const name = decodeURIComponent(url.pathname.replace(/^\//, ''));
+  if (name.length === 0 || name.includes('/')) {
+    throw new Error(
+      'WIPE_DATABASE_URL must include the database name (postgres://user:pw@host:port/<name>).',
+    );
+  }
+  if (url.hostname.length === 0) {
+    throw new Error('WIPE_DATABASE_URL must include a host.');
+  }
+  return {
+    host: url.hostname,
+    port: url.port.length > 0 ? Number(url.port) : DEFAULT_PG_PORT,
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    name,
+  };
+};
+
+/** libpq environment variables `pg` silently falls back to (notably `PGOPTIONS`, `PGSSLMODE`). */
+const assertNoAmbientPgEnv = (env: Record<string, string | undefined>): void => {
+  const present = Object.keys(env).filter((k) => k.startsWith('PG') && (env[k] ?? '').length > 0);
+  if (present.length > 0) {
+    throw new Error(
+      `Refusing to run with libpq environment variable(s) set: ${present.join(', ')}. ` +
+        'They can override the verified connection settings; unset them.',
+    );
+  }
 };
 
 /**
  * Reads all targets from env, never from code. The dev-only guard is bound to
- * real targets, with no defaults: the AWS account, user pool name and database
- * host must each equal an `WIPE_EXPECTED_*` value (the account and pool are
- * checked against AWS in `target.ts`, the host here and there). `WIPE_ENV=dev`
- * and the `-dev` name suffixes remain as extra self-assertions only.
+ * real targets, with no defaults: the AWS account, user pool name, database
+ * host and database name must each equal an `WIPE_EXPECTED_*` value (the account
+ * and pool are checked against AWS in `target.ts`, host and database name
+ * against the live connection). `WIPE_ENV=dev` and the `-dev` name suffixes
+ * remain as extra self-assertions only.
  * (The AWS profile itself is picked up by the SDK from `AWS_PROFILE`.)
  */
-export const loadWipeConfig = (env: Record<string, string | undefined>): WipeConfig => {
+const assertEnvIsAcceptable = (env: Record<string, string | undefined>): void => {
   if (env['WIPE_ENV'] !== 'dev') {
     throw new Error('WIPE_ENV must be set to "dev". This tool is dev-only and refuses anything else.');
   }
@@ -139,15 +200,22 @@ export const loadWipeConfig = (env: Record<string, string | undefined>): WipeCon
   if (missing.length > 0) {
     throw new Error(`Missing required environment variable(s): ${missing.join(', ')}.`);
   }
-  const get = (name: (typeof REQUIRED)[number]): string => env[name] as string;
-  const names = [get('WIPE_UPLOADS_BUCKET'), get('WIPE_EXPORTS_BUCKET'), get('WIPE_CACHE_TABLE')];
+  assertNoAmbientPgEnv(env);
+  const names = ['WIPE_UPLOADS_BUCKET', 'WIPE_EXPORTS_BUCKET', 'WIPE_CACHE_TABLE'].map(
+    (n) => env[n] as string,
+  );
   if (!names.every((n) => n.endsWith('-dev'))) {
     throw new Error('Bucket and table names must be -dev resources (they must end in "-dev").');
   }
-  if (!ACCOUNT_ID_PATTERN.test(get('WIPE_EXPECTED_ACCOUNT_ID'))) {
+  if (!ACCOUNT_ID_PATTERN.test(env['WIPE_EXPECTED_ACCOUNT_ID'] as string)) {
     throw new Error('WIPE_EXPECTED_ACCOUNT_ID must be the 12 digits of the AWS account id.');
   }
-  const url = parseDatabaseUrl(get('WIPE_DATABASE_URL'));
+};
+
+export const loadWipeConfig = (env: Record<string, string | undefined>): WipeConfig => {
+  assertEnvIsAcceptable(env);
+  const get = (name: (typeof REQUIRED)[number]): string => env[name] as string;
+  const database = parseDatabaseUrl(get('WIPE_DATABASE_URL'));
   const servername = (env['WIPE_DATABASE_SERVERNAME'] ?? '').trim();
   return {
     region: get('AWS_REGION'),
@@ -155,13 +223,14 @@ export const loadWipeConfig = (env: Record<string, string | undefined>): WipeCon
     uploadsBucket: get('WIPE_UPLOADS_BUCKET'),
     exportsBucket: get('WIPE_EXPORTS_BUCKET'),
     cacheTable: get('WIPE_CACHE_TABLE'),
-    databaseUrl: get('WIPE_DATABASE_URL'),
-    dbHost: servername.length > 0 ? servername : url.hostname,
+    database,
+    dbHost: servername.length > 0 ? servername : database.host,
     ...(servername.length > 0 ? { dbServername: servername } : {}),
     expected: {
       accountId: get('WIPE_EXPECTED_ACCOUNT_ID'),
       poolName: get('WIPE_EXPECTED_POOL_NAME'),
       dbHost: get('WIPE_EXPECTED_DB_HOST'),
+      dbName: get('WIPE_EXPECTED_DB_NAME'),
     },
   };
 };

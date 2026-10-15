@@ -82,6 +82,21 @@ describe('createIdentityPool', () => {
     await expect(createIdentityPool(gone, 'p').disableUser('x')).resolves.toBeUndefined();
   });
 
+  it('globally signs a user out, treating UserNotFoundException as success', async () => {
+    const { client, sent } = recorder([{}]);
+    await createIdentityPool(client, 'p').globalSignOut('u1');
+    expect(sent[0]?.name).toBe('AdminUserGlobalSignOutCommand');
+    expect(sent[0]?.input).toEqual({ UserPoolId: 'p', Username: 'u1' });
+    const gone = {
+      send: async () => {
+        const error = new Error('gone');
+        error.name = 'UserNotFoundException';
+        throw error;
+      },
+    };
+    await expect(createIdentityPool(gone, 'p').globalSignOut('x')).resolves.toBeUndefined();
+  });
+
   it('treats UserNotFoundException on delete as success', async () => {
     const client = {
       send: async () => {
