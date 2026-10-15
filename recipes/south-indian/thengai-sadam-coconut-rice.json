@@ -1,0 +1,107 @@
+{
+  "title": "Thengai Sadam (Coconut Rice)",
+  "description": "Fluffy rice tossed with fresh grated coconut, cashews and a mustard-curry leaf tempering for a mild, fragrant lunchbox meal.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Raw Rice (Ponni)",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "grain"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 100,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Chana Dal",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Urad Dal (Split, White)",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Cashew Nuts",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 5,
+      "unit": "g",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Water",
+      "quantity": 3,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Cook the rice with the water and a little of the salt until fluffy, then spread out to cool slightly.",
+    "Heat the coconut oil and crackle the mustard seeds.",
+    "Add the chana dal, urad dal and cashews and fry until golden.",
+    "Add the red chillies, green chilli, ginger and curry leaves and fry for 30 seconds.",
+    "Add the grated coconut and sauté on low heat for 2 minutes without browning it.",
+    "Fold in the rice and the remaining salt gently and serve warm."
+  ]
+}

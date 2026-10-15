@@ -1,0 +1,144 @@
+{
+  "title": "Chicken Dum Biryani",
+  "description": "Marinated chicken and par-cooked basmati layered with fried onion, mint and saffron, then sealed and slow cooked on dum.",
+  "servings": 4,
+  "prepMin": 40,
+  "cookMin": 50,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "hyderabadi",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Chicken (Curry Cut)",
+      "quantity": 750,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Basmati Rice",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "soaked 30 minutes"
+    },
+    {
+      "name": "Curd",
+      "quantity": 200,
+      "unit": "g",
+      "category": "dairy",
+      "notes": "whisked"
+    },
+    {
+      "name": "Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "thinly sliced"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Hyderabadi Biryani Masala",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Mint Leaves",
+      "quantity": 1,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juiced"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 5,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Saffron",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "notes": "soaked in the warm milk"
+    },
+    {
+      "name": "Milk",
+      "quantity": 45,
+      "unit": "ml",
+      "category": "dairy",
+      "notes": "warm"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 2.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Marinate the chicken with the curd, ginger garlic paste, green chillies, chilli powder, turmeric, biryani masala, half the mint and coriander, lemon juice and half the salt for at least 1 hour.",
+    "Fry the onions in the oil until deep golden brown, then mix half into the marinated chicken and keep the rest for garnish.",
+    "Boil the soaked rice in plenty of water with the bay leaf and remaining salt until 70 percent cooked, then drain.",
+    "Spread the chicken in a heavy pot, cover with the rice and scatter the remaining mint, coriander and fried onion.",
+    "Drizzle the ghee and saffron milk on top, seal tightly with foil and a lid.",
+    "Cook on high heat for 5 minutes, then on the lowest heat for 35 minutes.",
+    "Rest 10 minutes, then mix from the bottom gently and serve with raita."
+  ]
+}

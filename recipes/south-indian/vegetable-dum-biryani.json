@@ -1,0 +1,164 @@
+{
+  "title": "Vegetable Dum Biryani",
+  "description": "Layered basmati rice and spiced vegetables sealed and steamed on dum, finished with mint, fried onion and saffron milk.",
+  "servings": 4,
+  "prepMin": 30,
+  "cookMin": 45,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "hyderabadi",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Basmati Rice",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "soaked 30 minutes"
+    },
+    {
+      "name": "Potato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Cauliflower",
+      "quantity": 100,
+      "unit": "g",
+      "category": "produce",
+      "notes": "small florets"
+    },
+    {
+      "name": "Green Peas",
+      "quantity": 60,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "French Beans",
+      "quantity": 60,
+      "unit": "g",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Curd",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dairy",
+      "notes": "whisked"
+    },
+    {
+      "name": "Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "thinly sliced"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Biryani Masala",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Mint Leaves",
+      "quantity": 0.5,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 0.5,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Saffron",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "notes": "soaked in the warm milk"
+    },
+    {
+      "name": "Milk",
+      "quantity": 45,
+      "unit": "ml",
+      "category": "dairy",
+      "notes": "warm"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Fry the sliced onions in the oil until deep golden, then drain and set aside half for garnish.",
+    "In the same pot add the ginger garlic paste, green chillies, vegetables, curd, chilli powder, turmeric, biryani masala and half the salt; cook 10 minutes until the vegetables are just tender.",
+    "Boil the soaked rice in plenty of water with the bay leaf and the remaining salt until 70 percent cooked, then drain.",
+    "Spread half the rice over the vegetables, add half the mint, coriander and fried onion, then repeat with the remaining rice.",
+    "Drizzle the ghee and saffron milk over the top, seal the pot with foil or dough and a tight lid.",
+    "Cook on the lowest heat for 20 minutes, rest 10 minutes and mix gently before serving with raita."
+  ]
+}

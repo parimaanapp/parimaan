@@ -1,0 +1,113 @@
+{
+  "title": "Vegetable Fried Rice",
+  "description": "Takeaway-style Indo-Chinese fried rice with crisp vegetables, tossed on high heat with soy sauce and pepper.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 10,
+  "cuisineTier1": "indo_chinese",
+  "cuisineTier2": "indian_chinese",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Basmati Rice",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "cooked and cooled completely"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 5,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 5,
+      "unit": "g",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Spring Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "whites and greens separated, chopped"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely diced"
+    },
+    {
+      "name": "French Beans",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Capsicum (Green)",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "diced"
+    },
+    {
+      "name": "Cabbage",
+      "quantity": 60,
+      "unit": "g",
+      "category": "produce",
+      "notes": "shredded"
+    },
+    {
+      "name": "Soy Sauce",
+      "quantity": 1.5,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Vinegar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Black Pepper Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Cook the rice ahead with a little less water, spread it out and cool fully so the grains stay separate.",
+    "Heat a wok until smoking, add the oil, then the garlic, ginger and spring onion whites for 20 seconds.",
+    "Add the carrot and beans and stir-fry on high heat for 2 minutes.",
+    "Add the capsicum and cabbage and toss for another minute so they stay crunchy.",
+    "Add the rice with the soy sauce, vinegar, pepper and salt and toss on high heat for 2 minutes.",
+    "Finish with the spring onion greens and serve at once."
+  ]
+}

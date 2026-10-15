@@ -1,0 +1,126 @@
+{
+  "title": "Puliyodarai (Tamarind Rice)",
+  "description": "Tangy South Indian rice tossed in a spiced tamarind paste with peanuts and curry leaves, a classic temple and travel-meal favourite.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Raw Rice (Ponni)",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "grain"
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 30,
+      "unit": "g",
+      "category": "spice",
+      "notes": "soaked, pulp extracted"
+    },
+    {
+      "name": "Sesame Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Chana Dal",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Urad Dal (Split, White)",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Peanuts",
+      "quantity": 30,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 2,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Seeds",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Fenugreek Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Jaggery",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "notes": "grated"
+    },
+    {
+      "name": "Water",
+      "quantity": 3,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Cook the rice with the water until fluffy and spread it on a plate to cool, mixing in 1 tbsp of the sesame oil.",
+    "Dry roast the coriander seeds, fenugreek seeds and one red chilli until aromatic, then grind to a coarse powder.",
+    "Heat the remaining oil, crackle the mustard seeds, then fry the chana dal, urad dal, peanuts, remaining chillies and curry leaves until golden.",
+    "Add the hing, turmeric and tamarind pulp with the salt and jaggery and cook until the paste thickens and the oil separates.",
+    "Stir in the ground spice powder and cook 1 minute.",
+    "Fold the paste through the rice gently and rest 15 minutes so the flavours settle."
+  ]
+}
