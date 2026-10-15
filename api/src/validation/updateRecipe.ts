@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { RECIPE_ROLE_VALUES } from '../domain/recipeRoles.js';
 import { CUISINE_TIER1_VALUES } from '../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../domain/dietaryTags.js';
+import { NON_VEG_CONFLICT_MESSAGE, hasNonVegConflict } from '../domain/dietMatch.js';
 import {
   MAX_CUISINE_TIER2_LENGTH,
   MAX_DESCRIPTION_LENGTH,
@@ -54,7 +55,10 @@ export const recipePatchInputSchema = z
       .trim()
       .max(MAX_CUISINE_TIER2_LENGTH, `cuisineTier2 must be at most ${MAX_CUISINE_TIER2_LENGTH} characters`)
       .optional(),
-    dietaryTags: z.array(normalizeThenEnum(DIETARY_TAG_VALUES)).optional(),
+    dietaryTags: z
+      .array(normalizeThenEnum(DIETARY_TAG_VALUES))
+      .refine((tags) => !hasNonVegConflict(tags), NON_VEG_CONFLICT_MESSAGE)
+      .optional(),
     role: normalizeThenEnum(RECIPE_ROLE_VALUES).optional(),
     inRotation: z.boolean().optional(),
     ingredients: z

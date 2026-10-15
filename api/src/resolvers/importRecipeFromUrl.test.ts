@@ -84,7 +84,7 @@ describe('importRecipeFromUrl resolver', () => {
     expect(result.steps.length).toBeGreaterThan(0);
     expect(result.cuisineTier1).toBeNull();
     expect(result.role).toBeNull();
-    expect(result.dietaryTags).toEqual([]);
+    expect(result.dietaryTags).toEqual(['veg']); // H3: no style on the page, so one is inferred from the ingredients
   });
 
   it('rejects a malformed url with VALIDATION and never calls fetchPage', async () => {

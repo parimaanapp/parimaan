@@ -101,6 +101,16 @@ describe('toRecipeDraft — D4 enum leniency + quantity coercion (§13.2.5, §13
     expect(draft.warnings).toHaveLength(1);
   });
 
+  it('infers a style tag from the ingredients when the response has none (H3)', () => {
+    const chicken = toRecipeDraft({
+      ...wellFormed,
+      dietaryTags: ['gluten_free'],
+      ingredients: [{ name: 'chicken', quantity: '500', unit: 'g', notes: null }],
+    });
+    expect(chicken.dietaryTags).toEqual(['gluten_free', 'non_veg']);
+    expect(toRecipeDraft({ ...wellFormed, dietaryTags: null }).dietaryTags).toEqual(['veg']);
+  });
+
   it('role absent from the response yields role: null, not a failure and no warning', () => {
     const draft = toRecipeDraft({ ...wellFormed, role: null });
     expect(draft.role).toBeNull();

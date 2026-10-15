@@ -445,12 +445,25 @@ describe('menuRepository', () => {
         insertRecipe(client, householdId, owner.id, { title: 'GF DF', dietaryTags: ['vegan', 'gluten_free', 'dairy_free'] }),
       );
       await asUser(owner.id, (client) =>
-        insertRecipe(client, householdId, owner.id, { title: 'GF only', dietaryTags: ['vegan', 'gluten_free'] }),
+        insertRecipe(client, householdId, owner.id, { title: 'GF only', dietaryTags: ['veg', 'gluten_free'] }),
       );
       const candidates = await asUser(owner.id, (client) =>
         findAutoFillCandidates(client, householdId, [], ['veg', 'gluten_free', 'dairy_free']),
       );
       expect(candidates.map((c) => c.id)).toEqual([both.id]);
+    });
+
+    it('a vegan recipe satisfies the dairy_free modifier without carrying the tag (matches dietMatch)', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const vegan = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Vegan', dietaryTags: ['vegan'] }),
+      );
+      await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id, { title: 'Veg', dietaryTags: ['veg'] }));
+      const candidates = await asUser(owner.id, (client) =>
+        findAutoFillCandidates(client, householdId, [], ['veg', 'dairy_free']),
+      );
+      expect(candidates.map((c) => c.id)).toEqual([vegan.id]);
     });
 
     it('a modifier-only household applies the modifier and no style restriction', async () => {

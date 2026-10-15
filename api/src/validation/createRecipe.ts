@@ -3,6 +3,7 @@ import { householdIdSchema } from './householdId.js';
 import { RECIPE_ROLE_VALUES } from '../domain/recipeRoles.js';
 import { CUISINE_TIER1_VALUES } from '../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../domain/dietaryTags.js';
+import { NON_VEG_CONFLICT_MESSAGE, hasNonVegConflict } from '../domain/dietMatch.js';
 import {
   MAX_CUISINE_TIER2_LENGTH,
   MAX_DESCRIPTION_LENGTH,
@@ -102,7 +103,10 @@ export const recipeInputSchema = z.object({
   cookMin: z.number().int().min(0, 'cookMin must not be negative').nullish(),
   cuisineTier1: normalizeThenEnum(CUISINE_TIER1_VALUES).nullish(),
   cuisineTier2: z.string().trim().max(MAX_CUISINE_TIER2_LENGTH, `cuisineTier2 must be at most ${MAX_CUISINE_TIER2_LENGTH} characters`).nullish(),
-  dietaryTags: z.array(normalizeThenEnum(DIETARY_TAG_VALUES)).nullish(),
+  dietaryTags: z
+    .array(normalizeThenEnum(DIETARY_TAG_VALUES))
+    .refine((tags) => !hasNonVegConflict(tags), NON_VEG_CONFLICT_MESSAGE)
+    .nullish(),
   role: normalizeThenEnum(RECIPE_ROLE_VALUES),
   inRotation: z.boolean().nullish(),
   ingredients: z.array(recipeIngredientInputSchema).max(MAX_INGREDIENTS, `ingredients must contain at most ${MAX_INGREDIENTS} items`),

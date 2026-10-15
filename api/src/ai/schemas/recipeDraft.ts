@@ -4,6 +4,7 @@ import { CUISINE_TIER1_VALUES } from '../../domain/cuisineTiers.js';
 import type { CuisineTier1 } from '../../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../../domain/dietaryTags.js';
 import type { DietaryTag } from '../../domain/dietaryTags.js';
+import { withInferredStyle } from '../../domain/inferDietStyle.js';
 import { RECIPE_ROLE_VALUES } from '../../domain/recipeRoles.js';
 import type { RecipeRole } from '../../domain/recipeRoles.js';
 import {
@@ -175,7 +176,13 @@ export const toRecipeDraft = (raw: GeminiRecipeDraft): RecipeDraftResult => {
 
   const cuisineTier1 = cuisineResult.value;
   const role = roleResult.value;
-  const dietaryTags = dietaryTagResults.map((result) => result.value).filter((tag): tag is DietaryTag => tag !== null);
+  const recognisedTags = dietaryTagResults.map((result) => result.value).filter((tag): tag is DietaryTag => tag !== null);
+  // H3: a draft with no style tag gets one inferred from its ingredients (explicit tags win).
+  const dietaryTags = withInferredStyle(
+    recognisedTags,
+    raw.title ?? '',
+    raw.ingredients.map((ingredient) => ingredient.name),
+  ) as DietaryTag[];
   const warnings = [cuisineResult, roleResult, ...dietaryTagResults]
     .map((result) => result.warning)
     .filter((warning): warning is string => warning !== null);

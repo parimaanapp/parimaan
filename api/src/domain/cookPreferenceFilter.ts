@@ -1,4 +1,4 @@
-import { expandStyle, householdModifiers, householdStyles } from './dietMatch.js';
+import { effectiveRecipeTags, expandStyle, householdModifiers, householdStyles } from './dietMatch.js';
 import type { DietStyle } from './dietMatch.js';
 
 /**
@@ -124,15 +124,12 @@ const mentions = (text: string, word: string): boolean => {
 const normalizeTag = (tag: string): string => tag.trim().toLowerCase();
 
 /**
- * The tags a suggestion claims. A vegan dish is also dairy free; every other
- * implication is handled on the household side by `dietMatch.expandStyle`.
+ * The tags a suggestion claims, including the modifier it implies
+ * (`dietMatch.effectiveRecipeTags`: vegan implies dairy_free); style
+ * implications are handled on the household side by `dietMatch.expandStyle`.
  */
 const claimedTags = (suggestion: FilterableSuggestion): ReadonlySet<string> => {
-  const claimed = new Set(suggestion.dietaryTags.map(normalizeTag));
-  if (claimed.has('vegan')) {
-    claimed.add('dairy_free');
-  }
-  return claimed;
+  return new Set(effectiveRecipeTags(suggestion.dietaryTags.map(normalizeTag)));
 };
 
 /** Everything wrong with `suggestion` for ONE tag: not claimed, plus each keyword that breaks it. */

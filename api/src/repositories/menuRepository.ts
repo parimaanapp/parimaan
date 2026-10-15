@@ -564,7 +564,8 @@ export const findAutoFillCandidates = async (
          WHERE ri.recipe_id = r.id AND ri.name ILIKE ANY($2::text[])
        )
        AND ($3::boolean OR r.dietary_tags ?| $4::text[])
-       AND r.dietary_tags @> $5::jsonb
+       AND (r.dietary_tags || CASE WHEN r.dietary_tags ? 'vegan' THEN '["dairy_free"]'::jsonb ELSE '[]'::jsonb END)
+           @> $5::jsonb
      `,
     [
       householdId,

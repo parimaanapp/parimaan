@@ -9,6 +9,7 @@ import type { RecipeDraftResult } from '../ai/schemas/recipeDraft.js';
 import { checkAndIncrementDailyAction } from '../rateLimit/dailyActionLimiter.js';
 import { loadCacheTableName } from '../rateLimit/config.js';
 import { importRecipeFromUrlArgsSchema } from '../validation/importRecipeFromUrl.js';
+import { withInferredStyle } from '../domain/inferDietStyle.js';
 import { UrlUnreadableError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
 
@@ -55,7 +56,12 @@ const toRecipeDraftResult = (draft: JsonLdRecipeDraft, sourceUrl: string): Recip
   cookMin: draft.cookMin,
   cuisineTier1: null,
   cuisineTier2: null,
-  dietaryTags: [],
+  // H3: JSON-LD carries no diet tags; infer a style from the ingredients.
+  dietaryTags: withInferredStyle(
+    [],
+    draft.title,
+    draft.ingredients.map((ingredient) => ingredient.name),
+  ) as RecipeDraftResult['dietaryTags'],
   role: null,
   ingredients: draft.ingredients,
   steps: draft.steps,
