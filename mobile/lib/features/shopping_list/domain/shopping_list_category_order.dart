@@ -22,21 +22,41 @@ const List<String> _knownShoppingListCategoryOrder = <String>[
   'produce',
   'dal',
   'dairy',
-  // Both singular AND plural are listed deliberately, adjacent to each
-  // other: `recipe_ingredients.category` is free text with no canonical
-  // form (this file's own doc), and this codebase's own test fixtures
-  // (`shopping_list_fixtures.dart`'s `testShoppingListItem`) already use
-  // `'grains'` while `pantry_category.dart`'s mirror of the pantry's
-  // (different) vocabulary uses `'grain'` — either spelling reaching this
-  // client must land in a defined slot, not fall through to the unknown
-  // (alphabetical) bucket. If the server-side vocabulary is ever confirmed
-  // to emit only one of the two, drop the other here.
+  // `grains` and case/whitespace variants are folded onto the canonical
+  // value by [normalizeShoppingListCategory] before grouping.
   'grain',
-  'grains',
   'dry_goods',
+  'spice',
+  'eggs',
+  'oil',
+  'meat_fish',
   'condiment',
+  'bakery',
+  'snacks',
+  'beverages',
   'frozen',
 ];
+
+/// Approved display labels (`docs/catalog/decisions.md`, "Ingredient
+/// categories"). `meat_fish` / `dry_goods` are stored values; these are the
+/// labels. Singular and plural grain spellings share one label.
+const Map<String, String> _categoryLabels = <String, String>{
+  'dal': 'Dal',
+  'grain': 'Grain',
+  'spice': 'Spice',
+  'dairy': 'Dairy',
+  'eggs': 'Eggs',
+  'produce': 'Produce',
+  'dry_goods': 'Dry Goods',
+  'oil': 'Oil',
+  'meat_fish': 'Meat & Fish',
+  'condiment': 'Condiment',
+  'bakery': 'Bakery',
+  'snacks': 'Snacks',
+  'beverages': 'Beverages',
+  'frozen': 'Frozen',
+  'other': 'Other',
+};
 
 /// The bucket a `null` [ShoppingListItem.category] (or any category not
 /// otherwise recognised as staple-excluded — those never reach the client at
@@ -45,6 +65,22 @@ const String otherShoppingListCategory = 'other';
 
 /// One category's items, in the stable order [groupShoppingListItemsByCategory]
 /// produces.
+/// Folds free-text category spellings onto the canonical stored value:
+/// trims, lower-cases, maps spaces/hyphens/`&` to the snake_case form
+/// (`Dry Goods` -> `dry_goods`, `Meat & Fish` -> `meat_fish`) and `grains`
+/// to `grain`. Null or blank becomes [otherShoppingListCategory].
+String normalizeShoppingListCategory(String? raw) {
+  final String trimmed = (raw ?? '').trim().toLowerCase();
+  if (trimmed.isEmpty) return otherShoppingListCategory;
+  final String folded = trimmed
+      .replaceAll('&', ' ')
+      .split(RegExp(r'[\s\-_]+'))
+      .where((String part) => part.isNotEmpty)
+      .join('_');
+  if (folded.isEmpty) return otherShoppingListCategory;
+  return folded == 'grains' ? 'grain' : folded;
+}
+
 typedef ShoppingListCategoryGroup = ({
   String category,
   List<ShoppingListItem> items,
@@ -64,7 +100,7 @@ List<ShoppingListCategoryGroup> groupShoppingListItemsByCategory(
   final Map<String, List<ShoppingListItem>> byCategory =
       <String, List<ShoppingListItem>>{};
   for (final ShoppingListItem item in items) {
-    final String key = item.category ?? otherShoppingListCategory;
+    final String key = normalizeShoppingListCategory(item.category);
     byCategory.putIfAbsent(key, () => <ShoppingListItem>[]).add(item);
   }
 
@@ -94,9 +130,14 @@ List<ShoppingListCategoryGroup> groupShoppingListItemsByCategory(
       .toList(growable: false);
 }
 
-/// `dry_goods` -> `Dry goods`, `other` -> `Other`. Display formatting only —
-/// same shape as `pantry_category.dart`'s `pantryCategoryLabel`.
+/// The approved catalog label (`dry_goods` -> `Dry Goods`, `meat_fish` ->
+/// `Meat & Fish`); an unknown value falls back to a spaced, capitalised
+/// form. Display formatting only.
 String shoppingListCategoryLabel(String category) {
+  final String? approved = category.trim().isEmpty
+      ? null
+      : _categoryLabels[normalizeShoppingListCategory(category)];
+  if (approved != null) return approved;
   final String spaced = category.replaceAll('_', ' ');
   if (spaced.isEmpty) return spaced;
   return spaced[0].toUpperCase() + spaced.substring(1);
