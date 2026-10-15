@@ -35,31 +35,20 @@ enum MealType {
   String get description => switch (this) {
     MealType.breakfast => '1 recipe per day (e.g. Poha, Idli)',
     MealType.lunch => 'Up to 3 types × 3 each',
-    MealType.snacks => 'Between-meal items',
+    MealType.snacks => '1 recipe per day (e.g. Chai, Khakhra)',
     MealType.dinner => 'Same structure as lunch',
   };
 }
 
-/// The meals the setup wizard actually offers, in wireframe order.
+/// The meals the setup wizard offers, in wireframe order.
 ///
-/// ## Why `snacks` is missing, and where it goes instead
-///
-/// The schema has four `MealType` values; wireframe screen 2.2 draws exactly
-/// three toggles — Breakfast, Lunch, Dinner — and no fourth. Two options were
-/// available: add a Snacks toggle the design does not have, or follow the
-/// design and leave snacks alone. This takes the second.
-///
-/// The consequence is precise and worth naming: `mealsEnabled` is a **whole
-/// list replacement**, not a set of per-meal flags, so a patch built from
-/// these three can never include `snacks` — meaning the wizard *clears* any
-/// server-side snacks default rather than preserving it. That is the correct
-/// reading of a screen whose copy is "Toggle on the meals you plan weekly":
-/// a meal the user was never shown is a meal they did not opt into. Snacks
-/// is reachable through Settings → "Meals to plan" (`WhichMealsScreen` in
-/// [WizardFlow.edit], via [editMealTypes]), shipped in `W13 S3`.
+/// Snacks joined the wizard in Build A (A7, `E2E_MVP_PLAN.md` §32 #4): it is
+/// one slot per day with no structure page, and the plan, auto-fill and
+/// shopping list already honour it. It starts *off* ([defaultMealsEnabled]).
 const List<MealType> wizardMealTypes = <MealType>[
   MealType.breakfast,
   MealType.lunch,
+  MealType.snacks,
   MealType.dinner,
 ];
 
@@ -74,7 +63,7 @@ const List<MealType> wizardMealTypes = <MealType>[
 /// should reach Settings without anyone remembering to update this list.
 const List<MealType> editMealTypes = MealType.values;
 
-/// All three wizard meals start on, per wireframe screen 2.2.
+/// Breakfast, lunch and dinner start on; snacks is opt-in.
 const Set<MealType> defaultMealsEnabled = <MealType>{
   MealType.breakfast,
   MealType.lunch,

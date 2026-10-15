@@ -47,6 +47,24 @@ void main() {
       expect(find.text(PChip.selectedGlyph), findsOneWidget);
     });
 
+    testWidgets(
+      'showSelectedGlyph: false keeps the ink fill but drops the tick',
+      (WidgetTester tester) async {
+        await pumpComponent(
+          tester,
+          PChip(
+            label: 'Vegan',
+            selected: true,
+            showSelectedGlyph: false,
+            onTap: () {},
+          ),
+        );
+
+        expect(_decoration(tester).color, AppColors.ink);
+        expect(find.text(PChip.selectedGlyph), findsNothing);
+      },
+    );
+
     testWidgets('calls onTap', (WidgetTester tester) async {
       int taps = 0;
       await pumpComponent(tester, PChip(label: 'Carb', onTap: () => taps++));

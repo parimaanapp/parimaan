@@ -31,7 +31,7 @@ void main() {
 
       expect(find.text(WhichMealsScreen.heading), findsOne);
       expect(find.text(WhichMealsScreen.hint), findsOne);
-      expect(find.text(WhichMealsScreen.stepIndicator), findsOne);
+      expect(find.text('1/4'), findsOne);
     });
 
     testWidgets('renders one card per wizard meal, with its description', (
@@ -46,20 +46,71 @@ void main() {
       }
     });
 
-    testWidgets(
-      'offers no Snacks toggle — the wireframe draws three, not four',
-      (WidgetTester tester) async {
-        await _pump(tester);
+    testWidgets('offers Snacks between Lunch and Dinner, with its copy', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester);
 
-        expect(
-          find.byKey(WhichMealsScreen.toggleKey(MealType.snacks)),
-          findsNothing,
-        );
-        expect(find.text('Snacks'), findsNothing);
-      },
-    );
+      expect(find.byKey(WhichMealsScreen.toggleKey(MealType.snacks)), findsOne);
+      expect(find.text('Snacks'), findsOne);
+      expect(find.text('1 recipe per day (e.g. Chai, Khakhra)'), findsOne);
 
-    testWidgets('all three meals start on', (WidgetTester tester) async {
+      final double lunchY = tester
+          .getTopLeft(find.byKey(WhichMealsScreen.toggleKey(MealType.lunch)))
+          .dy;
+      final double snacksY = tester
+          .getTopLeft(find.byKey(WhichMealsScreen.toggleKey(MealType.snacks)))
+          .dy;
+      final double dinnerY = tester
+          .getTopLeft(find.byKey(WhichMealsScreen.toggleKey(MealType.dinner)))
+          .dy;
+      expect(lunchY, lessThan(snacksY));
+      expect(snacksY, lessThan(dinnerY));
+    });
+
+    testWidgets('enabling Snacks and continuing persists it', (
+      WidgetTester tester,
+    ) async {
+      final subject = await _pump(tester);
+
+      await tester.tap(find.byKey(WhichMealsScreen.toggleKey(MealType.snacks)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(WhichMealsScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        subject.repository.settingsCalls.single.patch.mealsEnabled,
+        <MealType>[
+          MealType.breakfast,
+          MealType.lunch,
+          MealType.snacks,
+          MealType.dinner,
+        ],
+      );
+    });
+
+    testWidgets('Setup title and step counter', (WidgetTester tester) async {
+      await _pump(tester);
+
+      expect(find.text('Setup your Household'), findsOne);
+      expect(find.text('1/4'), findsOne);
+    });
+
+    testWidgets('step counter is 1/3 with neither lunch nor dinner', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester);
+
+      await tester.tap(find.byKey(WhichMealsScreen.toggleKey(MealType.lunch)));
+      await tester.tap(find.byKey(WhichMealsScreen.toggleKey(MealType.dinner)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1/3'), findsOne);
+    });
+
+    testWidgets('breakfast, lunch and dinner start on; snacks off', (
+      WidgetTester tester,
+    ) async {
       final subject = await _pump(tester);
 
       expect(
@@ -185,43 +236,42 @@ void main() {
       );
     });
 
-    testWidgets(
-      'toggling every meal off and continuing surfaces the server '
-      '"at least one meal" VALIDATION error inline, unchanged',
-      (WidgetTester tester) async {
-        // No client-side guard stops an empty `mealsEnabled` submit — the
-        // screen relies on the server's own VALIDATION rejection and its
-        // existing error-rendering path, identically to any other server
-        // error. This RED test asserts that behaviour rather than adding a
-        // new one (E2E_MVP_PLAN.md §19.3 S3's RED list).
-        final subject = await _pump(
-          tester,
-          repository: FakeHouseholdRepository(
-            result: testHousehold,
-            settingsError: const ValidationError('mealsEnabled is invalid'),
-          ),
-        );
+    testWidgets('toggling every meal off and continuing surfaces the server '
+        '"at least one meal" VALIDATION error inline, unchanged', (
+      WidgetTester tester,
+    ) async {
+      // No client-side guard stops an empty `mealsEnabled` submit — the
+      // screen relies on the server's own VALIDATION rejection and its
+      // existing error-rendering path, identically to any other server
+      // error. This RED test asserts that behaviour rather than adding a
+      // new one (E2E_MVP_PLAN.md §19.3 S3's RED list).
+      final subject = await _pump(
+        tester,
+        repository: FakeHouseholdRepository(
+          result: testHousehold,
+          settingsError: const ValidationError('mealsEnabled is invalid'),
+        ),
+      );
 
-        for (final MealType meal in wizardMealTypes) {
-          await tester.tap(find.byKey(WhichMealsScreen.toggleKey(meal)));
-          await tester.pumpAndSettle();
-        }
-        expect(
-          subject.container
-              .read(householdWizardControllerProvider)
-              .requireValue
-              .mealsEnabled,
-          isEmpty,
-        );
-
-        await tester.tap(find.byKey(WhichMealsScreen.continueButtonKey));
+      for (final MealType meal in defaultMealsEnabled) {
+        await tester.tap(find.byKey(WhichMealsScreen.toggleKey(meal)));
         await tester.pumpAndSettle();
+      }
+      expect(
+        subject.container
+            .read(householdWizardControllerProvider)
+            .requireValue
+            .mealsEnabled,
+        isEmpty,
+      );
 
-        expect(find.byKey(WizardStepScaffold.errorKey), findsOne);
-        expect(find.text('mealsEnabled is invalid'), findsOne);
-        expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);
-      },
-    );
+      await tester.tap(find.byKey(WhichMealsScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(WizardStepScaffold.errorKey), findsOne);
+      expect(find.text('mealsEnabled is invalid'), findsOne);
+      expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);
+    });
 
     testWidgets('editing after a failure clears the stale message', (
       WidgetTester tester,

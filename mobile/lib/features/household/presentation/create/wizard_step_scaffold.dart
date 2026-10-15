@@ -27,8 +27,9 @@ class WizardStepScaffold extends StatelessWidget {
     this.errorMessage,
   });
 
-  /// Wireframe screens 2.2–2.6 all title the bar "Setup"; only 2.1 differs.
-  static const String defaultTopBarTitle = 'Setup';
+  /// Every setup step titles the bar "Setup your Household" (§32 #5); only
+  /// the name screen (2.1) differs.
+  static const String defaultTopBarTitle = 'Setup your Household';
 
   /// Lets a widget test assert the *absence* of the error line, which
   /// `find.text` cannot express for conditionally-built copy. Same trick as
