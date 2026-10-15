@@ -26,6 +26,18 @@ export const SCHEMA = 'public';
 
 export const qualifiedTable = (step: DeleteStep): string => `${SCHEMA}.${step.table}`;
 
+/**
+ * Global reference tables (no household or user ownership): never wiped, and
+ * so deliberately absent from `DELETE_STEPS`. Account data may later point at
+ * them (e.g. an ingredient id), never the other way round.
+ */
+export const GLOBAL_REFERENCE_TABLES: readonly string[] = [
+  'ingredient_catalog',
+  'ingredient_aliases',
+  'unit_conversions',
+  'catalog_sync_state',
+];
+
 export const DELETE_STEPS: readonly DeleteStep[] = [
   {
     table: 'shopping_list_items',

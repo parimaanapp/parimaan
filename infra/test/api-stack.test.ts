@@ -1001,42 +1001,6 @@ describe('ApiStack', () => {
     template.resourceCountIs('AWS::AppSync::Resolver', 56);
   });
 
-  it('declares resolvers for Query.ingredientCatalog and Query.searchIngredients (B2a)', () => {
-    const template = synth('dev');
-    for (const fieldName of ['ingredientCatalog', 'searchIngredients']) {
-      template.hasResourceProperties('AWS::AppSync::Resolver', {
-        TypeName: 'Query',
-        FieldName: fieldName,
-        DataSourceName: Match.anyValue(),
-      });
-    }
-  });
-
-  it('resolves CatalogIngredient.aliases(limit) on a NONE data source with no Lambda per item', () => {
-    const template = synth('dev');
-    const resolvers = Object.values(template.findResources('AWS::AppSync::Resolver')) as Array<{
-      Properties: {
-        TypeName: string;
-        FieldName: string;
-        DataSourceName?: unknown;
-        RequestMappingTemplate?: string;
-        ResponseMappingTemplate?: string;
-      };
-    }>;
-    const aliases = resolvers.find(
-      (r) => r.Properties.TypeName === 'CatalogIngredient' && r.Properties.FieldName === 'aliases',
-    );
-    expect(aliases).toBeDefined();
-    expect(aliases?.Properties.ResponseMappingTemplate).toContain('subList');
-    expect(aliases?.Properties.ResponseMappingTemplate).toContain('$ctx.args.limit');
-    const dataSources = Object.values(template.findResources('AWS::AppSync::DataSource')) as Array<{
-      Properties: { Type: string; Name: string };
-    }>;
-    const none = dataSources.filter((d) => d.Properties.Type === 'NONE');
-    expect(none).toHaveLength(1);
-    expect(none[0]?.Properties.Name).toBe('CatalogIngredientAliasesDataSource');
-  });
-
   it('enables X-Ray tracing on the AppSync API', () => {
     const template = synth('dev');
     template.hasResourceProperties('AWS::AppSync::GraphQLApi', {

@@ -40,13 +40,10 @@ const aliasRows = (bundle: CatalogBundle): AliasRow[] => {
   return rows;
 };
 
-const writeBundle = async (
+const writeIngredients = async (
   client: CatalogSyncClient,
-  bundle: CatalogBundle,
-  aliases: readonly AliasRow[],
+  ingredients: CatalogBundle['ingredients'],
 ): Promise<void> => {
-  const { ingredients, conversions } = bundle;
-
   // Unit lists travel as JSON text, not text[][] (ragged arrays are not
   // representable as a Postgres multidimensional array).
   await client.query(
@@ -88,8 +85,10 @@ const writeBundle = async (
   await client.query('DELETE FROM ingredient_catalog WHERE id <> ALL($1::text[])', [
     ingredients.map((item) => item.id),
   ]);
+};
 
-  // Aliases and conversions are fully derived, so replace them wholesale.
+/** Aliases are fully derived from the ingredients, so they are replaced wholesale. */
+const writeAliases = async (client: CatalogSyncClient, aliases: readonly AliasRow[]): Promise<void> => {
   await client.query('DELETE FROM ingredient_aliases');
   await client.query(
     `INSERT INTO ingredient_aliases (alias_key, ingredient_id, alias_display)
@@ -106,6 +105,12 @@ const writeBundle = async (
     ],
   );
 
+};
+
+const writeConversions = async (
+  client: CatalogSyncClient,
+  conversions: CatalogBundle['conversions'],
+): Promise<void> => {
   await client.query('DELETE FROM unit_conversions');
   await client.query(
     `INSERT INTO unit_conversions (scope, key, unit, base_unit, amount)
@@ -123,6 +128,16 @@ const writeBundle = async (
       ),
     ],
   );
+};
+
+const writeBundle = async (
+  client: CatalogSyncClient,
+  bundle: CatalogBundle,
+  aliases: readonly AliasRow[],
+): Promise<void> => {
+  await writeIngredients(client, bundle.ingredients);
+  await writeAliases(client, aliases);
+  await writeConversions(client, bundle.conversions);
 };
 
 /**

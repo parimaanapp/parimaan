@@ -39,13 +39,13 @@ const main = (): number => {
     if (!check) {
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, content, 'utf8');
-      console.log(`wrote ${path}`);
+      process.stdout.write(`wrote ${path}\n`);
     } else {
       console.error(`out of date: ${path}`);
     }
   }
-  console.log(
-    `catalog: ${bundle.ingredients.length} ingredients, ${bundle.conversions.length} conversions${stale && !check ? ' (updated)' : ''}`,
+  process.stdout.write(
+    `catalog: ${bundle.ingredients.length} ingredients, ${bundle.conversions.length} conversions${stale && !check ? ' (updated)' : ''}\n`,
   );
   return check && stale ? 1 : 0;
 };

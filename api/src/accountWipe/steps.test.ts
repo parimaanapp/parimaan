@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DELETE_STEPS, qualifiedTable } from './steps.js';
+import { DELETE_STEPS, GLOBAL_REFERENCE_TABLES, qualifiedTable } from './steps.js';
 
 const MIGRATIONS_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '../../migrations');
 
@@ -38,7 +38,10 @@ const parseSchema = (sql: string): { tables: Set<string>; edges: FkEdge[] } => {
 };
 
 describe('DELETE_STEPS (FK graph derived from api/migrations)', () => {
-  const { tables, edges } = parseSchema(readMigrations());
+  const parsed = parseSchema(readMigrations());
+  const isGlobal = (table: string): boolean => GLOBAL_REFERENCE_TABLES.includes(table);
+  const tables = new Set([...parsed.tables].filter((table) => !isGlobal(table)));
+  const edges = parsed.edges.filter(({ child }) => !isGlobal(child));
   const order = DELETE_STEPS.map((s) => s.table);
 
   it('parses a plausible schema', () => {
@@ -48,6 +51,13 @@ describe('DELETE_STEPS (FK graph derived from api/migrations)', () => {
 
   it('covers every table created by a migration (a new table must be added deliberately)', () => {
     expect([...tables].sort()).toEqual([...order].sort());
+  });
+
+  it('keeps global reference tables out of the wipe, and they exist in the migrations', () => {
+    for (const table of GLOBAL_REFERENCE_TABLES) {
+      expect(parsed.tables.has(table), table).toBe(true);
+      expect(order, table).not.toContain(table);
+    }
   });
 
   it('deletes every child table before the table it references', () => {

@@ -84,48 +84,57 @@ const dedupeAliases = (aliases: readonly string[]): string[] => {
   return result;
 };
 
-const toIngredient = (row: Row): CatalogEntry => {
-  const id = row['id'] ?? '';
-  if (!ID_PATTERN.test(id)) {
-    throw new Error(`ingredient id "${id}" must match ${ID_PATTERN}`);
+const cell = (row: Row, column: string): string => row[column] ?? '';
+
+const requireText = (row: Row, column: string, id: string): string => {
+  const value = cell(row, column);
+  if (value === '') {
+    throw new Error(`ingredient ${id}: ${column} is empty`);
   }
-  const canonicalName = row['canonical_name'] ?? '';
-  if (canonicalName === '') {
-    throw new Error(`ingredient ${id}: canonical_name is empty`);
-  }
-  const appCategory = row['app_category'] ?? '';
-  const expectedLabel = CATEGORY_LABELS[appCategory];
+  return value;
+};
+
+const requireCategory = (row: Row, id: string): string => {
+  const category = cell(row, 'app_category');
+  const expectedLabel = CATEGORY_LABELS[category];
   if (expectedLabel === undefined) {
-    throw new Error(`ingredient ${id}: unknown app_category "${appCategory}"`);
+    throw new Error(`ingredient ${id}: unknown app_category "${category}"`);
   }
-  if (row['app_category_label'] !== expectedLabel) {
+  if (cell(row, 'app_category_label') !== expectedLabel) {
     throw new Error(
-      `ingredient ${id}: app_category_label "${row['app_category_label']}" does not match approved label "${expectedLabel}"`,
+      `ingredient ${id}: app_category_label "${cell(row, 'app_category_label')}" does not match approved label "${expectedLabel}"`,
     );
   }
-  const allowedUnits = splitList(row['allowed_units'] ?? '');
+  return category;
+};
+
+const requireUnits = (row: Row, id: string): { allowedUnits: string[]; defaultUnit: string } => {
+  const allowedUnits = splitList(cell(row, 'allowed_units'));
   if (allowedUnits.length === 0) {
     throw new Error(`ingredient ${id}: allowed_units is empty`);
   }
-  const defaultUnit = row['default_unit'] ?? '';
+  const defaultUnit = cell(row, 'default_unit');
   if (!allowedUnits.includes(defaultUnit)) {
     throw new Error(`ingredient ${id}: default_unit "${defaultUnit}" is not in allowed_units`);
   }
-  const subcategory = row['subcategory'] ?? '';
-  if (subcategory === '') {
-    throw new Error(`ingredient ${id}: subcategory is empty`);
+  return { allowedUnits, defaultUnit };
+};
+
+const toIngredient = (row: Row): CatalogEntry => {
+  const id = cell(row, 'id');
+  if (!ID_PATTERN.test(id)) {
+    throw new Error(`ingredient id "${id}" must match ${ID_PATTERN}`);
   }
   return {
     id,
-    canonicalName,
-    appCategory,
-    subcategory,
-    aliases: dedupeAliases(splitList(row['aliases'] ?? '')),
-    allowedUnits,
-    defaultUnit,
-    pieceG: optionalPositive(row['piece_g'] ?? '', 'piece_g', id),
-    cupG: optionalPositive(row['cup_g_override'] ?? '', 'cup_g', id),
-    note: row['note'] ?? '',
+    canonicalName: requireText(row, 'canonical_name', id),
+    appCategory: requireCategory(row, id),
+    subcategory: requireText(row, 'subcategory', id),
+    aliases: dedupeAliases(splitList(cell(row, 'aliases'))),
+    ...requireUnits(row, id),
+    pieceG: optionalPositive(cell(row, 'piece_g'), 'piece_g', id),
+    cupG: optionalPositive(cell(row, 'cup_g_override'), 'cup_g', id),
+    note: cell(row, 'note'),
   };
 };
 
@@ -150,47 +159,62 @@ const toIngredients = (rows: readonly Row[]): CatalogEntry[] => {
   return entries.sort((a, b) => byString(a.id, b.id));
 };
 
-const scopeOf = (row: Row): string | undefined => row['scope'];
+interface ConversionLookups {
+  readonly ingredientIds: ReadonlySet<string>;
+  readonly subcategories: ReadonlySet<string>;
+  /** conversions.csv keys ingredient rows by canonical name; the bundle and table key them by id. */
+  readonly idByName: ReadonlyMap<string, string>;
+}
+
+const resolveConversionKey = (scope: 'subcategory' | 'ingredient', rawKey: string, lookups: ConversionLookups): string => {
+  if (scope === 'subcategory') {
+    if (!lookups.subcategories.has(rawKey)) {
+      throw new Error(`conversion for unknown subcategory "${rawKey}"`);
+    }
+    return rawKey;
+  }
+  const key = lookups.ingredientIds.has(rawKey) ? rawKey : lookups.idByName.get(rawKey.toLowerCase());
+  if (key === undefined) {
+    throw new Error(`conversion for unknown ingredient "${rawKey}"`);
+  }
+  return key;
+};
+
+const toConversion = (row: Row, lookups: ConversionLookups): UnitConversion => {
+  const rawKey = cell(row, 'subcategory_or_ingredient');
+  const unit = cell(row, 'unit');
+  const scope = row['scope'];
+  if (scope !== 'subcategory' && scope !== 'ingredient') {
+    throw new Error(`conversion "${rawKey}/${unit}": invalid scope "${scope}"`);
+  }
+  const key = resolveConversionKey(scope, rawKey, lookups);
+  const amount = Number(cell(row, 'amount_per_unit'));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error(`conversion ${scope}/${key}/${unit}: amount must be a positive number`);
+  }
+  const baseUnit = cell(row, 'base_unit');
+  if (unit === '' || baseUnit === '') {
+    throw new Error(`conversion ${scope}/${key}: unit and base_unit are required`);
+  }
+  return { scope, key, unit, baseUnit, amount };
+};
 
 const toConversions = (rows: readonly Row[], ingredients: readonly CatalogEntry[]): UnitConversion[] => {
-  const ingredientIds = new Set(ingredients.map((entry) => entry.id));
-  // conversions.csv keys ingredient rows by canonical name; the bundle (and the
-  // table) key them by the stable id. An id is accepted as-is too.
-  const idByName = new Map(ingredients.map((entry) => [entry.canonicalName.toLowerCase(), entry.id]));
-  const subcategories = new Set(ingredients.map((entry) => entry.subcategory));
+  const lookups: ConversionLookups = {
+    ingredientIds: new Set(ingredients.map((entry) => entry.id)),
+    subcategories: new Set(ingredients.map((entry) => entry.subcategory)),
+    idByName: new Map(ingredients.map((entry) => [entry.canonicalName.toLowerCase(), entry.id])),
+  };
   const seen = new Set<string>();
 
-  const conversions = rows.map((row): UnitConversion => {
-    const scope = row['scope'];
-    const rawKey = row['subcategory_or_ingredient'] ?? '';
-    const key =
-      scopeOf(row) === 'ingredient' && !ingredientIds.has(rawKey)
-        ? (idByName.get(rawKey.toLowerCase()) ?? rawKey)
-        : rawKey;
-    const unit = row['unit'] ?? '';
-    if (scope !== 'subcategory' && scope !== 'ingredient') {
-      throw new Error(`conversion "${key}/${unit}": invalid scope "${scope}"`);
-    }
-    if (scope === 'ingredient' && !ingredientIds.has(key)) {
-      throw new Error(`conversion for unknown ingredient "${key}"`);
-    }
-    if (scope === 'subcategory' && !subcategories.has(key)) {
-      throw new Error(`conversion for unknown subcategory "${key}"`);
-    }
-    const amount = Number(row['amount_per_unit']);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new Error(`conversion ${scope}/${key}/${unit}: amount must be a positive number`);
-    }
-    const baseUnit = row['base_unit'] ?? '';
-    if (unit === '' || baseUnit === '') {
-      throw new Error(`conversion ${scope}/${key}: unit and base_unit are required`);
-    }
-    const composite = `${scope}\u0000${key}\u0000${unit}`;
+  const conversions = rows.map((row) => {
+    const conversion = toConversion(row, lookups);
+    const composite = `${conversion.scope}\u0000${conversion.key}\u0000${conversion.unit}`;
     if (seen.has(composite)) {
-      throw new Error(`duplicate conversion ${scope}/${key}/${unit}`);
+      throw new Error(`duplicate conversion ${conversion.scope}/${conversion.key}/${conversion.unit}`);
     }
     seen.add(composite);
-    return { scope, key, unit, baseUnit, amount };
+    return conversion;
   });
 
   return conversions.sort(
