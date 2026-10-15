@@ -425,6 +425,47 @@ void main() {
       );
     });
 
+    testWidgets('a cell tapped in the next week sends THAT week to the picker', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: repository, today: thursday);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(WeeklyPlanScreen.nextWeekKey));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)));
+      await tester.pumpAndSettle();
+
+      expect(_picker(tester).extra.weekStartDate, DateTime.utc(2026, 10, 19));
+    });
+
+    testWidgets('the arrows disable at the +/-4 week bound', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: repository, today: thursday);
+      await tester.pumpAndSettle();
+      for (int i = 0; i < 4; i++) {
+        await tester.tap(find.byKey(WeeklyPlanScreen.nextWeekKey));
+        await tester.pumpAndSettle();
+      }
+      final Finder next = find.descendant(
+        of: find.byKey(WeeklyPlanScreen.nextWeekKey),
+        matching: find.byType(TextButton),
+      );
+      expect(tester.widget<TextButton>(next).onPressed, isNull);
+      final Finder prev = find.descendant(
+        of: find.byKey(WeeklyPlanScreen.previousWeekKey),
+        matching: find.byType(TextButton),
+      );
+      expect(tester.widget<TextButton>(prev).onPressed, isNotNull);
+    });
+
     testWidgets('a range crossing a month names both months', (
       WidgetTester tester,
     ) async {

@@ -11,6 +11,7 @@ import 'package:mobile/features/recipes/domain/recipe_source.dart';
 import 'package:mobile/shared/ui/colors.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
+import '../../../support/contrast.dart';
 import '../../../support/menu_fixtures.dart';
 
 const String _structure =
@@ -175,8 +176,13 @@ void main() {
       ]);
       await _pump(tester, menu);
       final Finder cell = find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch));
+      // Each title is its own single-line Text.
       expect(
-        find.descendant(of: cell, matching: find.text('Rice\nDal tadka')),
+        find.descendant(of: cell, matching: find.text('Rice')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: cell, matching: find.text('Dal tadka')),
         findsOneWidget,
       );
       expect(
@@ -197,8 +203,59 @@ void main() {
           _item('d', 'Raita', role: RecipeRole.accompaniment),
         ],
       );
+      await _pump(tester, menu, width: 320);
+      expect(find.text('Rice'), findsOneWidget);
+      expect(find.text('Dal'), findsOneWidget);
+      expect(find.text('Aloo'), findsNothing);
+      final Finder count = find.byKey(WeeklyPlanGrid.overflowCountKey);
+      expect(count, findsOneWidget);
+      expect(tester.widget<Text>(count).data, '+2');
+    });
+
+    testWidgets('+N survives long names at 320 pt and 2.0 text scale', (
+      WidgetTester tester,
+    ) async {
+      const String long = 'Extraordinarily long vegetable biryani with saffron';
+      final Menu menu = _menu(<String>['lunch'], <MenuItem>[
+        _item('a', long, role: RecipeRole.carb),
+        _item('b', long),
+        _item('c', long),
+        _item('d', long, role: RecipeRole.accompaniment),
+      ]);
+      await _pump(tester, menu, width: 320, textScale: 2.0);
+      final Finder count = find.byKey(WeeklyPlanGrid.overflowCountKey);
+      final Rect cell = tester.getRect(
+        find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)),
+      );
+      expect(cell.contains(tester.getTopLeft(count)), isTrue);
+      expect(cell.contains(tester.getBottomRight(count)), isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a partly filled meal shows how many slots remain', (
+      WidgetTester tester,
+    ) async {
+      final Menu menu = _menu(<String>['lunch'], <MenuItem>[
+        _item('a', 'Rice', role: RecipeRole.carb),
+      ]);
       await _pump(tester, menu);
-      expect(find.text('Rice\nDal\n+2'), findsOneWidget);
+      final Finder remaining = find.descendant(
+        of: find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)),
+        matching: find.byKey(WeeklyPlanGrid.remainingKey),
+      );
+      expect(remaining, findsOneWidget);
+      expect(tester.widget<Text>(remaining).data, '＋3');
+    });
+
+    testWidgets('a complete meal shows no remaining marker', (
+      WidgetTester tester,
+    ) async {
+      final Menu menu = _menu(<String>['dinner'], <MenuItem>[
+        _item('a', 'Roti', meal: 'dinner', role: RecipeRole.carb),
+        _item('b', 'Bhindi', meal: 'dinner'),
+      ]);
+      await _pump(tester, menu);
+      expect(find.byKey(WeeklyPlanGrid.remainingKey), findsNothing);
     });
 
     testWidgets('empty cell in block layout: plus with meal name beneath', (
@@ -320,6 +377,10 @@ void main() {
           tester.getSize(find.byKey(WeeklyPlanGrid.dayMenuKey(d))).height,
           greaterThanOrEqualTo(44),
         );
+        expect(
+          tester.getSize(find.byKey(WeeklyPlanGrid.dayMenuKey(d))).width,
+          greaterThanOrEqualTo(44),
+        );
       }
     });
 
@@ -337,12 +398,119 @@ void main() {
           ],
         ),
       );
-      expect(find.bySemanticsLabel('Monday lunch: Rice, Dal'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Monday lunch: Rice, Dal; 2 of 4 filled, next: '
+          '${RecipeRole.sabziDal.displayLabel}',
+        ),
+        findsOneWidget,
+      );
       expect(
         find.bySemanticsLabel('Tuesday breakfast: empty, add a recipe'),
         findsOneWidget,
       );
       handle.dispose();
+    });
+  });
+
+  group('today semantics', () {
+    testWidgets('the highlighted day says Today in its labels', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(tester, _menu(<String>['lunch']), today: 1);
+      expect(
+        find.bySemanticsLabel(RegExp('^Today, Tuesday lunch')),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('More Tuesday actions, today'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(RegExp('^Today, Monday')), findsNothing);
+      handle.dispose();
+    });
+  });
+
+  group('contrast', () {
+    testWidgets('filled cells: text >= 4.5:1 and labels >= 11 pt', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        _menu(_allFour, <MenuItem>[
+          _item('b', 'Poha', meal: 'breakfast', role: RecipeRole.breakfast),
+          _item('l', 'Dal'),
+          _item('s', 'Chai', meal: 'snacks', role: RecipeRole.snack),
+          _item('d', 'Roti', meal: 'dinner', role: RecipeRole.carb),
+        ]),
+      );
+      for (final MealType m in MealType.values) {
+        final Finder cell = find.byKey(WeeklyPlanGrid.cellKey(0, m));
+        final Container surface = tester.widget(
+          find.descendant(
+            of: cell,
+            matching: find.byKey(WeeklyPlanGrid.cellSurfaceKey),
+          ),
+        );
+        final Color fill = (surface.decoration! as BoxDecoration).color!;
+        final Iterable<Text> texts = tester.widgetList<Text>(
+          find.descendant(of: cell, matching: find.byType(Text)),
+        );
+        expect(texts, isNotEmpty);
+        for (final Text t in texts) {
+          expect(
+            contrastRatio(t.style!.color!, fill),
+            greaterThanOrEqualTo(4.5),
+            reason: '${m.name} "${t.data}"',
+          );
+          expect(t.style!.fontSize, greaterThanOrEqualTo(11));
+        }
+      }
+    });
+
+    testWidgets('empty cells: label >= 4.5:1, border and plus >= 3:1', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, _menu(_allFour));
+      final Finder cell = find.byKey(
+        WeeklyPlanGrid.cellKey(0, MealType.snacks),
+      );
+      final Container surface = tester.widget(
+        find.descendant(
+          of: cell,
+          matching: find.byKey(WeeklyPlanGrid.cellSurfaceKey),
+        ),
+      );
+      final Border border =
+          (surface.decoration! as BoxDecoration).border! as Border;
+      expect(
+        contrastRatio(border.top.color, AppColors.card),
+        greaterThanOrEqualTo(3),
+      );
+      for (final Text t in tester.widgetList<Text>(
+        find.descendant(of: cell, matching: find.byType(Text)),
+      )) {
+        expect(
+          contrastRatio(t.style!.color!, AppColors.card),
+          greaterThanOrEqualTo(t.key == WeeklyPlanGrid.plusKey ? 3 : 4.5),
+        );
+        expect(t.style!.fontSize, greaterThanOrEqualTo(11));
+      }
+    });
+
+    testWidgets('column headers are >= 4.5:1 and >= 11 pt', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, _menu(<String>['lunch']));
+      final Text header = tester.widget(
+        find.byKey(WeeklyPlanGrid.columnHeaderKey(MealType.lunch)),
+      );
+      expect(
+        contrastRatio(header.style!.color!, AppColors.paper),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(header.style!.fontSize, greaterThanOrEqualTo(11));
     });
   });
 
@@ -435,6 +603,23 @@ void main() {
             ],
           ];
           await _pump(tester, _menu(meals, items), width: 320, textScale: 1.3);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        '320 pt, ${four ? "four" : "three"} meals, 2.0 text scale: no overflow',
+        (WidgetTester tester) async {
+          final List<String> meals = four
+              ? _allFour
+              : <String>['breakfast', 'lunch', 'dinner'];
+          await _pump(
+            tester,
+            _menu(meals, <MenuItem>[_item('l', 'Dal tadka')]),
+            width: 320,
+            textScale: 2.0,
+            today: 0,
+          );
           expect(tester.takeException(), isNull);
         },
       );
