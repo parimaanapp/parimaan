@@ -5,6 +5,8 @@ import type { z } from 'zod';
 import { DIET_STYLES, isDietStyle } from '../src/domain/dietMatch.js';
 import { ROOT_VEG_FOR_JAIN, findDietaryViolations } from '../src/domain/cookPreferenceFilter.js';
 import { curatedRecipeInputSchema } from '../src/validation/curatedRecipe.js';
+import { loadRepoCatalog, type IngredientCatalog } from './recipeCatalog.js';
+import { lintAgainstCatalog } from './recipeCatalogLint.js';
 
 /**
  * W15 §21.2.2 D2 — a validation script, not a hand-maintained JSON Schema
@@ -110,6 +112,17 @@ export interface RecipeFileValidationResult {
   readonly filePath: string;
   readonly success: boolean;
   readonly errors: readonly string[];
+  /** Non-failing findings: step-quantity mismatches and known catalog gaps. */
+  readonly warnings: readonly string[];
+}
+
+export interface ValidateCuratedRecipeOptions {
+  /**
+   * Ingredient catalog to lint against. Defaults to the repo's
+   * `docs/catalog/ingredients.csv`; `null` skips the catalog lint (a seam for
+   * unit tests that exercise only the diet-tag rules).
+   */
+  readonly catalog?: IngredientCatalog | null;
 }
 
 /**
@@ -120,33 +133,62 @@ export interface RecipeFileValidationResult {
  * directory to carry the matching `cuisineTier1` value specifically, not
  * merely any valid `CuisineTier1` member (§21.2.1 D1 — "carried explicitly
  * per file rather than inferred from the directory path, so a file is
- * self-describing if it's ever moved or read in isolation").
+ * self-describing if it's ever moved or read in isolation"). B3-0 adds the
+ * catalog lint (canonical names, allowed units, categories, staples, step
+ * quantities, HTML entities); all rule groups report together.
  */
-export function validateCuratedRecipe(filePath: string, data: unknown): RecipeFileValidationResult {
+export function validateCuratedRecipe(
+  filePath: string,
+  data: unknown,
+  options: ValidateCuratedRecipeOptions = {},
+): RecipeFileValidationResult {
   const parsed = curatedRecipeInputSchema.safeParse(data);
   if (!parsed.success) {
     return {
       filePath,
       success: false,
       errors: parsed.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`),
+      warnings: [],
     };
   }
 
-  const dirRuleError = checkCuisineDirRule(filePath, parsed.data.cuisineTier1);
+  const recipe = parsed.data;
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const dirRuleError = checkCuisineDirRule(filePath, recipe.cuisineTier1);
   if (dirRuleError) {
-    return { filePath, success: false, errors: [dirRuleError] };
+    errors.push(dirRuleError);
   }
 
-  const dietErrors = checkDietTags(
-    parsed.data.dietaryTags ?? [],
-    parsed.data.ingredients.map((ingredient) => ingredient.name),
-    parsed.data.title,
+  errors.push(
+    ...checkDietTags(
+      recipe.dietaryTags ?? [],
+      recipe.ingredients.map((ingredient) => ingredient.name),
+      recipe.title,
+    ),
   );
-  if (dietErrors.length > 0) {
-    return { filePath, success: false, errors: dietErrors };
+
+  const catalog = options.catalog === undefined ? loadRepoCatalog() : options.catalog;
+  if (catalog !== null) {
+    const lint = lintAgainstCatalog(
+      {
+        ingredients: recipe.ingredients,
+        steps: recipe.steps,
+        texts: [
+          ['title', recipe.title],
+          ['description', recipe.description],
+          ...recipe.steps.map((step, index) => [`steps.${index}`, step] as const),
+          ...recipe.ingredients.map((ingredient, index) => [`ingredients.${index}.notes`, ingredient.notes] as const),
+        ],
+      },
+      catalog,
+    );
+    errors.push(...lint.errors);
+    warnings.push(...lint.warnings);
   }
 
-  return { filePath, success: true, errors: [] };
+  return { filePath, success: errors.length === 0, errors, warnings };
 }
 
 /**
@@ -201,7 +243,7 @@ export function validateAllCuratedRecipes(recipesDir: string): RecipeFileValidat
       raw = JSON.parse(readFileSync(filePath, 'utf-8'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      return { filePath, success: false, errors: [`invalid JSON: ${message}`] };
+      return { filePath, success: false, errors: [`invalid JSON: ${message}`], warnings: [] };
     }
     return validateCuratedRecipe(filePath, raw);
   });
