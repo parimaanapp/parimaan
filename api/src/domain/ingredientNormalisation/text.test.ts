@@ -12,7 +12,7 @@ describe('decodeHtmlEntities', () => {
     ['&apos;x&apos;', "'x'"],
     ['caf&#233;', 'café'],
     ['&ndash;&mdash;&hellip;', '–—…'],
-    ['&amp;quot;x&amp;quot;', '"x"'],
+    ['&amp;quot;x&amp;quot;', '&quot;x&quot;'],
     ['&unknown; stays', '&unknown; stays'],
     ['&#99999999999; stays', '&#99999999999; stays'],
     ['no entities', 'no entities'],

@@ -66,7 +66,7 @@ describe('mergeDuplicateIngredients — null quantities, staples, notes', () => 
   it('keeps the quantity of the row that has one when the other is quantity-less', () => {
     const result = mergeDuplicateIngredients([row('Salt', 1, 'tsp'), row('Salt', null, null, { isStaple: true })]);
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ quantity: 1, unit: 'tsp', isStaple: true });
+    expect(result[0]).toMatchObject({ quantity: 1, unit: 'tsp', isStaple: false });
   });
 
   it('keeps null quantity when both are quantity-less', () => {
@@ -74,8 +74,8 @@ describe('mergeDuplicateIngredients — null quantities, staples, notes', () => 
     expect(result).toEqual([row('Salt', null, null, { isStaple: true })]);
   });
 
-  it('ORs isStaple', () => {
-    expect(mergeDuplicateIngredients([row('Salt', 1, 'tsp'), row('Salt', 1, 'tsp', { isStaple: true })])[0]!.isStaple).toBe(true);
+  it('ORs isStaple when no measured quantity results', () => {
+    expect(mergeDuplicateIngredients([row('Salt', null, null), row('Salt', null, null, { isStaple: true })])[0]!.isStaple).toBe(true);
   });
 
   it('concatenates distinct notes only', () => {

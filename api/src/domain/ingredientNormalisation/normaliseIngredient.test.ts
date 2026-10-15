@@ -74,23 +74,28 @@ describe('normaliseIngredient — to taste', () => {
     ['salt (to taste)', 'salt'],
     ['black pepper powder to taste', 'black pepper powder'],
     ['pepper as needed', 'pepper'],
-  ])('strips the phrase from %j and flags salt/pepper as staple', (name, expected) => {
-    const result = normaliseIngredient(make({ name, quantity: 0.5, unit: 'tsp' }));
+  ])('strips the phrase from %j and flags salt/pepper as staple when no quantity was parsed', (name, expected) => {
+    const result = normaliseIngredient(make({ name }));
     expect(result.name.toLowerCase()).toBe(expected);
     expect(result.quantity).toBeNull();
     expect(result.unit).toBeNull();
     expect(result.isStaple).toBe(true);
   });
 
-  it('reads the phrase from notes too and removes it', () => {
-    const result = normaliseIngredient(make({ name: 'salt', quantity: 1, unit: 'tsp', notes: 'to taste' }));
+  it('reads the phrase from notes too and removes it when no quantity was parsed', () => {
+    const result = normaliseIngredient(make({ name: 'salt', notes: 'to taste' }));
     expect(result.notes).toBeNull();
     expect(result.quantity).toBeNull();
     expect(result.isStaple).toBe(true);
   });
 
+  it('keeps a parsed quantity and the phrase in notes, never staple', () => {
+    const result = normaliseIngredient(make({ name: 'salt', quantity: 1, unit: 'tsp', notes: 'to taste' }));
+    expect(result).toMatchObject({ quantity: 1, unit: 'tsp', notes: 'to taste', isStaple: false });
+  });
+
   it('keeps quantity absent but not staple for non salt/pepper items', () => {
-    const result = normaliseIngredient(make({ name: 'lemon juice to taste', quantity: 1, unit: 'tbsp' }));
+    const result = normaliseIngredient(make({ name: 'lemon juice to taste' }));
     expect(result.name).toBe('lemon juice');
     expect(result.quantity).toBeNull();
     expect(result.isStaple).toBe(false);

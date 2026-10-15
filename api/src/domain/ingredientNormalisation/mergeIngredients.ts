@@ -65,11 +65,32 @@ const combineAmounts = (a: Amount, b: Amount): Amount | null => {
   return sumConvertible({ ...a, quantity: a.quantity }, { ...b, quantity: b.quantity });
 };
 
-/** Case/whitespace/punctuation-insensitive key that ignores parenthetical prep notes. */
+/** Names longer than this are truncated before keying: bounds work on hostile input and no real ingredient name is longer. */
+const MAX_KEY_SOURCE_LENGTH = 200;
+
+const PREP_ADVERB = '(?:(?:finely|roughly|coarsely|thinly|freshly|lightly|very|well)\\s+)*';
+const PREP_WORD =
+  '(?:chopped|sliced|diced|minced|grated|crushed|optional|fresh|pur[eé]ed|ground|peeled|washed|soaked|cubed|shredded|mashed|beaten|melted|softened|deseeded|trimmed|cleaned|rinsed|drained|boiled|roasted|toasted)';
+const PREP_PART = new RegExp(`^(?:${PREP_ADVERB}${PREP_WORD}(?:\\s.*)?|(?:about|approx\\.?|approximately|around)\\s.*)$`);
+
+/** True when every comma/and/or-separated part is a pure preparation note, which never distinguishes one ingredient from another. */
+const isPrepNote = (inner: string): boolean =>
+  inner
+    .toLowerCase()
+    .split(/\s*(?:,|;|\band\b|\bor\b)\s*/)
+    .every((part) => part !== '' && PREP_PART.test(part.trim()));
+
+/**
+ * Case/whitespace/punctuation-insensitive key. Parentheticals that are pure
+ * prep notes are ignored; any other ("whole", "green") stays in the key so
+ * "Dal (whole)" and "Dal (split)" never merge. Input is capped and the
+ * parenthetical pattern excludes "(" so keying is linear-time.
+ */
 export const ingredientMergeKey = (name: string): string =>
   name
+    .slice(0, MAX_KEY_SOURCE_LENGTH)
     .toLowerCase()
-    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\(([^()]*)\)/g, (_match, inner: string) => (isPrepNote(inner) ? ' ' : ` ${inner} `))
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 
@@ -89,13 +110,16 @@ const joinDistinct = (parts: readonly (string | null)[], separator: string): str
   return kept.length === 0 ? null : kept.join(separator);
 };
 
+const MAX_MERGED_RAW_LENGTH = 1000;
+
 const mergePair = (base: NormalisedIngredient, other: NormalisedIngredient, amount: Amount): NormalisedIngredient => ({
-  raw: joinDistinct([base.raw, other.raw], ' + ') ?? base.raw,
+  raw: (joinDistinct([base.raw, other.raw], ' + ') ?? base.raw).slice(0, MAX_MERGED_RAW_LENGTH),
   name: base.name,
   quantity: amount.quantity,
   unit: amount.unit,
   notes: joinDistinct([base.notes, other.notes], ', ')?.slice(0, MAX_INGREDIENT_NOTES_LENGTH) ?? null,
-  isStaple: base.isStaple || other.isStaple,
+  // A to-taste staple flag only survives a merge when no measured quantity resulted, or every source row was staple.
+  isStaple: amount.quantity === null ? base.isStaple || other.isStaple : base.isStaple && other.isStaple,
 });
 
 /**
@@ -105,18 +129,27 @@ const mergePair = (base: NormalisedIngredient, other: NormalisedIngredient, amou
  * rather than guessing. Keeps the first occurrence's position and name.
  * Pure: never mutates its input.
  */
-export const mergeDuplicateIngredients = (rows: readonly NormalisedIngredient[]): NormalisedIngredient[] =>
-  rows.reduce<NormalisedIngredient[]>((merged, row) => {
+export const mergeDuplicateIngredients = (rows: readonly NormalisedIngredient[]): NormalisedIngredient[] => {
+  const merged: NormalisedIngredient[] = [];
+  const keys: string[] = [];
+  const indexesByKey = new Map<string, number[]>();
+  for (const row of rows) {
     const key = ingredientMergeKey(row.name);
-    for (let index = 0; index < merged.length; index += 1) {
-      const existing = merged[index]!;
-      if (ingredientMergeKey(existing.name) !== key) {
-        continue;
-      }
-      const amount = combineAmounts(existing, row);
+    const candidates = indexesByKey.get(key) ?? [];
+    let combined = false;
+    for (const index of candidates) {
+      const amount = combineAmounts(merged[index]!, row);
       if (amount !== null) {
-        return [...merged.slice(0, index), mergePair(existing, row, amount), ...merged.slice(index + 1)];
+        merged[index] = mergePair(merged[index]!, row, amount);
+        combined = true;
+        break;
       }
     }
-    return [...merged, row];
-  }, []);
+    if (!combined) {
+      keys.push(key);
+      indexesByKey.set(key, [...candidates, merged.length]);
+      merged.push(row);
+    }
+  }
+  return merged;
+};

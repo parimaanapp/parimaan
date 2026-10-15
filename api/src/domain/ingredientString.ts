@@ -19,6 +19,20 @@ const NUMERIC_TOKEN_SOURCE = '\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d+(?:\\.\\d+)?';
 const LEADING_QUANTITY_PATTERN = new RegExp(`^\\s*(${NUMERIC_TOKEN_SOURCE})\\s*`);
 const PURE_NUMERIC_TOKEN_PATTERN = new RegExp(`^(${NUMERIC_TOKEN_SOURCE})$`);
 
+/** Vulgar-fraction characters mapped to ASCII fractions. */
+const UNICODE_FRACTIONS: Readonly<Record<string, string>> = {
+  '\u00bd': '1/2', '\u2153': '1/3', '\u2154': '2/3', '\u00bc': '1/4', '\u00be': '3/4',
+  '\u2155': '1/5', '\u2156': '2/5', '\u2157': '3/5', '\u2158': '4/5', '\u2159': '1/6', '\u215a': '5/6',
+  '\u2150': '1/7', '\u215b': '1/8', '\u215c': '3/8', '\u215d': '5/8', '\u215e': '7/8', '\u2151': '1/9', '\u2152': '1/10',
+};
+const UNICODE_FRACTION_PATTERN = new RegExp(`(\\d?)([${Object.keys(UNICODE_FRACTIONS).join('')}])`, 'g');
+
+/** "1\u00bd" -> "1 1/2", "\u00bd" -> "1/2". Leaves every other character alone, so no fraction glyph can survive into a name. */
+export const normaliseUnicodeFractions = (text: string): string =>
+  text.replace(UNICODE_FRACTION_PATTERN, (_match, digit: string, glyph: string) => `${digit === '' ? '' : `${digit} `}${UNICODE_FRACTIONS[glyph]}`);
+
+const RANGE_PATTERN = new RegExp(`^\\s*(${NUMERIC_TOKEN_SOURCE})\\s*(?:-|\\u2013|\\u2014|to)\\s*(${NUMERIC_TOKEN_SOURCE})(?![\\d/.])\\s*`, 'i');
+
 /**
  * No real recipe calls for this much of an ingredient — a sanity ceiling
  * against an adversarial digit run (e.g. a 400-digit numerator), which
@@ -124,20 +138,32 @@ const extractNameAndNotes = (text: string): { name: string; notes: string | null
  * AI parse that can't fully structure a line, same "never discard the
  * source text" contract described on `ParsedIngredient.raw`.
  */
+/** Shared tail of parsing once the leading quantity (and optional range note) has been consumed. A unit word is only taken when a name remains after it, so "6 cloves" keeps "cloves" as the name. */
+const parseAfterQuantity = (raw: string, afterQuantity: string, quantity: number | null, rangeNote: string | null): ParsedIngredient => {
+  const { sizeNote, rest: afterSize } = consumeSizeMarker(afterQuantity, quantity);
+  const consumed = consumeUnit(afterSize);
+  const unitHasName = consumed.unit !== null && consumed.rest.replace(/^of\s+/i, '').trim() !== '';
+  const unit = unitHasName ? consumed.unit : null;
+  const rest = unitHasName ? consumed.rest.replace(/^of\s+/i, '') : afterSize;
+  const { name, notes: extractedNotes } = extractNameAndNotes(rest);
+  const notes = [rangeNote, sizeNote, extractedNotes].filter((part): part is string => part !== null).join(', ') || null;
+  return { raw, name: name === '' ? raw : name, quantity, unit, notes };
+};
+
+/** No real ingredient line is this long; longer input is truncated so every regex below runs on bounded text. */
+const MAX_INGREDIENT_LINE_LENGTH = 1000;
+
 export const parseIngredientString = (raw: string): ParsedIngredient => {
-  const trimmedRaw = raw.trim();
-  const quantityMatch = LEADING_QUANTITY_PATTERN.exec(trimmedRaw);
+  const trimmedRaw = raw.slice(0, MAX_INGREDIENT_LINE_LENGTH).trim();
+  const workingText = normaliseUnicodeFractions(trimmedRaw);
+  const rangeMatch = RANGE_PATTERN.exec(workingText);
+  if (rangeMatch) {
+    return parseAfterQuantity(trimmedRaw, workingText.slice(rangeMatch[0].length), parseQuantityToken(rangeMatch[1]!), `${rangeMatch[1]}-${rangeMatch[2]}`);
+  }
+  const quantityMatch = LEADING_QUANTITY_PATTERN.exec(workingText);
   if (!quantityMatch) {
-    const { name, notes } = extractNameAndNotes(trimmedRaw);
+    const { name, notes } = extractNameAndNotes(workingText);
     return { raw: trimmedRaw, name: name === '' ? trimmedRaw : name, quantity: null, unit: null, notes };
   }
-
-  const quantity = parseQuantityToken(quantityMatch[1]!);
-  const afterQuantity = trimmedRaw.slice(quantityMatch[0].length);
-  const { sizeNote, rest: afterSize } = consumeSizeMarker(afterQuantity, quantity);
-  const { unit, rest: afterUnit } = consumeUnit(afterSize);
-  const rest = unit === null ? afterUnit : afterUnit.replace(/^of\s+/i, '');
-  const { name, notes: extractedNotes } = extractNameAndNotes(rest);
-  const notes = [sizeNote, extractedNotes].filter((part): part is string => part !== null).join(', ') || null;
-  return { raw: trimmedRaw, name: name === '' ? trimmedRaw : name, quantity, unit, notes };
+  return parseAfterQuantity(trimmedRaw, workingText.slice(quantityMatch[0].length), parseQuantityToken(quantityMatch[1]!), null);
 };

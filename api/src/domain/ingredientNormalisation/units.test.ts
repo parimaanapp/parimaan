@@ -10,7 +10,8 @@ describe('canonicaliseUnit', () => {
     ['tsp', 'tsp'], ['tsps', 'tsp'], ['tsp.', 'tsp'], ['teaspoon', 'tsp'], ['teaspoons', 'tsp'],
     ['tbsp', 'tbsp'], ['tbsps', 'tbsp'], ['tbs', 'tbsp'], ['tablespoon', 'tbsp'], ['Tablespoons', 'tbsp'],
     ['cup', 'cup'], ['cups', 'cup'], ['Cup', 'cup'],
-    ['piece', 'piece'], ['pieces', 'piece'], ['pc', 'piece'], ['pcs', 'piece'], ['no', 'piece'], ['no.', 'piece'], ['nos', 'piece'], ['nos.', 'piece'],
+    ['piece', 'piece'], ['pieces', 'piece'], ['pc', 'piece'], ['pcs', 'piece'], ['clove', 'clove'], ['cloves', 'clove'],
+    ['can', 'can'], ['tins', 'can'], ['lb', 'lb'], ['lbs', 'lb'], ['pounds', 'lb'], ['oz', 'oz'], ['ounces', 'oz'],
     ['bunch', 'bunch'], ['bunches', 'bunch'],
     ['pinch', 'pinch'], ['pinches', 'pinch'],
     ['packet', 'packet'], ['packets', 'packet'],
@@ -19,7 +20,7 @@ describe('canonicaliseUnit', () => {
     expect(canonicaliseUnit(input)).toBe(expected);
   });
 
-  it.each([['chicken'], ['salt'], ['cloves'], [''], ['   '], ['xyzzy']])('returns null for non-unit %j', (input) => {
+  it.each([['chicken'], ['salt'], ['no'], ['no.'], ['nos'], [''], ['   '], ['xyzzy']])('returns null for non-unit %j', (input) => {
     expect(canonicaliseUnit(input)).toBeNull();
   });
 });
