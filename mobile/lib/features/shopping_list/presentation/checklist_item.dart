@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
+import '../../../shared/ui/radius.dart';
+import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_category_order.dart';
 import '../domain/shopping_list_item.dart';
 import '../state/current_shopping_list_controller.dart';
+import 'checklist_check_box.dart';
 import 'have_it_quantity_sheet.dart';
+
+export 'checklist_check_box.dart';
 
 /// One row on the List preview / Shopping List screens (§4's own named
 /// deliverable, "a `ChecklistItem` widget", E2E_MVP_PLAN.md §17.1/§17.3 S6).
@@ -125,7 +131,19 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
     return quantityPart.isEmpty ? unit : '$quantityPart $unit';
   }
 
+  /// Swipe left (`endToStart`) = Have it, which opens the quantity sheet;
+  /// swipe right (`startToEnd`) = mark bought (wireframe 10.2). Both return
+  /// `false` so `Dismissible` never removes the row itself — see this
+  /// class's own doc.
   Future<bool> _handleSwipe(DismissDirection direction) async {
+    if (direction == DismissDirection.startToEnd) {
+      await _handleMarkPurchased();
+      return false;
+    }
+    return _handleHaveIt();
+  }
+
+  Future<bool> _handleHaveIt() async {
     if (_isProcessing) return false;
     setState(() => _isProcessing = true);
     final String menuId = widget.menuId!;
@@ -137,8 +155,6 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
           .haveIt(widget.item.id, quantity),
     );
     if (mounted) setState(() => _isProcessing = false);
-    // Never let `Dismissible` itself remove the row — see this file's own
-    // class doc for why.
     return false;
   }
 
@@ -184,40 +200,56 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
   @override
   Widget build(BuildContext context) {
     final String? menuId = widget.menuId;
+    final bool isDone = widget.item.purchased || _isOptimisticallyChecked;
+    final String quantity = _quantityLabel(widget.item);
     final Widget row = PCard(
       key: ChecklistItem.rowKey(widget.item.id),
-      child: Row(
-        children: <Widget>[
-          if (menuId != null) ...<Widget>[
-            // Labelled explicitly (rather than left to merge with the
-            // sibling name `Text` below) so a screen reader announces which
-            // item this checkbox marks bought, not just "checkbox".
-            Semantics(
-              label: 'Mark ${widget.item.name} as bought',
-              child: Checkbox(
+      padding: EdgeInsets.only(
+        left: menuId != null ? 0 : AppSpacing.s2,
+        right: AppSpacing.s2,
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppSizing.minTouchTargetHeight,
+        ),
+        child: Row(
+          children: <Widget>[
+            if (menuId != null)
+              ChecklistCheckBox(
                 key: ChecklistItem.checkboxKey(widget.item.id),
-                value: _isOptimisticallyChecked,
-                onChanged: _isProcessing
-                    ? null
-                    : (bool? _) => _handleMarkPurchased(),
+                itemId: widget.item.id,
+                isChecked: isDone,
+                semanticLabel: 'Mark ${widget.item.name} as bought',
+                onChanged: _isProcessing ? null : _handleMarkPurchased,
+              ),
+            Expanded(
+              child: Text(
+                widget.item.name,
+                style: AppTypography.body.copyWith(
+                  color: isDone ? AppColors.inkMid : AppColors.ink,
+                  decoration: isDone ? TextDecoration.lineThrough : null,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: AppSpacing.s1),
+            if (quantity.isNotEmpty)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 112),
+                child: Text(
+                  quantity,
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.mono.copyWith(
+                    color: AppColors.inkMid,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
           ],
-          Expanded(
-            child: Text(
-              widget.item.name,
-              style: AppTypography.body,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.s2),
-          Text(
-            _quantityLabel(widget.item),
-            style: AppTypography.meta.copyWith(color: AppColors.inkMid),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -225,40 +257,58 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
 
     return Dismissible(
       key: ValueKey<String>('checklist-item-dismissible-${widget.item.id}'),
-      direction: DismissDirection.startToEnd,
+      direction: DismissDirection.horizontal,
       confirmDismiss: _handleSwipe,
-      background: const _HaveItSwipeBackground(),
-      child: row,
+      background: const _SwipeBackground(
+        label: 'Bought',
+        alignment: Alignment.centerLeft,
+        color: AppColors.cardamomSoft,
+        foreground: AppColors.cardamomSoftForeground,
+      ),
+      secondaryBackground: const _SwipeBackground(
+        label: 'Have it',
+        alignment: Alignment.centerRight,
+        color: AppColors.cardamom,
+        foreground: AppColors.card,
+      ),
+      child: Semantics(
+        customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
+          const CustomSemanticsAction(label: 'Have it'): _handleHaveIt,
+          const CustomSemanticsAction(label: 'Mark bought'):
+              _handleMarkPurchased,
+        },
+        child: row,
+      ),
     );
   }
 }
 
-/// The affirmative-coloured reveal behind a [ChecklistItem] row mid-swipe —
-/// [AppColors.cardamom]/[AppColors.success] are this design system's own
-/// named "Have-it, bought" colour (`colors.dart`'s own doc on both tokens).
-/// Colour never carries the meaning alone (this codebase's own
-/// accessibility rule, `p_button.dart`'s doc states it for buttons, applied
-/// here too): the label and icon say "Have it" in words.
-class _HaveItSwipeBackground extends StatelessWidget {
-  const _HaveItSwipeBackground();
+/// The reveal behind a [ChecklistItem] row mid-swipe. Colour never carries
+/// the meaning alone: the label and tick say it in words (wireframe 10.2).
+class _SwipeBackground extends StatelessWidget {
+  const _SwipeBackground({
+    required this.label,
+    required this.alignment,
+    required this.color,
+    required this.foreground,
+  });
+
+  final String label;
+  final Alignment alignment;
+  final Color color;
+  final Color foreground;
 
   @override
   Widget build(BuildContext context) => Container(
-    alignment: Alignment.centerLeft,
+    alignment: alignment,
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
-    decoration: BoxDecoration(
-      color: AppColors.cardamom,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: const Row(
-      children: <Widget>[
-        Icon(Icons.check_circle, color: AppColors.card),
-        SizedBox(width: AppSpacing.s1),
-        Text(
-          'Have it',
-          style: TextStyle(color: AppColors.card, fontWeight: FontWeight.w600),
-        ),
-      ],
+    decoration: BoxDecoration(color: color, borderRadius: AppRadius.borderL),
+    child: Text(
+      '✓ $label',
+      style: AppTypography.label.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w600,
+      ),
     ),
   );
 }
@@ -269,13 +319,22 @@ class _HaveItSwipeBackground extends StatelessWidget {
 /// and `ShoppingListScreen` so the grouping logic and the section layout
 /// never drift between the two screens that both render it.
 class CategorizedChecklist extends StatelessWidget {
-  const CategorizedChecklist({super.key, required this.items, this.menuId});
+  const CategorizedChecklist({
+    super.key,
+    required this.items,
+    this.menuId,
+    this.footer,
+  });
 
   final List<ShoppingListItem> items;
 
   /// Threaded straight through to every [ChecklistItem] row — see that
   /// widget's own doc for what a non-null value enables.
   final String? menuId;
+
+  /// Widgets rendered after the last section inside the same scroll view
+  /// (the screen's Staples check card).
+  final List<Widget>? footer;
 
   static const String categoryHeadingKeyPrefix = 'checklist-category-';
   static Key categoryHeadingKey(String category) =>
@@ -291,25 +350,48 @@ class CategorizedChecklist extends StatelessWidget {
       children: <Widget>[
         for (final ShoppingListCategoryGroup group in groups)
           Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.s4),
+            padding: const EdgeInsets.only(bottom: AppSpacing.s3),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  shoppingListCategoryLabel(group.category),
+                _SectionLabel(
                   key: CategorizedChecklist.categoryHeadingKey(group.category),
-                  style: AppTypography.title,
+                  label: shoppingListCategoryLabel(group.category),
                 ),
-                const SizedBox(height: AppSpacing.s2),
                 for (final ShoppingListItem item in group.items)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.s1),
                     child: ChecklistItem(item: item, menuId: menuId),
                   ),
               ],
             ),
           ),
+        ...?footer,
       ],
     );
   }
+}
+
+/// Mono-caps section label (wireframe `S.label`).
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    label: label,
+    excludeSemantics: true,
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s1),
+      child: Text(
+        label.toUpperCase(),
+        style: AppTypography.meta.copyWith(
+          fontFamily: AppFontFamily.mono,
+          color: AppColors.inkMid,
+        ),
+      ),
+    ),
+  );
 }

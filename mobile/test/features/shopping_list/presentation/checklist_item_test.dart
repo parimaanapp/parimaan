@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/shopping_list/data/shopping_list_repository.dart';
@@ -9,6 +11,7 @@ import 'package:mobile/features/shopping_list/presentation/checklist_item.dart';
 import 'package:mobile/features/shopping_list/presentation/have_it_quantity_sheet.dart';
 import 'package:mobile/features/shopping_list/state/current_shopping_list_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/ui/colors.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../../../support/fake_shopping_list_repository.dart';
@@ -68,7 +71,7 @@ Future<void> _swipe(WidgetTester tester, String itemId) async {
       matching: find.byType(Dismissible),
     ),
   );
-  unawaited(dismissible.confirmDismiss!(DismissDirection.startToEnd));
+  unawaited(dismissible.confirmDismiss!(DismissDirection.endToStart));
   await tester.pumpAndSettle();
 }
 
@@ -211,7 +214,7 @@ void main() {
         // The first call opens the sheet; its own Future stays pending
         // until the sheet resolves (below), same as a real swipe.
         final Future<bool?> first = dismissible.confirmDismiss!(
-          DismissDirection.startToEnd,
+          DismissDirection.endToStart,
         );
         await tester.pumpAndSettle();
         expect(find.byType(HaveItQuantitySheet), findsOneWidget);
@@ -220,7 +223,7 @@ void main() {
         // rejected immediately — [ChecklistItem]'s own `_isProcessing`
         // guard — never opening a second sheet.
         final bool? second = await dismissible.confirmDismiss!(
-          DismissDirection.startToEnd,
+          DismissDirection.endToStart,
         );
         expect(second, false);
         expect(find.byType(HaveItQuantitySheet), findsOneWidget);
@@ -350,7 +353,7 @@ void main() {
           ),
         );
         final bool? swipeResult = await dismissible.confirmDismiss!(
-          DismissDirection.startToEnd,
+          DismissDirection.endToStart,
         );
         expect(swipeResult, false);
         expect(find.byType(HaveItQuantitySheet), findsNothing);
@@ -375,7 +378,7 @@ void main() {
           ),
         );
         final Future<bool?> swipeFuture = dismissible.confirmDismiss!(
-          DismissDirection.startToEnd,
+          DismissDirection.endToStart,
         );
         await tester.pumpAndSettle();
         expect(find.byType(HaveItQuantitySheet), findsOneWidget);
@@ -388,7 +391,9 @@ void main() {
         // still pending, rather than merely proving a tap missed.
         expect(
           tester
-              .widget<Checkbox>(find.byKey(ChecklistItem.checkboxKey('item-1')))
+              .widget<ChecklistCheckBox>(
+                find.byKey(ChecklistItem.checkboxKey('item-1')),
+              )
               .onChanged,
           isNull,
         );
@@ -470,8 +475,10 @@ void main() {
         // failing call has even resolved.
         expect(
           tester
-              .widget<Checkbox>(find.byKey(ChecklistItem.checkboxKey('item-1')))
-              .value,
+              .widget<ChecklistCheckBox>(
+                find.byKey(ChecklistItem.checkboxKey('item-1')),
+              )
+              .isChecked,
           true,
         );
 
@@ -480,13 +487,186 @@ void main() {
         // Reverted back to unchecked on failure — never a silent no-op.
         expect(
           tester
-              .widget<Checkbox>(find.byKey(ChecklistItem.checkboxKey('item-1')))
-              .value,
+              .widget<ChecklistCheckBox>(
+                find.byKey(ChecklistItem.checkboxKey('item-1')),
+              )
+              .isChecked,
           false,
         );
         expect(find.byKey(ChecklistItem.rowKey('item-1')), findsOneWidget);
         expect(find.text('This item was already bought.'), findsOneWidget);
       },
     );
+  });
+
+  group('ChecklistItem — swipe right marks bought (C2)', () {
+    testWidgets('swiping right calls markPurchased, never opens the sheet', (
+      WidgetTester tester,
+    ) async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+        markPurchasedResult: testEmptyShoppingList,
+      );
+      await _pump(tester, repository: repository);
+
+      final Dismissible dismissible = tester.widget<Dismissible>(
+        find.ancestor(
+          of: find.byKey(ChecklistItem.rowKey('item-1')),
+          matching: find.byType(Dismissible),
+        ),
+      );
+      final bool? result = await dismissible.confirmDismiss!(
+        DismissDirection.startToEnd,
+      );
+      await tester.pumpAndSettle();
+
+      expect(result, false);
+      expect(repository.markPurchasedCalls, <String>['item-1']);
+      expect(repository.haveItCalls, isEmpty);
+      expect(find.byType(HaveItQuantitySheet), findsNothing);
+    });
+
+    testWidgets('both swipe directions are enabled', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, repository: FakeShoppingListRepository());
+      final Dismissible dismissible = tester.widget<Dismissible>(
+        find.byType(Dismissible),
+      );
+      expect(dismissible.direction, DismissDirection.horizontal);
+    });
+
+    testWidgets('exposes Have it and Mark bought as screen-reader actions', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(tester, repository: FakeShoppingListRepository());
+
+      final SemanticsData data = tester
+          .getSemantics(find.byKey(ChecklistItem.rowKey('item-1')))
+          .getSemanticsData();
+      final Set<String> labels = data.customSemanticsActionIds!
+          .map((int id) => CustomSemanticsAction.getAction(id)!.label!)
+          .toSet();
+      expect(labels, containsAll(<String>['Have it', 'Mark bought']));
+      handle.dispose();
+    });
+  });
+
+  group('ChecklistItem — check-row visuals (C2, wireframe 10.1)', () {
+    testWidgets('undone row: 18 px box, radius 6, no fill, mono quantity', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, repository: FakeShoppingListRepository());
+
+      final Size box = tester.getSize(
+        find.byKey(ChecklistCheckBox.boxKey('item-1')),
+      );
+      expect(box, const Size(18, 18));
+      final BoxDecoration decoration = tester
+          .widget<Container>(find.byKey(ChecklistCheckBox.boxKey('item-1')))
+          .decoration! as BoxDecoration;
+      expect(decoration.borderRadius, BorderRadius.circular(6));
+      expect(decoration.color, isNot(AppColors.cardamom));
+
+      final Text quantity = tester.widget<Text>(find.text('2 kg'));
+      expect(quantity.style!.fontFamily, 'JetBrains Mono');
+      expect(
+        tester.widget<Text>(find.text('Rice')).style!.decoration,
+        isNot(TextDecoration.lineThrough),
+      );
+    });
+
+    testWidgets('done row (purchased): green fill, strike-through name', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(),
+        item: testPurchasedShoppingListItem,
+      );
+
+      final BoxDecoration decoration = tester
+          .widget<Container>(find.byKey(ChecklistCheckBox.boxKey('item-1')))
+          .decoration! as BoxDecoration;
+      expect(decoration.color, AppColors.cardamom);
+      expect(
+        tester.widget<Text>(find.text('Rice')).style!.decoration,
+        TextDecoration.lineThrough,
+      );
+    });
+
+    testWidgets('optimistic tap turns the row done immediately', (
+      WidgetTester tester,
+    ) async {
+      final FakeShoppingListRepository repository = FakeShoppingListRepository(
+        generateResult: testShoppingList,
+        markPurchasedResult: testEmptyShoppingList,
+        delay: const Duration(milliseconds: 50),
+      );
+      await _pump(tester, repository: repository);
+
+      await tester.tap(find.byKey(ChecklistItem.checkboxKey('item-1')));
+      await tester.pump();
+
+      expect(
+        tester.widget<Text>(find.text('Rice')).style!.decoration,
+        TextDecoration.lineThrough,
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the check target is at least 44 x 44', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, repository: FakeShoppingListRepository());
+      final Size size = tester.getSize(
+        find.byKey(ChecklistItem.checkboxKey('item-1')),
+      );
+      expect(size.width, greaterThanOrEqualTo(44));
+      expect(size.height, greaterThanOrEqualTo(44));
+    });
+
+    testWidgets('the check announces its item and checked state', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(tester, repository: FakeShoppingListRepository());
+      expect(
+        tester.getSemantics(find.byKey(ChecklistItem.checkboxKey('item-1'))),
+        matchesSemantics(
+          label: 'Mark Rice as bought',
+          hasCheckedState: true,
+          isChecked: false,
+          hasEnabledState: true,
+          isEnabled: true,
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('long name and quantity do not overflow at 320 pt', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final ShoppingListItem long = ShoppingListItem(
+        id: 'item-1',
+        name: 'Kashmiri red chilli powder, extra long ingredient name here',
+        quantity: 1250.5,
+        unit: 'bunch',
+        category: 'spice',
+        sourceRecipeId: null,
+        purchased: false,
+        purchasedBy: null,
+        purchasedAt: null,
+        movedToPantry: false,
+      );
+      await _pump(tester, repository: FakeShoppingListRepository(), item: long);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
