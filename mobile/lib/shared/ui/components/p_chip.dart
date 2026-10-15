@@ -27,8 +27,9 @@ enum PChipTone { neutral, veg, warm, accent }
 /// performs the screen's main action is a [PButton] wearing the wrong shape,
 /// and no amount of API design can stop that; it is a review-time check.
 ///
-/// Selection is signalled by an inverted surface **and** a tick glyph, never
-/// by colour alone.
+/// Selection is signalled by an inverted surface (solid ink, paper text) and
+/// exposed to screen readers via `Semantics.selected`; the tick glyph is an
+/// opt-in ([showSelectedGlyph]).
 class PChip extends StatelessWidget {
   const PChip({
     super.key,
@@ -36,7 +37,7 @@ class PChip extends StatelessWidget {
     this.variant = PChipVariant.filter,
     this.tone = PChipTone.neutral,
     this.selected = false,
-    this.showSelectedGlyph = true,
+    this.showSelectedGlyph = false,
     this.onTap,
     this.onRemove,
     this.removeSemanticLabel,
@@ -60,9 +61,10 @@ class PChip extends StatelessWidget {
   /// On/off state for filter and role chips.
   final bool selected;
 
-  /// Whether a selected filter chip shows the tick. Defaults to true; setup's
-  /// dietary groups pass false (§32.6: solid ink fill without the tick). The
-  /// selected state is still exposed to screen readers via semantics.
+  /// Whether a selected filter chip shows the tick. Defaults to false app-wide
+  /// (§32.6: solid ink fill without the tick, as the wireframe draws it); the
+  /// option is kept for a caller that wants it. The selected state is exposed
+  /// to screen readers via semantics either way.
   final bool showSelectedGlyph;
 
   /// Non-null makes the chip tappable — and therefore subject to the 44pt
@@ -90,7 +92,7 @@ class PChip extends StatelessWidget {
             : Border.fromBorderSide(BorderSide(color: colors.border!)),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: _isPill ? AppSpacing.s2 : AppSpacing.s1,
+        horizontal: _isPill ? AppSpacing.s3 : AppSpacing.s1,
         vertical: _isPill ? AppSpacing.s1 : AppSpacing.s0,
       ),
       child: Row(
@@ -208,7 +210,7 @@ _PChipColors _colorsFor(PChipVariant variant, PChipTone tone, bool selected) {
         : const _PChipColors(
             background: Colors.transparent,
             foreground: AppColors.ink,
-            border: AppColors.inkMid,
+            border: AppColors.outline,
           );
   }
 

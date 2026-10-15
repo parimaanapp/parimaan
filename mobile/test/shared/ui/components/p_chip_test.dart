@@ -24,18 +24,21 @@ void main() {
       expect(find.text('All roles'), findsOneWidget);
     });
 
-    testWidgets('unselected is outlined, not filled', (
+    testWidgets('unselected is a 1px ink@20% outlined pill', (
       WidgetTester tester,
     ) async {
       await pumpComponent(tester, PChip(label: 'Carb', onTap: () {}));
 
       final BoxDecoration decoration = _decoration(tester);
       expect(decoration.color!.a, 0);
-      expect(decoration.border, isNotNull);
       expect(decoration.borderRadius, AppRadius.borderFull);
+      final BoxBorder border = decoration.border!;
+      final BorderSide side = (border as Border).top;
+      expect(side.color, AppColors.outline);
+      expect(side.width, 1);
     });
 
-    testWidgets('selected inverts to ink and adds a tick — not colour alone', (
+    testWidgets('selected is solid ink with paper text and no tick', (
       WidgetTester tester,
     ) async {
       await pumpComponent(
@@ -43,27 +46,47 @@ void main() {
         PChip(label: 'Carb', selected: true, onTap: () {}),
       );
 
+      final BoxDecoration decoration = _decoration(tester);
+      expect(decoration.color, AppColors.ink);
+      expect(decoration.border, isNull);
+      expect(find.text(PChip.selectedGlyph), findsNothing);
+      expect(
+        tester.widget<Text>(find.text('Carb')).style!.color,
+        AppColors.paper,
+      );
+    });
+
+    testWidgets('showSelectedGlyph: true still opts in to the tick', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        PChip(
+          label: 'Vegan',
+          selected: true,
+          showSelectedGlyph: true,
+          onTap: () {},
+        ),
+      );
+
       expect(_decoration(tester).color, AppColors.ink);
       expect(find.text(PChip.selectedGlyph), findsOneWidget);
     });
 
-    testWidgets(
-      'showSelectedGlyph: false keeps the ink fill but drops the tick',
-      (WidgetTester tester) async {
-        await pumpComponent(
-          tester,
-          PChip(
-            label: 'Vegan',
-            selected: true,
-            showSelectedGlyph: false,
-            onTap: () {},
-          ),
+    testWidgets('selected state is still exposed without a glyph', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        PChip(label: 'Carb', selected: true, onTap: () {}),
+      );
+      await withSemantics(tester, () async {
+        expect(
+          tester.getSemantics(find.byType(PChip)),
+          isSemantics(isSelected: true),
         );
-
-        expect(_decoration(tester).color, AppColors.ink);
-        expect(find.text(PChip.selectedGlyph), findsNothing);
-      },
-    );
+      });
+    });
 
     testWidgets('calls onTap', (WidgetTester tester) async {
       int taps = 0;
