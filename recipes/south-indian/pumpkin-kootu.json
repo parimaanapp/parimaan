@@ -1,0 +1,104 @@
+{
+  "title": "Pumpkin Kootu",
+  "description": "Soft pumpkin cooked with moong dal and a coconut-cumin paste, a mild Tamil side for rice.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Yellow Pumpkin",
+      "quantity": 300,
+      "unit": "g",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Moong Dal (Split, Yellow)",
+      "quantity": 100,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Urad Dal (Split, White)",
+      "quantity": 5,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 8 leaves",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Cook the moong dal with turmeric and 2 cups of water until soft and mushy.",
+    "Add the pumpkin and salt, and cook until the pumpkin is tender, adding water if needed.",
+    "Grind the coconut, green chilli and cumin seeds to a coarse paste with a splash of water.",
+    "Stir the paste into the dal-pumpkin mixture and simmer for 5 minutes, lightly mashing some pumpkin.",
+    "Heat the oil, crackle the mustard seeds, then add urad dal, dried red chilli and curry leaves and fry until the dal is golden.",
+    "Pour the tempering over the kootu and mix gently."
+  ]
+}

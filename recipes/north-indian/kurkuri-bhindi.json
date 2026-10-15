@@ -1,0 +1,89 @@
+{
+  "title": "Kurkuri Bhindi",
+  "description": "Crispy shallow-fried okra tossed with chaat masala and amchur, a dry sabzi that stays crunchy.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Okra",
+      "quantity": 400,
+      "unit": "g",
+      "category": "produce",
+      "notes": "washed, dried and cut into thin strips"
+    },
+    {
+      "name": "Besan",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Rice Flour",
+      "quantity": 5,
+      "unit": "g",
+      "category": "grain"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Dry Mango Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Chaat Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    }
+  ],
+  "steps": [
+    "Wash the okra and dry it completely with a clean towel, then slice into thin lengthwise strips.",
+    "Toss the okra with besan, rice flour, turmeric, chilli powder, coriander powder and salt without adding water.",
+    "Heat the oil in a non-stick pan on medium heat.",
+    "Spread the okra in a single layer and cook for 12-15 minutes, turning occasionally, until crisp and golden.",
+    "Drain on paper towels and sprinkle the amchur and chaat masala just before serving."
+  ]
+}

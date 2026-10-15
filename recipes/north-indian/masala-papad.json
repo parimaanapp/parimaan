@@ -1,0 +1,77 @@
+{
+  "title": "Masala Papad",
+  "description": "Roasted papad topped with onion, tomato, chaat masala and lemon, a quick starter or side.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": [
+    "veg",
+    "vegan"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Papad (Uncooked)",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "bakery"
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Chaat Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juice"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Roast the papads one by one over an open flame or fry until crisp.",
+    "Mix the onion, tomato, green chilli and coriander leaves in a bowl.",
+    "Add the lemon juice, chaat masala and red chilli powder and toss.",
+    "Place the roasted papads on a plate.",
+    "Spoon the topping on each papad and serve immediately so it stays crisp."
+  ]
+}

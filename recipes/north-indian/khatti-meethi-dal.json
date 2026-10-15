@@ -1,0 +1,127 @@
+{
+  "title": "Khatti Meethi Dal",
+  "description": "Gujarati-style toor dal balanced with jaggery and kokum, finished with a peanut and mustard tempering.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 30,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "gujarati",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Toor Dal",
+      "quantity": 200,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Kokum",
+      "quantity": 3,
+      "unit": "g",
+      "category": "spice",
+      "notes": "about 4 petals, soaked in warm water"
+    },
+    {
+      "name": "Jaggery",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "dry_goods",
+      "notes": "grated"
+    },
+    {
+      "name": "Peanuts",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 8 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Ginger Paste",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Wash the dal and pressure-cook it with turmeric, salt and 3 cups of water for 4 whistles until very soft; whisk until smooth.",
+    "Pour the whisked dal into a pot, add 1 more cup of hot water and bring to a gentle boil.",
+    "Add the chopped tomato, kokum, jaggery and peanuts, and simmer for 10 minutes until the peanuts soften.",
+    "In a small pan heat the oil and crackle the mustard seeds and cumin seeds.",
+    "Add curry leaves, green chilli and ginger paste, stir for 20 seconds, then add the chilli powder and pour the tempering over the dal.",
+    "Simmer for 5 more minutes, adjusting jaggery and salt until sweet, sour and spicy are in balance, and finish with coriander."
+  ]
+}

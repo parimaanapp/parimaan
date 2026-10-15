@@ -1,0 +1,63 @@
+{
+  "title": "Beetroot Raita",
+  "description": "Bright pink yogurt raita with grated beetroot and a touch of roasted cumin.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 10,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Beetroot",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "boiled, peeled and grated"
+    },
+    {
+      "name": "Curd",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "dairy"
+    },
+    {
+      "name": "Roasted Cumin Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Boil the beetroot in a pressure cooker or pot until tender, then cool and peel.",
+    "Grate the beetroot and squeeze out excess water.",
+    "Whisk the curd in a bowl until smooth.",
+    "Fold in the grated beetroot, green chilli, roasted cumin powder and salt.",
+    "Chill for 20 minutes and garnish with coriander leaves."
+  ]
+}

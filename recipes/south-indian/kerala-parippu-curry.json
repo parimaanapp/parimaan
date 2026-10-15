@@ -1,0 +1,104 @@
+{
+  "title": "Kerala Parippu Curry",
+  "description": "Creamy moong dal cooked with turmeric and ground coconut, tempered in coconut oil, the Kerala sadya starter.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Moong Dal (Split, Yellow)",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 80,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Garlic (Clove)",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Shallots",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 10 leaves",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Dry roast the moong dal in a pan for 3 minutes until fragrant, then wash and pressure-cook with turmeric, salt and 2.5 cups of water for 3 whistles.",
+    "Mash the dal lightly with a spoon.",
+    "Grind the grated coconut, cumin seeds, green chilli and garlic to a coarse paste with a splash of water.",
+    "Stir the coconut paste into the dal and simmer on low heat for 5 minutes without letting it boil hard; add water if too thick.",
+    "Heat the coconut oil, crackle the mustard seeds, then add dried red chilli, shallots and curry leaves and fry until the shallots are golden.",
+    "Pour the tempering over the parippu and serve with rice and a spoon of ghee."
+  ]
+}

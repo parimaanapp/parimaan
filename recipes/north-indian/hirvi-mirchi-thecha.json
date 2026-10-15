@@ -1,0 +1,71 @@
+{
+  "title": "Hirvi Mirchi Thecha",
+  "description": "Fiery Maharashtrian green chilli and peanut thecha, pounded with garlic and served in small spoonfuls.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Green Chilli",
+      "quantity": 100,
+      "unit": "g",
+      "category": "produce",
+      "notes": "stems removed"
+    },
+    {
+      "name": "Peanuts",
+      "quantity": 30,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "roasted"
+    },
+    {
+      "name": "Garlic (Clove)",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Heat half of the oil in a pan and sauté the green chillies for 3-4 minutes until blistered and soft.",
+    "Remove the chillies and in the same pan toast the cumin seeds and garlic for 1 minute.",
+    "Add the roasted peanuts and salt to a mortar or grinder with the chillies and garlic.",
+    "Pound or pulse to a coarse chunky paste, keeping some texture.",
+    "Stir in the coriander leaves and the remaining raw oil and serve in small portions."
+  ]
+}

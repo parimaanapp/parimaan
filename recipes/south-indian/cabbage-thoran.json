@@ -1,0 +1,106 @@
+{
+  "title": "Cabbage Thoran",
+  "description": "Kerala dry stir-fry of shredded cabbage with fresh coconut, mustard and curry leaves.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Cabbage",
+      "quantity": 400,
+      "unit": "g",
+      "category": "produce",
+      "notes": "finely shredded"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Garlic (Clove)",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 8 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    }
+  ],
+  "steps": [
+    "Crush the coconut, green chilli, garlic, cumin seeds and turmeric together roughly without adding water.",
+    "Heat the coconut oil in a wide pan and crackle the mustard seeds.",
+    "Add the dried red chilli, curry leaves and onion and cook until the onion is translucent.",
+    "Add the shredded cabbage and salt and toss on medium heat for 3 minutes.",
+    "Add the coconut mixture, mix well, cover and cook for 5 minutes until the cabbage is tender but still crunchy.",
+    "Uncover, stir on high heat for a minute to dry out any moisture and serve."
+  ]
+}

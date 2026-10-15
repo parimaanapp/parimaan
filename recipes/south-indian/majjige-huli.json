@@ -1,0 +1,110 @@
+{
+  "title": "Majjige Huli",
+  "description": "Karnataka buttermilk-coconut curry with ash gourd, mild and cooling.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Buttermilk",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "dairy"
+    },
+    {
+      "name": "Ash Gourd",
+      "quantity": 300,
+      "unit": "g",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Chana Dal",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dal",
+      "notes": "soaked for 30 minutes"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 8 leaves",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Boil the ash gourd with turmeric, salt and half a cup of water until tender.",
+    "Grind the coconut, green chilli, cumin seeds, coriander seeds and soaked chana dal into a fine paste with a little water.",
+    "Add the paste to the vegetables and simmer on low for 5 minutes.",
+    "Turn the heat to the minimum and stir in the buttermilk; warm through without boiling.",
+    "Heat the coconut oil, crackle the mustard seeds, then add dried red chilli and curry leaves.",
+    "Pour the tempering over the huli and serve with rice."
+  ]
+}

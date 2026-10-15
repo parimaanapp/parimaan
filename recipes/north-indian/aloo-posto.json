@@ -1,0 +1,96 @@
+{
+  "title": "Aloo Posto",
+  "description": "Bengali potatoes cooked in a creamy poppy seed paste with mustard oil and green chilli.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Potato",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "peeled and cubed"
+    },
+    {
+      "name": "Poppy Seeds",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Mustard Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Nigella Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Sugar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 0.5,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juice"
+    }
+  ],
+  "steps": [
+    "Soak the poppy seeds in warm water for 20 minutes, then grind them with 2 green chillies and a splash of water to a smooth paste.",
+    "Heat the mustard oil until it smokes lightly and then reduce the heat.",
+    "Add the nigella seeds and dried red chilli, then add the potato cubes with turmeric and half the salt and fry for 5 minutes.",
+    "Add the poppy seed paste, sugar and the remaining salt, and mix so the potatoes are well coated.",
+    "Add the water, cover and cook on low heat for 10-12 minutes until the potatoes are tender and the paste has thickened.",
+    "Slit the remaining green chilli, add it with a squeeze of lemon juice and a drizzle of raw mustard oil if you like, then serve with rice."
+  ]
+}

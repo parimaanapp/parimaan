@@ -1,0 +1,98 @@
+{
+  "title": "Manga Pachadi",
+  "description": "Kerala raw mango pachadi with jaggery and coconut, sweet-sour and mild.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Raw Mango",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "peeled and cubed"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 60,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Jaggery",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "dry_goods",
+      "notes": "grated"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "notes": "half ground in the paste, half for tempering",
+      "isStaple": true
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 6 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "beverages"
+    }
+  ],
+  "steps": [
+    "Cook the mango cubes with the water, turmeric and salt for 8 minutes until tender.",
+    "Grind the coconut, green chilli and half of the mustard seeds to a smooth paste with a little water.",
+    "Add the paste and the jaggery to the mango and simmer for 3-4 minutes; do not boil hard.",
+    "Switch off the heat once it thickens slightly.",
+    "Heat the coconut oil, crackle the remaining mustard seeds, add dried red chilli and curry leaves and pour over the pachadi."
+  ]
+}

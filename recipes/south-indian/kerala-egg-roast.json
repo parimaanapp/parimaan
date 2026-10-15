@@ -1,0 +1,128 @@
+{
+  "title": "Kerala Egg Roast",
+  "description": "Kerala boiled eggs in a dark, spicy onion-tomato roast with fennel and coconut oil.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "eggetarian",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Egg",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "eggs",
+      "notes": "boiled and peeled"
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 10 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "thinly sliced"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Fennel Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Black Pepper Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 0.5,
+      "unit": "cup",
+      "category": "beverages"
+    }
+  ],
+  "steps": [
+    "Make small slits in the boiled eggs and fry them in 1 tbsp coconut oil for 2 minutes until lightly golden; set aside.",
+    "In the same pan heat the remaining oil and crackle the mustard seeds, then add curry leaves.",
+    "Add the onion and a pinch of salt and cook for 10 minutes until deep golden brown.",
+    "Add the ginger garlic paste and green chilli and cook for 1 minute.",
+    "Add the tomato and cook until pulpy, then add turmeric, chilli powder, coriander powder, fennel seeds and the remaining salt.",
+    "Add the water and simmer for 5 minutes until the masala is thick and oily.",
+    "Return the eggs, coat gently, sprinkle black pepper and cook for 2 minutes."
+  ]
+}

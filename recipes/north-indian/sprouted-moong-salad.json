@@ -1,0 +1,85 @@
+{
+  "title": "Sprouted Moong Salad",
+  "description": "Protein-rich sprouted moong salad with cucumber, tomato and lemon, lightly seasoned with chaat masala.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "jain",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Moong Sprouts",
+      "quantity": 150,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Cucumber",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juice"
+    },
+    {
+      "name": "Chaat Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Roasted Cumin Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Steam the sprouts for 3-4 minutes until just tender, or leave raw if you prefer more crunch, then cool them.",
+    "Combine the sprouts, cucumber, tomato and green chilli in a bowl.",
+    "Add the chaat masala, roasted cumin powder and salt.",
+    "Squeeze in the lemon juice and toss gently.",
+    "Garnish with coriander leaves and serve fresh."
+  ]
+}

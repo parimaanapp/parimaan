@@ -1,0 +1,118 @@
+{
+  "title": "Mor Kuzhambu",
+  "description": "Tamil buttermilk curry thickened with a coconut-chilli paste and a light vegetable like ash gourd.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Curd",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "dairy",
+      "notes": "slightly sour"
+    },
+    {
+      "name": "Ash Gourd",
+      "quantity": 300,
+      "unit": "g",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Rice Flour",
+      "quantity": 5,
+      "unit": "g",
+      "category": "grain",
+      "notes": "optional, to bind"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Fenugreek Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 8 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Cook the ash gourd with turmeric, salt and half a cup of water until just tender, about 8 minutes.",
+    "Grind the coconut, green chilli, cumin seeds and rice flour to a smooth paste with a little water.",
+    "Whisk the curd until smooth and stir in the ground paste.",
+    "Lower the heat to the minimum, pour the curd mixture over the vegetables and warm for 5-6 minutes, stirring constantly; do not let it boil or the curd will split.",
+    "Heat the coconut oil, crackle the mustard seeds and fenugreek seeds, then add dried red chilli, hing and curry leaves.",
+    "Pour the tempering over the kuzhambu and serve with rice."
+  ]
+}

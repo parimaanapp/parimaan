@@ -1,0 +1,83 @@
+{
+  "title": "Peanut Chutney",
+  "description": "South Indian roasted peanut chutney with chilli and tamarind, served with idli and dosa.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Roasted Peanuts",
+      "quantity": 60,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Garlic (Clove)",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 1,
+      "unit": "g",
+      "category": "spice",
+      "notes": "a small marble-sized piece"
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 0.5,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 6 leaves",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Roast the peanuts lightly in a dry pan for 2 minutes if not already roasted, and let them cool.",
+    "Add the peanuts, dried red chilli, garlic, tamarind and salt to a grinder.",
+    "Grind with the water to a slightly coarse, spoonable paste.",
+    "Transfer to a bowl and adjust salt and consistency with a little more water.",
+    "Heat the oil, crackle the mustard seeds, add the curry leaves and pour over the chutney."
+  ]
+}

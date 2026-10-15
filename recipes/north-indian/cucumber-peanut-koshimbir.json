@@ -1,0 +1,79 @@
+{
+  "title": "Cucumber Peanut Koshimbir",
+  "description": "Maharashtrian cucumber salad with crushed peanuts, lemon and green chilli, a cooling side for spicy meals.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Cucumber",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "peeled and finely chopped"
+    },
+    {
+      "name": "Roasted Peanuts",
+      "quantity": 30,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "coarsely crushed"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juice"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 20,
+      "unit": "g",
+      "category": "produce"
+    }
+  ],
+  "steps": [
+    "Peel and finely chop the cucumbers, and drain off any excess water.",
+    "Add the crushed peanuts, green chilli and grated coconut.",
+    "Season with salt and sugar.",
+    "Add the lemon juice and coriander leaves.",
+    "Toss well and serve immediately so the peanuts stay crunchy."
+  ]
+}

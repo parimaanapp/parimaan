@@ -1,0 +1,121 @@
+{
+  "title": "Andhra Tomato Pappu",
+  "description": "Tangy toor dal cooked down with ripe tomatoes and green chilli, finished with a garlic and mustard tempering.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 30,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "andhra",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Toor Dal",
+      "quantity": 200,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Garlic (Clove)",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "crushed"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 10 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Wash the dal and pressure-cook it with tomatoes, onion, green chilli, turmeric and 3 cups of water for 4 whistles.",
+    "Mash everything well and stir in the salt; add hot water to reach a thick but flowing consistency.",
+    "Heat the oil in a small pan and add the mustard seeds and cumin seeds.",
+    "Add dried red chilli, crushed garlic, hing and curry leaves and fry until the garlic is golden brown.",
+    "Pour the tempering over the pappu, mix, and simmer for 5 minutes.",
+    "Garnish with coriander leaves and serve with rice and ghee."
+  ]
+}

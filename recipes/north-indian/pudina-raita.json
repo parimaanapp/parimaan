@@ -1,0 +1,69 @@
+{
+  "title": "Pudina Raita",
+  "description": "Whisked yogurt with fresh mint and roasted cumin, a cooling companion to biryani and pulao.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Curd",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "dairy"
+    },
+    {
+      "name": "Mint Leaves",
+      "quantity": 1,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Roasted Cumin Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Black Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Whisk the curd in a bowl until completely smooth.",
+    "Add the finely chopped mint leaves and green chilli.",
+    "Season with black salt, regular salt and roasted cumin powder.",
+    "Mix well and taste, adjusting the salt.",
+    "Refrigerate for 15 minutes, then dust with red chilli powder before serving."
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "title": "Beetroot Poriyal",
+  "description": "Tamil dry beetroot stir-fry with mustard, urad dal and coconut.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Beetroot",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "peeled and grated"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Urad Dal (Split, White)",
+      "quantity": 5,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 8 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juice"
+    }
+  ],
+  "steps": [
+    "Heat the oil in a pan and crackle the mustard seeds.",
+    "Add urad dal and dried red chilli and fry until the dal turns golden.",
+    "Add the curry leaves and onion and cook until the onion is soft.",
+    "Add the grated beetroot, turmeric and salt and mix well.",
+    "Cover and cook on low heat for 8-10 minutes, stirring occasionally, until the beetroot is cooked through.",
+    "Stir in the grated coconut and lemon juice, and cook uncovered for 1 minute before serving."
+  ]
+}

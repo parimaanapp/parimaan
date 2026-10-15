@@ -1,0 +1,113 @@
+{
+  "title": "Dal Palak",
+  "description": "Toor dal and spinach cooked together and tempered with garlic and cumin, a green, iron-rich everyday dal.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 30,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Toor Dal",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Moong Dal (Split, Yellow)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Spinach",
+      "quantity": 1,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "washed and chopped"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Garlic (Clove)",
+      "quantity": 5,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juice"
+    }
+  ],
+  "steps": [
+    "Pressure-cook the toor dal and moong dal with turmeric, salt and 3 cups of water for 4 whistles, then mash lightly.",
+    "Blanch the spinach in boiling water for 1 minute, drain and chop it roughly.",
+    "Heat the oil, add cumin seeds and garlic and fry until the garlic is golden.",
+    "Add the onion and green chilli and cook until soft, then add the tomato and chilli powder and cook until pulpy.",
+    "Add the spinach and cook for 2 minutes, then pour in the dal and simmer for 8 minutes.",
+    "Finish with lemon juice and adjust salt before serving."
+  ]
+}
