@@ -9,14 +9,14 @@
   "dietaryTags": ["veg"],
   "role": "carb",
   "ingredients": [
-    { "name": "Refined Flour", "quantity": 2.5, "unit": "cup", "category": "grain" },
+    { "name": "Maida", "quantity": 2.5, "unit": "cup", "category": "grain" },
     { "name": "Curd", "quantity": 0.25, "unit": "cup", "category": "dairy" },
     { "name": "Sugar", "quantity": 1, "unit": "tsp", "category": "dry_goods" },
-    { "name": "Instant Yeast", "quantity": 1, "unit": "tsp", "category": "dry_goods" },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
-    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "other", "notes": "lukewarm, approximate" },
-    { "name": "Butter", "quantity": 2, "unit": "tbsp", "category": "dairy", "notes": "for brushing" },
+    { "name": "Yeast (Dry)", "quantity": 1, "unit": "tsp", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "beverages", "notes": "lukewarm, approximate" },
+    { "name": "Butter (Salted)", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for brushing" },
     { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, optional garnish" }
   ],
   "steps": [

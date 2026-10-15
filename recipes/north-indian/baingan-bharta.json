@@ -9,17 +9,17 @@
   "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "sabzi_dal",
   "ingredients": [
-    { "name": "Eggplant (Baingan)", "quantity": 1, "unit": "piece", "category": "produce", "notes": "large" },
-    { "name": "Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
+    { "name": "Brinjal (Bharta)", "quantity": 1, "unit": "piece", "category": "produce", "notes": "large" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
     { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
-    { "name": "Ginger-Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "produce" },
+    { "name": "Ginger Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "condiment" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Tomato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Coriander Powder", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
   ],
   "steps": [

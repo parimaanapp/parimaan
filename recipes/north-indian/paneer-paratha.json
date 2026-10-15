@@ -9,17 +9,17 @@
   "dietaryTags": ["veg"],
   "role": "carb",
   "ingredients": [
-    { "name": "Whole Wheat Flour (Aata)", "quantity": 2, "unit": "cup", "category": "grain" },
-    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "other", "notes": "approximate, for the dough" },
-    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Paneer (block)", "quantity": 200, "unit": "g", "category": "dairy", "notes": "crumbled" },
+    { "name": "Atta (Whole Wheat Flour)", "quantity": 2, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "beverages", "notes": "approximate, for the dough" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Paneer", "quantity": 200, "unit": "g", "category": "dairy", "notes": "crumbled" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
     { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
     { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Amchur (Dry Mango Powder)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
-    { "name": "Ghee", "quantity": 3, "unit": "tbsp", "category": "dairy", "notes": "for pan-frying" }
+    { "name": "Dry Mango Powder", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Ghee", "quantity": 3, "unit": "tbsp", "category": "oil", "notes": "for pan-frying" }
   ],
   "steps": [
     "Knead the flour, water and salt into a soft dough, cover and rest for 15-20 minutes.",

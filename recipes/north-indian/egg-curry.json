@@ -9,18 +9,18 @@
   "dietaryTags": ["eggetarian", "gluten_free", "dairy_free"],
   "role": "sabzi_dal",
   "ingredients": [
-    { "name": "Eggs", "quantity": 6, "unit": "piece", "category": "dairy", "notes": "hard-boiled and peeled" },
-    { "name": "Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
+    { "name": "Egg", "quantity": 6, "unit": "piece", "category": "eggs", "notes": "hard-boiled and peeled" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
     { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Onion", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
-    { "name": "Ginger-Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "produce" },
+    { "name": "Ginger Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "condiment" },
     { "name": "Tomato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "pureed" },
     { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Red Chilli Powder", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Coriander Powder", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Water", "quantity": 1, "unit": "cup", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Water", "quantity": 1, "unit": "cup", "category": "beverages" },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
   ],
   "steps": [

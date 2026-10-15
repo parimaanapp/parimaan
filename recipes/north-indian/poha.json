@@ -9,8 +9,8 @@
   "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "breakfast",
   "ingredients": [
-    { "name": "Poha (Flattened Rice)", "quantity": 2, "unit": "cup", "category": "dry_goods" },
-    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Poha (Thick)", "quantity": 2, "unit": "cup", "category": "dry_goods" },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
     { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
     { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce", "notes": "a small sprig" },
     { "name": "Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
@@ -18,7 +18,7 @@
     { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "small, diced" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Sugar", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "notes": "optional" },
     { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
