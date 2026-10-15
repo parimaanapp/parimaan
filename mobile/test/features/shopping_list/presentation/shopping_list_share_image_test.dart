@@ -61,30 +61,26 @@ void main() {
     // to [groupShoppingListItemsByCategory], the SAME function
     // `CategorizedChecklist` (the live screen) calls, so this equality can
     // never drift out of sync with what ships behind it.
-    test(
-      'produces the exact same groups as groupShoppingListItemsByCategory, '
-      'in the same stable order, for a multi-category fixture',
-      () {
-        final List<ShoppingListCategoryGroup> shareGroups =
-            shareImageCategoryGroups(_multiCategoryList);
-        final List<ShoppingListCategoryGroup> liveScreenGroups =
-            groupShoppingListItemsByCategory(_multiCategoryList.toBuy);
+    test('produces the exact same groups as groupShoppingListItemsByCategory, '
+        'in the same stable order, for a multi-category fixture', () {
+      final List<ShoppingListCategoryGroup> shareGroups =
+          shareImageCategoryGroups(_multiCategoryList);
+      final List<ShoppingListCategoryGroup> liveScreenGroups =
+          groupShoppingListItemsByCategory(_multiCategoryList.toBuy);
 
-        expect(shareGroups.length, liveScreenGroups.length);
-        for (int i = 0; i < shareGroups.length; i++) {
-          expect(shareGroups[i].category, liveScreenGroups[i].category);
-          expect(shareGroups[i].items, liveScreenGroups[i].items);
-        }
-        // Concretely: 'grain'/'grains' before 'produce'... no — assert the
-        // real known order this codebase defines: produce, then the
-        // grains-family, then the unknown/other tail.
-        expect(shareGroups.map((g) => g.category).toList(), <String>[
-          'produce',
-          'grains',
-          otherShoppingListCategory,
-        ]);
-      },
-    );
+      expect(shareGroups.length, liveScreenGroups.length);
+      for (int i = 0; i < shareGroups.length; i++) {
+        expect(shareGroups[i].category, liveScreenGroups[i].category);
+        expect(shareGroups[i].items, liveScreenGroups[i].items);
+      }
+      // The defined order: produce, then grain (`grains` is folded onto
+      // `grain`), then the unknown/other tail.
+      expect(shareGroups.map((g) => g.category).toList(), <String>[
+        'produce',
+        'grain',
+        otherShoppingListCategory,
+      ]);
+    });
 
     test('an empty toBuy list produces zero groups', () {
       expect(shareImageCategoryGroups(testEmptyShoppingList), isEmpty);

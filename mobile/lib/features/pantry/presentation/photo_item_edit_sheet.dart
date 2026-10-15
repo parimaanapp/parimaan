@@ -113,63 +113,86 @@ class _PhotoItemEditSheetState extends State<PhotoItemEditSheet> {
 
   @override
   Widget build(BuildContext context) => SafeArea(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.s3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text('Edit item', style: AppTypography.displayM),
-          const SizedBox(height: AppSpacing.s3),
-          PInput(
-            key: PhotoItemEditSheet.nameFieldKey,
-            label: 'Name',
-            controller: _name,
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: AppSpacing.s2),
-          PInput(
-            key: PhotoItemEditSheet.quantityFieldKey,
-            label: 'How many',
-            controller: _quantity,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            useMonoFont: true,
-            helperText: 'Count what you can see — a guess is fine, you can change it later.',
-          ),
-          const SizedBox(height: AppSpacing.s2),
-          Text('Unit', style: AppTypography.label),
-          const SizedBox(height: AppSpacing.s1),
-          Wrap(
-            spacing: AppSpacing.s1,
-            runSpacing: AppSpacing.s1,
-            children: <Widget>[
-              for (final String unit in photoProposalUnits)
-                PChip(
-                  key: PhotoItemEditSheet.unitChipKey(unit),
-                  label: unit,
-                  selected: _unit == unit,
-                  onTap: () => setState(() => _unit = unit),
+    // The fields scroll; Remove / Done are pinned below them so they stay
+    // reachable on a small screen with the keyboard up.
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s3,
+              AppSpacing.s3,
+              AppSpacing.s3,
+              AppSpacing.s2,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text('Edit item', style: AppTypography.displayM),
+                const SizedBox(height: AppSpacing.s3),
+                PInput(
+                  key: PhotoItemEditSheet.nameFieldKey,
+                  label: 'Name',
+                  controller: _name,
+                  onChanged: (_) => setState(() {}),
                 ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.s2),
-          Text('Category', style: AppTypography.label),
-          const SizedBox(height: AppSpacing.s1),
-          Wrap(
-            spacing: AppSpacing.s1,
-            runSpacing: AppSpacing.s1,
-            children: <Widget>[
-              for (final String category in knownPantryCategories)
-                PChip(
-                  key: PhotoItemEditSheet.categoryChipKey(category),
-                  label: pantryCategoryLabel(category),
-                  selected: _category == category,
-                  onTap: () => setState(() => _category = category),
+                const SizedBox(height: AppSpacing.s2),
+                PInput(
+                  key: PhotoItemEditSheet.quantityFieldKey,
+                  label: 'How many',
+                  controller: _quantity,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  useMonoFont: true,
+                  helperText: 'Count what you can see — a guess is fine, you can change it later.',
                 ),
-            ],
+                const SizedBox(height: AppSpacing.s2),
+                Text('Unit', style: AppTypography.label),
+                const SizedBox(height: AppSpacing.s1),
+                Wrap(
+                  spacing: AppSpacing.s1,
+                  runSpacing: AppSpacing.s1,
+                  children: <Widget>[
+                    for (final String unit in photoProposalUnits)
+                      PChip(
+                        key: PhotoItemEditSheet.unitChipKey(unit),
+                        label: unit,
+                        selected: _unit == unit,
+                        onTap: () => setState(() => _unit = unit),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s2),
+                Text('Category', style: AppTypography.label),
+                const SizedBox(height: AppSpacing.s1),
+                Wrap(
+                  spacing: AppSpacing.s1,
+                  runSpacing: AppSpacing.s1,
+                  children: <Widget>[
+                    for (final String category in knownPantryCategories)
+                      PChip(
+                        key: PhotoItemEditSheet.categoryChipKey(category),
+                        label: pantryCategoryLabel(category),
+                        selected: _category == category,
+                        onTap: () => setState(() => _category = category),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.s3),
-          Row(
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s3,
+            0,
+            AppSpacing.s3,
+            AppSpacing.s3,
+          ),
+          child: Row(
             children: <Widget>[
               Expanded(
                 child: PButton(
@@ -191,8 +214,8 @@ class _PhotoItemEditSheetState extends State<PhotoItemEditSheet> {
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 }

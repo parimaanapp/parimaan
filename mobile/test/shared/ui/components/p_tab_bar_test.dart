@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/shared/ui/components/p_tab_bar.dart';
+import 'package:mobile/shared/ui/components/p_tab_glyph.dart';
 import 'package:mobile/shared/ui/tokens.dart';
 
 import '../../../support/component_harness.dart';
 
 const List<PTabBarItem> _items = <PTabBarItem>[
-  PTabBarItem(
-    icon: Icons.home_outlined,
-    activeIcon: Icons.home,
-    label: 'Today',
-  ),
-  PTabBarItem(icon: Icons.grid_view, label: 'Plan'),
-  PTabBarItem(icon: Icons.inventory_2_outlined, label: 'Pantry'),
-  PTabBarItem(icon: Icons.checklist, label: 'List'),
+  PTabBarItem(glyph: PTabGlyph.today, label: 'Today'),
+  PTabBarItem(glyph: PTabGlyph.plan, label: 'Plan'),
+  PTabBarItem(glyph: PTabGlyph.pantry, label: 'Pantry'),
+  PTabBarItem(glyph: PTabGlyph.recipes, label: 'Recipes'),
 ];
 
 Widget _bar({int currentIndex = 0, ValueChanged<int>? onSelect}) => PTabBar(
@@ -22,13 +19,37 @@ Widget _bar({int currentIndex = 0, ValueChanged<int>? onSelect}) => PTabBar(
   onSelect: onSelect ?? (_) {},
 );
 
+PTabGlyphIcon _glyphIcon(WidgetTester tester, int index) =>
+    tester.widget<PTabGlyphIcon>(find.byType(PTabGlyphIcon).at(index));
+
 void main() {
   group('PTabBar', () {
-    testWidgets('renders every item label', (WidgetTester tester) async {
+    testWidgets('renders every item label, in order', (
+      WidgetTester tester,
+    ) async {
       await pumpFullWidth(tester, _bar());
 
-      for (final PTabBarItem item in _items) {
-        expect(find.text(item.label), findsOneWidget);
+      final List<String> labels = find
+          .descendant(
+            of: find.byType(PTabBarTab),
+            matching: find.byType(Text),
+          )
+          .evaluate()
+          .map((Element e) => (e.widget as Text).data!)
+          .toList();
+      expect(labels, <String>['Today', 'Plan', 'Pantry', 'Recipes']);
+    });
+
+    testWidgets('draws its own glyphs, no stock Material icons', (
+      WidgetTester tester,
+    ) async {
+      await pumpFullWidth(tester, _bar());
+
+      expect(find.byType(Icon), findsNothing);
+      expect(find.byType(PTabGlyphIcon), findsNWidgets(_items.length));
+      for (int i = 0; i < _items.length; i++) {
+        expect(_glyphIcon(tester, i).glyph, _items[i].glyph);
+        expect(_glyphIcon(tester, i).size, AppSizing.icon20);
       }
     });
 
@@ -42,13 +63,14 @@ void main() {
       expect(selected, <int>[2]);
     });
 
-    testWidgets('every tab clears the min touch target', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('the bar is the scaled 48 high and every tab clears the '
+        'touch target', (WidgetTester tester) async {
       await pumpFullWidth(tester, _bar());
 
-      final Iterable<Element> tabs = find.byType(PTabBarTab).evaluate();
-      expect(tabs.length, _items.length);
+      expect(
+        tester.getSize(find.byType(PTabBarTab).first).height,
+        greaterThanOrEqualTo(AppSizing.tabBarHeight),
+      );
       for (int i = 0; i < _items.length; i++) {
         final Size size = tester.getSize(find.byType(PTabBarTab).at(i));
         expect(
@@ -59,31 +81,20 @@ void main() {
       }
     });
 
-    testWidgets('the active tab is marked by weight and icon, not colour '
-        'alone', (WidgetTester tester) async {
+    testWidgets('active is ink and semibold, inactive is inkMid and regular', (
+      WidgetTester tester,
+    ) async {
       await pumpFullWidth(tester, _bar(currentIndex: 0));
 
       final Text active = tester.widget<Text>(find.text('Today'));
       final Text inactive = tester.widget<Text>(find.text('Plan'));
 
       expect(active.style!.color, AppColors.ink);
-      expect(inactive.style!.color, AppColors.inkMid);
-      expect(
-        active.style!.fontWeight,
-        isNot(inactive.style!.fontWeight),
-        reason: 'weight must differentiate the active tab independently of hue',
-      );
-      // Duotone icons are allowed ONLY here — the active tab swaps glyph.
-      expect(find.byIcon(Icons.home), findsOneWidget);
-      expect(find.byIcon(Icons.home_outlined), findsNothing);
-    });
-
-    testWidgets('falls back to the single icon when no active glyph is given', (
-      WidgetTester tester,
-    ) async {
-      await pumpFullWidth(tester, _bar(currentIndex: 1));
-
-      expect(find.byIcon(Icons.grid_view), findsOneWidget);
+      expect(active.style!.fontWeight, FontWeight.w600);
+      expect(inactive.style!.color, AppColors.inkSoft);
+      expect(inactive.style!.fontWeight, FontWeight.w400);
+      expect(_glyphIcon(tester, 0).color, AppColors.ink);
+      expect(_glyphIcon(tester, 1).color, AppColors.inkMid);
     });
 
     testWidgets('exposes selection to screen readers', (
@@ -99,15 +110,6 @@ void main() {
       });
     });
 
-    testWidgets('renders icons at the nav size', (WidgetTester tester) async {
-      await pumpFullWidth(tester, _bar());
-
-      expect(
-        tester.widget<Icon>(find.byIcon(Icons.grid_view)).size,
-        AppSizing.icon24,
-      );
-    });
-
     testWidgets('rejects an out-of-range index', (WidgetTester tester) async {
       expect(
         () => PTabBar(items: _items, currentIndex: 9, onSelect: (_) {}),
@@ -119,7 +121,7 @@ void main() {
       expect(
         () => PTabBar(
           items: const <PTabBarItem>[
-            PTabBarItem(icon: Icons.home, label: 'Today'),
+            PTabBarItem(glyph: PTabGlyph.today, label: 'Today'),
           ],
           currentIndex: 0,
           onSelect: (_) {},

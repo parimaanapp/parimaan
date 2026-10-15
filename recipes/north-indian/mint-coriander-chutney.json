@@ -13,10 +13,10 @@
     { "name": "Mint Leaves", "quantity": 0.5, "unit": "bunch", "category": "produce" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
     { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
-    { "name": "Roasted Chana Dal", "quantity": 2, "unit": "tbsp", "category": "dal", "notes": "for body and a thicker texture" },
-    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Roasted Chana Dal", "quantity": 2, "unit": "tbsp", "category": "dry_goods", "notes": "for body and a thicker texture" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Sugar", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "notes": "optional, to balance the tang" },
-    { "name": "Water", "quantity": 3, "unit": "tbsp", "category": "other", "notes": "approximate, for blending" }
+    { "name": "Water", "quantity": 3, "unit": "tbsp", "category": "beverages", "notes": "approximate, for blending" }
   ],
   "steps": [
     "Wash the coriander and mint leaves thoroughly and roughly chop.",

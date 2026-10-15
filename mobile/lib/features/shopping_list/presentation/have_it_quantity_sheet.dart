@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
+import '../../../shared/ui/radius.dart';
+import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_item.dart';
@@ -131,12 +133,9 @@ class _HaveItQuantitySheetState extends State<HaveItQuantitySheet> {
   @override
   Widget build(BuildContext context) {
     final String? unit = widget.item.unit;
-    final String label = (unit == null || unit.isEmpty)
-        ? 'Quantity'
-        : 'Quantity ($unit)';
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: AppSpacing.s3,
           right: AppSpacing.s3,
@@ -147,27 +146,36 @@ class _HaveItQuantitySheetState extends State<HaveItQuantitySheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(
-              'Have it — ${widget.item.name}',
-              style: AppTypography.title.copyWith(color: AppColors.ink),
+            // Wireframe 10.3: serif question, one line of consequence, a
+            // right-aligned mono quantity with its (canonical) unit beside
+            // it, and an affirmative confirm.
+            Semantics(
+              header: true,
+              child: Text(
+                'How much of ${widget.item.name}?',
+                style: AppTypography.title.copyWith(color: AppColors.ink),
+              ),
             ),
-            const SizedBox(height: AppSpacing.s1),
+            const SizedBox(height: AppSpacing.s0),
             Text(
-              'How much did you get? Defaults to what the list called for — '
-              'edit it if you bought a different amount.',
+              'Moves to pantry, drops off the list',
               style: AppTypography.label.copyWith(color: AppColors.inkMid),
             ),
             const SizedBox(height: AppSpacing.s3),
             PInput(
               key: HaveItQuantitySheet.quantityFieldKey,
-              label: label,
+              label: 'Quantity',
               controller: _quantity,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               useMonoFont: true,
+              textAlign: TextAlign.end,
               enabled: !_isBusy,
               onChanged: (_) => setState(() {}),
+              trailing: (unit == null || unit.isEmpty)
+                  ? null
+                  : _UnitChip(unit: unit),
             ),
             if (_errorMessage != null) ...<Widget>[
               const SizedBox(height: AppSpacing.s2),
@@ -195,6 +203,7 @@ class _HaveItQuantitySheetState extends State<HaveItQuantitySheet> {
                   child: PButton(
                     key: HaveItQuantitySheet.confirmButtonKey,
                     label: 'Have it',
+                    icon: Icons.check,
                     variant: PButtonVariant.affirmative,
                     isLoading: _isBusy,
                     onPressed: (_isBusy || !_isValid) ? null : _confirm,
@@ -207,4 +216,33 @@ class _HaveItQuantitySheetState extends State<HaveItQuantitySheet> {
       ),
     );
   }
+}
+
+/// The item's canonical unit, shown beside the quantity. Read-only: the list
+/// is aggregated in one unit and `haveIt` takes a quantity only.
+class _UnitChip extends StatelessWidget {
+  const _UnitChip({required this.unit});
+
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(
+      minWidth: AppSizing.minTouchTargetWidth,
+      minHeight: AppSizing.minTouchTargetHeight,
+      maxWidth: 96,
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2),
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      borderRadius: AppRadius.borderM,
+      border: Border.all(color: AppColors.ink.withValues(alpha: 0.15)),
+    ),
+    child: Text(
+      unit,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppTypography.label.copyWith(color: AppColors.ink),
+    ),
+  );
 }

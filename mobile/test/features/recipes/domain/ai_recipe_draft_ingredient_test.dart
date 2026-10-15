@@ -46,6 +46,14 @@ void main() {
       );
     });
 
+    test('isStaple defaults to false and participates in equality', () {
+      expect(_base.isStaple, isFalse);
+      expect(
+        _base,
+        isNot(const AiRecipeDraftIngredient(raw: '1 cup rajma', name: 'Rajma', quantity: 1, unit: 'cup', isStaple: true)),
+      );
+    });
+
     test('differing only in raw is not equal', () {
       expect(
         _base,

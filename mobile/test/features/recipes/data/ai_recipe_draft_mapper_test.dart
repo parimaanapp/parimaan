@@ -93,6 +93,31 @@ void main() {
       expect(result.ingredients, isEmpty);
     });
 
+    test('maps isStaple from the draft ingredient, treating null as false', () {
+      GRecipeDraftFieldsData_ingredients ingredient(String name, bool? isStaple) =>
+          GRecipeDraftFieldsData_ingredients(
+            (GRecipeDraftFieldsData_ingredientsBuilder ib) => ib
+              ..raw = name
+              ..name = name
+              ..isStaple = isStaple,
+          );
+
+      final result = aiRecipeDraftFromGraphQL(
+        _data(
+          ingredients: <GRecipeDraftFieldsData_ingredients>[
+            ingredient('salt', true),
+            ingredient('onion', false),
+            ingredient('cumin', null),
+          ],
+        ),
+      );
+
+      expect(
+        result.ingredients.map((i) => i.isStaple).toList(),
+        <bool>[true, false, false],
+      );
+    });
+
     test('maps a warnings-free draft to an empty (not null) list', () {
       final result = aiRecipeDraftFromGraphQL(_data());
       expect(result.warnings, isNotNull);

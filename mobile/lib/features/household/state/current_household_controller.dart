@@ -113,23 +113,38 @@ currentHouseholdControllerProvider =
 final Provider<Household?> activeHouseholdProvider = Provider<Household?>((
   Ref ref,
 ) {
-  final Household? joined = ref
-      .watch(joinHouseholdControllerProvider)
-      .valueOrNull;
-  if (joined != null) {
+  final AsyncValue<List<Household>> me = ref.watch(
+    meHouseholdsControllerProvider,
+  );
+  final List<Household>? households = me.valueOrNull;
+
+  // Defence in depth (A9): a session-scoped household is only trusted when
+  // the server's list for the *current* user confirms membership. While that
+  // list is loading or unavailable it cannot be checked, and sign-out /
+  // signed-in-user change have already cleared the session providers.
+  final bool verifiable = households != null && !me.isLoading;
+  bool trusted(Household candidate) =>
+      !verifiable || households.any((Household h) => h.id == candidate.id);
+
+  // A rebuilding (invalidated) notifier keeps its previous value while
+  // loading; that previous value may belong to another user, so ignore it.
+  final AsyncValue<Household?> joinState = ref.watch(
+    joinHouseholdControllerProvider,
+  );
+  final Household? joined = joinState.isLoading ? null : joinState.valueOrNull;
+  if (joined != null && trusted(joined)) {
     return joined;
   }
 
-  final Household? created = ref
-      .watch(householdWizardControllerProvider)
-      .valueOrNull
-      ?.household;
-  if (created != null) {
+  final AsyncValue<HouseholdWizardData> wizardState = ref.watch(
+    householdWizardControllerProvider,
+  );
+  final Household? created = wizardState.isLoading
+      ? null
+      : wizardState.valueOrNull?.household;
+  if (created != null && trusted(created)) {
     return created;
   }
 
-  final List<Household>? households = ref
-      .watch(meHouseholdsControllerProvider)
-      .valueOrNull;
   return households == null || households.isEmpty ? null : households.first;
 });

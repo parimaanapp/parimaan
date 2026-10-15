@@ -233,7 +233,6 @@ class _DietaryChipGroup extends StatelessWidget {
           key: DietaryAllergensScreen.tagKey(tag),
           label: tag.displayLabel,
           selected: selected.contains(tag),
-          showSelectedGlyph: false,
           onTap: onToggle == null ? null : () => onToggle!(tag),
         ),
     ],

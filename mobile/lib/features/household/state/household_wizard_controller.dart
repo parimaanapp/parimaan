@@ -5,6 +5,7 @@ import '../data/household_repository.dart';
 import '../domain/cuisine_taxonomy.dart';
 import '../domain/dietary_tag.dart';
 import '../domain/household.dart';
+import 'me_households_controller.dart';
 import '../domain/household_settings_patch.dart';
 import '../domain/meal_structure.dart';
 import '../domain/meal_type.dart';
@@ -81,8 +82,10 @@ class HouseholdWizardController extends AsyncNotifier<HouseholdWizardData> {
   /// mutation already has a controller, and duplicating it here would give the
   /// app two code paths that can create a household. This is the hand-off
   /// between the two.
-  void adoptHousehold(Household household) =>
-      _updateDraft((HouseholdWizardData d) => d.copyWith(household: household));
+  void adoptHousehold(Household household) {
+    _updateDraft((HouseholdWizardData d) => d.copyWith(household: household));
+    ref.invalidate(meHouseholdsControllerProvider);
+  }
 
   /// Replaces the whole draft with [household]'s **stored** settings.
   ///

@@ -11,12 +11,12 @@
   "ingredients": [
     { "name": "Potato", "quantity": 3, "unit": "piece", "category": "produce", "notes": "medium, cut into cubes" },
     { "name": "Cauliflower", "quantity": 1, "unit": "piece", "category": "produce", "notes": "medium head, cut into florets" },
-    { "name": "Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
     { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Coriander Powder", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
   ],

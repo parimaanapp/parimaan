@@ -9,11 +9,11 @@ enum PBadgeTone { neutral, success, warning, danger, info, accent }
 /// A small, non-interactive status or count indicator.
 ///
 /// **Provenance.** The design source has no section called "badge"; the
-/// closest thing it draws is the "AI suggests" pill on the confirm-before-write
-/// modal — a `radius.r-full` pill carrying tracked all-caps `meta` type on a
-/// tinted surface. That pill is the spec this component generalises, which is
-/// why the default is uppercase meta type in a pill rather than, say, a
-/// Material-style numeric dot.
+/// closest thing it draws is a `radius.r-full` pill carrying tracked all-caps
+/// `meta` type on a tinted surface. That pill is the spec this component
+/// generalises, which is why the default is uppercase meta type in a pill
+/// rather than, say, a Material-style numeric dot. The AI proposal marker is
+/// its own fixed-copy component, [PAiBadge], below.
 ///
 /// A badge is **status, never a control**: it takes no callback, and nothing
 /// here is tappable. If it needs to be pressed it is a [PChip] or a
@@ -128,9 +128,51 @@ _PBadgeColors _colorsFor(PBadgeTone tone) {
         foreground: AppColors.paper,
       );
     case PBadgeTone.accent:
+      // terracottaDeep keeps the small caps label above 4.5:1.
       return const _PBadgeColors(
-        background: AppColors.terracotta,
+        background: AppColors.terracottaDeep,
         foreground: AppColors.paper,
       );
   }
+}
+
+/// The "◆ AI proposal" pill: a soft-haldi, mono all-caps badge marking a value
+/// the AI proposed and the user has not yet touched (wireframe v2 `ai` style).
+///
+/// Status only, like [PBadge]; its copy is fixed so every AI surface in the
+/// app reads identically.
+class PAiBadge extends StatelessWidget {
+  const PAiBadge({super.key});
+
+  /// Spoken label; the diamond is decoration.
+  static const String semanticLabel = 'AI proposal';
+
+  /// Visible copy.
+  static const String text = '◆ AI PROPOSAL';
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: semanticLabel,
+    child: ExcludeSemantics(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.haldiSoft,
+          borderRadius: AppRadius.borderFull,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s1,
+          vertical: AppSpacing.s0,
+        ),
+        child: Text(
+          text,
+          style: AppTypography.mono.copyWith(
+            fontSize: AppTypography.meta.fontSize,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.08 * AppTypography.meta.fontSize!,
+            color: AppColors.haldiSoftForeground,
+          ),
+        ),
+      ),
+    ),
+  );
 }

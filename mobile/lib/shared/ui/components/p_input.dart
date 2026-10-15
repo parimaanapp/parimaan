@@ -89,6 +89,15 @@ class PInput extends StatelessWidget {
   final int minLines;
   final int maxLines;
 
+  /// Key of the focus-ring [DecoratedBox] around the field box.
+  static const Key focusRingKey = Key('p-input-focus-ring');
+
+  /// Focused border width (wireframe: 1.5 px terracotta).
+  static const double _focusedBorderWidth = 1.5;
+
+  /// Spread of the focus ring outside the border (wireframe: 3 px).
+  static const double _focusRingSpread = 3;
+
   bool get _hasError => errorText != null;
 
   @override
@@ -113,26 +122,62 @@ class PInput extends StatelessWidget {
       decoration: _decoration(),
     );
 
+    // The ring hugs the text field box only, never the row's trailing slot.
+    final Widget ringed = _FocusRing(isError: _hasError, child: field);
+    final Widget box = trailing == null
+        ? ringed
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Expanded(child: ringed),
+              const SizedBox(width: AppSpacing.s1),
+              trailing!,
+            ],
+          );
+
+    final String? message = _hasError ? errorText : helperText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(
-          label,
-          style: AppTypography.label.copyWith(color: AppColors.inkSoft),
+        // Visual only: the field node carries the original-case label.
+        ExcludeSemantics(
+          child: Text(
+            label.toUpperCase(),
+            style: AppTypography.mono.copyWith(
+              // inkSoft, not inkMid: text must clear 4.5:1 (inkMid is for
+              // non-text strokes and placeholders).
+              color: AppColors.inkSoft,
+              fontWeight: FontWeight.w600,
+              fontSize: AppTypography.meta.fontSize,
+              letterSpacing: 0.12 * AppTypography.meta.fontSize!,
+            ),
+          ),
         ),
         const SizedBox(height: AppSpacing.s0),
-        if (trailing == null)
-          field
-        else
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Expanded(child: field),
-              const SizedBox(width: AppSpacing.s1),
-              trailing!,
-            ],
+        // One semantics node for the field: original-case label, with the
+        // helper or error message as its hint so it is read with the field.
+        Semantics(
+          label: label,
+          hint: message,
+          child: box,
+        ),
+        if (message != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.s0),
+          // The message is already in the field's hint; an error is also a
+          // live region so it is announced the moment it appears.
+          Semantics(
+            liveRegion: _hasError,
+            excludeSemantics: !_hasError,
+            child: Text(
+              message,
+              style: AppTypography.label.copyWith(
+                color: _hasError ? AppColors.danger : AppColors.inkSoft,
+              ),
+            ),
           ),
+        ],
       ],
     );
   }
@@ -140,10 +185,8 @@ class PInput extends StatelessWidget {
   InputDecoration _decoration() => InputDecoration(
     hintText: hintText,
     hintStyle: AppTypography.body.copyWith(color: AppColors.inkMid),
-    helperText: _hasError ? null : helperText,
-    helperStyle: AppTypography.label.copyWith(color: AppColors.inkMid),
-    errorText: errorText,
-    errorStyle: AppTypography.label.copyWith(color: AppColors.danger),
+    // Helper and error copy render below the field box (see [build]) so the
+    // focus ring hugs the box itself, not the message.
     filled: true,
     fillColor: enabled ? AppColors.card : AppColors.paper2,
     isDense: false,
@@ -161,23 +204,21 @@ class PInput extends StatelessWidget {
       horizontal: AppSpacing.s2,
       vertical: AppSpacing.s2,
     ),
-    border: _border(AppColors.inkMid),
-    enabledBorder: _border(AppColors.inkMid),
+    // `errorText` is not passed to the decoration, so the framework never
+    // selects an error border; the danger colour is chosen here instead.
+    border: _border(AppColors.outlineSoft),
+    enabledBorder: _hasError
+        ? _border(AppColors.danger)
+        : _border(AppColors.outlineSoft),
     disabledBorder: _border(AppColors.paper2),
-    focusedBorder: _border(AppColors.terracotta),
-    errorBorder: _border(AppColors.danger),
-    // Default width, same as errorBorder — the design source has no
-    // focused+error example to check against, and AppSizing.focusRingWidth
-    // is reserved for the haldi keyboard-focus ring elsewhere in this file
-    // set (see PButton._side), not for a danger-coloured border. Keeping
-    // this state a predictable composition of its two independent parts
-    // (danger colour, default width) rather than inventing a third look.
-    focusedErrorBorder: _border(AppColors.danger),
+    focusedBorder: _hasError
+        ? _border(AppColors.danger)
+        : _border(AppColors.terracotta, _focusedBorderWidth),
   );
 
   /// Field borders use [AppRadius.m] — `radius.r-m` is the token whose stated
-  /// usage is "buttons, inputs". (The design source's HTML draws them at 10px,
-  /// which is not on the radius scale at all; the token wins.)
+  /// usage is "buttons, inputs". (The wireframe draws them at 10px, which is
+  /// not on the radius scale at all; the token wins.)
   OutlineInputBorder _border(Color color, [double? width]) =>
       OutlineInputBorder(
         borderRadius: AppRadius.borderM,
@@ -185,4 +226,44 @@ class PInput extends StatelessWidget {
             ? BorderSide(color: color)
             : BorderSide(color: color, width: width),
       );
+}
+
+/// Draws the wireframe's 3px terracotta@12% (danger@12% in error) ring around
+/// its child while a descendant holds focus. The ring is a paint-only shadow
+/// outside the box, so it needs 3px of room inside any scroll view's padding.
+class _FocusRing extends StatelessWidget {
+  const _FocusRing({required this.child, required this.isError});
+
+  final Widget child;
+
+  /// The ring takes the danger wash while the field is in error.
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) => Focus(
+    canRequestFocus: false,
+    skipTraversal: true,
+    child: Builder(
+      builder: (BuildContext context) {
+        final bool focused = Focus.of(context).hasFocus;
+        return DecoratedBox(
+          key: PInput.focusRingKey,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.borderM,
+            boxShadow: focused
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: isError
+                          ? AppColors.dangerRing
+                          : AppColors.terracottaRing,
+                      spreadRadius: PInput._focusRingSpread,
+                    ),
+                  ]
+                : null,
+          ),
+          child: child,
+        );
+      },
+    ),
+  );
 }

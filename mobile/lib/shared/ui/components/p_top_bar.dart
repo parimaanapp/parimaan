@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../tokens.dart';
 import 'p_back_chevron.dart';
+import 'p_top_bar_layout.dart';
 
 /// The screen header from the design source's *Mobile app shell*.
 ///
-/// Anatomy, top to bottom: a control row (optional back affordance on the
-/// left, optional [trailing] action on the right), then the screen title in
-/// Instrument Serif at `display-m`, then an optional meta [subtitle].
+/// Anatomy: one row with the optional back affordance at the left edge, the
+/// screen title **centred** in Instrument Serif at `display-m` (the wireframe's
+/// centred title, scaled), and an optional [trailing] action at the right
+/// edge; then an optional centred meta [subtitle] beneath.
 ///
-/// **Note on the title's alignment.** The title is left-aligned, not centred:
-/// that is what the design source draws (a large serif title sitting under the
-/// control row, not a centred iOS-style navigation title). Anything centred
-/// here would fight the 28pt type at narrow widths.
+/// The title is centred on the bar with the wider of the leading and trailing
+/// controls (plus a gap) reserved on both sides, wraps within what remains, and
+/// never overlaps a control. When fewer than 120 px would remain it falls back
+/// to a start-aligned title between the two controls. See [PTopBarLayout].
 ///
 /// This is a plain widget, not a [PreferredSizeWidget] — its height depends on
 /// whether a subtitle is present and on the user's text scale, so it is meant
@@ -55,7 +57,8 @@ class PTopBar extends StatelessWidget {
   /// Optional trailing action, usually a [PIconButton].
   final Widget? trailing;
 
-  bool get _hasControlRow => onBack != null || trailing != null;
+  /// Below this width the centred title falls back to start alignment.
+  static const double _minTitleWidth = 120;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -66,34 +69,35 @@ class PTopBar extends StatelessWidget {
       AppSpacing.s3,
     ),
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        if (_hasControlRow)
-          Row(
-            children: <Widget>[
-              if (onBack != null)
-                PTopBarBackButton(
+        PTopBarLayout(
+          gap: AppSpacing.s1,
+          minTitleWidth: _minTitleWidth,
+          minHeight: AppSizing.minTouchTargetHeight,
+          leading: onBack == null
+              ? const SizedBox.shrink()
+              : PTopBarBackButton(
                   glyph: backGlyph,
                   semanticLabel: backSemanticLabel!,
                   onPressed: onBack,
                 ),
-              const Spacer(),
-              ?trailing,
-            ],
+          title: Semantics(
+            header: true,
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: AppTypography.displayM.copyWith(color: AppColors.ink),
+            ),
           ),
-        const SizedBox(height: AppSpacing.s1),
-        Semantics(
-          header: true,
-          child: Text(
-            title,
-            style: AppTypography.displayM.copyWith(color: AppColors.ink),
-          ),
+          trailing: trailing ?? const SizedBox.shrink(),
         ),
         if (subtitle != null) ...<Widget>[
           const SizedBox(height: AppSpacing.s0),
           Text(
             subtitle!,
+            textAlign: TextAlign.center,
             style: AppTypography.label.copyWith(color: AppColors.inkMid),
           ),
         ],

@@ -10,12 +10,12 @@
   "role": "accompaniment",
   "ingredients": [
     { "name": "Potato", "quantity": 4, "unit": "piece", "category": "produce", "notes": "boiled, peeled, and cut into cubes" },
-    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
     { "name": "Cumin Seeds", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Amchur (Dry Mango Powder)", "quantity": 0.5, "unit": "tsp", "category": "spice" },
-    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Dry Mango Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
   ],
   "steps": [

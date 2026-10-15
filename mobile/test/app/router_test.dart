@@ -522,7 +522,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(PTabBar), findsOneWidget);
-      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
       expect(find.text('Plan'), findsOneWidget);
       expect(find.text('Pantry'), findsOneWidget);
       expect(find.text('Recipes'), findsOneWidget);
@@ -1417,7 +1417,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Home'));
+      await tester.tap(find.text('Today'));
       // `pump`, not `pumpAndSettle` — same reason as this test's own
       // initial navigation to /home: `TodayScreen`'s spinner never settles
       // with no household data stubbed in this harness.
@@ -1453,7 +1453,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Home'));
+      await tester.tap(find.text('Today'));
       await tester.pump();
       expect(_location(router), AppRoutes.home);
     });
@@ -1490,7 +1490,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Home'));
+      await tester.tap(find.text('Today'));
       // `pump`, not `pumpAndSettle` — same reason as this test's own
       // initial navigation to /home: `TodayScreen`'s spinner never settles
       // with no household data stubbed in this harness.
