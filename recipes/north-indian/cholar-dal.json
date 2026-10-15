@@ -1,0 +1,121 @@
+{
+  "title": "Cholar Dal",
+  "description": "Bengali chana dal sweetened gently and studded with coconut pieces, tempered with whole spices and ghee.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 40,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Chana Dal",
+      "quantity": 200,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Sugar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut (Fresh)",
+      "quantity": 40,
+      "unit": "g",
+      "category": "produce",
+      "notes": "cut into thin slivers"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Ginger Paste",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Cumin Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Soak the chana dal for 30 minutes, then pressure-cook with turmeric, salt and 3 cups of water for 4 whistles until tender but whole.",
+    "Heat 1 tbsp ghee in a pan, add the coconut slivers and fry until lightly golden; remove and set aside.",
+    "In the same pan add the remaining ghee, cumin seeds, dried red chilli, bay leaf, cinnamon, cardamom and cloves.",
+    "Add the ginger paste and cumin powder, stir for 30 seconds, then add the cooked dal with its liquid.",
+    "Add the sugar and half of the fried coconut, and simmer for 10 minutes until slightly thick.",
+    "Finish with garam masala and the remaining coconut on top."
+  ]
+}
