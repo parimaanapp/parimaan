@@ -87,6 +87,11 @@ export interface TargetInfo {
   readonly userPoolId: string;
   readonly userPoolName: string;
   readonly dbHost: string;
+  readonly dbName: string;
+  readonly region: string;
+  readonly uploadsBucket: string;
+  readonly exportsBucket: string;
+  readonly cacheTable: string;
 }
 
 /** Resolves and verifies the target; must throw (fail closed) on any mismatch. */

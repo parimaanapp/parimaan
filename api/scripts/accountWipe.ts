@@ -20,6 +20,7 @@ import { createCacheStore, createIdentityPool, createObjectStore } from '../src/
 import { loadWipeConfig, parseCliArgs } from '../src/accountWipe/cli.js';
 import { formatFullListing, formatReport } from '../src/accountWipe/formatReport.js';
 import { RDS_GLOBAL_BUNDLE_CA } from '../src/db/rdsGlobalBundleCa.js';
+import { assertConnectedHost, buildPgConfig, readCurrentDatabase } from '../src/accountWipe/connection.js';
 import { createPgWipeDb } from '../src/accountWipe/pgWipeDb.js';
 import { runWipe } from '../src/accountWipe/runWipe.js';
 import { createTargetVerifier } from '../src/accountWipe/target.js';
@@ -28,17 +29,11 @@ const main = async (): Promise<void> => {
   const options = parseCliArgs(process.argv.slice(2), (path) => readFileSync(path, 'utf8'));
   const config = loadWipeConfig(process.env);
 
-  const pg = new Client({
-    connectionString: config.databaseUrl,
-    ssl: {
-      rejectUnauthorized: true,
-      ca: RDS_GLOBAL_BUNDLE_CA,
-      // For an SSM port-forward the URL host is localhost; verify the certificate against the real RDS host.
-      ...(config.dbServername !== undefined ? { servername: config.dbServername } : {}),
-    },
-  });
+  // Explicit parts only, never a connection string (its parameters would override these).
+  const pg = new Client(buildPgConfig(config, RDS_GLOBAL_BUNDLE_CA));
   await pg.connect();
   try {
+    assertConnectedHost(pg, config.database.host);
     const region = { region: config.region };
     const cognitoClient = new CognitoIdentityProviderClient(region);
     const outcome = await runWipe(
@@ -48,6 +43,13 @@ const main = async (): Promise<void> => {
           cognito: cognitoClient,
           userPoolId: config.userPoolId,
           dbHost: config.dbHost,
+          dbName: () => readCurrentDatabase(pg),
+          resources: {
+            region: config.region,
+            uploadsBucket: config.uploadsBucket,
+            exportsBucket: config.exportsBucket,
+            cacheTable: config.cacheTable,
+          },
           expected: config.expected,
         }),
         db: createPgWipeDb(pg),

@@ -25,6 +25,11 @@ export const FAKE_TARGET: TargetInfo = {
   userPoolId: 'pool-1',
   userPoolName: 'parimaan-dev',
   dbHost: 'db.dev.rds.test',
+  dbName: 'parimaan',
+  region: 'ap-south-1',
+  uploadsBucket: 'uploads-bucket',
+  exportsBucket: 'exports-bucket',
+  cacheTable: 'cache-dev',
 };
 
 export const emptyListing = (emails: readonly string[]): WipeListing => ({

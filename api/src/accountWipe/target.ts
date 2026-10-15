@@ -7,6 +7,15 @@ export interface ExpectedTarget {
   readonly accountId: string;
   readonly poolName: string;
   readonly dbHost: string;
+  readonly dbName: string;
+}
+
+/** The resources the run is configured to touch; verified by the caller's wiring and hashed. */
+export interface WipeResources {
+  readonly region: string;
+  readonly uploadsBucket: string;
+  readonly exportsBucket: string;
+  readonly cacheTable: string;
 }
 
 export interface TargetVerifierOptions {
@@ -15,6 +24,9 @@ export interface TargetVerifierOptions {
   readonly userPoolId: string;
   /** The host the database connection really terminates at (TLS-verified). */
   readonly dbHost: string;
+  /** Reads `SELECT current_database()` on the live connection. */
+  readonly dbName: () => Promise<string>;
+  readonly resources: WipeResources;
   readonly expected: ExpectedTarget;
 }
 
@@ -49,11 +61,20 @@ export const createTargetVerifier = (options: TargetVerifierOptions): TargetVeri
       );
     }
 
+    const dbName = await options.dbName();
+    if (dbName !== options.expected.dbName) {
+      throw new Error(
+        `Refusing to run: connected database name "${dbName}" is not the expected name "${options.expected.dbName}".`,
+      );
+    }
+
     return {
       accountId,
       userPoolId: options.userPoolId,
       userPoolName,
       dbHost: options.dbHost,
+      dbName,
+      ...options.resources,
     };
   },
 });

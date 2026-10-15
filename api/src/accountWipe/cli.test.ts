@@ -73,6 +73,7 @@ describe('loadWipeConfig', () => {
     WIPE_EXPECTED_ACCOUNT_ID: '123456789012',
     WIPE_EXPECTED_POOL_NAME: 'parimaan-dev',
     WIPE_EXPECTED_DB_HOST: 'db.dev.rds.test',
+    WIPE_EXPECTED_DB_NAME: 'parimaan',
     WIPE_DATABASE_SERVERNAME: 'db.dev.rds.test',
   };
 
@@ -92,7 +93,12 @@ describe('loadWipeConfig', () => {
   });
 
   it('has no default for the expected account, pool name or db host (fail closed)', () => {
-    for (const name of ['WIPE_EXPECTED_ACCOUNT_ID', 'WIPE_EXPECTED_POOL_NAME', 'WIPE_EXPECTED_DB_HOST']) {
+    for (const name of [
+      'WIPE_EXPECTED_ACCOUNT_ID',
+      'WIPE_EXPECTED_POOL_NAME',
+      'WIPE_EXPECTED_DB_HOST',
+      'WIPE_EXPECTED_DB_NAME',
+    ]) {
       expect(() => loadWipeConfig({ ...base, [name]: undefined })).toThrow(name);
       expect(() => loadWipeConfig({ ...base, [name]: '' })).toThrow(name);
     }
@@ -108,6 +114,76 @@ describe('loadWipeConfig', () => {
       accountId: '123456789012',
       poolName: 'parimaan-dev',
       dbHost: 'db.dev.rds.test',
+      dbName: 'parimaan',
+    });
+  });
+
+  describe('connection URL hardening (N1)', () => {
+    const vectors = [
+      '?host=other.example',
+      '?hostaddr=10.0.0.1',
+      '?ssl=0',
+      '?sslmode=disable',
+      '?sslrootcert=/tmp/ca.pem',
+      '?port=5433',
+      '?options=-c%20search_path%3Devil',
+      '?uselibpqcompat=true',
+      '?application_name=x',
+    ];
+    it.each(vectors)('rejects a query string (%s) without echoing credentials', (query) => {
+      const url = `postgres://u:secretpw@localhost:5432/parimaan${query}`;
+      try {
+        loadWipeConfig({ ...base, WIPE_DATABASE_URL: url });
+        throw new Error('should have thrown');
+      } catch (error) {
+        expect((error as Error).message).toMatch(/query/i);
+        expect((error as Error).message).not.toContain('secretpw');
+      }
+    });
+
+    it('rejects a bare "?" and a fragment', () => {
+      expect(() =>
+        loadWipeConfig({ ...base, WIPE_DATABASE_URL: 'postgres://u:p@localhost:5432/parimaan?' }),
+      ).toThrow(/query/i);
+      expect(() =>
+        loadWipeConfig({ ...base, WIPE_DATABASE_URL: 'postgres://u:p@localhost:5432/parimaan#x' }),
+      ).toThrow(/fragment/i);
+    });
+
+    it('rejects a non-postgres scheme', () => {
+      expect(() =>
+        loadWipeConfig({ ...base, WIPE_DATABASE_URL: 'http://u:p@localhost:5432/parimaan' }),
+      ).toThrow(/postgres/);
+    });
+
+    it('requires a database name in the URL', () => {
+      expect(() =>
+        loadWipeConfig({ ...base, WIPE_DATABASE_URL: 'postgres://u:p@localhost:5432' }),
+      ).toThrow(/database name/);
+    });
+
+    it('exposes the parsed connection parts and never the raw URL', () => {
+      const config = loadWipeConfig({
+        ...base,
+        WIPE_DATABASE_URL: 'postgres://adm%40in:p%2Fw@localhost:6543/parimaan',
+      });
+      expect(config.database).toEqual({
+        host: 'localhost',
+        port: 6543,
+        user: 'adm@in',
+        password: 'p/w',
+        name: 'parimaan',
+      });
+      expect('databaseUrl' in config).toBe(false);
+    });
+
+    it('defaults the port to 5432', () => {
+      expect(loadWipeConfig(base).database.port).toBe(5432);
+    });
+
+    it('refuses ambient libpq PG* environment variables that pg would fall back to', () => {
+      expect(() => loadWipeConfig({ ...base, PGOPTIONS: '-c search_path=evil' })).toThrow(/PGOPTIONS/);
+      expect(() => loadWipeConfig({ ...base, PGSSLMODE: 'disable' })).toThrow(/PGSSLMODE/);
     });
   });
 
