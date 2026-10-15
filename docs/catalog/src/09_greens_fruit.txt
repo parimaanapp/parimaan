@@ -1,0 +1,40 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## leafy_herb
+Ambadi Leaves | ambadi bhaji; pundi palya; gongura green; mesta |  | 
+Pui Shak | malabar spinach; pui; poi bhaji; basale soppu; basale; vallicheera |  | 
+Kalmi Shak | water spinach; kalmi saag; kangkong; vallarai; tuti kura |  | 
+Lal Shak | red spinach; red amaranth; chauli bhaji; tambdi bhaji; sivappu keerai |  | 
+Shorshe Shak | mustard greens bengali; sarson saag fresh; sarsoon |  | 
+Arai Keerai | arakeerai; amaranth tamil; thotakura green |  | 
+Vallarai Keerai | brahmi leaves; centella; ondelaga; mandukaparni; brahmi bhaji |  | 
+Cheera (Amaranth) | cheera thoran; thandu cheera; chorai |  | 
+Sorrel (Ambat Chuka) | ambat chuka; ambadi chuka; gogu; khatti bhaji |  | 
+Neem Leaves | neem; neem patta; kadu limbu; veppilai; vepa aaku; bevu |  | 
+Tulsi Leaves | tulasi; thulasi; krishna tulsi; rama tulsi; tulsi patta |  | 
+Pandan Leaves | pandan; screwpine leaves; rampe; rampe leaves; kewra leaves; pandanus |  | 
+Chives | fresh chives; chinese chives; hara lahsun |  | 
+## fruit
+Banana (Red) | red banana; lal kela; sevvazhai; chandrabale | 120 | 
+Banana (Robusta) | robusta banana; ordinary banana | 120 | 
+Mango (Alphonso) | hapus; hapoos; devgad mango; ratnagiri mango; badami mango; alphonso mango | 250 | 
+Mango (Kesar) | kesar mango; gir kesar; kesar aam | 220 | 
+Mango (Langra) | langra; banarasi langra; langda aam | 250 | 
+Mango (Dasheri) | dussehri; dashehari; malihabadi | 200 | 
+Mango (Totapuri) | totapuri; totapuri mango; sandersha; bangalora; kili mooku | 350 | 
+Mango (Banganapalli) | banganapalli; safeda; benishan; baneshan; banganapalle | 350 | 
+Apple (Green) | green apple; granny smith; hari seb | 180 | 
+Apple (Kashmiri) | kashmiri apple; shimla apple; red apple; sebhu | 180 | 
+Orange (Nagpur) | nagpur santra; kamala orange; kittale; santre | 150 | 
+Grapefruit | grape fruit; pummelo pink; ruby grapefruit | 300 | 
+Lemon (Gondhoraj) | gondhoraj; gandhoraj lebu; gondhoraj lebu | 100 | 
+Watermelon (Yellow) | yellow watermelon; peeli tarbooz | 3000 | 
+Muskmelon (Honeydew) | honeydew melon; honeydew; green melon; honey dew | 1500 | 
+Pear (Nashpati) | nashpathi; bartlett pear; babugosha; nakh; pearl pear | 150 | 
+Nectarine | nectarine fruit | 140 | 
+Blackberry | blackberries; blackberry fruit; kala jamun berry |  | 150
+Raspberry | raspberries; raspberry fruit |  | 125
+Hog Plum | amra; ambade; ambade fruit; june plum; ambarella; hog plum fruit | 60 | 
+Passion Fruit | passionfruit; krishna phal; passion fruits; purple passion fruit | 40 | 
+Bael Fruit | bel fruit; bilva; wood apple bael; bel patra fruit; belphal; vilvam | 400 | 
+Bilimbi | bilimbi fruit; irumban puli; kamrakh sour; bimbli; bilimbi kerala; cucumber tree | 20 | 
+Rose Apple | jamrul; jamrool; water apple; jambu; chambakka; champakka | 40 | 

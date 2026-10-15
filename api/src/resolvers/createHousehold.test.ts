@@ -6,7 +6,7 @@ import type { TestDatabase } from '../testing/postgres.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { upsertUserByCognitoSub } from '../repositories/userRepository.js';
 import { findMembershipsForUser, insertDefaultSettings, insertHousehold, insertMembership } from '../repositories/householdRepository.js';
-import { createCreateHouseholdHandler } from './createHousehold.js';
+import { createCreateHouseholdHandler, MAX_HOUSEHOLDS_PER_USER } from './createHousehold.js';
 import { UnauthorizedError, ValidationError } from '../errors.js';
 import type { RandomIntFn } from '../domain/inviteCode.js';
 import type { CuratedRecipeInput } from '../curatedRecipes.js';
@@ -353,6 +353,55 @@ describe('createHousehold resolver', () => {
 
       expect(a.id).toBe(b.id);
       expect(await countRows('households')).toBe(1);
+    });
+
+    it('rejects a sixth household with a clear limit error (A9)', async () => {
+      const handler = createCreateHouseholdHandler(fixture());
+      for (let i = 1; i <= MAX_HOUSEHOLDS_PER_USER; i += 1) {
+        await handler(buildEvent(`Cap House ${i}`, 'sub-cap'));
+      }
+
+      await expect(handler(buildEvent('One Too Many', 'sub-cap'))).rejects.toThrow(
+        new ValidationError(`You already have ${MAX_HOUSEHOLDS_PER_USER} households.`),
+      );
+      expect(await countRows('households')).toBe(MAX_HOUSEHOLDS_PER_USER);
+    });
+
+    it('allows the fifth household (one below the cap)', async () => {
+      const handler = createCreateHouseholdHandler(fixture());
+      for (let i = 1; i < MAX_HOUSEHOLDS_PER_USER; i += 1) {
+        await handler(buildEvent(`Below Cap ${i}`, 'sub-below'));
+      }
+
+      const fifth = await handler(buildEvent('Fifth House', 'sub-below'));
+
+      expect(fifth.name).toBe('Fifth House');
+      expect(await countRows('households')).toBe(MAX_HOUSEHOLDS_PER_USER);
+    });
+
+    it('an idempotent retry at the cap still returns the existing household', async () => {
+      const handler = createCreateHouseholdHandler(fixture());
+      let last;
+      for (let i = 1; i <= MAX_HOUSEHOLDS_PER_USER; i += 1) {
+        last = await handler(buildEvent(`Retry Cap ${i}`, 'sub-retry-cap'));
+      }
+
+      const again = await handler(
+        buildEvent(`Retry Cap ${MAX_HOUSEHOLDS_PER_USER}`, 'sub-retry-cap'),
+      );
+
+      expect(again.id).toBe(last?.id);
+    });
+
+    it("one user's cap does not affect another user", async () => {
+      const handler = createCreateHouseholdHandler(fixture());
+      for (let i = 1; i <= MAX_HOUSEHOLDS_PER_USER; i += 1) {
+        await handler(buildEvent(`Full ${i}`, 'sub-full'));
+      }
+
+      const other = await handler(buildEvent('Other User House', 'sub-other-user'));
+
+      expect(other.name).toBe('Other User House');
     });
 
     it('a different name still creates a second household for the same user', async () => {

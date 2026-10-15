@@ -131,6 +131,14 @@ void main() {
       expect(AppColors.cardamomSoftForeground.toARGB32(), argbFromHex(hex));
     });
 
+    test('brand.haldiSoft.foreground', () {
+      final String hex =
+          (colorGroup('brand')['haldiSoft']
+                  as Map<String, dynamic>)['foreground']
+              as String;
+      expect(AppColors.haldiSoftForeground.toARGB32(), argbFromHex(hex));
+    });
+
     test('no color in the JSON is missing from AppColors', () {
       final Set<String> jsonNames = <String>{
         for (final String g in <String>['neutral', 'brand', 'semantic'])

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/errors/app_error.dart';
 import '../data/household_repository.dart';
 import '../domain/household.dart';
+import 'me_households_controller.dart';
 
 /// Owns the state of the "create a household" action.
 ///
@@ -47,6 +48,9 @@ class CreateHouseholdController extends AsyncNotifier<Household?> {
     // forward would leave a stale message on screen during the retry.
     state = const AsyncLoading<Household?>();
     state = await AsyncValue.guard<Household?>(() => _createWithOneRetry(name));
+    if (!state.hasError) {
+      ref.invalidate(meHouseholdsControllerProvider);
+    }
   }
 
   /// Returns the controller to idle, clearing any parked error. Called when

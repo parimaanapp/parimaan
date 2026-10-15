@@ -174,8 +174,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final Finder produceHeading = find.text('Produce');
-        final Finder dairyHeading = find.text('Dairy');
+        final Finder produceHeading = find.text('PRODUCE');
+        final Finder dairyHeading = find.text('DAIRY');
         expect(produceHeading, findsOneWidget);
         expect(dairyHeading, findsOneWidget);
 

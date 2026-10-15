@@ -9,6 +9,7 @@ import 'package:mobile/features/shopping_list/presentation/checklist_item.dart';
 import 'package:mobile/features/shopping_list/presentation/shopping_list_regenerate_confirm_dialog.dart';
 import 'package:mobile/features/shopping_list/presentation/shopping_list_screen.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/ui/colors.dart';
 import 'package:mobile/shared/ui/components/components.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
@@ -70,6 +71,11 @@ Future<ProviderContainer> _pump(
         path: AppRoutes.weeklyPlan,
         builder: (BuildContext context, GoRouterState state) =>
             const Scaffold(body: Text('weekly-plan')),
+      ),
+      GoRoute(
+        path: AppRoutes.shoppingListShareImage,
+        builder: (BuildContext context, GoRouterState state) =>
+            const Scaffold(body: Text('share-image-route')),
       ),
     ],
   );
@@ -357,7 +363,8 @@ void main() {
         generatedFromMenuId: _menuId,
         createdAt: DateTime.utc(2026, 9, 1),
         closedAt: null,
-        aiStaplesNote: 'You might want to check: Kitchen King Masala, jeera, hing.',
+        aiStaplesNote:
+            'You might want to check: Kitchen King Masala, jeera, hing.',
         items: <ShoppingListItem>[testShoppingListItem],
       );
       final FakeShoppingListRepository repository = FakeShoppingListRepository(
@@ -369,9 +376,7 @@ void main() {
 
       expect(find.byKey(ShoppingListScreen.staplesNoteKey), findsOneWidget);
       expect(
-        find.text(
-          'You might want to check: Kitchen King Masala, jeera, hing.',
-        ),
+        find.text('You might want to check: Kitchen King Masala, jeera, hing.'),
         findsOneWidget,
       );
     });
@@ -389,5 +394,318 @@ void main() {
         expect(find.byKey(ShoppingListScreen.staplesNoteKey), findsNothing);
       },
     );
+  });
+
+  group('ShoppingListScreen — wireframe 10.1 layout (C2)', () {
+    ShoppingListItem item(
+      String id,
+      String name,
+      String category, {
+      String? recipe = 'r1',
+      double quantity = 1,
+      String unit = 'kg',
+    }) => ShoppingListItem(
+      id: id,
+      name: name,
+      quantity: quantity,
+      unit: unit,
+      category: category,
+      sourceRecipeId: recipe,
+      purchased: false,
+      purchasedBy: null,
+      purchasedAt: null,
+      movedToPantry: false,
+    );
+
+    ShoppingList list(List<ShoppingListItem> items, {String? note}) =>
+        ShoppingList(
+          id: 'shopping-list-1',
+          householdId: 'household-1',
+          generatedFromMenuId: _menuId,
+          createdAt: DateTime.utc(2026, 9, 1),
+          closedAt: null,
+          aiStaplesNote: note,
+          items: items,
+        );
+
+    testWidgets('header reads "This week" with "N items · from M recipes"', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[
+            item('a', 'Onion', 'produce', recipe: 'r1'),
+            item('b', 'Tomato', 'produce', recipe: 'r2'),
+            item('c', 'Paneer', 'dairy', recipe: 'r2'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('This week'), findsOneWidget);
+      expect(find.text('3 items · from 2 recipes'), findsOneWidget);
+    });
+
+    testWidgets(
+      'header uses singular forms and omits the source when unknown',
+      (WidgetTester tester) async {
+        await _pump(
+          tester,
+          repository: FakeShoppingListRepository(
+            generateResult: list(<ShoppingListItem>[
+              item('a', 'Onion', 'produce', recipe: null),
+            ]),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('1 item'), findsOneWidget);
+      },
+    );
+
+    testWidgets('groups rows under mono-caps approved category labels', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[
+            item('a', 'Onion', 'produce'),
+            item('b', 'Hing', 'spice', unit: 'g'),
+            item('c', 'Chicken', 'meat_fish'),
+            item('d', 'Atta', 'dry_goods'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('PRODUCE'), findsOneWidget);
+      expect(find.text('SPICE'), findsOneWidget);
+      expect(find.text('MEAT & FISH'), findsOneWidget);
+      expect(find.text('DRY GOODS'), findsOneWidget);
+      final Text label = tester.widget<Text>(find.text('PRODUCE'));
+      expect(label.style!.fontFamily, 'JetBrains Mono');
+    });
+
+    testWidgets('Share action pushes the share-image route with the list', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: testShoppingList,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share'), findsOneWidget);
+      final Size size = tester.getSize(
+        find.byKey(ShoppingListScreen.shareButtonKey),
+      );
+      expect(size.height, greaterThanOrEqualTo(44));
+      expect(size.width, greaterThanOrEqualTo(44));
+
+      await tester.tap(find.byKey(ShoppingListScreen.shareButtonKey));
+      await tester.pumpAndSettle();
+      expect(find.text('share-image-route'), findsOneWidget);
+    });
+
+    testWidgets('Share action has a screen-reader label', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: testShoppingList,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.bySemanticsLabel('Share shopping list as image'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('Staples check card sits in haldi-soft with its heading', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[
+            item('a', 'Onion', 'produce'),
+          ], note: 'Check: Kitchen King Masala, hing, ghee'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Staples check'), findsOneWidget);
+      expect(
+        find.text('Check: Kitchen King Masala, hing, ghee'),
+        findsOneWidget,
+      );
+      final DecoratedBox box = tester.widget<DecoratedBox>(
+        find
+            .descendant(
+              of: find.byKey(ShoppingListScreen.staplesNoteKey),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      expect((box.decoration as BoxDecoration).color, AppColors.haldiSoft);
+    });
+
+    testWidgets('no overflow at 320 pt with a long note and long names', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(
+            <ShoppingListItem>[
+              item(
+                'a',
+                'Kashmiri red chilli powder with a very long name',
+                'spice',
+              ),
+              item('b', 'Onion', 'produce'),
+            ],
+            note:
+                'Check: ${List<String>.filled(12, 'Kitchen King Masala').join(', ')}',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('ShoppingListScreen — review fixes (C2)', () {
+    ShoppingListItem item(String id, {bool purchased = false}) =>
+        ShoppingListItem(
+          id: id,
+          name: 'Item $id',
+          quantity: 1,
+          unit: 'kg',
+          category: 'produce',
+          sourceRecipeId: 'r1',
+          purchased: purchased,
+          purchasedBy: null,
+          purchasedAt: null,
+          movedToPantry: false,
+        );
+
+    ShoppingList list(List<ShoppingListItem> items) => ShoppingList(
+      id: 'shopping-list-1',
+      householdId: 'household-1',
+      generatedFromMenuId: _menuId,
+      createdAt: DateTime.utc(2026, 9, 1),
+      closedAt: null,
+      aiStaplesNote: null,
+      items: items,
+    );
+
+    testWidgets('the subtitle counts the whole list, not just what is left', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[
+            item('a'),
+            item('b', purchased: true),
+            item('c', purchased: true),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 items · from 1 recipe'), findsOneWidget);
+    });
+
+    testWidgets('top bar does not overflow at 320 pt and 2x text', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(() {
+        tester.view.reset();
+        tester.platformDispatcher.clearAllTestValues();
+      });
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[item('a')]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(ShoppingListScreen.shareButtonKey), findsOneWidget);
+      expect(
+        find.byKey(ShoppingListScreen.regenerateButtonKey),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Share is keyboard focusable and named without the glyph', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: list(<ShoppingListItem>[item('a')]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(ShoppingListScreen.shareButtonKey),
+          matching: find.byType(InkWell),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getSemantics(find.byKey(ShoppingListScreen.shareButtonKey))
+            .label,
+        'Share shopping list as image',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the staples card heading name has no decorative glyph', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        repository: FakeShoppingListRepository(
+          generateResult: ShoppingList(
+            id: 'shopping-list-1',
+            householdId: 'household-1',
+            generatedFromMenuId: _menuId,
+            createdAt: DateTime.utc(2026, 9, 1),
+            closedAt: null,
+            aiStaplesNote: 'Check: hing',
+            items: <ShoppingListItem>[item('a')],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel(RegExp('◆')), findsNothing);
+      handle.dispose();
+    });
   });
 }

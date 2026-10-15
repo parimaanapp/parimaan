@@ -103,9 +103,97 @@ void main() {
   });
 
   group('shoppingListCategoryLabel', () {
-    test('formats snake_case as a capitalized, spaced label', () {
-      expect(shoppingListCategoryLabel('dry_goods'), 'Dry goods');
-      expect(shoppingListCategoryLabel('other'), 'Other');
+    test('uses the approved catalog labels (docs/catalog/decisions.md)', () {
+      const Map<String, String> expected = <String, String>{
+        'dal': 'Dal',
+        'grain': 'Grain',
+        'grains': 'Grain',
+        'spice': 'Spice',
+        'dairy': 'Dairy',
+        'eggs': 'Eggs',
+        'produce': 'Produce',
+        'dry_goods': 'Dry Goods',
+        'oil': 'Oil',
+        'meat_fish': 'Meat & Fish',
+        'condiment': 'Condiment',
+        'bakery': 'Bakery',
+        'snacks': 'Snacks',
+        'beverages': 'Beverages',
+        'frozen': 'Frozen',
+        'other': 'Other',
+      };
+      expected.forEach((String key, String label) {
+        expect(shoppingListCategoryLabel(key), label, reason: key);
+      });
+    });
+
+    test(
+      'an unknown snake_case value falls back to a spaced, capitalised label',
+      () {
+        expect(shoppingListCategoryLabel('fresh_herbs'), 'Fresh herbs');
+        expect(shoppingListCategoryLabel(''), '');
+      },
+    );
+  });
+
+  group('approved categories all have a defined slot', () {
+    test('every approved category sorts in its defined order, then unknowns, then other', () {
+      final List<String> order = groupShoppingListItemsByCategory(
+        <ShoppingListItem>[
+          _item('1', 'other'),
+          _item('2', 'zzz_unknown'),
+          _item('3', 'beverages'),
+          _item('4', 'snacks'),
+          _item('5', 'bakery'),
+          _item('6', 'meat_fish'),
+          _item('7', 'oil'),
+          _item('8', 'eggs'),
+          _item('9', 'spice'),
+          _item('10', 'produce'),
+        ],
+      ).map((ShoppingListCategoryGroup g) => g.category).toList();
+      expect(order, <String>[
+        'produce',
+        'spice',
+        'eggs',
+        'oil',
+        'meat_fish',
+        'bakery',
+        'snacks',
+        'beverages',
+        'zzz_unknown',
+        'other',
+      ]);
+    });
+  });
+
+  group('category normalisation', () {
+    test('grains and grain share one group, keyed "grain"', () {
+      final List<ShoppingListCategoryGroup> groups =
+          groupShoppingListItemsByCategory(<ShoppingListItem>[
+            _item('1', 'grains'),
+            _item('2', 'grain'),
+          ]);
+      expect(groups.length, 1);
+      expect(groups.single.category, 'grain');
+      expect(groups.single.items.length, 2);
+    });
+
+    test('case, whitespace and spaced variants fold into the known value', () {
+      final List<ShoppingListCategoryGroup> groups =
+          groupShoppingListItemsByCategory(<ShoppingListItem>[
+            _item('1', ' Produce '),
+            _item('2', 'PRODUCE'),
+            _item('3', 'Dry Goods'),
+            _item('4', 'dry_goods'),
+            _item('5', 'Meat & Fish'),
+            _item('6', '   '),
+          ]);
+      expect(
+        groups.map((ShoppingListCategoryGroup g) => g.category).toList(),
+        <String>['produce', 'dry_goods', 'meat_fish', 'other'],
+      );
+      expect(groups.first.items.length, 2);
     });
   });
 }

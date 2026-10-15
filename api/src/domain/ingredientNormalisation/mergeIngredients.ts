@@ -1,4 +1,5 @@
 import { MAX_INGREDIENT_NOTES_LENGTH } from '../../validation/recipeShared.js';
+import { isAlwaysStaple } from './normaliseIngredient.js';
 import type { NormalisedIngredient } from './normaliseIngredient.js';
 
 /** 1 cup = 240 ml (the metric cup used by Indian recipe sites); only applied when the other row is already ml/l. */
@@ -120,8 +121,8 @@ const mergePair = (base: NormalisedIngredient, other: NormalisedIngredient, amou
   quantity: amount.quantity,
   unit: amount.unit,
   notes: joinDistinct([base.notes, other.notes], ', ')?.slice(0, MAX_INGREDIENT_NOTES_LENGTH) ?? null,
-  // A to-taste staple flag only survives a merge when no measured quantity resulted, or every source row was staple.
-  isStaple: amount.quantity === null ? base.isStaple || other.isStaple : base.isStaple && other.isStaple,
+  // Salt/pepper are always staples. Otherwise a staple flag survives a merge only when no measured quantity resulted, or every source row was staple.
+  isStaple: isAlwaysStaple(base.name) || (amount.quantity === null ? base.isStaple || other.isStaple : base.isStaple && other.isStaple),
 });
 
 /**

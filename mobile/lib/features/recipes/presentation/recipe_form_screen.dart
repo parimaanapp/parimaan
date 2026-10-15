@@ -49,7 +49,7 @@ import 'step_row_editor.dart';
 /// [Recipe] — a **seeded wrapper over this one screen, not a second form
 /// implementation** (§11.2.7's pattern, third use). Every reviewable field
 /// wraps its existing widget in [AIProposal], which renders the shared
-/// "AI suggests" badge/semantics treatment until the user's first
+/// "AI proposal" badge/semantics treatment until the user's first
 /// interaction with that field, tracked through
 /// [aiRecipeDraftControllerProvider] — the same shared draft-review
 /// controller W7 S7 built for both this screen and S9's URL-import path.
@@ -270,9 +270,8 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
       }
       _initialIngredientDrafts = _ingredientDraftsFrom(_ingredients);
     } else if (draftIngredients != null) {
-      // An AiRecipeDraftIngredient has no isStaple/category of its own —
-      // only a structured create/edit form ever sets those, never an AI
-      // parse.
+      // isStaple is pre-set from the import draft (salt/pepper); the user
+      // may still toggle it. An AI parse never sets category.
       for (final AiRecipeDraftIngredient ingredient in draftIngredients) {
         _ingredients.add(
           _IngredientRow(
@@ -280,6 +279,7 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
             name: ingredient.name,
             quantity: ingredient.quantity,
             unit: ingredient.unit,
+            isStaple: ingredient.isStaple,
             notes: ingredient.notes,
           ),
         );
