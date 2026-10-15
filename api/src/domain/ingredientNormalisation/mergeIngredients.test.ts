@@ -66,7 +66,12 @@ describe('mergeDuplicateIngredients — null quantities, staples, notes', () => 
   it('keeps the quantity of the row that has one when the other is quantity-less', () => {
     const result = mergeDuplicateIngredients([row('Salt', 1, 'tsp'), row('Salt', null, null, { isStaple: true })]);
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ quantity: 1, unit: 'tsp', isStaple: false });
+    expect(result[0]).toMatchObject({ quantity: 1, unit: 'tsp', isStaple: true });
+  });
+
+  it('keeps staple=true for measured pepper rows even if no source row was flagged', () => {
+    const result = mergeDuplicateIngredients([row('Black Pepper', 1, 'tsp'), row('Black Pepper', 1, 'tsp')]);
+    expect(result[0]).toMatchObject({ quantity: 2, isStaple: true });
   });
 
   it('keeps null quantity when both are quantity-less', () => {

@@ -105,6 +105,17 @@ Future<ProviderContainer> _pumpPushed(
   return container;
 }
 
+const AiRecipeDraft _saltDraft = AiRecipeDraft(
+  title: 'Dal Tadka',
+  servings: 4,
+  role: RecipeRole.sabziDal,
+  ingredients: <AiRecipeDraftIngredient>[
+    AiRecipeDraftIngredient(raw: '1 tsp salt', name: 'salt', quantity: 1, unit: 'tsp', isStaple: true),
+    AiRecipeDraftIngredient(raw: '1 onion', name: 'onion', quantity: 1, unit: 'piece'),
+  ],
+  steps: <String>['Cook.'],
+);
+
 const AiRecipeDraft _rajmaDraft = AiRecipeDraft(
   title: 'Rajma Chawal',
   servings: 4,
@@ -726,6 +737,43 @@ void main() {
         expect(find.byKey(RecipeFormScreen.roleConfirmHintKey), findsNothing);
       },
     );
+
+    testWidgets('an imported salt row shows the Staple toggle on; other rows stay off', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(
+        tester,
+        repository: FakeRecipeRepository(),
+        initialDraft: _saltDraft,
+      );
+
+      await tester.ensureVisible(find.byKey(IngredientRowEditor.stapleChipKey(0)));
+      expect(
+        tester.widget<PChip>(find.byKey(IngredientRowEditor.stapleChipKey(0))).selected,
+        isTrue,
+      );
+      await tester.ensureVisible(find.byKey(IngredientRowEditor.stapleChipKey(1)));
+      expect(
+        tester.widget<PChip>(find.byKey(IngredientRowEditor.stapleChipKey(1))).selected,
+        isFalse,
+      );
+    });
+
+    testWidgets('the pre-set Staple toggle can be switched off and is sent on save', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(createResult: _dalRecipe);
+      await _pumpPushed(tester, repository: repository, initialDraft: _saltDraft);
+
+      await tester.tap(find.text('Sabzi/Dal'));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(RecipeFormScreen.submitButtonKey));
+      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+      await tester.pumpAndSettle();
+
+      final ingredients = repository.createCalls.single.draft.ingredients;
+      expect(ingredients.map((i) => i.isStaple).toList(), <bool>[true, false]);
+    });
 
     testWidgets('warnings render as non-blocking notes', (WidgetTester tester) async {
       await _pumpPushed(

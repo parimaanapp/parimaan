@@ -42,7 +42,7 @@ describe('HIGH 1 — merge key is linear-time on adversarial input', () => {
 
 describe('HIGH 2 — a parsed quantity is never dropped by a to-taste phrase', () => {
   it('keeps 1 tsp for "1 tsp salt, plus more to taste"', () => {
-    expect(line('1 tsp salt, plus more to taste')).toMatchObject({ name: 'salt', quantity: 1, unit: 'tsp', notes: 'plus more to taste', isStaple: false });
+    expect(line('1 tsp salt, plus more to taste')).toMatchObject({ name: 'salt', quantity: 1, unit: 'tsp', notes: 'plus more to taste', isStaple: true });
   });
 
   it('keeps 2 tbsp for "2 tbsp oil, as needed for frying"', () => {
@@ -50,7 +50,7 @@ describe('HIGH 2 — a parsed quantity is never dropped by a to-taste phrase', (
   });
 
   it('keeps the quantity and moves an inline phrase out of the name', () => {
-    expect(line('1 tsp salt or to taste')).toMatchObject({ name: 'salt', quantity: 1, unit: 'tsp', isStaple: false });
+    expect(line('1 tsp salt or to taste')).toMatchObject({ name: 'salt', quantity: 1, unit: 'tsp', isStaple: true });
   });
 
   it('still clears quantity when none was parsed', () => {
@@ -151,8 +151,13 @@ describe('MEDIUM 6 — staple matching and merge flag', () => {
     expect(normaliseIngredient({ raw: `${name} to taste`, name: `${name} to taste`, quantity: null, unit: null, notes: null }).isStaple).toBe(expected);
   });
 
-  it('a merged row with a measured quantity is not a to-taste staple unless every source was', () => {
+  it('a merged salt/pepper row with a measured quantity stays staple', () => {
     const merged = mergeDuplicateIngredients([row('Salt', null, null, { isStaple: true }), row('Salt', 1, 'tsp')]);
+    expect(merged[0]).toMatchObject({ quantity: 1, unit: 'tsp', isStaple: true });
+  });
+
+  it('a merged non salt/pepper measured row is staple only if every source was', () => {
+    const merged = mergeDuplicateIngredients([row('Oil', null, null, { isStaple: true }), row('Oil', 1, 'tsp')]);
     expect(merged[0]).toMatchObject({ quantity: 1, unit: 'tsp', isStaple: false });
   });
 
