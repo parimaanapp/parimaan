@@ -5633,6 +5633,8 @@ Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf
 - **Recipes**: sample format approved; Methi Thepla is vegan and dairy free.
 - **Components**: sign-off list items 1–6 and 8 approved (drawn tab icons, "Today" label, centred titles, bold back chevron with 44×44 target, solid-ink chips without ✓, haldi "◆ AI proposal" badge, column header). Item 7 is **decided**: four meals planned → option B (2×2 block per day, meal name under the ＋ and in each cell, no column header); one to three meals planned → option C (one column per planned meal with a column header). Replaces the four-column layout in C1.
 
+- **C3 landed (shared components)**: drawn tab glyphs (`PTabGlyph`), "Today" label, 56 high bar; centred `PTopBar` title with leading/trailing slots (title still `display-m`, the nearest token to the wireframe's 20 scaled ~1.3x); chips default to solid ink without the tick and a 1 px ink@20% outline; `PAiBadge` ("◆ AI PROPOSAL", haldi-soft, mono) replaces the blue "AI suggests" pill; buttons gain the `dark` variant and wireframe weights/outline washes; `PInput` label is mono 9-caps scaled with a terracotta 1.5 px focus border and 3 px ring. Derived alpha washes live in `AppColors` (`outline`, `outlineSoft`, `dangerOutline`, `terracottaRing`).
+
 ## 33. Project status and sequence (snapshot after beta feedback round 1)
 
 ### 33.1 Where we are
