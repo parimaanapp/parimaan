@@ -99,12 +99,11 @@ GMealType _mealSlotToGraphQL(String mealSlot) => switch (mealSlot) {
 /// The `UnfilledSlot` counterpart to [menuFromGraphQL] — a fragment
 /// interface (`UnfilledSlotFields`), shared by `AutoFillPreviewResult` and
 /// `AutoFillResult` (W10 §16.2.3).
-UnfilledSlot unfilledSlotFromGraphQL(GUnfilledSlotFields data) =>
-    UnfilledSlot(
-      dayOfWeek: data.dayOfWeek,
-      mealSlot: data.mealSlot.name,
-      slotRole: recipeRoleFromGraphQL(data.slotRole),
-    );
+UnfilledSlot unfilledSlotFromGraphQL(GUnfilledSlotFields data) => UnfilledSlot(
+  dayOfWeek: data.dayOfWeek,
+  mealSlot: data.mealSlot.name,
+  slotRole: recipeRoleFromGraphQL(data.slotRole),
+);
 
 /// The `ProposedMenuItem` counterpart to [menuItemFromGraphQL] —
 /// `AutoFillPreviewResult.items`' own shape (W10 §16.2.1). Reuses

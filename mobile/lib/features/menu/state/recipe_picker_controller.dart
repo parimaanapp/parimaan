@@ -21,7 +21,8 @@ typedef RecipePickerKey = ({String householdId, RecipeRole slotRole});
 /// Ordering (favorites, then rotation, then title) is entirely server-side
 /// (`Query.recipes`' own `ORDER BY`, W10 §16.2.5) — this controller applies
 /// no client-side sort of its own.
-class RecipePickerController extends FamilyAsyncNotifier<List<Recipe>, RecipePickerKey> {
+class RecipePickerController
+    extends FamilyAsyncNotifier<List<Recipe>, RecipePickerKey> {
   RecipeRepository get _repository => ref.read(recipeRepositoryProvider);
 
   @override
@@ -29,8 +30,14 @@ class RecipePickerController extends FamilyAsyncNotifier<List<Recipe>, RecipePic
       _repository.fetchRecipes(key.householdId, role: key.slotRole);
 }
 
-final AsyncNotifierProviderFamily<RecipePickerController, List<Recipe>, RecipePickerKey>
+final AsyncNotifierProviderFamily<
+  RecipePickerController,
+  List<Recipe>,
+  RecipePickerKey
+>
 recipePickerControllerProvider =
-    AsyncNotifierProvider.family<RecipePickerController, List<Recipe>, RecipePickerKey>(
-      RecipePickerController.new,
-    );
+    AsyncNotifierProvider.family<
+      RecipePickerController,
+      List<Recipe>,
+      RecipePickerKey
+    >(RecipePickerController.new);

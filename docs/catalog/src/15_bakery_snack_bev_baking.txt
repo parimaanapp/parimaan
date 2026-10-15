@@ -1,0 +1,142 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## bakery
+Bread (Multigrain) | multi grain bread; seven grain bread; 7 grain bread | 30 | 
+Bread (Whole Wheat) | wheat bread; wholemeal bread | 30 | 
+Bread (Sourdough) | sourdough; sourdough bread; sour dough loaf | 50 | 
+Bread (Garlic) | garlic bread; garlic loaf; garlic baguette; garlic toast | 40 | 
+Bread (Milk) | sweet bread; shokupan; milk loaf | 30 | 
+Baguette | french bread; french stick; french loaf | 250 | 
+Ciabatta | ciabatta bread; italian bread; ciabatta roll | 80 | 
+Focaccia | focaccia bread; italian flatbread | 100 | 
+Pita Bread | pita; pitta; pocket bread; khubz | 60 | 
+Bagel | bagels; plain bagel; sesame bagel | 90 | 
+Pav (Ladi) | ladi paav; soft pav; maska pav bread; bun maska bread; ladi pao | 40 | 
+Maska Bun | bun maska; irani bun; cream bun plain; butter bun | 60 | 
+Kulcha | plain kulcha; amritsari kulcha bread; tandoori kulcha | 80 | 
+Tandoori Roti | tandoor roti; clay oven roti | 60 | 
+Puff Pastry Sheet | puff pastry; puff pastry sheets; puff sheet; frozen puff pastry; patty sheet | 100 | 
+Shortcrust Pastry | short crust; tart shell; pastry shell | 100 | 
+Filo Pastry | filo; phyllo; filo sheets; phyllo dough; filo pastry sheets; strudel leaves | 20 | 
+Pizza Dough | pizza dough ball; ready pizza dough | 250 | 
+Pie Crust | ready pie crust; graham crust; tart crust | 150 | 
+Muffin | muffins; blueberry muffin; chocolate muffin | 80 | 
+Brownie | brownies; chocolate brownie | 60 | 
+Nankhatai | nan khatai; nankatai; nan katai | 20 | 
+Osmania Biscuit | osmania biscuits; hyderabadi biscuit; irani chai biscuit | 10 | 
+Toast (Packaged) | packaged toast; crunchy toast; butter toast; suhari | 8 | 
+Cracker | crackers; cream crackers; water crackers; salted crackers; saltines | 8 | 
+Marie Biscuit | marie biscuits; tea biscuits; glucose biscuit; glucose biscuits | 5 | 
+Cream Biscuit | sandwich biscuit; cream sandwich biscuit; choco cream biscuit | 12 | 
+Pani Puri Shells | golgappa shells; puchka shells; pani puri puri; gol gappa puri; golgappe; puchka | 3 | 
+Samosa Patti | samosa wrapper; samosa pastry strips | 15 | 
+Tortilla (Corn) | corn tortilla; makki tortilla; masa tortilla; corn tortillas | 25 | 
+Tortilla (Wheat) | flour tortilla; wheat tortilla; atta tortilla; burrito wrap | 40 | 
+Nachos | nacho chips; tortilla chips; corn chips |  | 
+## snack
+Gathiya | ganthiya; gathia; ganthia; papdi gathiya; bhavnagri gathiya |  | 
+Fafda | fafda gathiya; fafda jalebi; fafdi |  | 
+Chakli (Bhajani) | bhajani chakli; chakli bhajani; chakkuli; murukku bhajani |  | 
+Thattai | thatai; thattai snack; thatta; rice thattai; nippattu |  | 
+Kerala Banana Chips | nendran banana chips; ethakka upperi; upperi; nendrakkai upperi; chips kerala; sarkara upperi |  | 
+Sarkara Varatti | sharkara varatti; jaggery banana chips; banana chips jaggery; sweet banana chips; sharkara upperi |  | 
+Sabudana Chivda | sago chivda; sabudana mixture; upvas chivda; fasting chivda; vrat chivda |  | 
+Til Ladoo | til laddu; sesame ladoo; sesame laddu; tilgul ladoo; til ke ladoo; ellunda |  | 
+Khakhra (Methi) | fenugreek khakhra; khakra methi; methi khakra |  | 
+Shankarpali | shakarpara; shakkar para; shankarpale; sweet shakarpara; shankar pale; shakarpare |  | 
+Namak Para | namakpara; namak pare; nimkin; salted shakarpara; namak paare |  | 
+Kaju Katli | kaju barfi; cashew barfi; kaju katli sweet; kaju burfi |  | 
+Mysore Pak | mysorepak; mysore paak; ghee mysore pak |  | 
+Besan Ladoo | besan laddu; besan ke ladoo; gram flour ladoo; besan laddoo; besan laadu |  | 
+Motichoor Ladoo | motichoor laddu; boondi ladoo; bundi ladoo; motichur ladoo; boondi laddu |  | 
+Jalebi (Ready) | jalebi; jilebi; jalebi ready; imarti; jangiri |  | 
+Gulab Jamun (Ready) | gulab jamun; gulab jamun ready; gulabjamun; gulab jamun tin; canned gulab jamun |  | 
+Rasgulla | rasagulla; rosogolla; roshogolla; sponge rasgulla |  | 
+Dal Moth | dalmoth; dal moot; dalmot; dal mot; dal moth namkeen; moong dal moth |  | 
+Chips (Plain Salted) | plain chips; salted chips; potato chips plain; wafers salted; classic salted chips |  | 
+Popcorn (Microwave) | popcorn packet; popcorn bag; butter popcorn microwave; instant popcorn; ready popcorn |  | 
+Makhana (Flavoured) | flavoured makhana; peri peri makhana; cheese makhana; masala makhana; pudina makhana; fox nut flavoured |  | 
+Granola Bar | cereal bar; protein bar; muesli bar; oats bar; nut bar; fruit bar |  | 
+Candy | candies; toffee; toffees; sweets candy; hard candy; boiled sweets |  | 
+Chocolate (Dark) | bitter chocolate; 70 percent chocolate; cooking dark chocolate; bittersweet chocolate; semi sweet chocolate; dark choco |  | 
+Chocolate (Milk) | milk chocolate; milk choco; chocolate bar milk; sweet chocolate; choco bar; milk chocolate bar |  | 
+Chocolate (White) | white chocolate; white choco; white chocolate bar; white chocolate chips; white chocolate callets |  | 
+Cacao Powder | raw cacao; raw cacao powder; unsweetened cacao; cacao; criollo cacao |  | 
+Hot Chocolate Mix | hot chocolate; drinking chocolate; cocoa mix; chocolate drink powder; sipping chocolate |  | 
+Baked Beans | beans in tomato sauce; canned baked beans; tinned baked beans; baked beans tin |  | 
+Canned Chickpeas | tinned chickpeas; chickpeas tin; boiled chickpeas canned; ready chole; canned chole; canned garbanzo |  | 
+Canned Kidney Beans | tinned rajma; rajma tin; canned rajma; boiled rajma canned; red kidney beans tinned; ready rajma |  | 
+Canned Corn | tinned corn; sweet corn tin; sweet corn kernels canned; canned sweet corn; corn kernels tin; corn tin |  | 
+Instant Soup Mix | instant soup; soup mix; soup powder; tomato soup mix; packet soup; instant soup packet |  | 
+Glass Noodles | cellophane noodles; bean thread noodles; vermicelli glass; mung bean noodles; sweet potato noodles; japchae noodles |  | 
+Egg Noodles | egg noodle; chinese egg noodles; hakka noodle; chow mein noodles; chowmein; noodles hakka |  | 
+Pasta (Penne) | penne pasta; penne rigate; penne dry |  | 
+Pasta (Spaghetti) | spaghetti pasta; spaghetti dry; spaghetti noodles |  | 
+Pasta (Fusilli) | fusilli pasta; rotini; spiral pasta; twist pasta |  | 
+Pasta (Macaroni) | macaroni pasta; elbow macaroni; elbow pasta; mac |  | 
+Pasta (Lasagne Sheets) | lasagne sheets; lasagna sheets; lasagna; lasagne; lasagna noodles; lasagne pasta |  | 
+Cornmeal | corn meal; yellow cornmeal; makki ka dalia; corn grits; makai ka dalia; corn rava |  | 
+## beverage
+Tea (Masala) | masala tea; masala chai; chai masala tea; spiced tea; masala chai leaves; tea masala powder |  | 
+Tea (Green Tea Bags) | green tea sachets; green tea bag; tea bags green; green tea sachet |  | 
+Tea (Assam CTC) | assam ctc; ctc tea; assam chai patti; ctc chai; assam tea leaves; strong tea |  | 
+Tea (Darjeeling) | darjeeling tea; darjeeling; darjeeling leaf tea; first flush tea; second flush; darjeeling black tea |  | 
+Tea (Chamomile) | chamomile tea; chamomile tea bags; camomile tea; babuna tea; chamomile herbal tea |  | 
+Tea (Herbal) | herbal tea; herbal tea bags; tisane; herbal infusion; kadha tea; herbal kadha |  | 
+Tea (Tulsi) | tulsi tea; tulsi green tea; tulsi chai; holy basil tea; tulsi tea bags; tulsi kadha tea |  | 
+Tea (Matcha) | matcha; matcha powder; matcha tea; japanese green tea powder; ceremonial matcha; culinary matcha |  | 
+Coffee (Instant) | coffee instant; instant coffee powder; instant coffee granules; coffee granules |  | 
+Coffee (Beans) | coffee beans; roasted coffee beans; arabica beans; robusta beans; whole coffee beans; coffee bean |  | 
+Coffee (Filter Powder) | south indian filter coffee; filter kaapi powder; coffee chicory powder; coffee chicory mix; filter coffee; kaapi podi |  | 
+Coffee Creamer | creamer; non dairy creamer; coffee whitener; tea whitener; dairy whitener; milk powder creamer |  | 
+Malt Drink Powder | health drink; malted drink; milk malt |  | 
+Electrolyte Powder | ors powder; electrolyte; oral rehydration salts; electrolyte drink mix; rehydration powder; sports drink powder |  | 
+Soda Water | seltzer; plain soda; carbonated water; fizzy water; goli soda |  | 
+Sugarcane Juice | ganne ka ras; ganne ka juice; ganna ras; karumbu juice; kabbina hala; cherukurasam |  | 
+Fruit Juice (Orange) | orange juice; santra juice; orange juice packet; oj; narangi juice; fresh orange juice |  | 
+Fruit Juice (Apple) | apple juice; seb ka juice; apple juice packet; apple juice tetra pack; seb juice |  | 
+Fruit Juice (Mango) | mango juice; aam ka juice; mango drink; mango juice packet; aam panna juice |  | 
+Fruit Juice (Pomegranate) | pomegranate juice; anar ka juice; anar juice; pomegranate juice packet; anar ras; dalimb juice |  | 
+Fruit Juice (Mixed) | mixed fruit juice; mixed juice; fruit juice mix; real fruit juice; mixed fruit drink; fruit punch |  | 
+Aloe Vera Juice | aloe juice; ghritkumari juice; kumari ras; kattarvazhai juice; aloe vera drink; aloe drink |  | 
+Badam Milk Mix | badam milk powder; almond milk mix; badam drink mix; kesar badam mix; badam powder; badam drink powder |  | 
+Jaljeera | jal jira; jaljeera drink; jaljeera mix; jeera water; jaljeera water; jaljeera concentrate |  | 
+Aam Panna Mix | aam panna; aam panna powder; raw mango drink; kairi panha; kairi panna; aam panna concentrate |  | 
+Nimbu Pani Mix | nimbu pani; shikanji; shikanji masala; shikanjvi; shikanji mix; lemonade |  | 
+Squash | fruit squash; orange squash; mango squash; lemon squash; pineapple squash; fruit concentrate |  | 
+Sharbat (Khus) | khus sharbat; vetiver syrup; khus ka sharbat; khas sharbat; khus drink; ramacham sharbat |  | 
+## frozen
+Frozen Paratha (Lachha) | frozen lachha paratha; layered paratha frozen; lacha paratha; frozen paratha lachha; kerala parotta frozen; parotta frozen |  | 
+Kerala Parotta | parotta; porotta; barotta; malabar parotta; kerala paratha; layered parotta | 90 | 
+Frozen Fish Fingers | fish fingers; fish finger; fish sticks; fish fingers frozen; breaded fish sticks; crumbed fish fingers | 28 | 
+Frozen Dumplings | dumplings frozen; veg dumplings; chicken dumplings; gyoza frozen; dim sum frozen; potstickers | 25 | 
+Ice Cream (Vanilla) | ice cream vanilla; vanilla ice cream tub; vanilla ice cream cup; plain ice cream; ice cream plain |  | 
+Ice Cream (Chocolate) | chocolate ice cream; ice cream chocolate; choco ice cream; chocolate ice cream tub; chocolate ice cream cup |  | 
+Ice Cream Cone | cone; waffle cone; ice cream cones; cone ice cream; wafer cone; sugar cone |  | 
+## baking_misc
+Compound Chocolate | chocolate compound; dark compound; milk compound; white compound; compound slab; couverture compound |  | 
+Couverture Chocolate | couverture; callets; chocolate callets; belgian chocolate; dark couverture; milk couverture |  | 
+Whipped Cream (Ready) | ready whipped cream; whipping cream aerosol; whipped topping; whip topping; non dairy whipped cream; vegetable whipping cream |  | 
+Invert Sugar | invert syrup; trimoline; inverted sugar syrup; sugar invert |  | 
+Food Colour (Powder) | food colour powder; powder food colour; edible colour powder; edible food colour powder; food color powder; red food colour powder |  | 
+Vanilla Bean | vanilla pod; vanilla beans; vanilla pods; vanilla stick; real vanilla; whole vanilla |  | 
+Almond Extract | almond essence; badam essence; almond flavouring; almond flavour; almond extract pure |  | 
+Cooking Wine | red wine cooking; white wine cooking; cooking red wine; cooking white wine; wine for cooking; dry white wine |  | 
+Xanthan Gum | xanthan; xanthan powder; gluten free binder; thickener xanthan |  | 
+Psyllium Husk | isabgol; isabgol husk; ispaghula; psyllium; isabgol powder; sat isabgol |  | 
+Cocoa Powder (Dutch) | dutch cocoa; dutch process cocoa; alkalized cocoa; dutched cocoa; dutch process cocoa powder; black cocoa |  | 
+Cocoa Powder (Natural) | natural cocoa; natural cocoa powder; unsweetened cocoa; unsweetened cocoa powder; non alkalized cocoa; plain cocoa powder |  | 
+Caramel Sauce | caramel syrup; salted caramel sauce; caramel topping; dulce de leche; caramel dessert sauce; butterscotch sauce |  | 
+Cake Premix | cake mix; ready cake mix; vanilla cake mix; chocolate cake mix; sponge cake mix; instant cake mix |  | 
+Pancake Mix | pancake premix; ready pancake mix; pancake powder; instant pancake mix; waffle mix; pancake and waffle mix |  | 
+Brownie Mix | brownie premix; ready brownie mix; chocolate brownie mix; instant brownie mix; fudge brownie mix |  | 
+Pudding Mix | instant pudding mix; instant pudding; pudding powder; vanilla pudding mix; chocolate pudding mix; caramel pudding mix |  | 
+Handvo Mix | handvo flour; handvo premix; instant handvo; handvo instant mix; handvo ready mix; gujarati handvo mix |  | 
+Pongal Mix | ven pongal mix; instant pongal mix; pongal premix; khara pongal mix; instant ven pongal; ready pongal |  | 
+Rava Idli Mix | instant rava idli; rava idli premix; suji idli mix; sooji idli mix; semolina idli mix; rawa idli mix |  | 
+Appam Mix | appam premix; instant appam mix; palappam mix; palappam podi; vellayappam mix; appam ready mix |  | 
+Baby Cereal | infant cereal; baby food cereal; instant baby cereal; wheat cereal baby; rice cereal baby; first foods cereal |  | 
+Baby Formula | infant formula; formula milk; baby milk powder; infant milk powder; follow up formula; formula powder |  | 
+Health Mix | health mix powder; sathu maavu; sathumaavu; sathu mavu; multigrain health mix; sprouted health mix |  | 
+Protein Powder (Plant) | plant protein; vegan protein; plant protein powder; pea protein; vegan protein powder; plant based protein powder |  | 
+Vrat Atta Mix | vrat atta; vrat ka atta; upvas atta; fasting flour; upvas flour; farali flour |  | 
+Samak Rice Flour | samvat flour; vari flour; varai flour; moriyo flour; sama flour |  | 

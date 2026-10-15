@@ -12,7 +12,6 @@ import '../../recipes/data/recipe_repository.dart';
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/domain/recipe_ingredient.dart';
 import '../../recipes/presentation/recipe_card.dart';
-import '../domain/current_week.dart';
 import '../domain/ingredient_warning.dart';
 import '../domain/menu.dart';
 import '../state/current_menu_controller.dart';
@@ -84,9 +83,8 @@ class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
         detail = await recipeRepository.fetchRecipeDetail(recipe.id);
       } on AppError catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(error.errorMessage)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(error.errorMessage)));
         }
         return;
       }
@@ -122,7 +120,7 @@ class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
       if (!context.mounted) return;
       final MenuKey menuKey = menuKeyFor(
         widget.household.id,
-        currentWeekStartDate(),
+        widget.extra.weekStartDate,
       );
       try {
         await ref
@@ -137,9 +135,8 @@ class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
             );
       } on AppError catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(error.errorMessage)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(error.errorMessage)));
         }
         return;
       }
@@ -174,34 +171,35 @@ class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
         ),
         Expanded(
           child: switch (recipes) {
-            AsyncData<List<Recipe>>(:final List<Recipe> value) => value.isEmpty
-                ? Center(
-                    key: RecipePickerScreen.emptyStateKey,
-                    child: PEmptyState(
-                      headline: 'No $roleLabel recipes yet',
-                      body: 'Add one from the Recipes tab, then come back to plan this slot.',
-                      action: PButton(
-                        label: 'Add a recipe',
-                        variant: PButtonVariant.secondary,
-                        onPressed: () => context.push(
-                          AppRoutes.recipeChooseMethod(widget.household.id),
+            AsyncData<List<Recipe>>(:final List<Recipe> value) =>
+              value.isEmpty
+                  ? Center(
+                      key: RecipePickerScreen.emptyStateKey,
+                      child: PEmptyState(
+                        headline: 'No $roleLabel recipes yet',
+                        body: 'Add one from the Recipes tab, then come back to plan this slot.',
+                        action: PButton(
+                          label: 'Add a recipe',
+                          variant: PButtonVariant.secondary,
+                          onPressed: () => context.push(
+                            AppRoutes.recipeChooseMethod(widget.household.id),
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: value.length,
+                      itemBuilder: (BuildContext context, int index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: RecipeCard(
+                          recipe: value[index],
+                          onTap: _isSelecting
+                              ? null
+                              : () => _selectRecipe(context, value[index]),
                         ),
                       ),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: value.length,
-                    itemBuilder: (BuildContext context, int index) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: RecipeCard(
-                        recipe: value[index],
-                        onTap: _isSelecting
-                            ? null
-                            : () => _selectRecipe(context, value[index]),
-                      ),
-                    ),
-                  ),
             AsyncValue<List<Recipe>>(hasError: true) => Center(
               key: RecipePickerScreen.errorKey,
               child: PEmptyState(
@@ -212,9 +210,8 @@ class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
                 action: PButton(
                   label: 'Try again',
                   variant: PButtonVariant.secondary,
-                  onPressed: () => ref.invalidate(
-                    recipePickerControllerProvider(key),
-                  ),
+                  onPressed: () =>
+                      ref.invalidate(recipePickerControllerProvider(key)),
                 ),
               ),
             ),
