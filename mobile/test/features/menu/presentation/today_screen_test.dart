@@ -115,6 +115,20 @@ void main() {
       expect(find.byKey(TodayScreen.loadingKey), findsOneWidget);
     });
 
+    testWidgets(
+      'names the household the user is in, so sign-in into an existing '
+      'household is never silent',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
+
+        expect(find.text(testMenuHousehold.name), findsOneWidget);
+      },
+    );
+
     testWidgets('a load failure is distinguished from a genuinely-empty day', (
       WidgetTester tester,
     ) async {

@@ -90,6 +90,7 @@ const RECIPE_DRAFT_FIELDS = `
     quantity
     unit
     notes
+    isStaple
   }
   steps
   sourceUrl

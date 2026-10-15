@@ -253,6 +253,43 @@ export const findMembershipsForUser = async (
 };
 
 /**
+ * Serializes one user's concurrent `createHousehold` calls for the rest of the
+ * transaction (64-bit advisory lock on the user id), so a timed-out original
+ * and its retry cannot both pass the "already created?" check.
+ */
+export const lockUserForHouseholdCreate = async (
+  client: PoolClient,
+  userId: string,
+): Promise<void> => {
+  await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [`create-household:${userId}`]);
+};
+
+/**
+ * Returns the household `userId` is primary of, named exactly `name`, and
+ * created within the last `windowSeconds` — the newest such row, or `null`. This is the
+ * idempotency lookup for `createHousehold`: a retry of a request that already
+ * succeeded server-side carries the same caller and name.
+ */
+export const findRecentPrimaryHouseholdByName = async (
+  client: PoolClient,
+  userId: string,
+  name: string,
+  windowSeconds: number,
+): Promise<HouseholdRow | null> => {
+  // DB-clock window; the caller must still hold a membership row, else a fresh create.
+  const result = await client.query<RawHouseholdRow>(
+    `SELECT h.* FROM households h
+     JOIN household_memberships m ON m.household_id = h.id AND m.user_id = $1
+     WHERE h.primary_user_id = $1 AND h.name = $2
+       AND h.created_at >= NOW() - make_interval(secs => $3::double precision)
+     ORDER BY h.created_at DESC, h.id
+     LIMIT 1`,
+    [userId, name, windowSeconds],
+  );
+  return result.rows[0] === undefined ? null : mapHouseholdRow(result.rows[0]);
+};
+
+/**
  * Looks up a single household by id. Plain `households` has no RLS policy
  * yet (per this slice's settled design — layer 2 resolver checks carry
  * authorization here, not layer 3 RLS), so this is a straightforward

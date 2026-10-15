@@ -19,4 +19,9 @@ const List<String> knownPantryUnits = <String>[
   // two weren't in yet — same count-only family as piece/packet/bunch.
   'jar',
   'bottle',
+  // A5 catalog units (`pack` in the catalog is `packet`).
+  'dozen',
+  'slice',
+  'loaf',
+  'pinch',
 ];

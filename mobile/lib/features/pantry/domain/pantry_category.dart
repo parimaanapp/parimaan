@@ -7,21 +7,49 @@
 /// fine, it just has no matching chip.
 const List<String> knownPantryCategories = <String>[
   'dal',
+  'grain',
   'spice',
   'dairy',
+  'eggs',
   'produce',
   'dry_goods',
-  'grain',
   'oil',
+  'meat_fish',
   'condiment',
+  'bakery',
+  'snacks',
+  'beverages',
   'frozen',
   'other',
 ];
 
-/// `dry_goods` -> `Dry goods`. Display formatting only — the wire value
-/// (used for the `category` filter argument and stored on the item) is
-/// always the raw snake_case string.
+/// Founder-approved display labels (docs/catalog/decisions.md, "UI copy
+/// rules"). Wire values stay snake_case.
+const Map<String, String> _categoryLabels = <String, String>{
+  'dal': 'Dal',
+  'grain': 'Grain',
+  'spice': 'Spice',
+  'dairy': 'Dairy',
+  'eggs': 'Eggs',
+  'produce': 'Produce',
+  'dry_goods': 'Dry Goods',
+  'oil': 'Oil',
+  'meat_fish': 'Meat & Fish',
+  'condiment': 'Condiment',
+  'bakery': 'Bakery',
+  'snacks': 'Snacks',
+  'beverages': 'Beverages',
+  'frozen': 'Frozen',
+  'other': 'Other',
+};
+
+/// Display label for a category wire value. An unknown (free-text) category
+/// is humanised (`festival_snacks` -> `Festival snacks`) rather than hidden.
 String pantryCategoryLabel(String category) {
+  final String? known = _categoryLabels[category];
+  if (known != null) {
+    return known;
+  }
   final String spaced = category.replaceAll('_', ' ');
   if (spaced.isEmpty) {
     return spaced;

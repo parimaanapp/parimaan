@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/pantry/domain/category_units.dart';
 import 'package:mobile/features/pantry/domain/curated_pantry_items.dart';
 import 'package:mobile/features/pantry/domain/curated_pantry_selection.dart';
 import 'package:mobile/features/pantry/domain/pantry_unit.dart';
@@ -93,29 +94,62 @@ void main() {
       expect(find.byKey(CuratedItemsSheet.quantityFieldKey(second)), findsNothing);
     });
 
-    testWidgets('the stepper offers exactly knownPantryUnits and nothing beyond it', (
+    testWidgets('a Toor Dal add offers only g, kg and cup', (
       WidgetTester tester,
     ) async {
       await _pumpSheet(tester, category: 'dal');
       final String item = curatedPantryItems['dal']!.first;
+      expect(item, 'Toor Dal');
       await _tick(tester, item);
 
-      for (final String unit in knownPantryUnits) {
-        expect(
-          find.byKey(CuratedItemsSheet.unitChipKey(item, unit)),
-          findsOneWidget,
-          reason: '$unit should be offered',
-        );
-      }
-      // No eleventh choice: exactly knownPantryUnits.length unit chips exist
-      // for this item.
-      int chipCount = 0;
-      for (final String candidate in <String>[...knownPantryUnits, 'made-up-unit']) {
-        if (find.byKey(CuratedItemsSheet.unitChipKey(item, candidate)).evaluate().isNotEmpty) {
-          chipCount++;
-        }
-      }
-      expect(chipCount, knownPantryUnits.length);
+      final List<String> offered = <String>[
+        for (final String candidate in knownPantryUnits)
+          if (find
+              .byKey(CuratedItemsSheet.unitChipKey(item, candidate))
+              .evaluate()
+              .isNotEmpty)
+            candidate,
+      ];
+      expect(offered.toSet(), <String>{'g', 'kg', 'cup'});
+    });
+
+    testWidgets('an oil add offers ml first and pre-selects it', (
+      WidgetTester tester,
+    ) async {
+      final List<List<CuratedPantrySelection>> emissions =
+          <List<CuratedPantrySelection>>[];
+      await _pumpSheet(
+        tester,
+        category: 'oil',
+        onSelectionChanged: emissions.add,
+      );
+      final String item = curatedPantryItems['oil']!.first;
+      await _tick(tester, item);
+
+      final List<String> offered = <String>[
+        for (final String candidate in unitsForCategory('oil'))
+          if (find
+              .byKey(CuratedItemsSheet.unitChipKey(item, candidate))
+              .evaluate()
+              .isNotEmpty)
+            candidate,
+      ];
+      expect(offered, unitsForCategory('oil'));
+      expect(offered.first, 'ml');
+      expect(
+        find.byKey(CuratedItemsSheet.unitChipKey(item, 'l')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(CuratedItemsSheet.unitChipKey(item, 'piece')),
+        findsNothing,
+      );
+
+      // The default unit is pre-selected, so a quantity alone commits.
+      await _setQuantity(tester, item, '1');
+      expect(emissions.last, <CuratedPantrySelection>[
+        CuratedPantrySelection(name: item, quantity: 1, unit: 'ml'),
+      ]);
     });
 
     testWidgets('an item ticked and then unticked contributes nothing', (

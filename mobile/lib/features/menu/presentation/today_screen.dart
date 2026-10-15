@@ -94,6 +94,8 @@ class _TodayForHousehold extends ConsumerWidget {
       children: <Widget>[
         PTopBar(
           title: 'Today',
+          // Names the household so signing in to an existing one is never silent.
+          subtitle: household.name,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
