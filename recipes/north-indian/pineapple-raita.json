@@ -1,0 +1,62 @@
+{
+  "title": "Pineapple Raita",
+  "description": "Sweet and tangy yogurt raita with small pineapple pieces and a hint of black salt.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Curd",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "dairy"
+    },
+    {
+      "name": "Pineapple",
+      "quantity": 150,
+      "unit": "g",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Roasted Cumin Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Black Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Mint Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Whisk the curd until smooth and creamy.",
+    "Add the sugar and mix until dissolved.",
+    "Fold in the chopped pineapple.",
+    "Season with black salt and roasted cumin powder.",
+    "Chill for 20 minutes and garnish with mint before serving."
+  ]
+}

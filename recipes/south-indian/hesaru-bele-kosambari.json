@@ -1,0 +1,100 @@
+{
+  "title": "Hesaru Bele Kosambari",
+  "description": "Karnataka no-cook salad of soaked moong dal, cucumber and fresh coconut with a lemon and mustard finish.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 5,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Moong Dal (Split, Yellow)",
+      "quantity": 100,
+      "unit": "g",
+      "category": "dal",
+      "notes": "soaked for 1 hour and drained"
+    },
+    {
+      "name": "Cucumber",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "grated"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 40,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juice"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 6 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Soak the moong dal in water for 1 hour until softened but still crunchy, then drain completely.",
+    "Combine the dal, cucumber, carrot, coconut and green chilli in a bowl.",
+    "Heat the oil in a small pan, crackle the mustard seeds and add the curry leaves.",
+    "Pour the tempering over the salad.",
+    "Add salt, lemon juice and coriander leaves, and toss lightly just before serving."
+  ]
+}
