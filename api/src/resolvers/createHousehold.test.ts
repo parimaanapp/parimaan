@@ -378,6 +378,71 @@ describe('createHousehold resolver', () => {
       expect(await countRows('households')).toBe(2);
     });
 
+    it('replay returns populated settings and the same inviteCode', async () => {
+      const handler = createCreateHouseholdHandler(fixture());
+      const first = await handler(buildEvent('Replay House', 'sub-replay'));
+      const second = await handler(buildEvent('Replay House', 'sub-replay'));
+
+      expect(second.inviteCode).toBe(first.inviteCode);
+      expect(second.settings).toEqual(first.settings);
+      expect(second.settings.mealsEnabled).toEqual(['breakfast', 'lunch', 'dinner']);
+    });
+
+    it('matches a name that differs only by surrounding whitespace', async () => {
+      const handler = createCreateHouseholdHandler(fixture());
+      const first = await handler(buildEvent('Padded House', 'sub-pad'));
+      const second = await handler(buildEvent('  Padded House  ', 'sub-pad'));
+
+      expect(second.id).toBe(first.id);
+      expect(await countRows('households')).toBe(1);
+    });
+
+    it('releases the lock after a seeding failure: an immediate retry creates exactly one', async () => {
+      const failing = createCreateHouseholdHandler({
+        getPool: async () => pool,
+        getCuratedRecipes: () => {
+          throw new Error('seed boom');
+        },
+      });
+      await expect(failing(buildEvent('Flaky House', 'sub-flaky'))).rejects.toThrow();
+      expect(await countRows('households')).toBe(0);
+
+      const ok = createCreateHouseholdHandler(fixture());
+      const result = await ok(buildEvent('Flaky House', 'sub-flaky'));
+
+      expect(result.name).toBe('Flaky House');
+      expect(await countRows('households')).toBe(1);
+    });
+
+    it.each([
+      ['just inside the window', '170 seconds', true],
+      ['just outside the window', '190 seconds', false],
+    ])('window boundary: %s', async (_label, age, reused) => {
+      const handler = createCreateHouseholdHandler(fixture());
+      const first = await handler(buildEvent('Edge House', 'sub-edge'));
+      await db.adminClient.query(
+        `UPDATE households SET created_at = NOW() - $2::interval WHERE id = $1`,
+        [first.id, age],
+      );
+
+      const second = await handler(buildEvent('Edge House', 'sub-edge'));
+
+      expect(second.id === first.id).toBe(reused);
+    });
+
+    it('falls through to create when the caller has no membership row for the match', async () => {
+      const handler = createCreateHouseholdHandler(fixture());
+      const first = await handler(buildEvent('Orphan House', 'sub-orphan'));
+      await db.adminClient.query(`DELETE FROM household_memberships WHERE household_id = $1`, [
+        first.id,
+      ]);
+
+      const second = await handler(buildEvent('Orphan House', 'sub-orphan'));
+
+      expect(second.id).not.toBe(first.id);
+      expect(second.members).toHaveLength(1);
+    });
+
     it("never returns another user's same-named household", async () => {
       const handler = createCreateHouseholdHandler(fixture());
       const a = await handler(buildEvent('Shared Name', 'sub-owner-a'));

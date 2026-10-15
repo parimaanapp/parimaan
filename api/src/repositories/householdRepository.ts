@@ -262,12 +262,12 @@ export const lockUserForHouseholdCreate = async (
   client: PoolClient,
   userId: string,
 ): Promise<void> => {
-  await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`create-household:${userId}`]);
+  await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [`create-household:${userId}`]);
 };
 
 /**
  * Returns the household `userId` is primary of, named exactly `name`, and
- * created at or after `since` — the newest such row, or `null`. This is the
+ * created within the last `windowSeconds` — the newest such row, or `null`. This is the
  * idempotency lookup for `createHousehold`: a retry of a request that already
  * succeeded server-side carries the same caller and name.
  */
@@ -275,14 +275,19 @@ export const findRecentPrimaryHouseholdByName = async (
   client: PoolClient,
   userId: string,
   name: string,
-  since: Date,
+  windowSeconds: number,
 ): Promise<HouseholdRow | null> => {
+  // Window is computed in SQL (DB clock) and the caller must still hold a
+  // membership row, so a household whose membership is gone falls through to
+  // a fresh create instead of surfacing NotFound downstream.
   const result = await client.query<RawHouseholdRow>(
-    `SELECT * FROM households
-     WHERE primary_user_id = $1 AND name = $2 AND created_at >= $3
-     ORDER BY created_at DESC
+    `SELECT h.* FROM households h
+     JOIN household_memberships m ON m.household_id = h.id AND m.user_id = $1
+     WHERE h.primary_user_id = $1 AND h.name = $2
+       AND h.created_at >= NOW() - make_interval(secs => $3::double precision)
+     ORDER BY h.created_at DESC, h.id
      LIMIT 1`,
-    [userId, name, since],
+    [userId, name, windowSeconds],
   );
   const row = result.rows[0];
   return row === undefined ? null : mapHouseholdRow(row);

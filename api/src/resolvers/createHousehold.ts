@@ -31,12 +31,12 @@ import { withErrorHandling } from './withErrorHandling.js';
 
 /**
  * A repeat `createHousehold` with the same name from the same primary user
- * inside this window is treated as a retry of the first call and returns that
+ * inside this window (3 minutes: ~2s client backoff + 45s Lambda timeout, with margin) is treated as a retry of the first call and returns that
  * household instead of creating another. Long enough to cover a cold-resume
  * timeout plus client retries; short enough that deliberately re-using a name
  * later still creates a new household.
  */
-export const CREATE_RETRY_WINDOW_MS = 10 * 60 * 1000;
+export const CREATE_RETRY_WINDOW_SECONDS = 3 * 60;
 
 export interface CreateHouseholdResolverDeps {
   getPool: () => Promise<Pool>;
@@ -234,7 +234,7 @@ export const createCreateHouseholdHandler =
           txClient,
           callerUser.id,
           name,
-          new Date(Date.now() - CREATE_RETRY_WINDOW_MS),
+          CREATE_RETRY_WINDOW_SECONDS,
         );
         if (existing !== null) {
           return buildGraphQLHousehold(txClient, existing);
