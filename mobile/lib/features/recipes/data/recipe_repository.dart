@@ -181,15 +181,11 @@ class FerryRecipeRepository with FerryExecuteMixin implements RecipeRepository {
   @override
   Stream<void> watchRecipeChanges(String householdId) async* {
     final GOnRecipeChangedReq request = GOnRecipeChangedReq(
-      (GOnRecipeChangedReqBuilder b) =>
-          b..vars = (GOnRecipeChangedVarsBuilder()..householdId = householdId),
+      (GOnRecipeChangedReqBuilder b) => b
+        ..vars = (GOnRecipeChangedVarsBuilder()..householdId = householdId),
     );
 
-    await for (final OperationResponse<
-          GOnRecipeChangedData,
-          GOnRecipeChangedVars
-        >
-        response
+    await for (final OperationResponse<GOnRecipeChangedData, GOnRecipeChangedVars> response
         in client.request(request)) {
       if (response.hasErrors) {
         throw mapOperationFailure(
@@ -248,8 +244,7 @@ class FerryRecipeRepository with FerryExecuteMixin implements RecipeRepository {
   @override
   Future<Recipe> deleteRecipe(String id) async {
     final GDeleteRecipeReq request = GDeleteRecipeReq(
-      (GDeleteRecipeReqBuilder b) =>
-          b..vars = (GDeleteRecipeVarsBuilder()..id = id),
+      (GDeleteRecipeReqBuilder b) => b..vars = (GDeleteRecipeVarsBuilder()..id = id),
     );
 
     final GDeleteRecipeData data = await execute(request);
@@ -316,6 +311,5 @@ class FerryRecipeRepository with FerryExecuteMixin implements RecipeRepository {
 /// shape as `pantryRepositoryProvider`.
 final Provider<RecipeRepository> recipeRepositoryProvider =
     Provider<RecipeRepository>(
-      (Ref ref) =>
-          FerryRecipeRepository(client: ref.watch(ferryClientProvider)),
+      (Ref ref) => FerryRecipeRepository(client: ref.watch(ferryClientProvider)),
     );

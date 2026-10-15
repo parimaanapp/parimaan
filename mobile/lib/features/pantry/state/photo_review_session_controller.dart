@@ -21,10 +21,7 @@ class PhotoReviewSessionController extends Notifier<PhotoReviewSession> {
 
   /// Appends [analysis]'s items. [pantryNames] is the household's current
   /// pantry, used only to flag duplicates (a note, never a block).
-  void addAnalysis(
-    PantryPhotoAnalysis analysis, {
-    required Set<String> pantryNames,
-  }) {
+  void addAnalysis(PantryPhotoAnalysis analysis, {required Set<String> pantryNames}) {
     _pantryNames = pantryNames.map(_key).toSet();
     final List<PhotoReviewItem> added = <PhotoReviewItem>[
       for (final PantryPhotoProposal proposal in analysis.items)
@@ -35,10 +32,7 @@ class PhotoReviewSessionController extends Notifier<PhotoReviewSession> {
           selected: proposal.confidence != ProposalConfidence.low,
         ),
     ];
-    state = PhotoReviewSession(
-      items: _withDuplicateNotes(<PhotoReviewItem>[...state.items, ...added]),
-      truncated: state.truncated || analysis.truncated,
-    );
+    state = PhotoReviewSession(items: _withDuplicateNotes(<PhotoReviewItem>[...state.items, ...added]), truncated: state.truncated || analysis.truncated);
   }
 
   /// Notes are recomputed across the whole list on every change, so renaming
@@ -52,13 +46,9 @@ class PhotoReviewSessionController extends Notifier<PhotoReviewSession> {
           final String key = _key(item.proposal.name);
           final String? note = _pantryNames.contains(key)
               ? PhotoReviewItem.alreadyInPantryNote
-              : (seen.contains(key)
-                    ? PhotoReviewItem.alsoInEarlierPhotoNote
-                    : null);
+              : (seen.contains(key) ? PhotoReviewItem.alsoInEarlierPhotoNote : null);
           seen.add(key);
-          return note == null
-              ? item.copyWith(clearDuplicateNote: true)
-              : item.copyWith(duplicateNote: note);
+          return note == null ? item.copyWith(clearDuplicateNote: true) : item.copyWith(duplicateNote: note);
         }(),
     ];
   }
@@ -68,28 +58,21 @@ class PhotoReviewSessionController extends Notifier<PhotoReviewSession> {
       return;
     }
     state = PhotoReviewSession(
-      items: _withDuplicateNotes(<PhotoReviewItem>[
-        for (final PhotoReviewItem i in state.items) i.id == id ? change(i) : i,
-      ]),
+      items: _withDuplicateNotes(<PhotoReviewItem>[for (final PhotoReviewItem i in state.items) i.id == id ? change(i) : i]),
       truncated: state.truncated,
     );
   }
 
-  void toggle(String id) =>
-      _replace(id, (PhotoReviewItem i) => i.copyWith(selected: !i.selected));
+  void toggle(String id) => _replace(id, (PhotoReviewItem i) => i.copyWith(selected: !i.selected));
 
-  void edit(String id, PantryPhotoProposal proposal) =>
-      _replace(id, (PhotoReviewItem i) => i.copyWith(proposal: proposal));
+  void edit(String id, PantryPhotoProposal proposal) => _replace(id, (PhotoReviewItem i) => i.copyWith(proposal: proposal));
 
   void remove(String id) {
     if (!state.items.any((PhotoReviewItem i) => i.id == id)) {
       return;
     }
     state = PhotoReviewSession(
-      items: _withDuplicateNotes(<PhotoReviewItem>[
-        for (final PhotoReviewItem i in state.items)
-          if (i.id != id) i,
-      ]),
+      items: _withDuplicateNotes(<PhotoReviewItem>[for (final PhotoReviewItem i in state.items) if (i.id != id) i]),
       truncated: state.truncated,
     );
   }
@@ -100,8 +83,5 @@ class PhotoReviewSessionController extends Notifier<PhotoReviewSession> {
   }
 }
 
-final NotifierProvider<PhotoReviewSessionController, PhotoReviewSession>
-photoReviewSessionControllerProvider =
-    NotifierProvider<PhotoReviewSessionController, PhotoReviewSession>(
-      PhotoReviewSessionController.new,
-    );
+final NotifierProvider<PhotoReviewSessionController, PhotoReviewSession> photoReviewSessionControllerProvider =
+    NotifierProvider<PhotoReviewSessionController, PhotoReviewSession>(PhotoReviewSessionController.new);

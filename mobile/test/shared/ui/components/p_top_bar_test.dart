@@ -76,7 +76,9 @@ void main() {
       expect(widget.strokeWidth, greaterThanOrEqualTo(2.6));
     });
 
-    testWidgets('back button has an ink response', (WidgetTester tester) async {
+    testWidgets('back button has an ink response', (
+      WidgetTester tester,
+    ) async {
       await pumpFullWidth(
         tester,
         PTopBar(title: 'Pantry', onBack: () {}, backSemanticLabel: 'Back'),

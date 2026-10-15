@@ -48,8 +48,7 @@ class ReconnectPolicy {
     if (_attempt < _ladder.length - 1) {
       _attempt++;
     }
-    final double jitterFactor =
-        _jitterMin + _random.nextDouble() * (_jitterMax - _jitterMin);
+    final double jitterFactor = _jitterMin + _random.nextDouble() * (_jitterMax - _jitterMin);
     return Duration(microseconds: (base.inMicroseconds * jitterFactor).round());
   }
 

@@ -249,19 +249,22 @@ void main() {
       },
     );
 
-    test('returns the whole household, not just settings — the whole point of the widened return shape (W8 S10)', () async {
-      final subject = _subject(_ok);
+    test(
+      'returns the whole household, not just settings — the whole point of the widened return shape (W8 S10)',
+      () async {
+        final subject = _subject(_ok);
 
-      final Household household = await subject.repository
-          .updateHouseholdSettings(
-            'household-1',
-            HouseholdSettingsPatch.meals(<MealType>{MealType.lunch}),
-          );
+        final Household household = await subject.repository
+            .updateHouseholdSettings(
+              'household-1',
+              HouseholdSettingsPatch.meals(<MealType>{MealType.lunch}),
+            );
 
-      expect(household.id, 'household-1');
-      expect(household.name, 'Kulkarni Kitchen');
-      expect(household.members, isNotEmpty);
-    });
+        expect(household.id, 'household-1');
+        expect(household.name, 'Kulkarni Kitchen');
+        expect(household.members, isNotEmpty);
+      },
+    );
 
     test('an unrecognised server enum value degrades that entry rather than '
         'failing the response', () async {

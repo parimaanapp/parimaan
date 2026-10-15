@@ -59,10 +59,7 @@ void main() {
     testWidgets('renders all three options', (WidgetTester tester) async {
       await _pump(tester);
 
-      expect(
-        find.byKey(RecipeMethodScreen.structuredButtonKey),
-        findsOneWidget,
-      );
+      expect(find.byKey(RecipeMethodScreen.structuredButtonKey), findsOneWidget);
       expect(find.byKey(RecipeMethodScreen.urlButtonKey), findsOneWidget);
       expect(find.byKey(RecipeMethodScreen.freeformButtonKey), findsOneWidget);
     });

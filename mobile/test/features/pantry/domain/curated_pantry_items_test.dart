@@ -49,8 +49,7 @@ void main() {
           expect(
             leadingDigit.hasMatch(item),
             isFalse,
-            reason:
-                '"$item" in "${entry.key}" looks like it carries a '
+            reason: '"$item" in "${entry.key}" looks like it carries a '
                 'quantity — curated entries are names only',
           );
         }
@@ -62,11 +61,7 @@ void main() {
           in curatedPantryItems.entries) {
         for (final String item in entry.value) {
           expect(item.trim(), isNotEmpty);
-          expect(
-            item,
-            item.trim(),
-            reason: '"$item" has leading/trailing whitespace',
-          );
+          expect(item, item.trim(), reason: '"$item" has leading/trailing whitespace');
         }
       }
     });
@@ -76,12 +71,10 @@ void main() {
       expect(curatedPantryItems['dal']?.first, 'Toor Dal');
     });
 
-    test(
-      'produce and other are deliberately absent, not present-and-empty',
-      () {
-        expect(curatedPantryItems.containsKey('produce'), isFalse);
-        expect(curatedPantryItems.containsKey('other'), isFalse);
-      },
-    );
+    test('produce and other are deliberately absent, not present-and-empty',
+        () {
+      expect(curatedPantryItems.containsKey('produce'), isFalse);
+      expect(curatedPantryItems.containsKey('other'), isFalse);
+    });
   });
 }

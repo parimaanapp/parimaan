@@ -58,9 +58,7 @@ String appSyncApiHost(String httpGraphQlUrl) => Uri.parse(httpGraphQlUrl).host;
 /// [AuthLink]'s own convention for the HTTP transport.
 String appSyncAuthHeader({required String host, required String idToken}) =>
     base64Url.encode(
-      utf8.encode(
-        jsonEncode(<String, String>{'host': host, 'Authorization': idToken}),
-      ),
+      utf8.encode(jsonEncode(<String, String>{'host': host, 'Authorization': idToken})),
     );
 
 /// The connect-time query string appended to [appSyncRealtimeUri]:
@@ -99,25 +97,16 @@ Map<String, Object?> startFrame({
   'id': id,
   'type': 'start',
   'payload': <String, Object?>{
-    'data': jsonEncode(<String, Object?>{
-      'query': query,
-      'variables': variables,
-    }),
+    'data': jsonEncode(<String, Object?>{'query': query, 'variables': variables}),
     'extensions': <String, Object?>{
-      'authorization': <String, Object?>{
-        'host': host,
-        'Authorization': idToken,
-      },
+      'authorization': <String, Object?>{'host': host, 'Authorization': idToken},
     },
   },
 };
 
 /// `{"id", "type":"stop"}` — unregisters one subscription without closing
 /// the shared connection (other subscriptions on it may still be active).
-Map<String, Object?> stopFrame(String id) => <String, Object?>{
-  'id': id,
-  'type': 'stop',
-};
+Map<String, Object?> stopFrame(String id) => <String, Object?>{'id': id, 'type': 'stop'};
 
 /// Extracts `payload.connectionTimeoutMs` from a decoded `connection_ack`
 /// frame — the value AppSync uses to tell the client how long it may go

@@ -49,9 +49,7 @@ Future<ProviderContainer> _pumpPushed(
   required FakeRecipeRepository repository,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[
-      recipeRepositoryProvider.overrideWithValue(repository),
-    ],
+    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
   );
   addTearDown(container.dispose);
 
@@ -120,9 +118,7 @@ Future<ProviderContainer> _pumpPushed(
 }
 
 bool _submitEnabled(WidgetTester tester) =>
-    tester
-        .widget<PButton>(find.byKey(UrlImportScreen.submitButtonKey))
-        .onPressed !=
+    tester.widget<PButton>(find.byKey(UrlImportScreen.submitButtonKey)).onPressed !=
     null;
 
 void main() {
@@ -134,10 +130,7 @@ void main() {
 
       expect(_submitEnabled(tester), isFalse);
 
-      await tester.enterText(
-        find.byKey(UrlImportScreen.urlFieldKey),
-        'not a url',
-      );
+      await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), 'not a url');
       await tester.pump();
       expect(_submitEnabled(tester), isFalse);
 
@@ -155,10 +148,7 @@ void main() {
       await tester.pump();
       expect(_submitEnabled(tester), isFalse, reason: 'no scheme at all');
 
-      await tester.enterText(
-        find.byKey(UrlImportScreen.urlFieldKey),
-        _rajmaUrl,
-      );
+      await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), _rajmaUrl);
       await tester.pump();
       expect(_submitEnabled(tester), isTrue);
     });
@@ -220,45 +210,38 @@ void main() {
       },
     );
 
-    testWidgets(
-      'a slow response shows an honest in-flight state and stays cancellable',
-      (WidgetTester tester) async {
-        final FakeRecipeRepository repository = FakeRecipeRepository()
-          ..importRecipeFromUrlResult = _rajmaDraft
-          ..delay = const Duration(milliseconds: 500);
-        await _pumpPushed(tester, repository: repository);
+    testWidgets('a slow response shows an honest in-flight state and stays cancellable', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository()
+        ..importRecipeFromUrlResult = _rajmaDraft
+        ..delay = const Duration(milliseconds: 500);
+      await _pumpPushed(tester, repository: repository);
 
-        await tester.enterText(
-          find.byKey(UrlImportScreen.urlFieldKey),
-          _rajmaUrl,
-        );
-        await tester.pump();
-        await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
-        await tester.pump();
+      await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), _rajmaUrl);
+      await tester.pump();
+      await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
+      await tester.pump();
 
-        expect(
-          find.byKey(UrlImportScreen.inFlightIndicatorKey),
-          findsOneWidget,
-        );
-        expect(find.textContaining('This can take'), findsOneWidget);
+      expect(find.byKey(UrlImportScreen.inFlightIndicatorKey), findsOneWidget);
+      expect(find.textContaining('This can take'), findsOneWidget);
 
-        // Still cancellable — actually tap it mid-flight, before the pending
-        // import resolves, and confirm it really pops rather than merely
-        // being present on screen. This exercises the same `PopScope.
-        // onPopInvokedWithResult` path any pop takes — the in-app button
-        // here, but identically Android's hardware/gesture back or iOS's
-        // edge-swipe, none of which are special-cased separately in
-        // `UrlImportScreen` itself.
-        await tester.tap(find.byType(PTopBarBackButton));
-        await tester.pumpAndSettle();
+      // Still cancellable — actually tap it mid-flight, before the pending
+      // import resolves, and confirm it really pops rather than merely
+      // being present on screen. This exercises the same `PopScope.
+      // onPopInvokedWithResult` path any pop takes — the in-app button
+      // here, but identically Android's hardware/gesture back or iOS's
+      // edge-swipe, none of which are special-cased separately in
+      // `UrlImportScreen` itself.
+      await tester.tap(find.byType(PTopBarBackButton));
+      await tester.pumpAndSettle();
 
-        expect(find.byType(UrlImportScreen), findsNothing);
-        expect(find.text('open'), findsOneWidget);
-        // The pending import must not push the review screen on top of
-        // wherever the user backed out to once it resolves.
-        expect(find.byType(RecipeDraftReviewScreen), findsNothing);
-      },
-    );
+      expect(find.byType(UrlImportScreen), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+      // The pending import must not push the review screen on top of
+      // wherever the user backed out to once it resolves.
+      expect(find.byType(RecipeDraftReviewScreen), findsNothing);
+    });
 
     testWidgets('a successful import navigates to review with sourceUrl set', (
       WidgetTester tester,
@@ -267,10 +250,7 @@ void main() {
         ..importRecipeFromUrlResult = _rajmaDraft;
       await _pumpPushed(tester, repository: repository);
 
-      await tester.enterText(
-        find.byKey(UrlImportScreen.urlFieldKey),
-        _rajmaUrl,
-      );
+      await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), _rajmaUrl);
       await tester.pump();
       await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
       await tester.pumpAndSettle();
@@ -280,109 +260,88 @@ void main() {
       expect(find.text('From $_rajmaUrl'), findsOneWidget);
     });
 
-    testWidgets(
-      'URL_UNREADABLE routes to the AI failure fallback screen with the URL preserved',
-      (WidgetTester tester) async {
-        final FakeRecipeRepository repository = FakeRecipeRepository()
-          ..importRecipeFromUrlError = const UrlUnreadableError(
-            "Couldn't read that page. Try pasting the recipe text instead.",
-          );
-        await _pumpPushed(tester, repository: repository);
-
-        await tester.enterText(
-          find.byKey(UrlImportScreen.urlFieldKey),
-          _rajmaUrl,
+    testWidgets('URL_UNREADABLE routes to the AI failure fallback screen with the URL preserved', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository()
+        ..importRecipeFromUrlError = const UrlUnreadableError(
+          "Couldn't read that page. Try pasting the recipe text instead.",
         );
-        await tester.pump();
-        await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
-        await tester.pumpAndSettle();
+      await _pumpPushed(tester, repository: repository);
 
-        expect(find.byType(AiFailureScreen), findsOneWidget);
-        expect(find.byKey(AiFailureScreen.preservedInputKey), findsOneWidget);
-        expect(find.text(_rajmaUrl), findsOneWidget);
-        expect(
-          find.text(
-            "Couldn't read that page. Try pasting the recipe text instead.",
-          ),
-          findsOneWidget,
+      await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), _rajmaUrl);
+      await tester.pump();
+      await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AiFailureScreen), findsOneWidget);
+      expect(find.byKey(AiFailureScreen.preservedInputKey), findsOneWidget);
+      expect(find.text(_rajmaUrl), findsOneWidget);
+      expect(
+        find.text("Couldn't read that page. Try pasting the recipe text instead."),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a RATE_LIMITED failure renders inline with no retry affordance', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository()
+        ..importRecipeFromUrlError = const RateLimitedError(
+          "You've reached today's limit for recipe imports.",
         );
-      },
-    );
+      await _pumpPushed(tester, repository: repository);
 
-    testWidgets(
-      'a RATE_LIMITED failure renders inline with no retry affordance',
-      (WidgetTester tester) async {
-        final FakeRecipeRepository repository = FakeRecipeRepository()
-          ..importRecipeFromUrlError = const RateLimitedError(
-            "You've reached today's limit for recipe imports.",
-          );
-        await _pumpPushed(tester, repository: repository);
+      await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), _rajmaUrl);
+      await tester.pump();
+      await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
+      await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(UrlImportScreen.urlFieldKey),
-          _rajmaUrl,
-        );
-        await tester.pump();
-        await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
-        await tester.pumpAndSettle();
+      expect(
+        find.text("You've reached today's limit for recipe imports."),
+        findsOneWidget,
+      );
+      expect(find.byKey(UrlImportScreen.retryButtonKey), findsNothing);
+      expect(find.byType(AiFailureScreen), findsNothing);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(UrlImportScreen.urlFieldKey),
+                matching: find.byType(TextField),
+              ),
+            )
+            .controller
+            ?.text,
+        _rajmaUrl,
+      );
+    });
 
-        expect(
-          find.text("You've reached today's limit for recipe imports."),
-          findsOneWidget,
-        );
-        expect(find.byKey(UrlImportScreen.retryButtonKey), findsNothing);
-        expect(find.byType(AiFailureScreen), findsNothing);
-        expect(
-          tester
-              .widget<TextField>(
-                find.descendant(
-                  of: find.byKey(UrlImportScreen.urlFieldKey),
-                  matching: find.byType(TextField),
-                ),
-              )
-              .controller
-              ?.text,
-          _rajmaUrl,
-        );
-      },
-    );
+    testWidgets('a generic (non-URL_UNREADABLE) failure renders inline with a retry affordance', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository()
+        ..importRecipeFromUrlError = const ValidationError('url must be an https URL');
+      await _pumpPushed(tester, repository: repository);
 
-    testWidgets(
-      'a generic (non-URL_UNREADABLE) failure renders inline with a retry affordance',
-      (WidgetTester tester) async {
-        final FakeRecipeRepository repository = FakeRecipeRepository()
-          ..importRecipeFromUrlError = const ValidationError(
-            'url must be an https URL',
-          );
-        await _pumpPushed(tester, repository: repository);
+      await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), _rajmaUrl);
+      await tester.pump();
+      await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
+      await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(UrlImportScreen.urlFieldKey),
-          _rajmaUrl,
-        );
-        await tester.pump();
-        await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
-        await tester.pumpAndSettle();
-
-        expect(find.text('url must be an https URL'), findsOneWidget);
-        expect(find.byKey(UrlImportScreen.retryButtonKey), findsOneWidget);
-        expect(find.byType(AiFailureScreen), findsNothing);
-      },
-    );
+      expect(find.text('url must be an https URL'), findsOneWidget);
+      expect(find.byKey(UrlImportScreen.retryButtonKey), findsOneWidget);
+      expect(find.byType(AiFailureScreen), findsNothing);
+    });
 
     testWidgets(
       'the entered URL survives the inline-retry failure path (RATE_LIMITED and URL_UNREADABLE are covered by their own tests above)',
       (WidgetTester tester) async {
         final FakeRecipeRepository repository = FakeRecipeRepository()
-          ..importRecipeFromUrlError = const ValidationError(
-            'url must be an https URL',
-          );
+          ..importRecipeFromUrlError = const ValidationError('url must be an https URL');
         await _pumpPushed(tester, repository: repository);
 
-        await tester.enterText(
-          find.byKey(UrlImportScreen.urlFieldKey),
-          _rajmaUrl,
-        );
+        await tester.enterText(find.byKey(UrlImportScreen.urlFieldKey), _rajmaUrl);
         await tester.pump();
         await tester.tap(find.byKey(UrlImportScreen.submitButtonKey));
         await tester.pumpAndSettle();
@@ -402,17 +361,16 @@ void main() {
       },
     );
 
-    testWidgets(
-      'the "paste text instead" affordance is co-equal and always present',
-      (WidgetTester tester) async {
-        await _pumpPushed(tester, repository: FakeRecipeRepository());
+    testWidgets('the "paste text instead" affordance is co-equal and always present', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakeRecipeRepository());
 
-        await tester.tap(find.byKey(UrlImportScreen.pasteInsteadButtonKey));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byKey(UrlImportScreen.pasteInsteadButtonKey));
+      await tester.pumpAndSettle();
 
-        expect(find.byType(FreeformInputScreen), findsOneWidget);
-      },
-    );
+      expect(find.byType(FreeformInputScreen), findsOneWidget);
+    });
 
     testWidgets('tapping the top-bar back button actually pops', (
       WidgetTester tester,

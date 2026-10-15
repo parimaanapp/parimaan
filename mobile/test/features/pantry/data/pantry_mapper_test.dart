@@ -38,28 +38,25 @@ void main() {
       expect(result.updatedAt, DateTime.utc(2026, 8, 25, 11));
     });
 
-    test(
-      'maps a null category, expiryDate, and lowThreshold through as null',
-      () {
-        final GPantryItemFieldsData data = GPantryItemFieldsData(
-          (GPantryItemFieldsDataBuilder b) => b
-            ..id = 'item-1'
-            ..householdId = 'household-1'
-            ..name = 'Rice'
-            ..quantity = 1
-            ..unit = 'kg'
-            ..isStaple = false
-            ..addedBy = 'user-1'
-            ..addedAt = DateTime.utc(2026, 8, 25, 10)
-            ..updatedAt = DateTime.utc(2026, 8, 25, 11),
-        );
+    test('maps a null category, expiryDate, and lowThreshold through as null', () {
+      final GPantryItemFieldsData data = GPantryItemFieldsData(
+        (GPantryItemFieldsDataBuilder b) => b
+          ..id = 'item-1'
+          ..householdId = 'household-1'
+          ..name = 'Rice'
+          ..quantity = 1
+          ..unit = 'kg'
+          ..isStaple = false
+          ..addedBy = 'user-1'
+          ..addedAt = DateTime.utc(2026, 8, 25, 10)
+          ..updatedAt = DateTime.utc(2026, 8, 25, 11),
+      );
 
-        final result = pantryItemFromGraphQL(data);
+      final result = pantryItemFromGraphQL(data);
 
-        expect(result.category, isNull);
-        expect(result.expiryDate, isNull);
-        expect(result.lowThreshold, isNull);
-      },
-    );
+      expect(result.category, isNull);
+      expect(result.expiryDate, isNull);
+      expect(result.lowThreshold, isNull);
+    });
   });
 }

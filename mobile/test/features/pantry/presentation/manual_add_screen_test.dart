@@ -36,9 +36,7 @@ Future<ProviderContainer> _pumpPushed(
   PantryItem? initialItem,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[
-      pantryRepositoryProvider.overrideWithValue(repository),
-    ],
+    overrides: <Override>[pantryRepositoryProvider.overrideWithValue(repository)],
   );
   addTearDown(container.dispose);
 
@@ -90,10 +88,7 @@ void main() {
         expect(find.byKey(ManualAddScreen.unitChipKey(unit)), findsNothing);
       }
       expect(
-        tester
-            .widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey))
-            .controller
-            ?.text,
+        tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text,
         'g',
       );
     });
@@ -109,10 +104,7 @@ void main() {
 
       final List<String> shown = <String>[
         for (final String unit in unitsForCategory('oil'))
-          if (find
-              .byKey(ManualAddScreen.unitChipKey(unit))
-              .evaluate()
-              .isNotEmpty)
+          if (find.byKey(ManualAddScreen.unitChipKey(unit)).evaluate().isNotEmpty)
             unit,
       ];
       expect(shown, unitsForCategory('oil'));
@@ -123,10 +115,7 @@ void main() {
         ),
       );
       expect(
-        tester
-            .widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey))
-            .controller
-            ?.text,
+        tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text,
         'ml',
       );
     });
@@ -140,13 +129,7 @@ void main() {
       await tester.ensureVisible(find.widgetWithText(PChip, 'Dal'));
       await tester.tap(find.widgetWithText(PChip, 'Dal'));
       await tester.pump();
-      expect(
-        tester
-            .widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey))
-            .controller
-            ?.text,
-        'ml',
-      );
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'ml');
     });
 
     testWidgets('an empty unit is filled with the category default', (
@@ -156,13 +139,7 @@ void main() {
       await tester.ensureVisible(find.widgetWithText(PChip, 'Dal'));
       await tester.tap(find.widgetWithText(PChip, 'Dal'));
       await tester.pump();
-      expect(
-        tester
-            .widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey))
-            .controller
-            ?.text,
-        'g',
-      );
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'g');
     });
 
     testWidgets('an auto-filled default follows a category change', (
@@ -175,13 +152,7 @@ void main() {
       await tester.ensureVisible(find.widgetWithText(PChip, 'Oil'));
       await tester.tap(find.widgetWithText(PChip, 'Oil'));
       await tester.pump();
-      expect(
-        tester
-            .widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey))
-            .controller
-            ?.text,
-        'ml',
-      );
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'ml');
     });
 
     testWidgets('edit mode keeps the stored unit when the category changes', (
@@ -207,36 +178,21 @@ void main() {
       await tester.ensureVisible(find.widgetWithText(PChip, 'Oil'));
       await tester.tap(find.widgetWithText(PChip, 'Oil'));
       await tester.pump();
-      expect(
-        tester
-            .widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey))
-            .controller
-            ?.text,
-        'g',
-      );
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'g');
     });
 
-    testWidgets(
-      'a differently-cased unit still shows its matching chip selected',
-      (WidgetTester tester) async {
-        await _pumpPushed(tester, repository: FakePantryRepository());
-        await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'KG');
-        await tester.pump();
-        expect(
-          tester
-              .widget<PChip>(find.byKey(ManualAddScreen.unitChipKey('kg')))
-              .selected,
-          isTrue,
-        );
-        expect(
-          tester
-              .widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey))
-              .controller
-              ?.text,
-          'KG',
-        );
-      },
-    );
+    testWidgets('a differently-cased unit still shows its matching chip selected', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+      await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'KG');
+      await tester.pump();
+      expect(
+        tester.widget<PChip>(find.byKey(ManualAddScreen.unitChipKey('kg'))).selected,
+        isTrue,
+      );
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'KG');
+    });
 
     testWidgets('the category filter shows the approved labels', (
       WidgetTester tester,
@@ -248,39 +204,34 @@ void main() {
         'Eggs',
         'Beverages',
       ]) {
-        expect(
-          find.widgetWithText(PChip, label),
-          findsOneWidget,
-          reason: label,
-        );
+        expect(find.widgetWithText(PChip, label), findsOneWidget, reason: label);
       }
     });
 
-    testWidgets(
-      'an existing unit outside the allow-list stays visible in edit',
-      (WidgetTester tester) async {
-        await _pumpPushed(
-          tester,
-          repository: FakePantryRepository(),
-          initialItem: PantryItem(
-            id: 'item-2',
-            householdId: 'household-1',
-            name: 'Toor Dal',
-            quantity: 2,
-            unit: 'ml',
-            category: 'dal',
-            isStaple: false,
-            addedBy: 'user-1',
-            addedAt: DateTime.utc(2026, 8, 25),
-            updatedAt: DateTime.utc(2026, 8, 25),
-          ),
-        );
+    testWidgets('an existing unit outside the allow-list stays visible in edit', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(
+        tester,
+        repository: FakePantryRepository(),
+        initialItem: PantryItem(
+          id: 'item-2',
+          householdId: 'household-1',
+          name: 'Toor Dal',
+          quantity: 2,
+          unit: 'ml',
+          category: 'dal',
+          isStaple: false,
+          addedBy: 'user-1',
+          addedAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        ),
+      );
 
-        expect(find.byKey(ManualAddScreen.unitChipKey('ml')), findsOneWidget);
-        expect(find.byKey(ManualAddScreen.unitChipKey('g')), findsOneWidget);
-        expect(find.byKey(ManualAddScreen.unitChipKey('piece')), findsNothing);
-      },
-    );
+      expect(find.byKey(ManualAddScreen.unitChipKey('ml')), findsOneWidget);
+      expect(find.byKey(ManualAddScreen.unitChipKey('g')), findsOneWidget);
+      expect(find.byKey(ManualAddScreen.unitChipKey('piece')), findsNothing);
+    });
 
     testWidgets('submit is disabled until name, quantity, and unit are valid', (
       WidgetTester tester,
@@ -290,10 +241,7 @@ void main() {
       final Finder submitButton = find.byKey(ManualAddScreen.submitButtonKey);
       expect(tester.widget<PButton>(submitButton).onPressed, isNull);
 
-      await tester.enterText(
-        find.byKey(ManualAddScreen.nameFieldKey),
-        'Toor Dal',
-      );
+      await tester.enterText(find.byKey(ManualAddScreen.nameFieldKey), 'Toor Dal');
       await tester.enterText(find.byKey(ManualAddScreen.quantityFieldKey), '2');
       await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'kg');
       await tester.pump();
@@ -301,26 +249,22 @@ void main() {
       expect(tester.widget<PButton>(submitButton).onPressed, isNotNull);
     });
 
-    testWidgets(
-      'a blank name keeps submit disabled even with quantity+unit filled',
-      (WidgetTester tester) async {
-        await _pumpPushed(tester, repository: FakePantryRepository());
+    testWidgets('a blank name keeps submit disabled even with quantity+unit filled', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
 
-        await tester.enterText(
-          find.byKey(ManualAddScreen.quantityFieldKey),
-          '2',
-        );
-        await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'kg');
-        await tester.pump();
+      await tester.enterText(find.byKey(ManualAddScreen.quantityFieldKey), '2');
+      await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'kg');
+      await tester.pump();
 
-        expect(
-          tester
-              .widget<PButton>(find.byKey(ManualAddScreen.submitButtonKey))
-              .onPressed,
-          isNull,
-        );
-      },
-    );
+      expect(
+        tester
+            .widget<PButton>(find.byKey(ManualAddScreen.submitButtonKey))
+            .onPressed,
+        isNull,
+      );
+    });
 
     testWidgets('success calls addPantryItem and pops back', (
       WidgetTester tester,
@@ -330,10 +274,7 @@ void main() {
       );
       await _pumpPushed(tester, repository: repository);
 
-      await tester.enterText(
-        find.byKey(ManualAddScreen.nameFieldKey),
-        'Toor Dal',
-      );
+      await tester.enterText(find.byKey(ManualAddScreen.nameFieldKey), 'Toor Dal');
       await tester.enterText(find.byKey(ManualAddScreen.quantityFieldKey), '2');
       await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'kg');
       await tester.pump();
@@ -355,10 +296,7 @@ void main() {
       );
       await _pumpPushed(tester, repository: repository);
 
-      await tester.enterText(
-        find.byKey(ManualAddScreen.nameFieldKey),
-        'Toor Dal',
-      );
+      await tester.enterText(find.byKey(ManualAddScreen.nameFieldKey), 'Toor Dal');
       await tester.enterText(find.byKey(ManualAddScreen.quantityFieldKey), '2');
       await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'kg');
       await tester.pump();
@@ -373,10 +311,7 @@ void main() {
       final FakePantryRepository repository = FakePantryRepository();
       await _pumpPushed(tester, repository: repository);
 
-      await tester.enterText(
-        find.byKey(ManualAddScreen.nameFieldKey),
-        'Toor Dal',
-      );
+      await tester.enterText(find.byKey(ManualAddScreen.nameFieldKey), 'Toor Dal');
       await tester.tap(find.byType(PTopBarBackButton));
       await tester.pumpAndSettle();
 
@@ -410,34 +345,33 @@ void main() {
       );
     });
 
-    testWidgets(
-      'submitting with only one field changed sends a patch with only that field',
-      (WidgetTester tester) async {
-        final FakePantryRepository repository = FakePantryRepository(
-          updateResult: _existingItem,
-        );
-        await _pumpPushed(
-          tester,
-          repository: repository,
-          initialItem: _existingItem,
-        );
+    testWidgets('submitting with only one field changed sends a patch with only that field', (
+      WidgetTester tester,
+    ) async {
+      final FakePantryRepository repository = FakePantryRepository(
+        updateResult: _existingItem,
+      );
+      await _pumpPushed(
+        tester,
+        repository: repository,
+        initialItem: _existingItem,
+      );
 
-        await tester.enterText(
-          find.byKey(ManualAddScreen.quantityFieldKey),
-          '5',
-        );
-        await tester.tap(find.byKey(ManualAddScreen.submitButtonKey));
-        await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(ManualAddScreen.quantityFieldKey),
+        '5',
+      );
+      await tester.tap(find.byKey(ManualAddScreen.submitButtonKey));
+      await tester.pumpAndSettle();
 
-        expect(repository.updateCalls, hasLength(1));
-        final patch = repository.updateCalls.single.patch;
-        expect(patch.quantity, 5);
-        expect(patch.name, isNull);
-        expect(patch.unit, isNull);
-        expect(patch.category, isNull);
-        expect(patch.isStaple, isNull);
-      },
-    );
+      expect(repository.updateCalls, hasLength(1));
+      final patch = repository.updateCalls.single.patch;
+      expect(patch.quantity, 5);
+      expect(patch.name, isNull);
+      expect(patch.unit, isNull);
+      expect(patch.category, isNull);
+      expect(patch.isStaple, isNull);
+    });
 
     testWidgets('submitting with nothing changed sends no request at all', (
       WidgetTester tester,

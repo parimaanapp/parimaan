@@ -37,7 +37,5 @@ const double unverifiedDarkFrameLumaThreshold = 50;
 /// `true` when [averageLuma] falls at or below [threshold] — the capture
 /// screen's own decision of what to do with that (block the shutter, show
 /// a non-blocking warning) is deliberately not this function's job.
-bool isFrameTooDark(
-  double averageLuma, {
-  double threshold = unverifiedDarkFrameLumaThreshold,
-}) => averageLuma <= threshold;
+bool isFrameTooDark(double averageLuma, {double threshold = unverifiedDarkFrameLumaThreshold}) =>
+    averageLuma <= threshold;

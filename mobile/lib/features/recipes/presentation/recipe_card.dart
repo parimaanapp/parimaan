@@ -39,9 +39,7 @@ class RecipeCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   recipe.title,
-                  style: AppTypography.bodyStrong.copyWith(
-                    color: AppColors.ink,
-                  ),
+                  style: AppTypography.bodyStrong.copyWith(color: AppColors.ink),
                 ),
                 const SizedBox(height: AppSpacing.s0),
                 Text(

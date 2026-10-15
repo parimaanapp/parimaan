@@ -13,8 +13,7 @@ class _FixedRandom implements math.Random {
 
   @override
   double nextDouble() {
-    final double value =
-        values[_index < values.length ? _index : values.length - 1];
+    final double value = values[_index < values.length ? _index : values.length - 1];
     _index++;
     return value;
   }
@@ -31,9 +30,7 @@ void main() {
     test('the ladder is 1s, 2s, 5s, 15s, 60s, then stays at 60s', () {
       // nextDouble() = 0.5 -> jitter factor exactly 1.0 (the midpoint of
       // 0.8..1.2), so each delay equals its ladder step precisely.
-      final ReconnectPolicy policy = ReconnectPolicy(
-        random: _FixedRandom(<double>[0.5]),
-      );
+      final ReconnectPolicy policy = ReconnectPolicy(random: _FixedRandom(<double>[0.5]));
 
       expect(policy.nextDelay(), const Duration(seconds: 1));
       expect(policy.nextDelay(), const Duration(seconds: 2));
@@ -46,27 +43,21 @@ void main() {
       expect(policy.nextDelay(), const Duration(seconds: 60));
     });
 
-    test(
-      'reset() starts the ladder over at 1s, not from wherever it left off',
-      () {
-        final ReconnectPolicy policy = ReconnectPolicy(
-          random: _FixedRandom(<double>[0.5]),
-        );
+    test('reset() starts the ladder over at 1s, not from wherever it left off', () {
+      final ReconnectPolicy policy = ReconnectPolicy(random: _FixedRandom(<double>[0.5]));
 
-        expect(policy.nextDelay(), const Duration(seconds: 1));
-        expect(policy.nextDelay(), const Duration(seconds: 2));
-        expect(policy.nextDelay(), const Duration(seconds: 5));
+      expect(policy.nextDelay(), const Duration(seconds: 1));
+      expect(policy.nextDelay(), const Duration(seconds: 2));
+      expect(policy.nextDelay(), const Duration(seconds: 5));
 
-        policy.reset();
+      policy.reset();
 
-        expect(policy.nextDelay(), const Duration(seconds: 1));
-        expect(policy.nextDelay(), const Duration(seconds: 2));
-      },
-    );
+      expect(policy.nextDelay(), const Duration(seconds: 1));
+      expect(policy.nextDelay(), const Duration(seconds: 2));
+    });
 
     test('jitter keeps every delay inside its declared ±20% band', () {
-      final ReconnectPolicy policy =
-          ReconnectPolicy(); // real Random — many samples
+      final ReconnectPolicy policy = ReconnectPolicy(); // real Random — many samples
 
       const List<Duration> ladder = <Duration>[
         Duration(seconds: 1),

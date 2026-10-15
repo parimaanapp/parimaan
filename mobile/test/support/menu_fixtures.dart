@@ -74,11 +74,12 @@ final MenuItem testMenuItem = MenuItem(
 /// snapshot from a [HouseholdSettings] it already has, rather than
 /// hand-writing an equivalent JSON string that could silently drift from
 /// what `mealConfigSettings` actually decodes.
-String mealConfigSnapshotJsonFor(HouseholdSettings settings) =>
-    jsonEncode(<String, dynamic>{
-      'mealsEnabled': settings.mealsEnabled,
-      'mealStructure': jsonDecode(settings.mealStructureJson),
-    });
+String mealConfigSnapshotJsonFor(HouseholdSettings settings) => jsonEncode(
+  <String, dynamic>{
+    'mealsEnabled': settings.mealsEnabled,
+    'mealStructure': jsonDecode(settings.mealStructureJson),
+  },
+);
 
 /// A domain [Menu] with no items — the expected first-visit state for a
 /// fresh week. Its [Menu.mealConfigSnapshot] mirrors [testMenuHousehold]'s

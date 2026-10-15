@@ -75,9 +75,7 @@ void main() {
       },
     );
 
-    testWidgets('accepting marks the field confirmed', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('accepting marks the field confirmed', (WidgetTester tester) async {
       ProposedField<String>? result;
       await pumpComponent(
         tester,
@@ -136,27 +134,26 @@ void main() {
       expect(result!.isUserModified, isFalse);
     });
 
-    testWidgets(
-      'a null proposal renders as an ordinary empty field, not a proposal',
-      (WidgetTester tester) async {
-        await withSemantics(tester, () async {
-          await pumpComponent(
-            tester,
-            _harness(
-              field: const ProposedField<String>.proposed(null),
-              onChanged: (_) {},
-            ),
-          );
+    testWidgets('a null proposal renders as an ordinary empty field, not a proposal', (
+      WidgetTester tester,
+    ) async {
+      await withSemantics(tester, () async {
+        await pumpComponent(
+          tester,
+          _harness(
+            field: const ProposedField<String>.proposed(null),
+            onChanged: (_) {},
+          ),
+        );
 
-          expect(find.byKey(AIProposal.proposedBadgeKey), findsNothing);
-          expect(
-            find.bySemanticsLabel('AI-suggested, not yet confirmed'),
-            findsNothing,
-          );
-          expect(find.text('(empty)'), findsOneWidget);
-        });
-      },
-    );
+        expect(find.byKey(AIProposal.proposedBadgeKey), findsNothing);
+        expect(
+          find.bySemanticsLabel('AI-suggested, not yet confirmed'),
+          findsNothing,
+        );
+        expect(find.text('(empty)'), findsOneWidget);
+      });
+    });
 
     testWidgets('warnings render as non-blocking notes, never as errors', (
       WidgetTester tester,
@@ -171,7 +168,10 @@ void main() {
       );
 
       expect(find.byKey(AIProposal.warningsKey), findsOneWidget);
-      expect(find.text('Could not determine cuisineTier2.'), findsOneWidget);
+      expect(
+        find.text('Could not determine cuisineTier2.'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.error), findsNothing);
       expect(find.byIcon(Icons.error_outline), findsNothing);
       expect(find.byIcon(Icons.info_outline), findsOneWidget);
@@ -191,47 +191,45 @@ void main() {
       expect(find.byKey(AIProposal.warningsKey), findsNothing);
     });
 
-    testWidgets(
-      'an absurdly long string truncates before reaching the builder',
-      (WidgetTester tester) async {
-        final longValue = 'a' * 200;
-        await pumpComponent(
-          tester,
-          _harness(
-            field: ProposedField<String>.proposed(longValue),
-            onChanged: (_) {},
-            maxDisplayLength: 50,
-          ),
-        );
+    testWidgets('an absurdly long string truncates before reaching the builder', (
+      WidgetTester tester,
+    ) async {
+      final longValue = 'a' * 200;
+      await pumpComponent(
+        tester,
+        _harness(
+          field: ProposedField<String>.proposed(longValue),
+          onChanged: (_) {},
+          maxDisplayLength: 50,
+        ),
+      );
 
-        final Text titleWidget = tester.widget<Text>(find.byKey(_titleKey));
-        expect(titleWidget.data!.length, lessThan(longValue.length));
-        expect(titleWidget.data, endsWith('…'));
-      },
-    );
+      final Text titleWidget = tester.widget<Text>(find.byKey(_titleKey));
+      expect(titleWidget.data!.length, lessThan(longValue.length));
+      expect(titleWidget.data, endsWith('…'));
+    });
 
-    testWidgets(
-      'maxDisplayLength never truncates a non-String field, e.g. an int',
-      (WidgetTester tester) async {
-        const intTitleKey = Key('ai-proposal-int-content');
-        int? builderValue;
-        await pumpComponent(
-          tester,
-          AIProposal<int>(
-            field: const ProposedField<int>.proposed(42),
-            onChanged: (_) {},
-            maxDisplayLength: 1,
-            builder: (context, field, onEdit, onAccept, onReject) {
-              builderValue = field.value;
-              return Text('${field.value}', key: intTitleKey);
-            },
-          ),
-        );
+    testWidgets('maxDisplayLength never truncates a non-String field, e.g. an int', (
+      WidgetTester tester,
+    ) async {
+      const intTitleKey = Key('ai-proposal-int-content');
+      int? builderValue;
+      await pumpComponent(
+        tester,
+        AIProposal<int>(
+          field: const ProposedField<int>.proposed(42),
+          onChanged: (_) {},
+          maxDisplayLength: 1,
+          builder: (context, field, onEdit, onAccept, onReject) {
+            builderValue = field.value;
+            return Text('${field.value}', key: intTitleKey);
+          },
+        ),
+      );
 
-        expect(builderValue, 42);
-        expect(find.text('42'), findsOneWidget);
-      },
-    );
+      expect(builderValue, 42);
+      expect(find.text('42'), findsOneWidget);
+    });
 
     testWidgets('renders every warning without a duplicate-key collision', (
       WidgetTester tester,

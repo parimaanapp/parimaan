@@ -96,29 +96,25 @@ class PantryFormController extends AsyncNotifier<void> {
   /// item carries a category that a curated selection has no field for, and
   /// squeezing it through [bulkAdd]'s `CuratedPantrySelection` would have
   /// silently dropped it.
-  Future<bool> bulkAddDrafts(
-    String householdId,
-    List<PantryItemDraft> drafts,
-  ) => _run(PantryFormAction.bulkAdd, () async {
-    if (drafts.length > maxBulkAddPantryItems) {
-      throw ValidationError(
-        'Select $maxBulkAddPantryItems items or fewer at a time.',
-      );
-    }
-    await _repository.bulkAddPantryItems(householdId, drafts);
-    ref.invalidate(pantryControllerProvider(householdId));
-  });
+  Future<bool> bulkAddDrafts(String householdId, List<PantryItemDraft> drafts) =>
+      _run(PantryFormAction.bulkAdd, () async {
+        if (drafts.length > maxBulkAddPantryItems) {
+          throw ValidationError(
+            'Select $maxBulkAddPantryItems items or fewer at a time.',
+          );
+        }
+        await _repository.bulkAddPantryItems(householdId, drafts);
+        ref.invalidate(pantryControllerProvider(householdId));
+      });
 
   /// Named `updateItem`, not `update` — `AsyncNotifierBase` already declares
   /// a built-in `update` (a `state`-transform helper), and this method's
   /// unrelated signature can't override it.
-  Future<bool> updateItem(String id, PantryItemPatch patch) => _run(
-    PantryFormAction.update,
-    () async {
-      final PantryItem updated = await _repository.updatePantryItem(id, patch);
-      ref.invalidate(pantryControllerProvider(updated.householdId));
-    },
-  );
+  Future<bool> updateItem(String id, PantryItemPatch patch) =>
+      _run(PantryFormAction.update, () async {
+        final PantryItem updated = await _repository.updatePantryItem(id, patch);
+        ref.invalidate(pantryControllerProvider(updated.householdId));
+      });
 
   Future<bool> delete(String id) => _run(PantryFormAction.delete, () async {
     final PantryItem deleted = await _repository.deletePantryItem(id);
@@ -140,5 +136,6 @@ class PantryFormController extends AsyncNotifier<void> {
 }
 
 final AsyncNotifierProvider<PantryFormController, void>
-pantryFormControllerProvider =
-    AsyncNotifierProvider<PantryFormController, void>(PantryFormController.new);
+pantryFormControllerProvider = AsyncNotifierProvider<PantryFormController, void>(
+  PantryFormController.new,
+);

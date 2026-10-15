@@ -69,21 +69,18 @@ void main() {
   });
 
   group('CurrentHouseholdController — live updates (W8 S10)', () {
-    test(
-      'subscribes to watchHouseholdChanges for the household it is keyed on',
-      () async {
-        final FakeHouseholdRepository repository = FakeHouseholdRepository(
-          fetchResult: testHousehold,
-        );
-        final ProviderContainer container = _container(repository);
+    test('subscribes to watchHouseholdChanges for the household it is keyed on', () async {
+      final FakeHouseholdRepository repository = FakeHouseholdRepository(
+        fetchResult: testHousehold,
+      );
+      final ProviderContainer container = _container(repository);
 
-        await container.read(
-          currentHouseholdControllerProvider('household-1').future,
-        );
+      await container.read(
+        currentHouseholdControllerProvider('household-1').future,
+      );
 
-        expect(repository.watchCalls, <String>['household-1']);
-      },
-    );
+      expect(repository.watchCalls, <String>['household-1']);
+    });
 
     test('a pushed change event triggers a refetch', () async {
       final FakeHouseholdRepository repository = FakeHouseholdRepository(
@@ -211,38 +208,44 @@ void main() {
       },
     );
 
-    test('never throws — an escaping exception from a fire-and-forget caller would be an unhandled async error', () async {
-      final FakeHouseholdRepository repository = FakeHouseholdRepository(
-        fetchResult: testHousehold,
-      );
-      final ProviderContainer container = _container(repository);
-      await container.read(
-        currentHouseholdControllerProvider('household-1').future,
-      );
+    test(
+      'never throws — an escaping exception from a fire-and-forget caller would be an unhandled async error',
+      () async {
+        final FakeHouseholdRepository repository = FakeHouseholdRepository(
+          fetchResult: testHousehold,
+        );
+        final ProviderContainer container = _container(repository);
+        await container.read(
+          currentHouseholdControllerProvider('household-1').future,
+        );
 
-      repository.fetchError = const InternalError('boom');
+        repository.fetchError = const InternalError('boom');
 
-      await expectLater(
-        container
-            .read(currentHouseholdControllerProvider('household-1').notifier)
-            .refresh(),
-        completes,
-      );
-    });
+        await expectLater(
+          container
+              .read(currentHouseholdControllerProvider('household-1').notifier)
+              .refresh(),
+          completes,
+        );
+      },
+    );
   });
 
   group('activeHouseholdProvider', () {
-    test('is null when nothing has been created or joined this session and '
-        '`Query.me` reports no households', () {
-      final ProviderContainer container = _container(
-        FakeHouseholdRepository(
-          result: testHousehold,
-          myHouseholdsResult: const <Household>[],
-        ),
-      );
+    test(
+      'is null when nothing has been created or joined this session and '
+      '`Query.me` reports no households',
+      () {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            result: testHousehold,
+            myHouseholdsResult: const <Household>[],
+          ),
+        );
 
-      expect(container.read(activeHouseholdProvider), isNull);
-    });
+        expect(container.read(activeHouseholdProvider), isNull);
+      },
+    );
 
     test('reports the household the wizard created', () async {
       final ProviderContainer container = _container(
@@ -311,36 +314,42 @@ void main() {
       },
     );
 
-    test('prefers this session\'s created/joined household over `Query.me`\'s '
-        'list — the list may still be last launch\'s, stale by definition the '
-        'moment a create or join succeeds', () async {
-      final ProviderContainer container = _container(
-        FakeHouseholdRepository(
-          joinResult: testHouseholdWithMembers,
-          myHouseholdsResult: <Household>[testHousehold],
-        ),
-      );
-      await container.read(meHouseholdsControllerProvider.future);
-      await container.read(joinHouseholdControllerProvider.future);
+    test(
+      'prefers this session\'s created/joined household over `Query.me`\'s '
+      'list — the list may still be last launch\'s, stale by definition the '
+      'moment a create or join succeeds',
+      () async {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            joinResult: testHouseholdWithMembers,
+            myHouseholdsResult: <Household>[testHousehold],
+          ),
+        );
+        await container.read(meHouseholdsControllerProvider.future);
+        await container.read(joinHouseholdControllerProvider.future);
 
-      await container
-          .read(joinHouseholdControllerProvider.notifier)
-          .join('K4M9PQ');
+        await container
+            .read(joinHouseholdControllerProvider.notifier)
+            .join('K4M9PQ');
 
-      expect(container.read(activeHouseholdProvider), testHouseholdWithMembers);
-    });
+        expect(container.read(activeHouseholdProvider), testHouseholdWithMembers);
+      },
+    );
 
-    test('is null while `Query.me` is still loading and nothing session-scoped '
-        'is available yet — never a stale answer', () {
-      final ProviderContainer container = _container(
-        FakeHouseholdRepository(
-          result: testHousehold,
-          myHouseholdsResult: <Household>[testHousehold],
-          delay: const Duration(milliseconds: 50),
-        ),
-      );
+    test(
+      'is null while `Query.me` is still loading and nothing session-scoped '
+      'is available yet — never a stale answer',
+      () {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            result: testHousehold,
+            myHouseholdsResult: <Household>[testHousehold],
+            delay: const Duration(milliseconds: 50),
+          ),
+        );
 
-      expect(container.read(activeHouseholdProvider), isNull);
-    });
+        expect(container.read(activeHouseholdProvider), isNull);
+      },
+    );
   });
 }

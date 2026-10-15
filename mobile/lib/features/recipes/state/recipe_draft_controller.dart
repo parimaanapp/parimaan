@@ -29,24 +29,23 @@ class AiRecipeDraftState {
     required this.warnings,
   });
 
-  factory AiRecipeDraftState.fromDraft(AiRecipeDraft draft) =>
-      AiRecipeDraftState(
-        title: ProposedField<String>.proposed(draft.title),
-        description: ProposedField<String>.proposed(draft.description),
-        servings: ProposedField<int>.proposed(draft.servings),
-        prepMin: ProposedField<int>.proposed(draft.prepMin),
-        cookMin: ProposedField<int>.proposed(draft.cookMin),
-        cuisineTier1: ProposedField<String>.proposed(draft.cuisineTier1),
-        cuisineTier2: ProposedField<String>.proposed(draft.cuisineTier2),
-        dietaryTags: ProposedField<List<String>>.proposed(draft.dietaryTags),
-        role: ProposedField<RecipeRole>.proposed(draft.role),
-        ingredients: ProposedField<List<AiRecipeDraftIngredient>>.proposed(
-          draft.ingredients,
-        ),
-        steps: ProposedField<List<String>>.proposed(draft.steps),
-        sourceUrl: draft.sourceUrl,
-        warnings: draft.warnings,
-      );
+  factory AiRecipeDraftState.fromDraft(AiRecipeDraft draft) => AiRecipeDraftState(
+    title: ProposedField<String>.proposed(draft.title),
+    description: ProposedField<String>.proposed(draft.description),
+    servings: ProposedField<int>.proposed(draft.servings),
+    prepMin: ProposedField<int>.proposed(draft.prepMin),
+    cookMin: ProposedField<int>.proposed(draft.cookMin),
+    cuisineTier1: ProposedField<String>.proposed(draft.cuisineTier1),
+    cuisineTier2: ProposedField<String>.proposed(draft.cuisineTier2),
+    dietaryTags: ProposedField<List<String>>.proposed(draft.dietaryTags),
+    role: ProposedField<RecipeRole>.proposed(draft.role),
+    ingredients: ProposedField<List<AiRecipeDraftIngredient>>.proposed(
+      draft.ingredients,
+    ),
+    steps: ProposedField<List<String>>.proposed(draft.steps),
+    sourceUrl: draft.sourceUrl,
+    warnings: draft.warnings,
+  );
 
   final ProposedField<String> title;
   final ProposedField<String> description;
@@ -150,7 +149,9 @@ final AutoDisposeNotifierProviderFamily<
   AiRecipeDraftState,
   AiRecipeDraft
 >
-aiRecipeDraftControllerProvider = NotifierProvider.autoDispose
-    .family<AiRecipeDraftController, AiRecipeDraftState, AiRecipeDraft>(
-      AiRecipeDraftController.new,
-    );
+aiRecipeDraftControllerProvider =
+    NotifierProvider.autoDispose.family<
+      AiRecipeDraftController,
+      AiRecipeDraftState,
+      AiRecipeDraft
+    >(AiRecipeDraftController.new);

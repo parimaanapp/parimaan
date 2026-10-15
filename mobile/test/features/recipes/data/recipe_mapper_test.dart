@@ -217,12 +217,7 @@ void main() {
           role: RecipeRole.sabziDal,
           inRotation: true,
           ingredients: <RecipeIngredientDraft>[
-            RecipeIngredientDraft(
-              name: 'Toor dal',
-              quantity: 1,
-              unit: 'cup',
-              isStaple: true,
-            ),
+            RecipeIngredientDraft(name: 'Toor dal', quantity: 1, unit: 'cup', isStaple: true),
           ],
           steps: <String>['Boil the dal.'],
         ),
@@ -240,16 +235,13 @@ void main() {
       expect(input.steps, <String>['Boil the dal.']);
     });
 
-    test(
-      'maps a zero-ingredient, zero-step draft to empty (not null) lists',
-      () {
-        final input = recipeDraftToGraphQL(
-          const RecipeDraft(title: 'Toor Dal', role: RecipeRole.sabziDal),
-        );
-        expect(input.ingredients, isEmpty);
-        expect(input.steps, isEmpty);
-      },
-    );
+    test('maps a zero-ingredient, zero-step draft to empty (not null) lists', () {
+      final input = recipeDraftToGraphQL(
+        const RecipeDraft(title: 'Toor Dal', role: RecipeRole.sabziDal),
+      );
+      expect(input.ingredients, isEmpty);
+      expect(input.steps, isEmpty);
+    });
   });
 
   group('recipePatchToGraphQL', () {
@@ -290,10 +282,7 @@ void main() {
         ),
       );
       expect(input.ingredients, hasLength(2));
-      expect(input.ingredients!.map((i) => i.name), <String>[
-        'Onion',
-        'Garlic',
-      ]);
+      expect(input.ingredients!.map((i) => i.name), <String>['Onion', 'Garlic']);
     });
   });
 }

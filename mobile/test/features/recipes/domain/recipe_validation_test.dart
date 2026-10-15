@@ -95,12 +95,9 @@ void main() {
   });
 
   group('validateRecipeStep', () {
-    test(
-      'an empty step is valid — matches the server, which has no min length',
-      () {
-        expect(validateRecipeStep(''), isNull);
-      },
-    );
+    test('an empty step is valid — matches the server, which has no min length', () {
+      expect(validateRecipeStep(''), isNull);
+    });
 
     test('rejects a step over the max length', () {
       expect(validateRecipeStep('a' * (maxRecipeStepLength + 1)), isNotNull);

@@ -76,9 +76,7 @@ void main() {
 
       // The migration's own ALTER TABLE actually ran, not silently skipped.
       final List<Map<String, Object?>> notesColumn = await v2
-          .customSelect(
-            "SELECT notes FROM pantry_items_table WHERE id = 'item-1'",
-          )
+          .customSelect("SELECT notes FROM pantry_items_table WHERE id = 'item-1'")
           .get()
           .then(
             (List<QueryRow> rows) => rows.map((QueryRow r) => r.data).toList(),

@@ -34,6 +34,5 @@ class RecipeIngredientDraft {
           other.isStaple == isStaple;
 
   @override
-  int get hashCode =>
-      Object.hash(name, quantity, unit, category, notes, isStaple);
+  int get hashCode => Object.hash(name, quantity, unit, category, notes, isStaple);
 }

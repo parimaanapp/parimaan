@@ -51,14 +51,13 @@ void main() {
       expect(find.textContaining('30 min'), findsOneWidget);
     });
 
-    testWidgets(
-      'shows no total-time text when both prepMin and cookMin are null',
-      (WidgetTester tester) async {
-        await pumpComponent(tester, RecipeCard(recipe: _recipe()));
+    testWidgets('shows no total-time text when both prepMin and cookMin are null', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(tester, RecipeCard(recipe: _recipe()));
 
-        expect(find.byKey(RecipeCard.totalTimeKey), findsNothing);
-      },
-    );
+      expect(find.byKey(RecipeCard.totalTimeKey), findsNothing);
+    });
 
     testWidgets('shows a favorite badge when isFavorite is true', (
       WidgetTester tester,

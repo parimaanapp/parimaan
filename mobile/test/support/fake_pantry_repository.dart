@@ -35,8 +35,8 @@ class FakePantryRepository implements PantryRepository {
   Duration? delay;
 
   /// Every `(householdId, search, category)` triple, in order.
-  final List<({String householdId, String? search, String? category})> calls =
-      <({String householdId, String? search, String? category})>[];
+  final List<({String householdId, String? search, String? category})>
+  calls = <({String householdId, String? search, String? category})>[];
 
   // ── addPantryItem ──────────────────────────────────────────────────────
 
@@ -49,8 +49,8 @@ class FakePantryRepository implements PantryRepository {
 
   List<PantryItem>? bulkAddResult;
   Object? bulkAddError;
-  final List<({String householdId, List<PantryItemDraft> items})> bulkAddCalls =
-      <({String householdId, List<PantryItemDraft> items})>[];
+  final List<({String householdId, List<PantryItemDraft> items})>
+  bulkAddCalls = <({String householdId, List<PantryItemDraft> items})>[];
 
   // ── updatePantryItem ───────────────────────────────────────────────────
 

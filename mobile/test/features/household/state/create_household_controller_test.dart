@@ -179,10 +179,7 @@ void main() {
             .read(createHouseholdControllerProvider.notifier)
             .createHousehold('Kulkarni Kitchen');
 
-        expect(repository.calls, <String>[
-          'Kulkarni Kitchen',
-          'Kulkarni Kitchen',
-        ]);
+        expect(repository.calls, <String>['Kulkarni Kitchen', 'Kulkarni Kitchen']);
         expect(
           container.read(createHouseholdControllerProvider).value,
           testHousehold,
@@ -228,10 +225,7 @@ void main() {
           createHouseholdControllerProvider.notifier,
         );
         await notifier.createHousehold('x');
-        expect(
-          container.read(createHouseholdControllerProvider).hasError,
-          isTrue,
-        );
+        expect(container.read(createHouseholdControllerProvider).hasError, isTrue);
 
         notifier.reset();
 

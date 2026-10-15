@@ -1,0 +1,72 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## nut_seed
+Walnuts (Kashmiri Kernels) | akhrot giri; kashmiri akhrot; walnut kernels; walnut giri |  | 100
+Almonds (Mamra) | mamra badam; mamra almonds; iranian almonds |  | 150
+Almonds (Californian) | california badam; californian badam; american almonds; nonpareil almonds |  | 150
+Pistachios (Shelled) | pista giri; shelled pista; pistachio kernels; green pista |  | 130
+Peanuts (Fried Masala) | masala peanuts; masala shengdana; masala moongphali; chatpata peanuts |  | 140
+Pine Seeds (Chilgoza) | chilgoza nuts; neoza; neosa; chilgoza pine nuts |  | 130
+Betel Nut (Supari) | supari; areca nut; adike; pakku; vakka; kamugu |  | 
+Lotus Seeds (Kamal Gatta) | kamal gatta; kamal kakdi seeds; kamal gatte; thamarai vithai; tamara vittulu; lotus nuts |  | 
+Pumpkin Seeds (Roasted) | roasted pumpkin seeds; pepita; salted pumpkin seeds; kaddu ke beej roasted |  | 130
+Mixed Nuts | assorted nuts; nut mix; roasted mixed nuts; trail mix nuts |  | 140
+Dried Plums (Alubukhara) | alu bukhara; dried plum; dry plum; aaloo bukhara; sukha aloo bukhara |  | 
+Dried Dates (Chhuara) | chuara; chhuhara; chhohara; dry khajoor; kharek; chhuhare |  | 
+Dates (Medjool) | medjool dates; mejdool; khajoor medjool; large dates | 25 | 
+Dates (Ajwa) | ajwa dates; ajwa khajoor; ajwa madina; madina dates | 12 | 
+Dates (Sukkari) | sukkari dates; sukkari; sukari khajoor; sugar dates; saudi dates | 12 | 
+Date Syrup | khajoor syrup; khajur syrup; dibs; silan; khajoor ka ras |  | 
+Coconut Sugar | coconut palm sugar; nariyal sugar; coconut jaggery; coconut blossom sugar; thengai sakkarai |  | 
+Coconut (Desiccated) | sukha nariyal; nariyal powder; coconut flakes; shredded coconut; coconut grated dry |  | 85
+Melon Seeds (Charmagaz) | charmagaz; char magaz; four kernel mix; magaz mix; melon seeds mix; chaar maghaz |  | 
+## salt_sugar
+Jaggery (Kolhapuri) | kolhapuri gul; kolhapur jaggery; kolhapuri gud; maharashtrian gul; kolhapuri jaggery |  | 
+Jaggery (Date Palm Patali) | patali gur; patali jaggery; khejur gur; date palm jaggery; khajur gur; nolen gud |  | 
+Jaggery (Coconut) | thengai vellam; kobbari bellam; nariyal gud; kerala coconut jaggery; palm jaggery coconut |  | 
+Jaggery (Sugarcane Liquid Kakvi) | kakvi jaggery; kakavi; kakavi gul; sugarcane syrup; sugarcane molasses; ras gud |  | 
+Rock Sugar (Khadi Sakkar) | khadi sakkar; khadi sugar; sugar candy; kalkand; kalkandam; rock candy |  | 
+Sugar (Caster) | caster sugar; superfine sugar; baker's sugar; bura sugar; bura; boora |  | 
+Sugar (Demerara) | demerara sugar; turbinado; sugar in the raw; cane sugar raw; golden sugar |  | 
+Sugar (Muscovado) | muscovado; muscovado sugar; dark brown sugar; barbados sugar; khandsari; khandsari sugar |  | 
+Sugar Free Sweetener | sugar substitute; sugarfree; artificial sweetener; aspartame; sucralose; sugar free tablets |  | 
+Agave Syrup | agave nectar; blue agave; agave |  | 
+Honey (Raw) | raw honey; unprocessed honey; forest honey; wild honey; shahad raw; jungle honey |  | 
+Kosher Salt | coarse salt; sea salt coarse; kosher; rock salt coarse |  | 
+## oil
+Sesame Oil (Toasted) | toasted sesame oil; roasted sesame oil; asian sesame oil; kachi ghani toasted; dark sesame oil; chinese sesame oil |  | 240
+Mustard Oil (Kachi Ghani) | kachi ghani; kachi ghani mustard oil; cold pressed mustard; sarson tel kachi ghani; shorsher tel |  | 240
+Coconut Oil (Virgin) | virgin coconut oil; vco; cold pressed coconut oil; kera oil; cold pressed nariyal tel; extra virgin coconut oil |  | 240
+Olive Oil (Extra Virgin) | extra virgin; virgin olive oil; olive oil extra virgin |  | 240
+Ghee (Cow) | desi cow ghee; gir cow ghee; a2 ghee; a2 cow ghee; gau ghee; gai ka ghee |  | 
+Ghee (Plant Based) | vegan ghee; plant ghee; veg ghee; dairy free ghee; coconut ghee |  | 
+Almond Butter | badam butter; almond spread; badam spread; nut butter almond; almond nut butter |  | 
+White Butter (Makhan) | loni butter; benne makkan; makkhan; nonu; vennai; desi makhan |  | 
+## dairy_liquid
+Goat Milk | bakri ka doodh; bakri doodh; aadu paal; mekke halu; goat's milk; shaya dudh |  | 
+Cashew Milk | kaju milk; kaju doodh; nut milk cashew; cashew drink; cashewmilk |  | 
+Single Cream | light cream; pouring cream; table cream; coffee cream; cooking cream light |  | 
+Sour Cream | khatti malai; soured cream; smetana; mexican crema; crema; cultured cream |  | 
+Rabri | rabdi; basundi base; rabdi malai; thickened milk sweet; kheer rabri; loaded milk |  | 
+Basundi | basundi sweet; bassundi; thick milk sweet maharashtra; basundi mix; basunda |  | 
+Whey | paneer water; chhena water; whey water; paneer ka paani; paneer whey; chhena paani |  | 
+Kefir | kefir milk; milk kefir; fermented milk drink; kefir grains; water kefir |  | 
+## dairy_solid
+Tofu (Silken) | silken tofu; soft tofu; japanese tofu; cream tofu; kinugoshi; silken soy paneer |  | 
+Tofu (Firm) | firm tofu; extra firm tofu; pressed tofu; momen tofu; soy paneer; hard tofu |  | 
+Tempeh | tempe; fermented soy cake; soy tempeh; tempeh block; tempeh cakes |  | 
+Cheese (Gouda) | gouda; gouda cheese; dutch cheese; smoked gouda; gouda block; edam |  | 
+Cheese (Gruyere) | gruyere; gruyère; gruyere cheese; swiss cheese; emmental; emmenthal |  | 
+Cheese (Brie) | brie; brie cheese; camembert; camembert cheese; brie wheel; soft ripened cheese |  | 
+Cheese (Goat) | goat cheese; chevre; chèvre; goat's cheese; bakri ka cheese; goats cheese log |  | 
+Cheese (Halloumi) | halloumi; haloumi; grilling cheese; frying cheese; halloumi cheese; cyprus cheese |  | 
+Cheese (Ricotta) | ricotta; ricotta cheese; fresh ricotta; italian cottage cheese; ricotta fresca; whey cheese |  | 
+Cheese (Mascarpone) | mascarpone; mascarpone cheese; tiramisu cheese; mascarpone cream; italian cream cheese |  | 
+Cheese (Cottage) | fresh chenna; kuttage cheese; cottage; creamed cottage cheese; lumpy cheese |  | 
+Cheese (Pizza Blend) | pizza blend; shredded pizza cheese; pizza mozzarella; mozzarella cheddar blend; italian cheese blend; grated pizza cheese |  | 
+Khoya (Danedar) | danedar khoya; granular khoya; danedar mawa; mawa danedar; dhaarwa khoya; kalakand khoya |  | 
+Khoya (Soft Mawa) | soft khoya; soft mawa; peda mawa; gulab jamun khoya; kneaded khoya; batti khoa |  | 
+Curd Cheese | labneh; labne; yoghurt cheese; strained yoghurt cheese; yogurt cheese; lebnah |  | 
+## egg
+Egg (Free Range) | free range egg; free range eggs; desi anda; country egg; desi egg; gaon ka anda | 55 | 
+Egg (Omega 3) | omega 3 eggs; omega 3 egg; omega eggs; enriched eggs; omega-3 eggs | 55 | 
+Egg Yolk | anda yellow; yolk; anda peela; egg yellow; mutta manjal; anda ki zardi | 18 | 

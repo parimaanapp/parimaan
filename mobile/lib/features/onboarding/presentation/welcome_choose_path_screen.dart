@@ -90,8 +90,9 @@ class WelcomeChoosePathScreen extends ConsumerWidget {
                     "what's available when it plans your meals.",
                 actionLabel: 'Add to Pantry',
                 variant: PButtonVariant.primary,
-                onPressed: () =>
-                    context.push(AppRoutes.pantryAddChooseMethod(householdId)),
+                onPressed: () => context.push(
+                  AppRoutes.pantryAddChooseMethod(householdId),
+                ),
               ),
               const SizedBox(height: AppSpacing.s5),
               _PathCard(

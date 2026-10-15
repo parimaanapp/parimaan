@@ -233,7 +233,10 @@ void main() {
         expect(find.text('Toor Dal'), findsOneWidget);
         // ...but the banner makes clear the refetch itself failed, rather
         // than looking like a successful, unfiltered result.
-        expect(find.byKey(RecipesLibraryScreen.staleBannerKey), findsOneWidget);
+        expect(
+          find.byKey(RecipesLibraryScreen.staleBannerKey),
+          findsOneWidget,
+        );
       },
     );
 
@@ -281,10 +284,7 @@ void main() {
           await _pump(tester, recipeRepository: repository);
           await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(RecipesLibraryScreen.emptyStateKey),
-            findsOneWidget,
-          );
+          expect(find.byKey(RecipesLibraryScreen.emptyStateKey), findsOneWidget);
           expect(find.text('No recipes yet'), findsOneWidget);
           expect(
             find.byKey(RecipesLibraryScreen.filteredEmptyStateKey),
@@ -366,23 +366,22 @@ void main() {
         expect(find.byType(RecipeMethodScreen), findsOneWidget);
       });
 
-      testWidgets(
-        'a favorites filter with zero matches also gets filter copy',
-        (WidgetTester tester) async {
-          final FakeRecipeRepository repository = FakeRecipeRepository(
-            result: <Recipe>[_dalRecipe],
-          );
-          await _pump(tester, recipeRepository: repository);
-          await tester.pumpAndSettle();
+      testWidgets('a favorites filter with zero matches also gets filter copy', (
+        WidgetTester tester,
+      ) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[_dalRecipe],
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
 
-          repository.result = <Recipe>[];
-          await tester.tap(find.byKey(RecipesLibraryScreen.favoritesChipKey));
-          await tester.pumpAndSettle();
+        repository.result = <Recipe>[];
+        await tester.tap(find.byKey(RecipesLibraryScreen.favoritesChipKey));
+        await tester.pumpAndSettle();
 
-          expect(find.text('No favorite recipes yet'), findsOneWidget);
-          expect(find.text('Clear filter'), findsOneWidget);
-        },
-      );
+        expect(find.text('No favorite recipes yet'), findsOneWidget);
+        expect(find.text('Clear filter'), findsOneWidget);
+      });
 
       testWidgets(
         'while a filter refetch is in flight over an empty result, shows '
@@ -393,10 +392,7 @@ void main() {
           );
           await _pump(tester, recipeRepository: repository);
           await tester.pumpAndSettle();
-          expect(
-            find.byKey(RecipesLibraryScreen.emptyStateKey),
-            findsOneWidget,
-          );
+          expect(find.byKey(RecipesLibraryScreen.emptyStateKey), findsOneWidget);
 
           repository.delay = const Duration(milliseconds: 50);
           await tester.tap(find.widgetWithText(PChip, 'Carb'));
@@ -412,26 +408,22 @@ void main() {
         },
       );
 
-      testWidgets(
-        'an error with a filter selected offers retry, not empty copy',
-        (WidgetTester tester) async {
-          final FakeRecipeRepository repository = FakeRecipeRepository(
-            error: const InternalError('network down'),
-          );
-          await _pump(tester, recipeRepository: repository);
-          await tester.pumpAndSettle();
-          await tester.tap(find.widgetWithText(PChip, 'Carb'));
-          await tester.pumpAndSettle();
+      testWidgets('an error with a filter selected offers retry, not empty copy', (
+        WidgetTester tester,
+      ) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          error: const InternalError('network down'),
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(PChip, 'Carb'));
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(RecipesLibraryScreen.errorStateKey),
-            findsOneWidget,
-          );
-          expect(find.text('Try again'), findsOneWidget);
-          expect(find.text('No Carb recipes yet'), findsNothing);
-          expect(find.text('No recipes yet'), findsNothing);
-        },
-      );
+        expect(find.byKey(RecipesLibraryScreen.errorStateKey), findsOneWidget);
+        expect(find.text('Try again'), findsOneWidget);
+        expect(find.text('No Carb recipes yet'), findsNothing);
+        expect(find.text('No recipes yet'), findsNothing);
+      });
     });
   });
 }

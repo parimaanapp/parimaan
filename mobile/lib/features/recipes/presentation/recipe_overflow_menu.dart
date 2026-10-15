@@ -109,10 +109,7 @@ class RecipeOverflowMenu extends ConsumerWidget {
                     ? null
                     : () {
                         Navigator.of(context).pop();
-                        context.push(
-                          AppRoutes.recipeEdit(recipe.id),
-                          extra: recipe,
-                        );
+                        context.push(AppRoutes.recipeEdit(recipe.id), extra: recipe);
                       },
               ),
               _OverflowRow(

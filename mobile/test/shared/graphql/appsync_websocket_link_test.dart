@@ -20,50 +20,40 @@ class _RecordingLink extends Link {
   @override
   Stream<Response> request(Request request, [NextLink? forward]) async* {
     requests.add(request);
-    yield const Response(
-      data: <String, dynamic>{},
-      response: <String, dynamic>{},
-    );
+    yield const Response(data: <String, dynamic>{}, response: <String, dynamic>{});
   }
 }
 
-const String _httpUrl =
-    'https://abc.appsync-api.ap-south-1.amazonaws.com/graphql';
+const String _httpUrl = 'https://abc.appsync-api.ap-south-1.amazonaws.com/graphql';
 
 void main() {
   group('AppSyncWebSocketLink', () {
-    test(
-      'forwards a non-subscription operation to the next link unchanged',
-      () async {
-        final _RecordingLink terminating = _RecordingLink();
-        final AppSyncSubscriptionClient subscriptionClient =
-            AppSyncSubscriptionClient(
-              httpGraphQlUrl: _httpUrl,
-              idTokenProvider: () async => 'the-id-token',
-              channelFactory: (Uri uri, {Iterable<String>? protocols}) =>
-                  FakeWebSocketChannel(),
-            );
-        final Link link = Link.from(<Link>[
-          AuthLink(idTokenProvider: () async => 'the-id-token'),
-          AppSyncWebSocketLink(subscriptionClient: subscriptionClient),
-          terminating,
-        ]);
+    test('forwards a non-subscription operation to the next link unchanged', () async {
+      final _RecordingLink terminating = _RecordingLink();
+      final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
+        httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'the-id-token',
+        channelFactory: (Uri uri, {Iterable<String>? protocols}) => FakeWebSocketChannel(),
+      );
+      final Link link = Link.from(<Link>[
+        AuthLink(idTokenProvider: () async => 'the-id-token'),
+        AppSyncWebSocketLink(subscriptionClient: subscriptionClient),
+        terminating,
+      ]);
 
-        await link.request(GMeReq().execRequest).toList();
+      await link.request(GMeReq().execRequest).toList();
 
-        expect(terminating.requests, hasLength(1));
-      },
-    );
+      expect(terminating.requests, hasLength(1));
+    });
 
     test('routes a subscription operation to the subscription client, not the next link', () async {
       final _RecordingLink terminating = _RecordingLink();
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
-      final AppSyncSubscriptionClient subscriptionClient =
-          AppSyncSubscriptionClient(
-            httpGraphQlUrl: _httpUrl,
-            idTokenProvider: () async => 'the-id-token',
-            channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
-          );
+      final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
+        httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'the-id-token',
+        channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
+      );
       final Link link = Link.from(<Link>[
         AuthLink(idTokenProvider: () async => 'the-id-token'),
         AppSyncWebSocketLink(subscriptionClient: subscriptionClient),
@@ -73,9 +63,7 @@ void main() {
       final Request request = GOnPantryChangedReq(
         (GOnPantryChangedReqBuilder b) => b.vars.householdId = 'household-1',
       ).execRequest;
-      final StreamSubscription<Response> sub = link
-          .request(request)
-          .listen((_) {});
+      final StreamSubscription<Response> sub = link.request(request).listen((_) {});
       addTearDown(sub.cancel);
       await pumpEventQueue();
 
@@ -89,12 +77,11 @@ void main() {
       // directly (called standalone, no AuthLink in front of it), the defense-
       // in-depth case if the link order were ever changed.
       final FakeWebSocketChannel channel = FakeWebSocketChannel();
-      final AppSyncSubscriptionClient subscriptionClient =
-          AppSyncSubscriptionClient(
-            httpGraphQlUrl: _httpUrl,
-            idTokenProvider: () async => 'the-id-token',
-            channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
-          );
+      final AppSyncSubscriptionClient subscriptionClient = AppSyncSubscriptionClient(
+        httpGraphQlUrl: _httpUrl,
+        idTokenProvider: () async => 'the-id-token',
+        channelFactory: (Uri uri, {Iterable<String>? protocols}) => channel,
+      );
       final AppSyncWebSocketLink link = AppSyncWebSocketLink(
         subscriptionClient: subscriptionClient,
       );
@@ -103,10 +90,7 @@ void main() {
         (GOnPantryChangedReqBuilder b) => b.vars.householdId = 'household-1',
       ).execRequest;
 
-      await expectLater(
-        link.request(request),
-        emitsError(isA<UnauthorizedError>()),
-      );
+      await expectLater(link.request(request), emitsError(isA<UnauthorizedError>()));
       expect(channel.sentFrames, isEmpty);
     });
   });

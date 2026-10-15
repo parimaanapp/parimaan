@@ -295,40 +295,32 @@ void main() {
       expect(households.single.members, isEmpty);
     });
 
-    test(
-      'maps settings via the shared HouseholdSettingsFields mapping',
-      () async {
-        final subject = _subject(
-          (Request _) => <String, dynamic>{
-            'data': meWireData(
-              households: <Map<String, dynamic>>[
-                meHouseholdMembershipWireNode(),
-              ],
-            ),
-          },
-        );
+    test('maps settings via the shared HouseholdSettingsFields mapping', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': meWireData(
+            households: <Map<String, dynamic>>[meHouseholdMembershipWireNode()],
+          ),
+        },
+      );
 
-        final List<Household> households = await subject.repository
-            .fetchMyHouseholds();
+      final List<Household> households = await subject.repository
+          .fetchMyHouseholds();
 
-        expect(households.single.settings.householdId, 'household-1');
-        expect(
-          households.single.settings.mealStructureJson,
-          '{"breakfast":{"items":2}}',
-        );
-      },
-    );
+      expect(households.single.settings.householdId, 'household-1');
+      expect(
+        households.single.settings.mealStructureJson,
+        '{"breakfast":{"items":2}}',
+      );
+    });
 
-    test(
-      'an empty households list maps to an empty list, not an error',
-      () async {
-        final subject = _subject(
-          (Request _) => <String, dynamic>{'data': meWireData()},
-        );
+    test('an empty households list maps to an empty list, not an error', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': meWireData()},
+      );
 
-        expect(await subject.repository.fetchMyHouseholds(), isEmpty);
-      },
-    );
+      expect(await subject.repository.fetchMyHouseholds(), isEmpty);
+    });
 
     test('an unrecognised errorType falls back to InternalError', () {
       final subject = _subject(

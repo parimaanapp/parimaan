@@ -21,10 +21,7 @@ void main() {
     });
 
     test('rejects a name containing a control character', () {
-      expect(
-        validatePantryItemName('Bad${String.fromCharCode(9)}Name'),
-        isNotNull,
-      );
+      expect(validatePantryItemName('Bad${String.fromCharCode(9)}Name'), isNotNull);
     });
   });
 

@@ -37,21 +37,24 @@ void main() {
       });
     });
 
-    test('rapid keystrokes produce exactly one settle, with the final value — '
-        'not one request per keystroke against a cold Aurora', () {
-      fakeAsync((FakeAsync async) {
-        final subject = _subject();
-        subject.debouncer.update('d');
-        async.elapse(const Duration(milliseconds: 100));
-        subject.debouncer.update('da');
-        async.elapse(const Duration(milliseconds: 100));
-        subject.debouncer.update('dal');
-        async.elapse(SearchDebouncer.defaultDuration);
+    test(
+      'rapid keystrokes produce exactly one settle, with the final value — '
+      'not one request per keystroke against a cold Aurora',
+      () {
+        fakeAsync((FakeAsync async) {
+          final subject = _subject();
+          subject.debouncer.update('d');
+          async.elapse(const Duration(milliseconds: 100));
+          subject.debouncer.update('da');
+          async.elapse(const Duration(milliseconds: 100));
+          subject.debouncer.update('dal');
+          async.elapse(SearchDebouncer.defaultDuration);
 
-        expect(subject.settled, <String?>['dal']);
-        subject.debouncer.dispose();
-      });
-    });
+          expect(subject.settled, <String?>['dal']);
+          subject.debouncer.dispose();
+        });
+      },
+    );
 
     test('a null value (cleared search) also debounces and settles', () {
       fakeAsync((FakeAsync async) {

@@ -71,52 +71,42 @@ void main() {
   });
 
   group('HouseholdSyncPolicy — no poll cadence (W8 S10 retirement)', () {
-    test(
-      'no timer is ever armed — waiting does not trigger any further refetch',
-      () {
-        fakeAsync((FakeAsync async) {
-          final subject = _subject();
+    test('no timer is ever armed — waiting does not trigger any further refetch', () {
+      fakeAsync((FakeAsync async) {
+        final subject = _subject();
 
-          subject.policy.start();
-          async.flushMicrotasks();
-          final int afterStart = subject.calls.length;
+        subject.policy.start();
+        async.flushMicrotasks();
+        final int afterStart = subject.calls.length;
 
-          // A long wait with nothing else happening. Pre-W8-S10 this class
-          // would have polled repeatedly across this window; now the only way
-          // `calls` grows is another explicit start()/resumed trigger.
-          async.elapse(const Duration(hours: 6));
+        // A long wait with nothing else happening. Pre-W8-S10 this class
+        // would have polled repeatedly across this window; now the only way
+        // `calls` grows is another explicit start()/resumed trigger.
+        async.elapse(const Duration(hours: 6));
 
-          expect(
-            subject.calls.length,
-            afterStart,
-            reason: 'onHouseholdChanged replaces polling — this class no longer arms a Timer at all',
-          );
+        expect(
+          subject.calls.length,
+          afterStart,
+          reason: 'onHouseholdChanged replaces polling — this class no longer arms a Timer at all',
+        );
 
-          subject.policy.dispose();
-        });
-      },
-    );
+        subject.policy.dispose();
+      });
+    });
 
-    test(
-      'stop() is a harmless no-op — there is no cadence left for it to end',
-      () {
-        fakeAsync((FakeAsync async) {
-          final subject = _subject();
+    test('stop() is a harmless no-op — there is no cadence left for it to end', () {
+      fakeAsync((FakeAsync async) {
+        final subject = _subject();
 
-          subject.policy.start();
-          async.flushMicrotasks();
+        subject.policy.start();
+        async.flushMicrotasks();
 
-          expect(() => subject.policy.stop(), returnsNormally);
-          expect(
-            subject.calls,
-            hasLength(1),
-            reason: 'stop() itself never refetches',
-          );
+        expect(() => subject.policy.stop(), returnsNormally);
+        expect(subject.calls, hasLength(1), reason: 'stop() itself never refetches');
 
-          subject.policy.dispose();
-        });
-      },
-    );
+        subject.policy.dispose();
+      });
+    });
   });
 
   group('HouseholdSyncPolicy — app lifecycle', () {
@@ -177,37 +167,30 @@ void main() {
   });
 
   group('HouseholdSyncPolicy — overlap and teardown', () {
-    test(
-      'a slow refetch suppresses an overlapping one from firing concurrently',
-      () {
-        fakeAsync((FakeAsync async) {
-          int started = 0;
-          int finished = 0;
-          final HouseholdSyncPolicy policy = HouseholdSyncPolicy(
-            refetch: () async {
-              started++;
-              await Future<void>.delayed(const Duration(seconds: 5));
-              finished++;
-            },
-          );
+    test('a slow refetch suppresses an overlapping one from firing concurrently', () {
+      fakeAsync((FakeAsync async) {
+        int started = 0;
+        int finished = 0;
+        final HouseholdSyncPolicy policy = HouseholdSyncPolicy(
+          refetch: () async {
+            started++;
+            await Future<void>.delayed(const Duration(seconds: 5));
+            finished++;
+          },
+        );
 
-          policy.start();
-          // A resumed event lands while the first refetch is still in flight.
-          policy.onLifecycleChanged(AppLifecycleState.resumed);
-          async.flushMicrotasks();
+        policy.start();
+        // A resumed event lands while the first refetch is still in flight.
+        policy.onLifecycleChanged(AppLifecycleState.resumed);
+        async.flushMicrotasks();
 
-          expect(
-            started,
-            1,
-            reason: 'the in-flight guard suppresses the overlapping trigger',
-          );
-          expect(finished, 0);
+        expect(started, 1, reason: 'the in-flight guard suppresses the overlapping trigger');
+        expect(finished, 0);
 
-          async.elapse(const Duration(seconds: 5));
-          policy.dispose();
-        });
-      },
-    );
+        async.elapse(const Duration(seconds: 5));
+        policy.dispose();
+      });
+    });
 
     test('a refetch that throws does not break a later trigger', () {
       fakeAsync((FakeAsync async) {

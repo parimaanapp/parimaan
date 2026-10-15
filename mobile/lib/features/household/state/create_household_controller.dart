@@ -20,9 +20,8 @@ import '../domain/household.dart';
 /// flight", which is what the button binds to.
 /// Backoff before the single automatic retry. A provider so widget tests can
 /// override it to zero rather than sleeping on a real timer.
-final Provider<Duration> createHouseholdRetryDelayProvider = Provider<Duration>(
-  (Ref ref) => const Duration(seconds: 2),
-);
+final Provider<Duration> createHouseholdRetryDelayProvider =
+    Provider<Duration>((Ref ref) => const Duration(seconds: 2));
 
 class CreateHouseholdController extends AsyncNotifier<Household?> {
   /// `read`, not `watch`: the repository is resolved when an action runs, so

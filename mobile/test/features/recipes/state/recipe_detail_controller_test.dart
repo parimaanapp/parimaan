@@ -32,9 +32,7 @@ const RecipeDetailArg _arg = (householdId: 'household-1', id: 'recipe-1');
 
 ProviderContainer _container(FakeRecipeRepository repository) {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[
-      recipeRepositoryProvider.overrideWithValue(repository),
-    ],
+    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
   );
   addTearDown(container.dispose);
   return container;
@@ -63,51 +61,43 @@ void main() {
       final ProviderContainer container = _container(repository);
 
       await container.read(
-        recipeDetailControllerProvider((householdId: 'household-1', id: 'a'))
-            .future,
+        recipeDetailControllerProvider((householdId: 'household-1', id: 'a')).future,
       );
       await container.read(
-        recipeDetailControllerProvider((householdId: 'household-1', id: 'b'))
-            .future,
+        recipeDetailControllerProvider((householdId: 'household-1', id: 'b')).future,
       );
 
       expect(repository.detailCalls, <String>['a', 'b']);
     });
 
-    test(
-      'a fetch failure lands in state with its concrete AppError subtype',
-      () async {
-        final FakeRecipeRepository repository = FakeRecipeRepository(
-          detailError: const NotFoundError('Recipe not found.'),
-        );
-        final ProviderContainer container = _container(repository);
+    test('a fetch failure lands in state with its concrete AppError subtype', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        detailError: const NotFoundError('Recipe not found.'),
+      );
+      final ProviderContainer container = _container(repository);
 
-        await expectLater(
-          container.read(recipeDetailControllerProvider(_arg).future),
-          throwsA(isA<NotFoundError>()),
-        );
-        expect(
-          container.read(recipeDetailControllerProvider(_arg)).error,
-          isA<NotFoundError>(),
-        );
-      },
-    );
+      await expectLater(
+        container.read(recipeDetailControllerProvider(_arg).future),
+        throwsA(isA<NotFoundError>()),
+      );
+      expect(
+        container.read(recipeDetailControllerProvider(_arg)).error,
+        isA<NotFoundError>(),
+      );
+    });
   });
 
   group('RecipeDetailController — live updates', () {
-    test(
-      'subscribes to watchRecipeChanges for the recipe\'s household',
-      () async {
-        final FakeRecipeRepository repository = FakeRecipeRepository(
-          detailResult: _dalRecipe,
-        );
-        final ProviderContainer container = _container(repository);
+    test('subscribes to watchRecipeChanges for the recipe\'s household', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        detailResult: _dalRecipe,
+      );
+      final ProviderContainer container = _container(repository);
 
-        await container.read(recipeDetailControllerProvider(_arg).future);
+      await container.read(recipeDetailControllerProvider(_arg).future);
 
-        expect(repository.watchCalls, <String>['household-1']);
-      },
-    );
+      expect(repository.watchCalls, <String>['household-1']);
+    });
 
     test('a pushed change event triggers a refetch', () async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
@@ -148,9 +138,7 @@ void main() {
         detailResult: _dalRecipe,
       );
       final ProviderContainer container = ProviderContainer(
-        overrides: <Override>[
-          recipeRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
       );
       await container.read(recipeDetailControllerProvider(_arg).future);
 
@@ -163,46 +151,40 @@ void main() {
   });
 
   group('RecipeDetailController — applyUpdatedRecipe', () {
-    test(
-      'pushes the given recipe straight into state, no network call',
-      () async {
-        final FakeRecipeRepository repository = FakeRecipeRepository(
-          detailResult: _dalRecipe,
-        );
-        final ProviderContainer container = _container(repository);
-        await container.read(recipeDetailControllerProvider(_arg).future);
+    test('pushes the given recipe straight into state, no network call', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        detailResult: _dalRecipe,
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeDetailControllerProvider(_arg).future);
 
-        final Recipe favorited = Recipe(
-          id: _dalRecipe.id,
-          householdId: _dalRecipe.householdId,
-          sourceType: _dalRecipe.sourceType,
-          title: _dalRecipe.title,
-          servings: _dalRecipe.servings,
-          dietaryTags: _dalRecipe.dietaryTags,
-          role: _dalRecipe.role,
-          inRotation: _dalRecipe.inRotation,
-          isFavorite: true,
-          ingredients: _dalRecipe.ingredients,
-          steps: _dalRecipe.steps,
-          createdAt: _dalRecipe.createdAt,
-          updatedAt: _dalRecipe.updatedAt,
-        );
+      final Recipe favorited = Recipe(
+        id: _dalRecipe.id,
+        householdId: _dalRecipe.householdId,
+        sourceType: _dalRecipe.sourceType,
+        title: _dalRecipe.title,
+        servings: _dalRecipe.servings,
+        dietaryTags: _dalRecipe.dietaryTags,
+        role: _dalRecipe.role,
+        inRotation: _dalRecipe.inRotation,
+        isFavorite: true,
+        ingredients: _dalRecipe.ingredients,
+        steps: _dalRecipe.steps,
+        createdAt: _dalRecipe.createdAt,
+        updatedAt: _dalRecipe.updatedAt,
+      );
 
-        container
-            .read(recipeDetailControllerProvider(_arg).notifier)
-            .applyUpdatedRecipe(favorited);
+      container
+          .read(recipeDetailControllerProvider(_arg).notifier)
+          .applyUpdatedRecipe(favorited);
 
-        expect(
-          container
-              .read(recipeDetailControllerProvider(_arg))
-              .value
-              ?.isFavorite,
-          isTrue,
-        );
-        // Only the initial build() fetch — applyUpdatedRecipe never calls the
-        // repository.
-        expect(repository.detailCalls, hasLength(1));
-      },
-    );
+      expect(
+        container.read(recipeDetailControllerProvider(_arg)).value?.isFavorite,
+        isTrue,
+      );
+      // Only the initial build() fetch — applyUpdatedRecipe never calls the
+      // repository.
+      expect(repository.detailCalls, hasLength(1));
+    });
   });
 }

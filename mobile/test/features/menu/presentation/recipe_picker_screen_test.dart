@@ -24,10 +24,11 @@ import '../../../support/fake_menu_repository.dart';
 import '../../../support/fake_recipe_repository.dart';
 import '../../../support/menu_fixtures.dart';
 
-const RecipePickerExtra _extra = (
+final RecipePickerExtra _extra = (
   dayOfWeek: 2,
   mealSlot: 'lunch',
   slotRole: RecipeRole.sabziDal,
+  weekStartDate: currentWeekStartDate(),
 );
 
 Future<ProviderContainer> _pump(
@@ -35,7 +36,7 @@ Future<ProviderContainer> _pump(
   required FakeRecipeRepository recipeRepository,
   FakeMenuRepository? menuRepository,
   Household? household,
-  RecipePickerExtra extra = _extra,
+  RecipePickerExtra? extra,
 }) async {
   final Household resolvedHousehold = household ?? testMenuHousehold;
   final ProviderContainer container = ProviderContainer(
@@ -97,7 +98,7 @@ Future<ProviderContainer> _pump(
       child: MaterialApp.router(theme: parimaanTheme(), routerConfig: router),
     ),
   );
-  router.push(AppRoutes.recipePicker, extra: extra);
+  router.push(AppRoutes.recipePicker, extra: extra ?? _extra);
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
   return container;
@@ -131,6 +132,52 @@ Recipe _recipe(
 
 void main() {
   group('RecipePickerScreen', () {
+    testWidgets(
+      'adds to the menu of the week carried in extra, not the current week',
+      (WidgetTester tester) async {
+        final DateTime nextWeek = currentWeekStartDate().add(
+          const Duration(days: 7),
+        );
+        final FakeMenuRepository menuRepository = FakeMenuRepository(
+          fetchResult: Menu(
+            id: 'menu-next',
+            householdId: 'household-1',
+            weekStartDate: nextWeek,
+            mealConfigSnapshot: '{}',
+            items: const <MenuItem>[],
+          ),
+          addResult: testMenuItem,
+        );
+        await _pump(
+          tester,
+          recipeRepository: FakeRecipeRepository(
+            result: <Recipe>[_recipe('recipe-1', 'Dal')],
+            detailResult: _recipe('recipe-1', 'Dal'),
+          ),
+          menuRepository: menuRepository,
+          extra: (
+            dayOfWeek: 1,
+            mealSlot: 'lunch',
+            slotRole: RecipeRole.sabziDal,
+            weekStartDate: nextWeek,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Dal'));
+        await tester.pumpAndSettle();
+
+        expect(menuRepository.addCalls.single.$1, 'menu-next');
+        // Every fetch (initial get-or-create and the post-add refresh)
+        // targets the viewed week; none touches the current week.
+        expect(menuRepository.fetchCalls, isNotEmpty);
+        expect(
+          menuRepository.fetchCalls.every((c) => c.$2 == nextWeek),
+          isTrue,
+        );
+      },
+    );
+
     testWidgets('shows a loading indicator before recipes resolve', (
       WidgetTester tester,
     ) async {
@@ -221,10 +268,11 @@ void main() {
           tester,
           recipeRepository: recipeRepository,
           menuRepository: menuRepository,
-          extra: const (
+          extra: (
             dayOfWeek: 4,
             mealSlot: 'dinner',
             slotRole: RecipeRole.accompaniment,
+            weekStartDate: currentWeekStartDate(),
           ),
         );
         await tester.pumpAndSettle();

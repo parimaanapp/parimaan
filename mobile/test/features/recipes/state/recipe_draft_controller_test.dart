@@ -17,12 +17,7 @@ const _draft = AiRecipeDraft(
   dietaryTags: <String>['veg'],
   role: RecipeRole.sabziDal,
   ingredients: <AiRecipeDraftIngredient>[
-    AiRecipeDraftIngredient(
-      raw: '1 cup rajma',
-      name: 'Rajma',
-      quantity: 1,
-      unit: 'cup',
-    ),
+    AiRecipeDraftIngredient(raw: '1 cup rajma', name: 'Rajma', quantity: 1, unit: 'cup'),
   ],
   steps: <String>['Soak the rajma overnight.'],
   sourceUrl: 'https://example.com/rajma-chawal',
@@ -36,27 +31,19 @@ void main() {
 
       expect(state.title, const ProposedField<String>.proposed('Rajma Chawal'));
       expect(state.servings, const ProposedField<int>.proposed(4));
-      expect(
-        state.role,
-        const ProposedField<RecipeRole>.proposed(RecipeRole.sabziDal),
-      );
+      expect(state.role, const ProposedField<RecipeRole>.proposed(RecipeRole.sabziDal));
       expect(
         state.ingredients,
-        ProposedField<List<AiRecipeDraftIngredient>>.proposed(
-          _draft.ingredients,
-        ),
+        ProposedField<List<AiRecipeDraftIngredient>>.proposed(_draft.ingredients),
       );
       expect(state.steps, ProposedField<List<String>>.proposed(_draft.steps));
     });
 
-    test(
-      'passes sourceUrl and warnings through unchanged, not as proposals',
-      () {
-        final state = AiRecipeDraftState.fromDraft(_draft);
-        expect(state.sourceUrl, 'https://example.com/rajma-chawal');
-        expect(state.warnings, <String>['Could not determine cuisineTier2.']);
-      },
-    );
+    test('passes sourceUrl and warnings through unchanged, not as proposals', () {
+      final state = AiRecipeDraftState.fromDraft(_draft);
+      expect(state.sourceUrl, 'https://example.com/rajma-chawal');
+      expect(state.warnings, <String>['Could not determine cuisineTier2.']);
+    });
   });
 
   group('AiRecipeDraftState.isRoleConfirmed', () {
@@ -104,9 +91,7 @@ void main() {
       final notifier = container.read(
         aiRecipeDraftControllerProvider(_draft).notifier,
       );
-      notifier.updateTitle(
-        const ProposedField<String>.userModified('Chole Chawal'),
-      );
+      notifier.updateTitle(const ProposedField<String>.userModified('Chole Chawal'));
 
       final state = container.read(aiRecipeDraftControllerProvider(_draft));
       expect(state.title.value, 'Chole Chawal');
@@ -123,9 +108,7 @@ void main() {
         aiRecipeDraftControllerProvider(_draft).notifier,
       );
 
-      notifier.updateDescription(
-        const ProposedField<String>.userModified('New description'),
-      );
+      notifier.updateDescription(const ProposedField<String>.userModified('New description'));
       var state = container.read(aiRecipeDraftControllerProvider(_draft));
       expect(state.description.value, 'New description');
       expect(state.servings.isProposed, isTrue);
@@ -145,16 +128,12 @@ void main() {
       expect(state.cookMin.value, 45);
       expect(state.cuisineTier1.isProposed, isTrue);
 
-      notifier.updateCuisineTier1(
-        const ProposedField<String>.userModified('south_indian'),
-      );
+      notifier.updateCuisineTier1(const ProposedField<String>.userModified('south_indian'));
       state = container.read(aiRecipeDraftControllerProvider(_draft));
       expect(state.cuisineTier1.value, 'south_indian');
       expect(state.cuisineTier2.isProposed, isTrue);
 
-      notifier.updateCuisineTier2(
-        const ProposedField<String>.userModified('kerala'),
-      );
+      notifier.updateCuisineTier2(const ProposedField<String>.userModified('kerala'));
       state = container.read(aiRecipeDraftControllerProvider(_draft));
       expect(state.cuisineTier2.value, 'kerala');
       expect(state.dietaryTags.isProposed, isTrue);
@@ -167,17 +146,10 @@ void main() {
       expect(state.ingredients.isProposed, isTrue);
 
       final newIngredients = <AiRecipeDraftIngredient>[
-        const AiRecipeDraftIngredient(
-          raw: '2 onions',
-          name: 'Onion',
-          quantity: 2,
-          unit: null,
-        ),
+        const AiRecipeDraftIngredient(raw: '2 onions', name: 'Onion', quantity: 2, unit: null),
       ];
       notifier.updateIngredients(
-        ProposedField<List<AiRecipeDraftIngredient>>.userModified(
-          newIngredients,
-        ),
+        ProposedField<List<AiRecipeDraftIngredient>>.userModified(newIngredients),
       );
       state = container.read(aiRecipeDraftControllerProvider(_draft));
       expect(state.ingredients.value, newIngredients);
@@ -200,61 +172,49 @@ void main() {
       final notifier = container.read(
         aiRecipeDraftControllerProvider(_draft).notifier,
       );
-      notifier.updateRole(
-        const ProposedField<RecipeRole>.confirmed(RecipeRole.breakfast),
-      );
+      notifier.updateRole(const ProposedField<RecipeRole>.confirmed(RecipeRole.breakfast));
 
       final state = container.read(aiRecipeDraftControllerProvider(_draft));
       expect(state.role.value, RecipeRole.breakfast);
       expect(state.isRoleConfirmed, isTrue);
     });
 
-    test(
-      'two fetches of a structurally identical draft each start a fresh review',
-      () {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
+    test('two fetches of a structurally identical draft each start a fresh review', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-        // Deliberately NOT `const` — a `const` literal with identical field
-        // values canonicalizes to the same object as `_draft`, which would
-        // defeat the very identity-based-family behaviour this test asserts.
-        final secondFetch = AiRecipeDraft(
-          title: 'Rajma Chawal',
-          description: 'A comforting kidney bean curry.',
-          servings: 4,
-          prepMin: 15,
-          cookMin: 30,
-          cuisineTier1: 'north_indian',
-          cuisineTier2: 'punjabi',
-          dietaryTags: <String>['veg'],
-          role: RecipeRole.sabziDal,
-          ingredients: <AiRecipeDraftIngredient>[
-            AiRecipeDraftIngredient(
-              raw: '1 cup rajma',
-              name: 'Rajma',
-              quantity: 1,
-              unit: 'cup',
-            ),
-          ],
-          steps: <String>['Soak the rajma overnight.'],
-          sourceUrl: 'https://example.com/rajma-chawal',
-          warnings: <String>['Could not determine cuisineTier2.'],
-        );
+      // Deliberately NOT `const` — a `const` literal with identical field
+      // values canonicalizes to the same object as `_draft`, which would
+      // defeat the very identity-based-family behaviour this test asserts.
+      final secondFetch = AiRecipeDraft(
+        title: 'Rajma Chawal',
+        description: 'A comforting kidney bean curry.',
+        servings: 4,
+        prepMin: 15,
+        cookMin: 30,
+        cuisineTier1: 'north_indian',
+        cuisineTier2: 'punjabi',
+        dietaryTags: <String>['veg'],
+        role: RecipeRole.sabziDal,
+        ingredients: <AiRecipeDraftIngredient>[
+          AiRecipeDraftIngredient(raw: '1 cup rajma', name: 'Rajma', quantity: 1, unit: 'cup'),
+        ],
+        steps: <String>['Soak the rajma overnight.'],
+        sourceUrl: 'https://example.com/rajma-chawal',
+        warnings: <String>['Could not determine cuisineTier2.'],
+      );
 
-        final firstNotifier = container.read(
-          aiRecipeDraftControllerProvider(_draft).notifier,
-        );
-        firstNotifier.updateTitle(
-          const ProposedField<String>.userModified('Edited Title'),
-        );
+      final firstNotifier = container.read(
+        aiRecipeDraftControllerProvider(_draft).notifier,
+      );
+      firstNotifier.updateTitle(const ProposedField<String>.userModified('Edited Title'));
 
-        final secondState = container.read(
-          aiRecipeDraftControllerProvider(secondFetch),
-        );
-        expect(secondState.title.value, 'Rajma Chawal');
-        expect(secondState.title.isProposed, isTrue);
-        expect(secondState.title.isUserModified, isFalse);
-      },
-    );
+      final secondState = container.read(
+        aiRecipeDraftControllerProvider(secondFetch),
+      );
+      expect(secondState.title.value, 'Rajma Chawal');
+      expect(secondState.title.isProposed, isTrue);
+      expect(secondState.title.isUserModified, isFalse);
+    });
   });
 }

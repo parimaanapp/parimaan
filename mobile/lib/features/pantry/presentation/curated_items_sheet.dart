@@ -185,13 +185,11 @@ class _CuratedItemsSheetState extends State<CuratedItemsSheet> {
         for (final String name in _items) name: TextEditingController(),
       };
 
-  List<String> get _items =>
-      curatedPantryItems[widget.category] ?? const <String>[];
+  List<String> get _items => curatedPantryItems[widget.category] ?? const <String>[];
 
   @override
   void dispose() {
-    for (final TextEditingController controller
-        in _quantityControllers.values) {
+    for (final TextEditingController controller in _quantityControllers.values) {
       controller.dispose();
     }
     super.dispose();
@@ -209,8 +207,7 @@ class _CuratedItemsSheetState extends State<CuratedItemsSheet> {
         ),
   ];
 
-  bool get _canConfirm =>
-      _selections.isNotEmpty && _committable.length == _selections.length;
+  bool get _canConfirm => _selections.isNotEmpty && _committable.length == _selections.length;
 
   void _notify() => widget.onSelectionChanged?.call(_committable);
 
@@ -272,78 +269,70 @@ class _CuratedItemsSheetState extends State<CuratedItemsSheet> {
     final int count = _selections.length;
     return Padding(
       key: CuratedItemsSheet.sheetKey,
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: DraggableScrollableSheet(
         initialChildSize: 0.65,
         minChildSize: 0.4,
         maxChildSize: 0.92,
         expand: false,
-        builder: (BuildContext context, ScrollController scrollController) =>
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.s3,
-                    AppSpacing.s3,
-                    AppSpacing.s3,
-                    AppSpacing.s1,
-                  ),
-                  child: Text(
-                    pantryCategoryLabel(widget.category),
-                    style: AppTypography.title.copyWith(color: AppColors.ink),
-                  ),
-                ),
-                Expanded(
-                  // A plain scrollable `Column`, not `ListView.builder` —
-                  // deliberately, so every row exists in the tree at once. No
-                  // curated category has "anywhere near 50 entries" (D7's own
-                  // words about the sibling `bulkAddPantryItems` cap apply
-                  // equally here), so lazy building buys nothing and costs the
-                  // declared-order guarantee its most direct test: a widget
-                  // test asserting row *position* needs every row actually
-                  // built, not just the ones a virtualised list happens to
-                  // have scrolled into its cache extent.
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s3,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        for (final String name in items)
-                          _CuratedItemRow(
-                            name: name,
-                            ticked: _selections[name] != null,
-                            unit: _selections[name]?.unit,
-                            units: unitsForCategory(widget.category),
-                            quantityController: _quantityControllers[name]!,
-                            onToggle: (bool ticked) => _toggle(name, ticked),
-                            onQuantityChanged: (String text) =>
-                                _setQuantity(name, _parseQuantity(text)),
-                            onUnitChanged: (String unit) =>
-                                _setUnit(name, unit),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.s3),
-                  child: PButton(
-                    key: CuratedItemsSheet.confirmButtonKey,
-                    label: count == 0
-                        ? 'Add items'
-                        : 'Add $count item${count == 1 ? '' : 's'}',
-                    expand: true,
-                    onPressed: _canConfirm ? _confirm : null,
-                  ),
-                ),
-              ],
+        builder: (BuildContext context, ScrollController scrollController) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s3,
+                AppSpacing.s3,
+                AppSpacing.s3,
+                AppSpacing.s1,
+              ),
+              child: Text(
+                pantryCategoryLabel(widget.category),
+                style: AppTypography.title.copyWith(color: AppColors.ink),
+              ),
             ),
+            Expanded(
+              // A plain scrollable `Column`, not `ListView.builder` —
+              // deliberately, so every row exists in the tree at once. No
+              // curated category has "anywhere near 50 entries" (D7's own
+              // words about the sibling `bulkAddPantryItems` cap apply
+              // equally here), so lazy building buys nothing and costs the
+              // declared-order guarantee its most direct test: a widget
+              // test asserting row *position* needs every row actually
+              // built, not just the ones a virtualised list happens to
+              // have scrolled into its cache extent.
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    for (final String name in items)
+                      _CuratedItemRow(
+                        name: name,
+                        ticked: _selections[name] != null,
+                        unit: _selections[name]?.unit,
+                        units: unitsForCategory(widget.category),
+                        quantityController: _quantityControllers[name]!,
+                        onToggle: (bool ticked) => _toggle(name, ticked),
+                        onQuantityChanged: (String text) =>
+                            _setQuantity(name, _parseQuantity(text)),
+                        onUnitChanged: (String unit) => _setUnit(name, unit),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.s3),
+              child: PButton(
+                key: CuratedItemsSheet.confirmButtonKey,
+                label: count == 0 ? 'Add items' : 'Add $count item${count == 1 ? '' : 's'}',
+                expand: true,
+                onPressed: _canConfirm ? _confirm : null,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -393,10 +382,7 @@ class _CuratedItemRow extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Text(
-                  name,
-                  style: AppTypography.body.copyWith(color: AppColors.ink),
-                ),
+                child: Text(name, style: AppTypography.body.copyWith(color: AppColors.ink)),
               ),
             ],
           ),
@@ -416,9 +402,7 @@ class _CuratedItemRow extends StatelessWidget {
                   label: 'Quantity',
                   hintText: '2',
                   controller: quantityController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   useMonoFont: true,
                   onChanged: onQuantityChanged,
                 ),

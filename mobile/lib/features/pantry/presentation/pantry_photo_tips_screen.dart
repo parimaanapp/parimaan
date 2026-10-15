@@ -27,11 +27,7 @@ import '../../../shared/ui/typography.dart';
 /// opens, since a user can't act on it in the moment and it reads as a
 /// demand to change their storage.
 class PantryPhotoTipsScreen extends StatelessWidget {
-  const PantryPhotoTipsScreen({
-    super.key,
-    required this.onContinue,
-    this.onBack,
-  });
+  const PantryPhotoTipsScreen({super.key, required this.onContinue, this.onBack});
 
   /// Called when the user taps through to the camera screen.
   final VoidCallback onContinue;
@@ -97,12 +93,7 @@ class _TipRow extends StatelessWidget {
     children: <Widget>[
       Padding(
         padding: const EdgeInsets.only(top: 2),
-        child: Icon(
-          Icons.check_circle,
-          size: 20,
-          color: AppColors.cardamom,
-          semanticLabel: null,
-        ),
+        child: Icon(Icons.check_circle, size: 20, color: AppColors.cardamom, semanticLabel: null),
       ),
       const SizedBox(width: AppSpacing.s2),
       Expanded(child: Text(text, style: AppTypography.body)),

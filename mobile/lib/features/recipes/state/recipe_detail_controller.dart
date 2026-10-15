@@ -67,14 +67,8 @@ class RecipeDetailController
   }
 }
 
-final AsyncNotifierProviderFamily<
-  RecipeDetailController,
-  Recipe,
-  RecipeDetailArg
->
+final AsyncNotifierProviderFamily<RecipeDetailController, Recipe, RecipeDetailArg>
 recipeDetailControllerProvider =
-    AsyncNotifierProvider.family<
-      RecipeDetailController,
-      Recipe,
-      RecipeDetailArg
-    >(RecipeDetailController.new);
+    AsyncNotifierProvider.family<RecipeDetailController, Recipe, RecipeDetailArg>(
+      RecipeDetailController.new,
+    );

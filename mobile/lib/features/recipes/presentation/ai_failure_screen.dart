@@ -105,7 +105,9 @@ class AiFailureScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s2),
                   Text(
                     inputLabel.toUpperCase(),
-                    style: AppTypography.meta.copyWith(color: AppColors.inkMid),
+                    style: AppTypography.meta.copyWith(
+                      color: AppColors.inkMid,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.s0),
                   Text(

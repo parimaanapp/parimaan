@@ -14,7 +14,8 @@ List<Map<String, dynamic>> _loadCases() {
   return (decoded['cases'] as List<dynamic>).cast<Map<String, dynamic>>();
 }
 
-List<String> _strings(dynamic value) => (value as List<dynamic>).cast<String>();
+List<String> _strings(dynamic value) =>
+    (value as List<dynamic>).cast<String>();
 
 void main() {
   group('isRecipeEligible — shared fixture table', () {

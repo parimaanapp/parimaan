@@ -35,9 +35,7 @@ Future<ProviderContainer> _pump(
   required FakeRecipeRepository repository,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[
-      recipeRepositoryProvider.overrideWithValue(repository),
-    ],
+    overrides: <Override>[recipeRepositoryProvider.overrideWithValue(repository)],
   );
   addTearDown(container.dispose);
   await container.read(recipeDetailControllerProvider(_arg).future);
@@ -55,8 +53,7 @@ Future<ProviderContainer> _pump(
           body: Builder(
             builder: (BuildContext context) => Center(
               child: ElevatedButton(
-                onPressed: () =>
-                    showRecipeOverflowMenu(context: context, arg: _arg),
+                onPressed: () => showRecipeOverflowMenu(context: context, arg: _arg),
                 child: const Text('open'),
               ),
             ),
@@ -84,9 +81,7 @@ Future<ProviderContainer> _pump(
 
 void main() {
   group('RecipeOverflowMenu', () {
-    testWidgets('shows "Favorite" for a non-favorite recipe', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('shows "Favorite" for a non-favorite recipe', (WidgetTester tester) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
         detailResult: _dalRecipe,
       );
@@ -132,33 +127,30 @@ void main() {
       ]);
     });
 
-    testWidgets(
-      'tapping Edit navigates to RecipeFormScreen with the recipe as extra',
-      (WidgetTester tester) async {
-        final FakeRecipeRepository repository = FakeRecipeRepository(
-          detailResult: _dalRecipe,
-        );
-        await _pump(tester, repository: repository);
+    testWidgets('tapping Edit navigates to RecipeFormScreen with the recipe as extra', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        detailResult: _dalRecipe,
+      );
+      await _pump(tester, repository: repository);
 
-        await tester.tap(find.byKey(RecipeOverflowMenu.editRowKey));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byKey(RecipeOverflowMenu.editRowKey));
+      await tester.pumpAndSettle();
 
-        expect(find.text('recipe form screen'), findsOneWidget);
-        // The Overflow sheet closed on its way to the form — same
-        // `Navigator.of(context).pop()`-before-`push` shape as Delete's own
-        // success path.
-        expect(find.byType(RecipeOverflowMenu), findsNothing);
-      },
-    );
+      expect(find.text('recipe form screen'), findsOneWidget);
+      // The Overflow sheet closed on its way to the form — same
+      // `Navigator.of(context).pop()`-before-`push` shape as Delete's own
+      // success path.
+      expect(find.byType(RecipeOverflowMenu), findsNothing);
+    });
 
     testWidgets('shows the server error message on a failed toggle', (
       WidgetTester tester,
     ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
         detailResult: _dalRecipe,
-        favoriteError: const ForbiddenError(
-          'You are not a member of this household.',
-        ),
+        favoriteError: const ForbiddenError('You are not a member of this household.'),
       );
       await _pump(tester, repository: repository);
 

@@ -24,8 +24,9 @@ String _location(GoRouter router) =>
 /// live `onMembershipRevoked` push via `repository.revokedControllers`, the
 /// same shape `current_household_controller_test.dart` uses for
 /// `onHouseholdChanged`.
-Future<({GoRouter router, FakeHouseholdRepository repository})>
-_pumpSignedInHome(WidgetTester tester) async {
+Future<({GoRouter router, FakeHouseholdRepository repository})> _pumpSignedInHome(
+  WidgetTester tester,
+) async {
   final FakeHouseholdRepository repository = FakeHouseholdRepository(
     myHouseholdsResult: <Household>[testHousehold],
     fetchResult: testHousehold,
@@ -68,10 +69,7 @@ void main() {
         final ({GoRouter router, FakeHouseholdRepository repository}) subject =
             await _pumpSignedInHome(tester);
         expect(_location(subject.router), AppRoutes.home);
-        expect(
-          subject.repository.revokedWatchCalls,
-          contains(testHousehold.id),
-        );
+        expect(subject.repository.revokedWatchCalls, contains(testHousehold.id));
 
         subject.repository.revokedControllers[testHousehold.id]!.add(null);
         await tester.pumpAndSettle();
