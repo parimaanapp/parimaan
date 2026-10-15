@@ -43,6 +43,17 @@ describe('draftToFormValues', () => {
     ]);
   });
 
+  it('carries the import normaliser isStaple flag into the form row, defaulting to false when absent', () => {
+    const values = draftToFormValues({
+      ...draft,
+      ingredients: [
+        { raw: 'salt', name: 'salt', quantity: null, unit: null, notes: null, isStaple: true },
+        { raw: 'atta', name: 'atta', quantity: 1, unit: 'cup', notes: null },
+      ],
+    });
+    expect(values.ingredients.map((row) => row.isStaple)).toEqual([true, false]);
+  });
+
   it('defaults a null title/description to an empty string, never "null" text', () => {
     const values = draftToFormValues({ ...draft, title: null, description: null });
     expect(values.title).toBe('');

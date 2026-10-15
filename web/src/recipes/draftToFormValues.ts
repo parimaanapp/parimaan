@@ -28,5 +28,5 @@ const toIngredientInput = (ingredient: RecipeDraft['ingredients'][number]): Reci
   unit: ingredient.unit,
   category: null,
   notes: ingredient.notes,
-  isStaple: false,
+  isStaple: ingredient.isStaple ?? false,
 });
