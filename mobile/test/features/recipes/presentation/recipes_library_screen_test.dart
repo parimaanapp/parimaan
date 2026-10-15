@@ -273,5 +273,157 @@ void main() {
         expect(repository.calls.last.role, RecipeRole.sabziDal);
       },
     );
+
+    group('empty states', () {
+      testWidgets(
+        'genuinely empty library, no filter: original copy, no Clear filter',
+        (WidgetTester tester) async {
+          final FakeRecipeRepository repository = FakeRecipeRepository(
+            result: <Recipe>[],
+          );
+          await _pump(tester, recipeRepository: repository);
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(RecipesLibraryScreen.emptyStateKey), findsOneWidget);
+          expect(find.text('No recipes yet'), findsOneWidget);
+          expect(
+            find.byKey(RecipesLibraryScreen.filteredEmptyStateKey),
+            findsNothing,
+          );
+          expect(find.text('Clear filter'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'regression: a role filter with zero matches names the role and '
+        'offers Clear filter, not "No recipes yet"',
+        (WidgetTester tester) async {
+          final FakeRecipeRepository repository = FakeRecipeRepository(
+            result: <Recipe>[_dalRecipe],
+          );
+          await _pump(tester, recipeRepository: repository);
+          await tester.pumpAndSettle();
+          expect(find.text('Toor Dal'), findsOneWidget);
+
+          // The library is non-empty elsewhere; the filtered fetch is empty.
+          repository.result = <Recipe>[];
+          await tester.tap(find.widgetWithText(PChip, 'Carb'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.byKey(RecipesLibraryScreen.filteredEmptyStateKey),
+            findsOneWidget,
+          );
+          expect(find.text('No Carb recipes yet'), findsOneWidget);
+          expect(find.text('No recipes yet'), findsNothing);
+          expect(find.text('Clear filter'), findsOneWidget);
+          expect(
+            find.byKey(RecipesLibraryScreen.filteredAddButtonKey),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets('Clear filter deselects the chip and refetches unfiltered', (
+        WidgetTester tester,
+      ) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[],
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(PChip, 'Carb'));
+        await tester.pumpAndSettle();
+        expect(repository.calls.last.role, RecipeRole.carb);
+
+        repository.result = <Recipe>[_dalRecipe];
+        await tester.tap(find.text('Clear filter'));
+        await tester.pumpAndSettle();
+
+        expect(repository.calls.last.role, isNull);
+        expect(repository.calls.last.isFavorite, isNull);
+        expect(find.text('Toor Dal'), findsOneWidget);
+        expect(
+          tester.widget<PChip>(find.widgetWithText(PChip, 'Carb')).selected,
+          isFalse,
+        );
+      });
+
+      testWidgets('the secondary Add a recipe opens the method chooser', (
+        WidgetTester tester,
+      ) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[],
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(PChip, 'Carb'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(RecipesLibraryScreen.filteredAddButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RecipeMethodScreen), findsOneWidget);
+      });
+
+      testWidgets('a favorites filter with zero matches also gets filter copy', (
+        WidgetTester tester,
+      ) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          result: <Recipe>[_dalRecipe],
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
+
+        repository.result = <Recipe>[];
+        await tester.tap(find.byKey(RecipesLibraryScreen.favoritesChipKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text('No favorite recipes yet'), findsOneWidget);
+        expect(find.text('Clear filter'), findsOneWidget);
+      });
+
+      testWidgets(
+        'while a filter refetch is in flight over an empty result, shows '
+        'progress and never an empty card',
+        (WidgetTester tester) async {
+          final FakeRecipeRepository repository = FakeRecipeRepository(
+            result: <Recipe>[],
+          );
+          await _pump(tester, recipeRepository: repository);
+          await tester.pumpAndSettle();
+          expect(find.byKey(RecipesLibraryScreen.emptyStateKey), findsOneWidget);
+
+          repository.delay = const Duration(milliseconds: 50);
+          await tester.tap(find.widgetWithText(PChip, 'Carb'));
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.byKey(RecipesLibraryScreen.emptyStateKey), findsNothing);
+          expect(
+            find.byKey(RecipesLibraryScreen.filteredEmptyStateKey),
+            findsNothing,
+          );
+          await tester.pumpAndSettle();
+        },
+      );
+
+      testWidgets('an error with a filter selected offers retry, not empty copy', (
+        WidgetTester tester,
+      ) async {
+        final FakeRecipeRepository repository = FakeRecipeRepository(
+          error: const InternalError('network down'),
+        );
+        await _pump(tester, recipeRepository: repository);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(PChip, 'Carb'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(RecipesLibraryScreen.errorStateKey), findsOneWidget);
+        expect(find.text('Try again'), findsOneWidget);
+        expect(find.text('No Carb recipes yet'), findsNothing);
+        expect(find.text('No recipes yet'), findsNothing);
+      });
+    });
   });
 }

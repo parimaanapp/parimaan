@@ -27,6 +27,11 @@ class RecipesLibraryScreen extends ConsumerWidget {
   static const Key emptyStateKey = Key('recipes-library-empty');
   static const Key errorStateKey = Key('recipes-library-error');
   static const Key favoritesChipKey = Key('recipes-library-favorites-chip');
+  static const Key filteredEmptyStateKey = Key(
+    'recipes-library-filtered-empty',
+  );
+  static const Key clearFilterButtonKey = Key('recipes-library-clear-filter');
+  static const Key filteredAddButtonKey = Key('recipes-library-filtered-add');
   static const Key staleBannerKey = Key('recipes-library-stale-banner');
 
   @override
@@ -70,6 +75,36 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
   /// change. `setRoleFilter` refetches using the controller's own
   /// already-current `_isFavorite`, so a single call re-applies both.
   void _retry() => _controller.setRoleFilter(_selectedRole);
+
+  bool get _filterActive => _selectedRole != null || _favoritesOnly;
+
+  String get _filteredHeadline {
+    final RecipeRole? role = _selectedRole;
+    final String roleLabel = role == null ? '' : ' ${role.displayLabel}';
+    final String favorite = _favoritesOnly ? ' favorite' : '';
+    return 'No$favorite$roleLabel recipes yet';
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedRole = null;
+      _favoritesOnly = false;
+    });
+    _controller.clearFilters();
+  }
+
+  Widget _errorState(Object error) => Center(
+    key: RecipesLibraryScreen.errorStateKey,
+    child: PEmptyState(
+      headline: 'Could not load recipes',
+      body: error is AppError ? error.errorMessage : '',
+      action: PButton(
+        label: 'Try again',
+        variant: PButtonVariant.secondary,
+        onPressed: _retry,
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +194,41 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
             (final List<Recipe> items, _) when items.isNotEmpty => _RecipeList(
               items: items,
             ),
+            // A refetch over an empty previous result is still in flight:
+            // never show an empty card for data that has not arrived.
+            (final List<Recipe> items, _)
+                when items.isEmpty && recipes.isLoading =>
+              const Center(child: CircularProgressIndicator()),
+            (final List<Recipe> items, final Object error) when items.isEmpty =>
+              _errorState(error),
+            (final List<Recipe> items, _) when items.isEmpty && _filterActive =>
+              Center(
+                key: RecipesLibraryScreen.filteredEmptyStateKey,
+                child: PEmptyState(
+                  headline: _filteredHeadline,
+                  body: 'Clear the filter to see all your recipes.',
+                  action: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      PButton(
+                        key: RecipesLibraryScreen.clearFilterButtonKey,
+                        label: 'Clear filter',
+                        variant: PButtonVariant.secondary,
+                        onPressed: _clearFilters,
+                      ),
+                      const SizedBox(height: AppSpacing.s1),
+                      PButton(
+                        key: RecipesLibraryScreen.filteredAddButtonKey,
+                        label: 'Add a recipe',
+                        variant: PButtonVariant.ghost,
+                        onPressed: () => context.push(
+                          AppRoutes.recipeChooseMethod(widget.householdId),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             (final List<Recipe> items, _) when items.isEmpty => Center(
               key: RecipesLibraryScreen.emptyStateKey,
               child: PEmptyState(
@@ -173,18 +243,7 @@ class _RecipesForHouseholdState extends ConsumerState<_RecipesForHousehold> {
                 ),
               ),
             ),
-            (null, final Object error) => Center(
-              key: RecipesLibraryScreen.errorStateKey,
-              child: PEmptyState(
-                headline: 'Could not load recipes',
-                body: error is AppError ? error.errorMessage : '',
-                action: PButton(
-                  label: 'Try again',
-                  variant: PButtonVariant.secondary,
-                  onPressed: _retry,
-                ),
-              ),
-            ),
+            (null, final Object error) => _errorState(error),
             _ => const Center(child: CircularProgressIndicator()),
           },
         ),
