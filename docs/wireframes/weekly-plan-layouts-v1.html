@@ -1,0 +1,176 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Weekly Plan Layouts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Plan: page chrome uses Parimaan's own tokens so the review reads as the product.
+   Phone mocks are fixed-palette (they depict the app, not the page).
+   Layout: single column of numbered-by-area sections; each is a Now / Target pair that wraps on phones. */
+:root{--bg:#FBF6EE;--fg:#1F1A15;--soft:#5A4F42;--mid:#8B7C6B;--rule:rgba(31,26,21,.12);--panel:#F5EFE4;--accent:#C25A2B;--ok:#4F6B4A;--warn:#7A5A18;--haldi:#E8B961}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17130F;--fg:#F3ECE0;--soft:#C9BDAA;--mid:#9C8F7D;--rule:rgba(243,236,224,.14);--panel:#221C16;--accent:#E0804F;--ok:#8FB087;--warn:#E8B961;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17130F;--fg:#F3ECE0;--soft:#C9BDAA;--mid:#9C8F7D;--rule:rgba(243,236,224,.14);--panel:#221C16;--accent:#E0804F;--ok:#8FB087;--warn:#E8B961;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:'DM Sans',system-ui,sans-serif;font-size:15px;line-height:1.55;padding-inline:16px;padding-block:28px 64px}
+.wrap{max-width:1040px;margin:0 auto}
+h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:40px;line-height:1.05;margin:0 0 10px;text-wrap:balance}
+h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:28px;margin:0 0 4px;text-wrap:balance}
+.lede{max-width:62ch;color:var(--soft);margin:0 0 6px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);font-weight:600}
+section{border-top:1px solid var(--rule);padding-top:28px;margin-top:40px}
+.pair{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-top:18px}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.tag.now{color:var(--mid)} .tag.tgt{color:var(--ok)}
+.chg{margin:18px 0 0;padding:0;list-style:none;display:grid;gap:6px;max-width:70ch}
+.chg li{padding-left:16px;position:relative;color:var(--soft)}
+.chg li::before{content:"";position:absolute;left:0;top:.7em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.shot{width:280px;max-width:100%;border:1px solid var(--rule);border-radius:22px;display:block}
+.note{font-size:13px;color:var(--mid);max-width:42ch}
+/* wireframe-literal phone (values from Parimaan Wireframes v2) */
+.ph{width:300px;max-width:100%;background:#fff;border:1px solid rgba(31,26,21,.08);border-radius:28px;box-shadow:0 1px 2px rgba(31,26,21,.04),0 4px 12px rgba(31,26,21,.06);overflow:hidden;color:#1F1A15;font-family:'DM Sans',sans-serif;font-size:12px;display:flex;flex-direction:column}
+.ph .sb{height:22px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;font:9px 'JetBrains Mono',monospace;color:#8B7C6B}
+.ph .tb{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ph .ttl{font-family:'Instrument Serif',serif;font-size:20px;line-height:1.1;text-align:center;flex:1}
+.ph .back{width:44px;height:44px;margin:-12px 0 -12px -12px;display:flex;align-items:center;justify-content:center;color:#1F1A15}
+.ph .back svg{width:20px;height:20px}
+.ph .lab{font:600 9px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8B7C6B}
+.ph .body{padding:10px 16px 14px;display:flex;flex-direction:column;gap:8px}
+.tabs{height:48px;border-top:1px solid rgba(31,26,21,.08);display:grid;grid-template-columns:repeat(4,1fr);background:#fff}
+.tabs div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:#8B7C6B}
+.tabs .on{color:#1F1A15;font-weight:600}
+.tabs i{font-style:normal;font-size:16px;line-height:1}
+.tabs svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.nowtabs div{font-size:11px}
+.chip{display:inline-block;padding:5px 12px;border-radius:999px;border:1px solid rgba(31,26,21,.2);font-size:11px;font-weight:500;color:#1F1A15}
+.chip.on{background:#1F1A15;color:#FBF6EE;border-color:#1F1A15}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.cta{padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;border:1px solid transparent}
+.cta.p{background:#C25A2B;color:#FBF6EE}.cta.s{background:transparent;color:#1F1A15;border-color:rgba(31,26,21,.2);font-weight:500}
+.cta.a{background:#4F6B4A;color:#FBF6EE}.cta.d{background:#1F1A15;color:#FBF6EE}.cta.g{background:transparent;color:#A64420;font-weight:500}.cta.x{background:transparent;color:#9E2A2B;border-color:rgba(158,42,43,.25);font-weight:500}
+.fld{padding:9px 12px;border:1px solid rgba(31,26,21,.15);border-radius:10px;font-size:13px;background:#fff}
+.fld.f{border:1.5px solid #C25A2B;box-shadow:0 0 0 3px rgba(194,90,43,.12)}
+.ai{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font:600 9px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em;width:max-content}
+.ai.t{background:rgba(232,185,97,.15);color:#7A5A18}.ai.n{background:#3A5A7C;color:#fff}
+.day{border:1px solid rgba(31,26,21,.08);border-radius:10px;padding:6px 7px;display:grid;grid-template-columns:34px repeat(4,1fr);gap:5px;align-items:stretch}
+.day.today{border:1.5px solid #C25A2B;background:rgba(194,90,43,.04)}
+.dn{font:600 10px 'JetBrains Mono',monospace;color:#8B7C6B;line-height:1.2}.dn b{display:block;font:400 14px 'Instrument Serif',serif;color:#1F1A15}
+.cell{border-radius:7px;padding:4px 4px;font-size:8.5px;line-height:1.2;font-weight:600;display:flex;flex-direction:column;gap:2px;min-height:44px;color:#fff;overflow:hidden}
+.cell s{text-decoration:none;font-size:6.5px;letter-spacing:.1em;opacity:.85}
+.cell.b{background:#E8B961;color:#3b2a06}.cell.l{background:#C25A2B}.cell.sn{background:#8B7C6B}.cell.dn2{background:#4F6B4A}
+.cell.e{background:transparent;border:1px dashed rgba(31,26,21,.18);color:#8B7C6B;font-weight:400;font-style:italic;align-items:center;justify-content:center;font-size:12px}
+.row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(31,26,21,.06)}
+.box{width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(31,26,21,.25);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#FBF6EE;font-size:11px}
+.box.d{background:#4F6B4A;border:none}
+.q{font:11px 'JetBrains Mono',monospace;color:#8B7C6B;margin-left:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mid)}
+.tw{overflow-x:auto}
+</style>
+<style>
+.ph{height:auto}
+.hd{padding:6px 16px 8px;border-bottom:1px solid rgba(31,26,21,.06)}
+.week{padding:8px;display:flex;flex-direction:column;gap:6px}
+/* 2x2 */
+.d2{border:1px solid rgba(31,26,21,.08);border-radius:12px;padding:7px;display:grid;grid-template-columns:30px 1fr 1fr;gap:5px}
+.d2.today{border:1.5px solid #C25A2B;background:rgba(194,90,43,.04)}
+.d2 .dn{grid-row:1/3;padding-top:2px}
+.c2{border-radius:9px;padding:6px 7px 5px;min-height:56px;display:flex;flex-direction:column;justify-content:space-between;gap:3px;color:#fff}
+.c2 .t{font-size:10.5px;font-weight:600;line-height:1.25;display:flex;flex-direction:column;gap:1px}
+.c2 .m{font:600 7px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.c2.b{background:#E8B961;color:#3b2a06}.c2.l{background:#C25A2B}.c2.sn{background:#8B7C6B}.c2.dn2{background:#4F6B4A}
+.c2.e{background:transparent;border:1px dashed rgba(31,26,21,.22);color:#8B7C6B;align-items:center;justify-content:center;gap:1px}
+.c2.e .pl{font-size:16px;line-height:1;color:#C25A2B}
+.c2.e .m{opacity:1;color:#8B7C6B}
+/* 3 columns */
+.d3{border:1px solid rgba(31,26,21,.08);border-radius:12px;padding:7px;display:grid;grid-template-columns:30px repeat(3,1fr);gap:5px}
+.d3.today{border:1.5px solid #C25A2B;background:rgba(194,90,43,.04)}
+.c3{border-radius:9px;padding:6px;min-height:76px;display:flex;flex-direction:column;gap:2px;font-size:10px;font-weight:600;line-height:1.25;color:#fff}
+.c3.b{background:#E8B961;color:#3b2a06}.c3.l{background:#C25A2B}.c3.dn2{background:#4F6B4A}
+.c3.e{background:transparent;border:1px dashed rgba(31,26,21,.22);color:#8B7C6B;align-items:center;justify-content:center;font-weight:400}
+.c3.e .pl{font-size:16px;color:#C25A2B}
+.colh{display:grid;gap:5px;padding:0 7px;font:600 7px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8B7C6B}
+.cut{height:26px;background:linear-gradient(#fff,rgba(255,255,255,0));text-align:center;font:10px 'JetBrains Mono',monospace;color:#8B7C6B;padding-top:6px}
+.cmp{width:100%}
+</style>
+<div class="wrap">
+<p class="mono">Parimaan · Weekly plan · option sketch</p>
+<h1>Weekly plan layouts</h1>
+<p class="lede">Three sketches of the same screen. A is the layout I showed last time. B is your idea for four meals: each day becomes a 2×2 block and the meal name sits under the ＋. C is the three-meal version of the same rows. Content is illustrative.</p>
+
+<section>
+<div class="pair">
+ <div class="col"><span class="tag now">A · four meals, four columns</span>
+  <div class="ph"><div class="sb">9:41<span>●●● ▮</span></div>
+   <div class="hd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:18px;color:#5A4F42">‹</span><span style="font-family:'Instrument Serif',serif;font-size:18px">12 – 18 Oct</span><span style="font-size:18px;color:#5A4F42">›</span></div><div class="cta d" style="padding:8px;font-size:12px">◆ Auto-fill empty slots</div></div>
+   <div class="week">
+    <div class="colh" style="grid-template-columns:30px repeat(4,1fr)"><span></span><span>Brkfst</span><span>Lunch</span><span>Snack</span><span>Dinner</span></div>
+    <div class="day"><div class="dn"><b>Mon</b>12</div><div class="cell b">Poha</div><div class="cell l"><span>Rice</span><span>Dal tadka</span><span>Aloo gobi</span></div><div class="cell e">＋</div><div class="cell dn2"><span>Roti</span><span>Paneer bhurji</span></div></div>
+    <div class="day today"><div class="dn"><b>Tue</b>13</div><div class="cell b">Upma</div><div class="cell l"><span>Jeera rice</span><span>Rajma</span><span>Raita</span></div><div class="cell sn">Chai, Khakhra</div><div class="cell dn2"><span>Roti</span><span>Bhindi</span></div></div>
+    <div class="day"><div class="dn"><b>Wed</b>14</div><div class="cell b">Idli</div><div class="cell l"><span>Sambar rice</span><span>Poriyal</span></div><div class="cell e">＋</div><div class="cell dn2"><span>Dosa</span><span>Chutney</span></div></div>
+    <div class="day"><div class="dn"><b>Thu</b>15</div><div class="cell e">＋</div><div class="cell l"><span>Roti</span><span>Chole</span></div><div class="cell e">＋</div><div class="cell e">＋</div></div>
+    <div class="day"><div class="dn"><b>Fri</b>16</div><div class="cell b">Paratha</div><div class="cell l"><span>Pulao</span><span>Kadhi</span></div><div class="cell sn">Fruit</div><div class="cell dn2"><span>Roti</span><span>Egg curry</span></div></div>
+    <div class="day"><div class="dn"><b>Sat</b>17</div><div class="cell e">＋</div><div class="cell e">＋</div><div class="cell e">＋</div><div class="cell e">＋</div></div>
+    <div class="day"><div class="dn"><b>Sun</b>18</div><div class="cell e">＋</div><div class="cell e">＋</div><div class="cell e">＋</div><div class="cell e">＋</div></div>
+   </div>
+   <div class="tabs"><div><i>◉</i>Today</div><div class="on"><i>▦</i>Plan</div><div><i>◈</i>Pantry</div><div><i>☰</i>Recipes</div></div>
+  </div>
+  <span class="note"><b>Whole week on one screen.</b> Cells are about 54 px wide in this sketch (75 pt on a real phone), so names wrap to two lines and long ones truncate.</span></div>
+
+ <div class="col"><span class="tag tgt">B · four meals, 2×2 per day</span>
+  <div class="ph"><div class="sb">9:41<span>●●● ▮</span></div>
+   <div class="hd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:18px;color:#5A4F42">‹</span><span style="font-family:'Instrument Serif',serif;font-size:18px">12 – 18 Oct</span><span style="font-size:18px;color:#5A4F42">›</span></div><div class="cta d" style="padding:8px;font-size:12px">◆ Auto-fill empty slots</div></div>
+   <div class="week">
+    <div class="d2"><div class="dn"><b>Mon</b>12</div>
+      <div class="c2 b"><div class="t">Poha</div><div class="m">Breakfast</div></div>
+      <div class="c2 l"><div class="t"><span>Rice · Dal tadka</span><span>Aloo gobi</span></div><div class="m">Lunch</div></div>
+      <div class="c2 e"><span class="pl">＋</span><span class="m">Snack</span></div>
+      <div class="c2 dn2"><div class="t"><span>Roti</span><span>Paneer bhurji</span></div><div class="m">Dinner</div></div></div>
+    <div class="d2 today"><div class="dn"><b>Tue</b>13</div>
+      <div class="c2 b"><div class="t">Upma</div><div class="m">Breakfast</div></div>
+      <div class="c2 l"><div class="t"><span>Jeera rice · Rajma</span><span>Raita</span></div><div class="m">Lunch</div></div>
+      <div class="c2 sn"><div class="t">Chai, Khakhra</div><div class="m">Snack</div></div>
+      <div class="c2 dn2"><div class="t"><span>Roti</span><span>Bhindi masala</span></div><div class="m">Dinner</div></div></div>
+    <div class="d2"><div class="dn"><b>Wed</b>14</div>
+      <div class="c2 b"><div class="t">Idli</div><div class="m">Breakfast</div></div>
+      <div class="c2 l"><div class="t"><span>Sambar rice</span><span>Poriyal</span></div><div class="m">Lunch</div></div>
+      <div class="c2 e"><span class="pl">＋</span><span class="m">Snack</span></div>
+      <div class="c2 dn2"><div class="t"><span>Dosa · Chutney</span></div><div class="m">Dinner</div></div></div>
+    <div class="cut">Thu – Sun below · scroll</div>
+   </div>
+   <div class="tabs"><div><i>◉</i>Today</div><div class="on"><i>▦</i>Plan</div><div><i>◈</i>Pantry</div><div><i>☰</i>Recipes</div></div>
+  </div>
+  <span class="note"><b>About 4½ days per phone screen.</b> Cells are about 108 px wide in this sketch (150 pt on a real phone), so full names show on one or two lines. No column header; each cell names its own meal.</span></div>
+
+ <div class="col"><span class="tag tgt">C · three meals, three columns</span>
+  <div class="ph"><div class="sb">9:41<span>●●● ▮</span></div>
+   <div class="hd"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:18px;color:#5A4F42">‹</span><span style="font-family:'Instrument Serif',serif;font-size:18px">12 – 18 Oct</span><span style="font-size:18px;color:#5A4F42">›</span></div><div class="cta d" style="padding:8px;font-size:12px">◆ Auto-fill empty slots</div></div>
+   <div class="week">
+    <div class="colh" style="grid-template-columns:30px repeat(3,1fr)"><span></span><span>Breakfast</span><span>Lunch</span><span>Dinner</span></div>
+    <div class="d3"><div class="dn"><b>Mon</b>12</div><div class="c3 b">Poha</div><div class="c3 l"><span>Rice</span><span>Dal tadka</span><span>Aloo gobi</span></div><div class="c3 dn2"><span>Roti</span><span>Paneer bhurji</span></div></div>
+    <div class="d3 today"><div class="dn"><b>Tue</b>13</div><div class="c3 b">Upma</div><div class="c3 l"><span>Jeera rice</span><span>Rajma</span><span>Raita</span></div><div class="c3 dn2"><span>Roti</span><span>Bhindi masala</span></div></div>
+    <div class="d3"><div class="dn"><b>Wed</b>14</div><div class="c3 b">Idli</div><div class="c3 l"><span>Sambar rice</span><span>Poriyal</span></div><div class="c3 dn2"><span>Dosa</span><span>Chutney</span></div></div>
+    <div class="d3"><div class="dn"><b>Thu</b>15</div><div class="c3 e"><span class="pl">＋</span></div><div class="c3 l"><span>Roti</span><span>Chole</span></div><div class="c3 e"><span class="pl">＋</span></div></div>
+    <div class="d3"><div class="dn"><b>Fri</b>16</div><div class="c3 b">Paratha</div><div class="c3 l"><span>Pulao</span><span>Kadhi</span></div><div class="c3 dn2"><span>Roti</span><span>Egg curry</span></div></div>
+    <div class="d3"><div class="dn"><b>Sat</b>17</div><div class="c3 e"><span class="pl">＋</span></div><div class="c3 e"><span class="pl">＋</span></div><div class="c3 e"><span class="pl">＋</span></div></div>
+   </div>
+   <div class="tabs"><div><i>◉</i>Today</div><div class="on"><i>▦</i>Plan</div><div><i>◈</i>Pantry</div><div><i>☰</i>Recipes</div></div>
+  </div>
+  <span class="note"><b>6 to 7 days per phone screen.</b> Used when snacks are switched off. Same cell style as B so the two feel like one design.</span></div>
+</div>
+</section>
+
+<section>
+<p class="mono">How they compare</p>
+<h2>What each one trades</h2>
+<div class="tw"><table>
+<tr><th></th><th>A · 4 columns</th><th>B · 2×2 (your idea)</th><th>C · 3 columns</th></tr>
+<tr><td>Used when</td><td>Four meals</td><td>Four meals</td><td>Three meals</td></tr>
+<tr><td>Cell width (390 pt phone)</td><td>≈ 75 pt</td><td>≈ 150 pt</td><td>≈ 100 pt</td></tr>
+<tr><td>Text per cell</td><td>2 lines, truncates</td><td>3 lines, mostly full names</td><td>3 lines</td></tr>
+<tr><td>Days visible without scrolling</td><td>7</td><td>≈ 4½</td><td>6 to 7</td></tr>
+<tr><td>Meal name</td><td>Column header</td><td>Under the ＋ / in each cell</td><td>Column header</td></tr>
+<tr><td>Best at</td><td>Seeing the whole week at a glance</td><td>Reading what is planned</td><td>Same as A with room to read</td></tr>
+</table></div>
+<p class="lede" style="margin-top:16px">What B gives up is the single-screen week. It buys readable names. A hybrid is possible: B for the day you are on and A as a zoomed-out week overview toggle. Tell me which of A, B, or the hybrid you want, and I will carry it into Build C.</p>
+</section>
+</div>
+</body></html>
