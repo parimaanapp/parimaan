@@ -14,6 +14,7 @@ import 'slot_stepper.dart';
 import 'wizard_error_copy.dart';
 import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
+import 'wizard_step_plan.dart';
 import 'wizard_step_submit.dart';
 
 /// Wireframe screen 2.3 — "Lunch structure"/"Dinner structure", step 2/4 of
@@ -26,10 +27,11 @@ import 'wizard_step_submit.dart';
 /// `lunch` — see `LunchMealStructure`'s doc for why the domain type keeps its
 /// old name despite serving both meal types.
 ///
-/// The create wizard only ever routes here with [MealType.lunch] — see
-/// `router.dart`'s `AppRoutes.createHouseholdStructure` route, unchanged by
-/// this slice. Dinner is reachable only from Settings, through
-/// `AppRoutes.editMealStructure`'s `:mealType` segment.
+/// The create wizard routes here with [MealType.lunch]
+/// (`AppRoutes.createHouseholdStructure`) and, when "Same structure as lunch"
+/// is OFF or lunch is not enabled, with [MealType.dinner]
+/// (`AppRoutes.createHouseholdDinnerStructure`, A7). Settings reaches either
+/// through `AppRoutes.editMealStructure`'s `:mealType` segment.
 class MealStructureScreen extends ConsumerWidget {
   const MealStructureScreen({
     super.key,
@@ -50,7 +52,11 @@ class MealStructureScreen extends ConsumerWidget {
 
   static const Key continueButtonKey = Key('meal-structure-continue');
 
-  static const String stepIndicator = '2/4';
+  /// The "Same structure as lunch" row on the create wizard's lunch page.
+  static const Key sameAsLunchKey = Key('meal-structure-same-as-lunch');
+
+  static const String sameAsLunchLabel = 'Same structure as lunch';
+
   static const String hint = 'Max slots per type — you can plan fewer any day';
 
   /// "Lunch structure" / "Dinner structure" — the wireframe's own heading,
@@ -85,16 +91,21 @@ class MealStructureScreen extends ConsumerWidget {
     final bool isBusy = state.isLoading;
     final LunchMealStructure structure =
         draft?.structureFor(mealType) ?? LunchMealStructure.defaults;
+    final WizardStepPlan plan = WizardStepPlan.fromDraft(draft);
+    final WizardStep step = mealType == MealType.dinner
+        ? WizardStep.dinnerStructure
+        : WizardStep.lunchStructure;
+    final bool isLunchStep = mealType != MealType.dinner;
 
     return WizardStepScaffold(
-      stepIndicator: flow.stepIndicator(stepIndicator),
+      stepIndicator: flow.stepIndicator(plan.indicator(step)),
       heading: heading,
       hint: hint,
       onBack: () => context.go(
-        flow.backDestination(whenCreating: AppRoutes.createHouseholdMeals),
+        flow.backDestination(whenCreating: plan.routeBefore(step)),
       ),
       backSemanticLabel: flow.backSemanticLabel(
-        whenCreating: 'Back to which meals to plan',
+        whenCreating: plan.backSemanticLabel(step),
       ),
       errorMessage: wizardErrorMessage(state.error),
       action: PButton(
@@ -108,9 +119,11 @@ class MealStructureScreen extends ConsumerWidget {
                 ref: ref,
                 context: context,
                 submit: (HouseholdWizardController c) =>
-                    c.submitMealStructure(mealType),
+                    !flow.isEditing && isLunchStep
+                    ? c.submitLunchStructureStep()
+                    : c.submitMealStructure(mealType),
                 nextRoute: flow.destination(
-                  whenCreating: AppRoutes.createHouseholdCuisine,
+                  whenCreating: plan.routeAfter(step),
                 ),
               ),
       ),
@@ -125,7 +138,19 @@ class MealStructureScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.s1),
         ],
-        if (mealType == MealType.lunch) ...<Widget>[
+        if (!flow.isEditing &&
+            isLunchStep &&
+            plan.showsSameAsLunchToggle) ...<Widget>[
+          const SizedBox(height: AppSpacing.s1),
+          _SameAsLunchRow(
+            value: plan.dinnerSameAsLunch,
+            onTap: isBusy
+                ? null
+                : () =>
+                      controller.setDinnerSameAsLunch(!plan.dinnerSameAsLunch),
+          ),
+        ],
+        if (flow.isEditing && mealType == MealType.lunch) ...<Widget>[
           const SizedBox(height: AppSpacing.s1),
           Text(
             dinnerNote,
@@ -138,6 +163,44 @@ class MealStructureScreen extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// The "Same structure as lunch" toggle row: a tappable card with a switch.
+class _SameAsLunchRow extends StatelessWidget {
+  const _SameAsLunchRow({required this.value, required this.onTap});
+
+  final bool value;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    toggled: value,
+    child: PCard(
+      key: MealStructureScreen.sameAsLunchKey,
+      onTap: onTap,
+      semanticLabel:
+          '${MealStructureScreen.sameAsLunchLabel}. ${value ? 'On' : 'Off'}',
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              MealStructureScreen.sameAsLunchLabel,
+              style: AppTypography.bodyStrong.copyWith(color: AppColors.ink),
+            ),
+          ),
+          // The card owns the tap; the switch only displays state.
+          IgnorePointer(
+            child: Switch(
+              value: value,
+              onChanged: (_) {},
+              activeThumbColor: AppColors.paper,
+              activeTrackColor: AppColors.ink,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Rendered in place of [MealStructureScreen] when

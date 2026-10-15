@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'cuisine_taxonomy.dart';
 import 'dietary_tag.dart';
 import 'meal_structure.dart';
@@ -86,7 +88,19 @@ class HouseholdSettingsPatch {
   factory HouseholdSettingsPatch.mealStructure(
     MealType mealType,
     LunchMealStructure structure,
-  ) => HouseholdSettingsPatch(mealStructureJson: structure.toWireJson(mealType));
+  ) =>
+      HouseholdSettingsPatch(mealStructureJson: structure.toWireJson(mealType));
+
+  /// Setup's "Same structure as lunch" ON: persists dinner equal to lunch in
+  /// one patch, so dinner cannot drift from what the user just configured.
+  factory HouseholdSettingsPatch.lunchAndDinnerStructure(
+    LunchMealStructure structure,
+  ) => HouseholdSettingsPatch(
+    mealStructureJson: jsonEncode(<String, Object?>{
+      ...structure.toJson(MealType.lunch),
+      ...structure.toJson(MealType.dinner),
+    }),
+  );
 
   /// Wizard step 3/4, first frame (screen 2.4). Schema order, as with
   /// [HouseholdSettingsPatch.meals].

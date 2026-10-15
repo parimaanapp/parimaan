@@ -136,6 +136,11 @@ abstract final class AppRoutes {
   /// Wireframe 2.3 — step 2/4.
   static const String createHouseholdStructure = '/household/create/structure';
 
+  /// The extra dinner-structure page, shown when "Same structure as lunch"
+  /// is OFF (A7). Visually identical to [createHouseholdStructure].
+  static const String createHouseholdDinnerStructure =
+      '/household/create/dinner-structure';
+
   /// Wireframe 2.4 — step 3/4, first frame.
   static const String createHouseholdCuisine = '/household/create/cuisine';
 
@@ -631,6 +636,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         // reachable exclusively through the Settings edit route below.
         builder: (BuildContext context, GoRouterState state) =>
             const MealStructureScreen(mealType: MealType.lunch),
+      ),
+      GoRoute(
+        path: AppRoutes.createHouseholdDinnerStructure,
+        builder: (BuildContext context, GoRouterState state) =>
+            const MealStructureScreen(mealType: MealType.dinner),
       ),
       GoRoute(
         path: AppRoutes.createHouseholdCuisine,

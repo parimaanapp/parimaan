@@ -36,6 +36,7 @@ class PChip extends StatelessWidget {
     this.variant = PChipVariant.filter,
     this.tone = PChipTone.neutral,
     this.selected = false,
+    this.showSelectedGlyph = true,
     this.onTap,
     this.onRemove,
     this.removeSemanticLabel,
@@ -58,6 +59,11 @@ class PChip extends StatelessWidget {
 
   /// On/off state for filter and role chips.
   final bool selected;
+
+  /// Whether a selected filter chip shows the tick. Defaults to true; setup's
+  /// dietary groups pass false (§32.6: solid ink fill without the tick). The
+  /// selected state is still exposed to screen readers via semantics.
+  final bool showSelectedGlyph;
 
   /// Non-null makes the chip tappable — and therefore subject to the 44pt
   /// touch-target floor.
@@ -90,7 +96,7 @@ class PChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (_isPill && selected) ...<Widget>[
+          if (_isPill && selected && showSelectedGlyph) ...<Widget>[
             Text(
               selectedGlyph,
               style: AppTypography.label.copyWith(color: colors.foreground),

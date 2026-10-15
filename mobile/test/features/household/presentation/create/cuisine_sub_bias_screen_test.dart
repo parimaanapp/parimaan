@@ -43,7 +43,7 @@ void main() {
     ) async {
       await _pump(tester);
 
-      expect(find.text(CuisineSubBiasScreen.stepIndicator), findsOne);
+      expect(find.text('3/4'), findsOne);
       expect(find.text('3/4'), findsOne);
     });
 

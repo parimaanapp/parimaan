@@ -13,13 +13,13 @@ void main() {
       );
     });
 
-    test('the wizard offers the three meals the wireframe draws', () {
+    test('the wizard offers all four meals (Snacks added in A7)', () {
       expect(wizardMealTypes, <MealType>[
         MealType.breakfast,
         MealType.lunch,
+        MealType.snacks,
         MealType.dinner,
       ]);
-      expect(wizardMealTypes, isNot(contains(MealType.snacks)));
     });
 
     test('every wizard meal has display copy from the wireframe', () {

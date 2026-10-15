@@ -35,7 +35,7 @@ void main() {
 
       expect(find.text(CuisineRegionsScreen.heading), findsOne);
       expect(find.text(CuisineRegionsScreen.hint), findsOne);
-      expect(find.text(CuisineRegionsScreen.stepIndicator), findsOne);
+      expect(find.text('3/4'), findsOne);
       expect(find.text(CuisineRegionsScreen.unlockNote), findsOne);
     });
 

@@ -12,6 +12,7 @@ import '../../state/household_wizard_controller.dart';
 import 'wizard_error_copy.dart';
 import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
+import 'wizard_step_plan.dart';
 import 'wizard_step_submit.dart';
 
 /// Wireframe screen 2.2 — "Which meals?", step 1/4 in the create wizard; also
@@ -38,7 +39,6 @@ class WhichMealsScreen extends ConsumerWidget {
 
   static Key toggleKey(MealType meal) => Key('which-meals-${meal.name}');
 
-  static const String stepIndicator = '1/4';
   static const String heading = 'Which meals?';
   static const String hint = 'Toggle on the meals you plan weekly';
 
@@ -52,13 +52,14 @@ class WhichMealsScreen extends ConsumerWidget {
       householdWizardControllerProvider.notifier,
     );
     final bool isBusy = state.isLoading;
+    final WizardStepPlan plan = WizardStepPlan.fromDraft(draft);
 
     final List<MealType> offeredMeals = flow.isEditing
         ? editMealTypes
         : wizardMealTypes;
 
     return WizardStepScaffold(
-      stepIndicator: flow.stepIndicator(stepIndicator),
+      stepIndicator: flow.stepIndicator(plan.indicator(WizardStep.meals)),
       heading: heading,
       hint: hint,
       onBack: () => context.go(
@@ -83,7 +84,7 @@ class WhichMealsScreen extends ConsumerWidget {
                 context: context,
                 submit: (HouseholdWizardController c) => c.submitMealsEnabled(),
                 nextRoute: flow.destination(
-                  whenCreating: AppRoutes.createHouseholdStructure,
+                  whenCreating: plan.routeAfter(WizardStep.meals),
                 ),
               ),
       ),

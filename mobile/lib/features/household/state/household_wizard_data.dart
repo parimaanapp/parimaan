@@ -21,6 +21,7 @@ class HouseholdWizardData {
     Set<MealType>? mealsEnabled,
     this.lunchStructure = LunchMealStructure.defaults,
     this.dinnerStructure = LunchMealStructure.defaults,
+    this.dinnerSameAsLunch = true,
     Set<CuisineRegion>? regions,
     Map<String, CuisineBias>? subCuisineWeights,
     Set<DietaryTag>? dietaryTags,
@@ -63,6 +64,11 @@ class HouseholdWizardData {
   /// `E2E_MVP_PLAN.md` §19.2.3 — the wizard stays at three toggles and one
   /// structure step).
   final LunchMealStructure dinnerStructure;
+
+  /// Setup's "Same structure as lunch" toggle (default ON). Wizard-only,
+  /// transient: it decides whether the dinner page is shown and whether the
+  /// lunch submit also writes dinner. It is not a stored setting.
+  final bool dinnerSameAsLunch;
 
   final Set<CuisineRegion> regions;
 
@@ -108,6 +114,7 @@ class HouseholdWizardData {
     Set<MealType>? mealsEnabled,
     LunchMealStructure? lunchStructure,
     LunchMealStructure? dinnerStructure,
+    bool? dinnerSameAsLunch,
     Set<CuisineRegion>? regions,
     Map<String, CuisineBias>? subCuisineWeights,
     Set<DietaryTag>? dietaryTags,
@@ -118,6 +125,7 @@ class HouseholdWizardData {
     mealsEnabled: mealsEnabled ?? this.mealsEnabled,
     lunchStructure: lunchStructure ?? this.lunchStructure,
     dinnerStructure: dinnerStructure ?? this.dinnerStructure,
+    dinnerSameAsLunch: dinnerSameAsLunch ?? this.dinnerSameAsLunch,
     regions: regions ?? this.regions,
     subCuisineWeights: subCuisineWeights ?? this.subCuisineWeights,
     dietaryTags: dietaryTags ?? this.dietaryTags,

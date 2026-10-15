@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/router.dart';
 import 'package:mobile/features/household/domain/meal_structure.dart';
+import 'package:mobile/features/household/domain/meal_type.dart';
 import 'package:mobile/features/household/presentation/create/meal_structure_screen.dart';
 import 'package:mobile/features/household/presentation/create/slot_stepper.dart';
 import 'package:mobile/features/household/presentation/create/wizard_step_scaffold.dart';
@@ -46,8 +47,10 @@ void main() {
       // heading is now derived from `mealType`, no longer a static const.
       expect(find.text('Lunch structure'), findsOne);
       expect(find.text(MealStructureScreen.hint), findsOne);
-      expect(find.text(MealStructureScreen.stepIndicator), findsOne);
-      expect(find.text(MealStructureScreen.dinnerNote), findsOne);
+      expect(find.text('2/4'), findsOne);
+      expect(find.text('Setup your Household'), findsOne);
+      // Setup no longer points at Settings for dinner - it has a real toggle.
+      expect(find.text(MealStructureScreen.dinnerNote), findsNothing);
     });
 
     testWidgets('renders one stepper per slot at the wireframe defaults', (
@@ -138,14 +141,33 @@ void main() {
       await tester.tap(find.byKey(MealStructureScreen.continueButtonKey));
       await tester.pumpAndSettle();
 
+      // Toggle defaults ON, so dinner is persisted from lunch in one patch.
       expect(subject.repository.settingsCalls, hasLength(1));
       final patch = subject.repository.settingsCalls.single.patch;
       expect(patch.fieldCount, 1);
       expect(
         patch.mealStructureJson,
+        '{"lunch":{"carb":3,"sabzi_dal":2,"accompaniment":1},'
+        '"dinner":{"carb":3,"sabzi_dal":2,"accompaniment":1}}',
+      );
+    });
+
+    testWidgets('with the toggle OFF only the lunch key is sent', (
+      WidgetTester tester,
+    ) async {
+      final subject = await _pump(tester);
+      await tester.tap(find.byKey(MealStructureScreen.sameAsLunchKey));
+      await tester.pumpAndSettle();
+      await _tapPlus(tester, MealSlot.carb);
+
+      await tester.tap(find.byKey(MealStructureScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      final patch = subject.repository.settingsCalls.single.patch;
+      expect(
+        patch.mealStructureJson,
         '{"lunch":{"carb":3,"sabzi_dal":2,"accompaniment":1}}',
       );
-      expect(patch.mealStructureJson, isNot(contains('dinner')));
     });
 
     testWidgets('advances to the cuisine screen on success', (
@@ -225,6 +247,97 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(currentLocation(subject.router), AppRoutes.createHouseholdMeals);
+    });
+  });
+
+  group('MealStructureScreen — same-as-lunch toggle', () {
+    testWidgets('shows the toggle row, default ON', (
+      WidgetTester tester,
+    ) async {
+      final subject = await _pump(tester);
+
+      expect(find.text('Same structure as lunch'), findsOne);
+      expect(find.byKey(MealStructureScreen.sameAsLunchKey), findsOne);
+      expect(
+        subject.container
+            .read(householdWizardControllerProvider)
+            .requireValue
+            .dinnerSameAsLunch,
+        isTrue,
+      );
+    });
+
+    testWidgets('ON: Continue goes straight to cuisine', (
+      WidgetTester tester,
+    ) async {
+      final subject = await _pump(tester);
+
+      await tester.tap(find.byKey(MealStructureScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(subject.router), AppRoutes.createHouseholdCuisine);
+    });
+
+    testWidgets('OFF: counter becomes 2/5 and Continue shows the dinner page', (
+      WidgetTester tester,
+    ) async {
+      final subject = await _pump(tester);
+
+      await tester.tap(find.byKey(MealStructureScreen.sameAsLunchKey));
+      await tester.pumpAndSettle();
+      expect(find.text('2/5'), findsOne);
+
+      await tester.tap(find.byKey(MealStructureScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        currentLocation(subject.router),
+        AppRoutes.createHouseholdDinnerStructure,
+      );
+      expect(find.text('Dinner structure'), findsOne);
+      expect(find.text('Setup your Household'), findsOne);
+      expect(find.text('3/5'), findsOne);
+      expect(find.byType(SlotStepper), findsExactly(3));
+      expect(find.byKey(MealStructureScreen.sameAsLunchKey), findsNothing);
+    });
+
+    testWidgets('dinner page edits and persists only the dinner key', (
+      WidgetTester tester,
+    ) async {
+      final subject = await _pump(tester);
+      await tester.tap(find.byKey(MealStructureScreen.sameAsLunchKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(MealStructureScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      await _tapPlus(tester, MealSlot.accompaniment);
+      await tester.tap(find.byKey(MealStructureScreen.continueButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(subject.repository.settingsCalls, hasLength(2));
+      expect(
+        subject.repository.settingsCalls.last.patch.mealStructureJson,
+        '{"dinner":{"carb":2,"sabzi_dal":2,"accompaniment":2}}',
+      );
+      expect(currentLocation(subject.router), AppRoutes.createHouseholdCuisine);
+      expect(find.text('4/5'), findsOne);
+    });
+
+    testWidgets('no toggle when lunch is not enabled; dinner shown directly', (
+      WidgetTester tester,
+    ) async {
+      final subject = await pumpWizardRoute(
+        tester,
+        AppRoutes.createHouseholdDinnerStructure,
+      );
+      subject.container
+          .read(householdWizardControllerProvider.notifier)
+          .toggleMeal(MealType.lunch);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dinner structure'), findsOne);
+      expect(find.byKey(MealStructureScreen.sameAsLunchKey), findsNothing);
+      expect(find.text('2/4'), findsOne);
     });
   });
 }

@@ -7,6 +7,7 @@ import 'package:mobile/features/household/presentation/create/dietary_allergens_
 import 'package:mobile/features/household/presentation/create/wizard_step_scaffold.dart';
 import 'package:mobile/features/household/state/household_wizard_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/ui/components/p_chip.dart';
 
 import '../../../../support/fake_household_repository.dart';
 import '../../../../support/household_fixtures.dart';
@@ -46,8 +47,8 @@ void main() {
     ) async {
       await _pump(tester);
 
-      expect(find.text(DietaryAllergensScreen.stepIndicator), findsOne);
-      expect(find.text('DIETARY'), findsOne);
+      expect(find.text('4/4'), findsOne);
+      expect(find.text('EATING STYLE'), findsOne);
       expect(find.text('ALLERGENS'), findsOne);
       expect(find.text('SKIP INGREDIENTS'), findsOne);
     });
@@ -171,6 +172,108 @@ void main() {
 
       expect(_draft(harness).dietaryTags, contains(DietaryTag.jain));
       expect(harness.repository.settingsCalls, isEmpty);
+    });
+  });
+
+  group('DietaryAllergensScreen — grouped chips (A7)', () {
+    testWidgets('shows Eating style and Must also be groups in order', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester);
+
+      expect(find.text('EATING STYLE'), findsOne);
+      expect(find.text('MUST ALSO BE'), findsOne);
+      expect(find.text('Setup your Household'), findsOne);
+
+      final double styleY = tester.getTopLeft(find.text('EATING STYLE')).dy;
+      final double modifierY = tester.getTopLeft(find.text('MUST ALSO BE')).dy;
+      final double veganY = tester
+          .getTopLeft(
+            find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.vegan)),
+          )
+          .dy;
+      final double glutenY = tester
+          .getTopLeft(
+            find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.glutenFree)),
+          )
+          .dy;
+      expect(styleY, lessThan(veganY));
+      expect(veganY, lessThan(modifierY));
+      expect(modifierY, lessThan(glutenY));
+    });
+
+    testWidgets('selected chips carry no tick glyph', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester);
+
+      expect(find.text(PChip.selectedGlyph), findsNothing);
+      await tester.tap(
+        find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.glutenFree)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(PChip.selectedGlyph), findsNothing);
+    });
+
+    testWidgets('eating styles are multi-select (union)', (
+      WidgetTester tester,
+    ) async {
+      final harness = await _pump(tester);
+
+      await tester.tap(
+        find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.nonVeg)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        _draft(harness).dietaryTags,
+        containsAll(<DietaryTag>[
+          DietaryTag.veg,
+          DietaryTag.eggetarian,
+          DietaryTag.nonVeg,
+        ]),
+      );
+    });
+
+    testWidgets('Finish is disabled with an inline hint when no style', (
+      WidgetTester tester,
+    ) async {
+      final harness = await _pump(tester);
+      expect(find.byKey(DietaryAllergensScreen.styleHintKey), findsNothing);
+
+      await tester.tap(
+        find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.veg)),
+      );
+      await tester.tap(
+        find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.eggetarian)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.glutenFree)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(DietaryAllergensScreen.styleHintKey), findsOne);
+      expect(find.text(DietaryAllergensScreen.styleHint), findsOne);
+
+      await tester.tap(
+        find.byKey(DietaryAllergensScreen.finishButtonKey),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(harness.repository.settingsCalls, isEmpty);
+      expect(currentLocation(harness.router), AppRoutes.createHouseholdDietary);
+
+      // Choosing a style re-enables Finish and clears the hint.
+      await tester.tap(
+        find.byKey(DietaryAllergensScreen.tagKey(DietaryTag.jain)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(DietaryAllergensScreen.styleHintKey), findsNothing);
+
+      await tester.tap(find.byKey(DietaryAllergensScreen.finishButtonKey));
+      await tester.pumpAndSettle();
+      expect(harness.repository.settingsCalls, hasLength(1));
     });
   });
 

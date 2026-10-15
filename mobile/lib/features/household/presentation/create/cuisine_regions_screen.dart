@@ -12,6 +12,7 @@ import '../../state/household_wizard_controller.dart';
 import 'wizard_error_copy.dart';
 import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
+import 'wizard_step_plan.dart';
 import 'wizard_step_submit.dart';
 
 /// Wireframe screen 2.4 — "Cuisine mix", step 3/4 (first of two frames).
@@ -35,7 +36,6 @@ class CuisineRegionsScreen extends ConsumerWidget {
   static Key chipKey(CuisineRegion region) =>
       Key('cuisine-region-${region.name}');
 
-  static const String stepIndicator = '3/4';
   static const String heading = 'Cuisine mix';
   static const String hint = 'Broad regions your household eats';
 
@@ -52,16 +52,19 @@ class CuisineRegionsScreen extends ConsumerWidget {
       householdWizardControllerProvider.notifier,
     );
     final bool isBusy = state.isLoading;
+    final WizardStepPlan plan = WizardStepPlan.fromDraft(draft);
 
     return WizardStepScaffold(
-      stepIndicator: flow.stepIndicator(stepIndicator),
+      stepIndicator: flow.stepIndicator(plan.indicator(WizardStep.cuisine)),
       heading: heading,
       hint: hint,
       onBack: () => context.go(
-        flow.backDestination(whenCreating: AppRoutes.createHouseholdStructure),
+        flow.backDestination(
+          whenCreating: plan.routeBefore(WizardStep.cuisine),
+        ),
       ),
       backSemanticLabel: flow.backSemanticLabel(
-        whenCreating: 'Back to the lunch structure',
+        whenCreating: plan.backSemanticLabel(WizardStep.cuisine),
       ),
       errorMessage: wizardErrorMessage(state.error),
       action: PButton(

@@ -12,6 +12,7 @@ import '../../state/household_wizard_controller.dart';
 import 'wizard_error_copy.dart';
 import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
+import 'wizard_step_plan.dart';
 import 'wizard_step_submit.dart';
 
 /// Wireframe screen 2.5 — sub-cuisines and their Less / Same / More bias.
@@ -42,7 +43,6 @@ class CuisineSubBiasScreen extends ConsumerWidget {
   static Key biasKey(String subCuisineKey, CuisineBias bias) =>
       Key('cuisine-bias-$subCuisineKey-${bias.name}');
 
-  static const String stepIndicator = '3/4';
   static const String heading = 'Sub-cuisines';
   static const String hint = 'Nudge the mix — this biases, it never filters';
 
@@ -55,7 +55,9 @@ class CuisineSubBiasScreen extends ConsumerWidget {
     final bool isBusy = state.isLoading;
 
     return WizardStepScaffold(
-      stepIndicator: flow.stepIndicator(stepIndicator),
+      stepIndicator: flow.stepIndicator(
+        WizardStepPlan.fromDraft(draft).indicator(WizardStep.cuisine),
+      ),
       heading: heading,
       hint: hint,
       onBack: () => context.go(

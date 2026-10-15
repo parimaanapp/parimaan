@@ -129,6 +129,30 @@ class HouseholdWizardController extends AsyncNotifier<HouseholdWizardData> {
         ),
       );
 
+  /// Setup's "Same structure as lunch" toggle.
+  void setDinnerSameAsLunch(bool value) => _updateDraft(
+    (HouseholdWizardData d) => d.copyWith(dinnerSameAsLunch: value),
+  );
+
+  /// The lunch page's submit in the create wizard. With the toggle ON and
+  /// dinner enabled, one patch writes dinner = lunch alongside lunch;
+  /// otherwise only the lunch key is sent.
+  Future<void> submitLunchStructureStep() async {
+    final HouseholdWizardData? draft = _draft;
+    if (draft == null) return;
+    final bool alsoDinner =
+        draft.mealsEnabled.contains(MealType.lunch) &&
+        draft.mealsEnabled.contains(MealType.dinner) &&
+        draft.dinnerSameAsLunch;
+    if (!alsoDinner) {
+      await submitMealStructure(MealType.lunch);
+      return;
+    }
+    await _submit(
+      HouseholdSettingsPatch.lunchAndDinnerStructure(draft.lunchStructure),
+    );
+  }
+
   /// Sends a patch carrying only [mealType]'s key — never both, even though
   /// the draft holds both structures. See `HouseholdSettingsPatch.mealStructure`
   /// and W13 S1's server-side merge, which is what makes this safe for the

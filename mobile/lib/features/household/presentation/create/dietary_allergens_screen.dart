@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
+import '../../../../shared/ui/colors.dart';
 import '../../../../shared/ui/components/components.dart';
 import '../../../../shared/ui/spacing.dart';
+import '../../../../shared/ui/typography.dart';
 import '../../domain/dietary_tag.dart';
 import '../../state/household_wizard_controller.dart';
 import 'wizard_error_copy.dart';
 import 'wizard_flow.dart';
 import 'wizard_step_scaffold.dart';
+import 'wizard_step_plan.dart';
 import 'wizard_step_submit.dart';
 
 /// Wireframe screen 2.6 — dietary tags, allergens and skip ingredients,
@@ -42,7 +45,22 @@ class DietaryAllergensScreen extends ConsumerStatefulWidget {
   static Key allergenChipKey(String value) => Key('dietary-allergen-$value');
   static Key skipChipKey(String value) => Key('dietary-skip-$value');
 
-  static const String stepIndicator = '4/4';
+  static const Key styleHintKey = Key('dietary-style-hint');
+
+  /// Eating styles (union) and modifiers (always applied) — §32.1/§32.3.
+  static const List<DietaryTag> styleTags = <DietaryTag>[
+    DietaryTag.veg,
+    DietaryTag.nonVeg,
+    DietaryTag.vegan,
+    DietaryTag.eggetarian,
+    DietaryTag.jain,
+  ];
+  static const List<DietaryTag> modifierTags = <DietaryTag>[
+    DietaryTag.glutenFree,
+    DietaryTag.dairyFree,
+  ];
+
+  static const String styleHint = 'Pick at least one eating style to finish.';
   static const String finishLabel = 'Finish setup';
 
   @override
@@ -92,10 +110,14 @@ class _DietaryAllergensScreenState
       householdWizardControllerProvider.notifier,
     );
     final bool isBusy = state.isLoading;
+    final WizardStepPlan plan = WizardStepPlan.fromDraft(draft);
+    final bool hasStyle =
+        draft?.dietaryTags.any(DietaryAllergensScreen.styleTags.contains) ??
+        false;
 
     return WizardStepScaffold(
       stepIndicator: widget.flow.stepIndicator(
-        DietaryAllergensScreen.stepIndicator,
+        plan.indicator(WizardStep.dietary),
       ),
       onBack: () => context.go(
         widget.flow.backDestination(
@@ -113,7 +135,7 @@ class _DietaryAllergensScreenState
             : DietaryAllergensScreen.finishLabel,
         isLoading: isBusy,
         expand: true,
-        onPressed: draft == null
+        onPressed: draft == null || !hasStyle
             ? null
             : () => submitWizardStep(
                 ref: ref,
@@ -126,19 +148,27 @@ class _DietaryAllergensScreenState
               ),
       ),
       children: <Widget>[
-        const WizardSectionLabel(label: 'Dietary'),
-        Wrap(
-          spacing: AppSpacing.s1,
-          runSpacing: AppSpacing.s1,
-          children: <Widget>[
-            for (final DietaryTag tag in DietaryTag.values)
-              PChip(
-                key: DietaryAllergensScreen.tagKey(tag),
-                label: tag.displayLabel,
-                selected: draft?.dietaryTags.contains(tag) ?? false,
-                onTap: isBusy ? null : () => controller.toggleDietaryTag(tag),
-              ),
-          ],
+        const WizardSectionLabel(label: 'Eating style'),
+        _DietaryChipGroup(
+          tags: DietaryAllergensScreen.styleTags,
+          selected: draft?.dietaryTags ?? const <DietaryTag>{},
+          onToggle: isBusy ? null : controller.toggleDietaryTag,
+        ),
+        if (draft != null && !hasStyle) ...<Widget>[
+          const SizedBox(height: AppSpacing.s1),
+          Text(
+            DietaryAllergensScreen.styleHint,
+            key: DietaryAllergensScreen.styleHintKey,
+            style: AppTypography.label.copyWith(color: AppColors.danger),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.s3),
+
+        const WizardSectionLabel(label: 'Must also be'),
+        _DietaryChipGroup(
+          tags: DietaryAllergensScreen.modifierTags,
+          selected: draft?.dietaryTags ?? const <DietaryTag>{},
+          onToggle: isBusy ? null : controller.toggleDietaryTag,
         ),
         const SizedBox(height: AppSpacing.s4),
 
@@ -179,6 +209,35 @@ class _DietaryAllergensScreenState
       ],
     );
   }
+}
+
+/// One labelled group of dietary chips: solid ink fill when selected, no tick.
+class _DietaryChipGroup extends StatelessWidget {
+  const _DietaryChipGroup({
+    required this.tags,
+    required this.selected,
+    required this.onToggle,
+  });
+
+  final List<DietaryTag> tags;
+  final Set<DietaryTag> selected;
+  final ValueChanged<DietaryTag>? onToggle;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: AppSpacing.s1,
+    runSpacing: AppSpacing.s1,
+    children: <Widget>[
+      for (final DietaryTag tag in tags)
+        PChip(
+          key: DietaryAllergensScreen.tagKey(tag),
+          label: tag.displayLabel,
+          selected: selected.contains(tag),
+          showSelectedGlyph: false,
+          onTap: onToggle == null ? null : () => onToggle!(tag),
+        ),
+    ],
+  );
 }
 
 /// A [PInput] with an Add button in its trailing slot.

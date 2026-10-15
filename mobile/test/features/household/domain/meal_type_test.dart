@@ -4,17 +4,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/household/domain/meal_type.dart';
 
 void main() {
-  group('wizardMealTypes — the create wizard\'s three toggles', () {
-    test('is exactly Breakfast, Lunch, Dinner, in that order', () {
+  group('wizardMealTypes - the create wizard\'s four toggles (A7)', () {
+    test('is Breakfast, Lunch, Snacks, Dinner, in that order', () {
       expect(wizardMealTypes, <MealType>[
         MealType.breakfast,
         MealType.lunch,
+        MealType.snacks,
         MealType.dinner,
       ]);
     });
 
-    test('does not include Snacks', () {
-      expect(wizardMealTypes, isNot(contains(MealType.snacks)));
+    test('Snacks is offered but starts off', () {
+      expect(wizardMealTypes, contains(MealType.snacks));
+      expect(defaultMealsEnabled, isNot(contains(MealType.snacks)));
     });
   });
 
@@ -38,9 +40,8 @@ void main() {
     // Settings screen this promise names is "Meal structure", not "Meals to
     // plan" — a second inaccuracy the fix corrects at the same time).
     test('no longer claims Snacks is reachable via "Meal structure"', () {
-      final String source = File(
-        'lib/features/household/domain/meal_type.dart',
-      ).readAsStringSync();
+      final String source = File('lib/features/household/domain/meal_type.dart')
+          .readAsStringSync();
 
       expect(
         source.contains(
@@ -48,13 +49,15 @@ void main() {
           'screen',
         ),
         isFalse,
-        reason: 'the stale forward-reference must be gone, not merely '
+        reason:
+            'the stale forward-reference must be gone, not merely '
             'true again in prose',
       );
       expect(
         source.contains('W13 S3'),
         isTrue,
-        reason: 'the corrected doc comment must cite the slice that closed '
+        reason:
+            'the corrected doc comment must cite the slice that closed '
             'the gap',
       );
     });
