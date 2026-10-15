@@ -193,7 +193,7 @@ class NewMenuItem {
 }
 
 /// One slot `autoFillPreview`/`autoFillWeek` could not fill (W10 §16.2.3,
-/// D5) — either the household has no in-rotation recipes for [slotRole] at
+/// D5) — either the household has no diet-matching recipes for [slotRole] at
 /// all, or (only reachable via a commit's own live re-validation) the slot
 /// stopped being available between when a proposal was generated and when
 /// it was committed. Never distinguishes the two reasons — see each
