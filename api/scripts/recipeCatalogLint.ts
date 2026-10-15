@@ -6,10 +6,10 @@ import { suggestNames, type CatalogIngredient, type IngredientCatalog } from './
  */
 export interface LintIngredient {
   readonly name: string;
-  readonly quantity?: number | null;
-  readonly unit?: string | null;
-  readonly category?: string | null;
-  readonly isStaple?: boolean | null;
+  readonly quantity?: number | null | undefined;
+  readonly unit?: string | null | undefined;
+  readonly category?: string | null | undefined;
+  readonly isStaple?: boolean | null | undefined;
 }
 
 export interface CatalogLintResult {
@@ -106,44 +106,48 @@ function lintStepQuantities(
   return warnings;
 }
 
-function lintIngredient(ingredient: LintIngredient, index: number, catalog: IngredientCatalog): CatalogLintResult {
-  const at = `ingredients.${index}`;
-  const exact = catalog.byCanonical.get(ingredient.name);
-  if (!exact) {
-    if (KNOWN_CATALOG_GAPS.has(ingredient.name)) {
-      return { errors: [], warnings: [`${at}.name: catalog gap — "${ingredient.name}" is not in the catalog yet`] };
-    }
-    const lower = ingredient.name.toLowerCase();
-    const sameName = [...catalog.byCanonical.values()].filter((item) => item.canonicalName.toLowerCase() === lower);
-    const matches = sameName.length > 0 ? sameName : (catalog.byAlias.get(lower) ?? []);
-    if (matches.length === 1) {
-      return { errors: [`${at}.name: "${ingredient.name}" is not canonical — use "${matches[0]?.canonicalName}"`], warnings: [] };
-    }
-    if (matches.length > 1) {
-      const options = matches.map((item) => `"${item.canonicalName}"`).join(' or ');
-      return { errors: [`${at}.name: "${ingredient.name}" is ambiguous — use ${options}`], warnings: [] };
-    }
-    const suggestions = suggestNames(catalog, ingredient.name)
-      .map((s) => `"${s}"`)
-      .join(', ');
-    return { errors: [`${at}.name: unknown ingredient "${ingredient.name}" — closest: ${suggestions}`], warnings: [] };
-  }
+const NO_FINDINGS: CatalogLintResult = { errors: [], warnings: [] };
 
+/** Resolves a non-canonical name to a single finding (gap warning, `use`, or unknown). */
+function nameFinding(name: string, at: string, catalog: IngredientCatalog): CatalogLintResult {
+  if (KNOWN_CATALOG_GAPS.has(name)) {
+    return { errors: [], warnings: [`${at}.name: catalog gap — "${name}" is not in the catalog yet`] };
+  }
+  const lower = name.toLowerCase();
+  const sameName = [...catalog.byCanonical.values()].filter((item) => item.canonicalName.toLowerCase() === lower);
+  const matches = sameName.length > 0 ? sameName : (catalog.byAlias.get(lower) ?? []);
+  const quoted = matches.map((item) => `"${item.canonicalName}"`);
+  if (matches.length === 1) {
+    return { errors: [`${at}.name: "${name}" is not canonical — use ${quoted[0]}`], warnings: [] };
+  }
+  if (matches.length > 1) {
+    return { errors: [`${at}.name: "${name}" is ambiguous — use ${quoted.join(' or ')}`], warnings: [] };
+  }
+  const closest = suggestNames(catalog, name).map((s) => `"${s}"`).join(', ');
+  return { errors: [`${at}.name: unknown ingredient "${name}" — closest: ${closest}`], warnings: [] };
+}
+
+function quantityErrors(ingredient: LintIngredient, at: string): string[] {
+  const staple = ALWAYS_STAPLE.has(ingredient.name);
   const errors: string[] = [];
-  const hasQuantity = ingredient.quantity !== null && ingredient.quantity !== undefined;
-  const mustBeStaple = ALWAYS_STAPLE.has(ingredient.name);
-  if (mustBeStaple && ingredient.isStaple !== true) {
+  if (staple && ingredient.isStaple !== true) {
     errors.push(`${at}.isStaple: "${ingredient.name}" must be isStaple: true`);
   }
-  if (!hasQuantity) {
-    if (!(mustBeStaple && ingredient.isStaple === true)) {
+  const quantity = ingredient.quantity;
+  if (quantity === null || quantity === undefined) {
+    if (!(staple && ingredient.isStaple === true)) {
       errors.push(`${at}.quantity: required (absent only for a staple Salt or pepper)`);
     }
-  } else if (!((ingredient.quantity as number) > 0)) {
-    errors.push(`${at}.quantity: must be a positive number (got ${ingredient.quantity})`);
+  } else if (!(quantity > 0)) {
+    errors.push(`${at}.quantity: must be a positive number (got ${quantity})`);
   }
+  return errors;
+}
+
+function unitAndCategoryErrors(ingredient: LintIngredient, at: string, exact: CatalogIngredient): string[] {
+  const errors: string[] = [];
   const unit = ingredient.unit?.trim();
-  if (hasQuantity && !unit) {
+  if (ingredient.quantity != null && !unit) {
     errors.push(`${at}.unit: required when a quantity is given`);
   }
   if (unit && !exact.allowedUnits.includes(unit)) {
@@ -157,7 +161,17 @@ function lintIngredient(ingredient: LintIngredient, index: number, catalog: Ingr
       `${at}.category: category "${category}" must be "${exact.appCategory}" for ${exact.canonicalName} (or omitted)`,
     );
   }
-  return { errors, warnings: [] };
+  return errors;
+}
+
+function lintIngredient(ingredient: LintIngredient, index: number, catalog: IngredientCatalog): CatalogLintResult {
+  const at = `ingredients.${index}`;
+  const exact = catalog.byCanonical.get(ingredient.name);
+  if (!exact) {
+    return nameFinding(ingredient.name, at, catalog);
+  }
+  const errors = [...quantityErrors(ingredient, at), ...unitAndCategoryErrors(ingredient, at, exact)];
+  return errors.length === 0 ? NO_FINDINGS : { errors, warnings: [] };
 }
 
 export interface CatalogLintInput {

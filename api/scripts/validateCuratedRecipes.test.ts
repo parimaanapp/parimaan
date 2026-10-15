@@ -194,4 +194,11 @@ describe('validateAllCuratedRecipes — full corpus', () => {
     const failures = results.filter((result) => !result.success);
     expect(failures).toEqual([]);
   });
+
+  it('has no step-quantity warnings (only known catalog gaps may warn)', () => {
+    const warnings = validateAllCuratedRecipes(repoRecipesDir()).flatMap((result) =>
+      result.warnings.filter((warning) => !warning.includes('catalog gap')).map((w) => `${result.filePath}: ${w}`),
+    );
+    expect(warnings).toEqual([]);
+  });
 });
