@@ -54,11 +54,15 @@ const wordPattern = (word: string, plantExempt: boolean): RegExp => {
 
 /**
  * Phrases that contain a keyword but are harmless, removed before matching:
- * "egg-free mayo", "meatless mince" (the word it says the product is free of,
- * plus the product), any other "-free" marker, goat cheese (not meat), butter
- * beans, cream of tartar.
+ * "egg-free mayo", "meatless mince" (egg/dairy/meat only: the word it says the
+ * product is free of, plus the substitute product), any other "-free" marker
+ * on its own ("oil-free chicken" is still chicken), vegan substitutes ("vegan
+ * mayo", "egg replacer"), goat cheese (not meat), butter beans, cream of
+ * tartar. "gluten-free" is left in place on purpose: it is what exempts
+ * generic bread words (`GLUTEN_FREE_GRAIN`), and it must never hide the
+ * ingredient it modifies ("gluten-free chicken").
  */
-const HARMLESS_PHRASES = /\b(?:egg|dairy|meat|gluten)-free(?: [a-z]+)?\b|\b[a-z]+-free\b|\b(?:meat|egg|dairy|gluten)less(?: [a-z]+)?\b|\bgoat(?:'s)? (?:cheese|milk)\b|\bbutter beans?\b|\bcream of tartar\b/g;
+const HARMLESS_PHRASES = /\b(?:egg|dairy|meat)-free(?: [a-z]+)?\b|\b(?!gluten-)[a-z]+-free\b|\b(?:meat|egg|dairy)less(?: [a-z]+)?\b|\bvegan (?:mayo|mayonnaise|eggs?|butter|cheese|milk|ghee)\b|\begg (?:replacer|substitute|replacement)\b|\bgoat(?:'s)? (?:cheese|milk)\b|\bbutter beans?\b|\bcream of tartar\b/g;
 
 const neutralise = (text: string): string => text.replace(HARMLESS_PHRASES, ' ');
 
@@ -80,8 +84,10 @@ export const findSkipViolations = (suggestion: FilterableSuggestion, skipIngredi
 const MEAT_AND_FISH = [
   'chicken', 'mutton', 'lamb', 'goat', 'beef', 'pork', 'bacon', 'ham', 'turkey', 'duck', 'lard', 'gelatin', 'gelatine', 'mince', 'keema', 'sausage', 'meat',
   'fish', 'prawn', 'shrimp', 'crab', 'lobster', 'oyster', 'clam', 'mussel', 'squid', 'salmon', 'tuna', 'sardine', 'mackerel', 'anchovy', 'rohu', 'pomfret', 'hilsa',
+  // Hindi / regional names.
+  'gosht', 'murgh', 'kheema', 'machli', 'machhi', 'meen', 'maachh', 'maach', 'jhinga',
 ];
-const EGG = ['egg', 'mayonnaise', 'mayo'];
+const EGG = ['egg', 'mayonnaise', 'mayo', 'anda', 'omelette', 'omelet'];
 const DAIRY = [
   'milk', 'paneer', 'cheese', 'curd', 'dahi', 'yogurt', 'yoghurt', 'ghee', 'butter', 'buttermilk', 'cream', 'malai', 'khoa', 'khowa', 'mawa', 'whey',
   'lassi', 'chaas', 'makhan', 'shrikhand', 'chhena', 'kefir',

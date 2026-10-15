@@ -33,6 +33,44 @@ describe('inferDietStyle', () => {
   });
 });
 
+describe('inferDietStyle — "-free" phrases never swallow real meat or egg (F2)', () => {
+  it('Oil-free Chicken Curry is non_veg', () => {
+    expect(inferDietStyle('Oil-free Chicken Curry', ['chicken', 'onion'])).toBe('non_veg');
+    expect(inferDietStyle('Oil-free Chicken Curry', [])).toBe('non_veg');
+  });
+
+  it('"sugar-free" followed by a different ingredient does not hide it', () => {
+    expect(inferDietStyle('Dessert', ['sugar-free', 'chicken breast'])).toBe('non_veg');
+    expect(inferDietStyle('Sugar-free chicken breast', [])).toBe('non_veg');
+  });
+
+  it('gluten-free chicken is non_veg', () => {
+    expect(inferDietStyle('Roast', ['gluten-free chicken'])).toBe('non_veg');
+  });
+
+  it('keeps the existing harmless replacements', () => {
+    expect(inferDietStyle('Sandwich', ['egg-free mayo', 'meat-free mince', 'dairy-free butter'])).toBe('veg');
+    expect(inferDietStyle('Wrap', ['gluten-free bread'])).toBe('veg');
+  });
+});
+
+describe('inferDietStyle — Indian-language meat, fish and egg names (F3)', () => {
+  it.each(['Dum Gosht', 'Kheema Pav', 'Murgh Makhani', 'Machli Fry', 'Meen Curry', 'Jhinga Masala', 'Maachh Jhol'])(
+    '%s is non_veg from the title alone',
+    (title) => {
+      expect(inferDietStyle(title, [])).toBe('non_veg');
+    },
+  );
+
+  it.each(['Anda Bhurji', 'Masala Omelette', 'Cheese Omelet'])('%s is eggetarian', (title) => {
+    expect(inferDietStyle(title, [])).toBe('eggetarian');
+  });
+
+  it.each(['vegan mayo', 'vegan egg', 'egg replacer', 'eggless cake batter'])('%s does not count as egg', (name) => {
+    expect(inferDietStyle('Salad', [name])).toBe('veg');
+  });
+});
+
 describe('withInferredStyle', () => {
   it('leaves explicit style tags untouched, whatever the ingredients', () => {
     expect(withInferredStyle(['vegan'], 'Chicken', ['chicken'])).toEqual(['vegan']);

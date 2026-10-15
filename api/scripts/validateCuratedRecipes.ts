@@ -3,7 +3,7 @@ import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { z } from 'zod';
 import { DIET_STYLES, isDietStyle } from '../src/domain/dietMatch.js';
-import { ROOT_VEG_FOR_JAIN } from '../src/domain/cookPreferenceFilter.js';
+import { ROOT_VEG_FOR_JAIN, findDietaryViolations } from '../src/domain/cookPreferenceFilter.js';
 import { curatedRecipeInputSchema } from '../src/validation/curatedRecipe.js';
 
 /**
@@ -79,8 +79,15 @@ const JAIN_ROOT_PATTERNS = ROOT_VEG_FOR_JAIN.map(
  * veg dishes, so the tags would only mislead); a `jain` recipe lists no
  * root vegetable or allium.
  */
-function checkDietTags(dietaryTags: readonly string[], ingredientNames: readonly string[]): string[] {
+function checkDietTags(dietaryTags: readonly string[], ingredientNames: readonly string[], title: string): string[] {
   const errors: string[] = [];
+  if (dietaryTags.includes('vegan')) {
+    const violations = findDietaryViolations(
+      { title, dietaryTags: ['vegan'], ingredients: ingredientNames.map((name) => ({ name })) },
+      ['vegan'],
+    );
+    errors.push(...violations.map((violation) => `dietaryTags: vegan recipe — ${violation}`));
+  }
   const styles = dietaryTags.filter(isDietStyle);
   if (styles.length === 0) {
     errors.push(`dietaryTags: at least one style tag (${DIET_STYLES.join(', ')}) is required`);
@@ -133,6 +140,7 @@ export function validateCuratedRecipe(filePath: string, data: unknown): RecipeFi
   const dietErrors = checkDietTags(
     parsed.data.dietaryTags ?? [],
     parsed.data.ingredients.map((ingredient) => ingredient.name),
+    parsed.data.title,
   );
   if (dietErrors.length > 0) {
     return { filePath, success: false, errors: dietErrors };

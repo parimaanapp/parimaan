@@ -87,6 +87,27 @@ describe('retag-diet-styles data migration', () => {
     const untaggedMeat = await addRecipe('Fry', 'user', ['gluten_free'], ['Prawns']);
     const eggless = await addRecipe('Eggless Cake', 'user', [], ['eggless cake batter']);
     const eggplant = await addRecipe('Baingan', 'user', [], ['Eggplant']);
+    // F2: a "-free" marker must not swallow the next word or cross ingredient boundaries.
+    const oilFree = await addRecipe('Oil-free Chicken Curry', 'user', []);
+    const sugarFreeThenChicken = await addRecipe('Mixed', 'user', [], ['sugar-free', 'chicken breast']);
+    const glutenFreeChicken = await addRecipe('Roast', 'user', [], ['gluten-free chicken']);
+    const eggFreeMayo = await addRecipe('Sandwich', 'user', [], ['egg-free mayo', 'bread']);
+    const veganMayo = await addRecipe('Salad', 'user', [], ['vegan mayo']);
+    // F3: regional names.
+    const gosht = await addRecipe('Dum Gosht', 'user', []);
+    const kheema = await addRecipe('Kheema Pav', 'user', []);
+    const murgh = await addRecipe('Murgh Makhani', 'user', []);
+    const machli = await addRecipe('Machli Fry', 'user', []);
+    const anda = await addRecipe('Anda Bhurji', 'user', []);
+    const omelette = await addRecipe('Masala Omelette', 'user', []);
+    // F6: contradictory non_veg + veg-ish tags are cleaned up.
+    const conflicted = await addRecipe('Conflicted', 'user', ['non_veg', 'veg', 'vegan', 'jain', 'gluten_free']);
+    // F7: curated seeds that list ghee are no longer vegan.
+    const roti = await addRecipe('Roti (Chapati)', 'curated', ['veg', 'vegan']);
+    const rasam = await addRecipe('Rasam', 'curated', ['veg', 'vegan', 'gluten_free']);
+    const jeeraRice = await addRecipe('Jeera Rice', 'curated', ['veg', 'vegan', 'gluten_free']);
+    const steamedRice = await addRecipe('Plain Steamed Rice', 'curated', ['veg', 'vegan', 'gluten_free', 'jain']);
+    const userRoti = await addRecipe('Roti (Chapati)', 'user', ['veg', 'vegan']);
 
     await runMigrations(container.getConnectionUri(), 'up');
 
@@ -104,6 +125,22 @@ describe('retag-diet-styles data migration', () => {
       expect(await tagsOf(untaggedMeat)).toEqual(['gluten_free', 'non_veg']);
       expect(await tagsOf(eggless)).toEqual(['veg']);
       expect(await tagsOf(eggplant)).toEqual(['veg']);
+      expect(await tagsOf(oilFree)).toEqual(['non_veg']);
+      expect(await tagsOf(sugarFreeThenChicken)).toEqual(['non_veg']);
+      expect(await tagsOf(glutenFreeChicken)).toEqual(['non_veg']);
+      expect(await tagsOf(eggFreeMayo)).toEqual(['veg']);
+      expect(await tagsOf(veganMayo)).toEqual(['veg']);
+      for (const id of [gosht, kheema, murgh, machli]) {
+        expect(await tagsOf(id)).toEqual(['non_veg']);
+      }
+      expect(await tagsOf(anda)).toEqual(['eggetarian']);
+      expect(await tagsOf(omelette)).toEqual(['eggetarian']);
+      expect(await tagsOf(conflicted)).toEqual(['gluten_free', 'non_veg']);
+      expect(await tagsOf(roti)).toEqual(['veg']);
+      expect(await tagsOf(rasam)).toEqual(['gluten_free', 'veg']);
+      expect(await tagsOf(jeeraRice)).toEqual(['gluten_free', 'veg']);
+      expect(await tagsOf(steamedRice)).toEqual(['gluten_free', 'jain', 'veg']);
+      expect(await tagsOf(userRoti)).toEqual(['veg', 'vegan']);
     };
 
     await expectAll();

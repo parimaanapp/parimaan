@@ -6,7 +6,7 @@
   "cookMin": 25,
   "cuisineTier1": "south_indian",
   "cuisineTier2": "tamil",
-  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "dietaryTags": ["veg", "gluten_free"],
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Toor Dal", "quantity": 0.25, "unit": "cup", "category": "dal" },

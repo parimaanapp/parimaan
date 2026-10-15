@@ -157,6 +157,23 @@ describe('validateCuratedRecipe — diet tagging lint (§32.3)', () => {
     },
   );
 
+  it.each(['ghee', 'Butter', 'milk', 'curd', 'paneer', 'honey', 'eggs', 'chicken'])(
+    'rejects a vegan recipe containing %s (F7)',
+    (name) => {
+      const result = withTags(['veg', 'vegan'], name);
+      expect(result.success).toBe(false);
+      expect(result.errors.join(' ')).toContain('vegan');
+    },
+  );
+
+  it('accepts a vegan recipe with plant milks and butters', () => {
+    expect(withTags(['veg', 'vegan'], 'coconut milk', 'peanut butter').success).toBe(true);
+  });
+
+  it('accepts a veg (non-vegan) recipe with ghee', () => {
+    expect(withTags(['veg'], 'ghee').success).toBe(true);
+  });
+
   it('accepts a jain recipe built from non-root ingredients', () => {
     expect(withTags(['veg', 'jain'], 'lauki', 'besan').success).toBe(true);
   });
