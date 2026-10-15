@@ -1,0 +1,145 @@
+{
+  "title": "Arachuvitta Sambar",
+  "description": "Tamil sambar thickened with a freshly roasted and ground coconut-spice paste instead of ready-made powder.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 40,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Toor Dal",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Drumstick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cut into pieces"
+    },
+    {
+      "name": "Brinjal (Round)",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Shallots",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "peeled"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice",
+      "notes": "soaked, extracted pulp"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "oil"
+    },
+    {
+      "name": "Coriander Seeds",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Chana Dal",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Fenugreek Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 8 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Pressure-cook the toor dal with turmeric and 3 cups of water for 4 whistles and mash well.",
+    "Heat 1 tsp oil and roast the coriander seeds, chana dal, 2 dried red chillies and fenugreek seeds until aromatic; add the coconut and roast for 1 minute, then grind with water to a smooth paste.",
+    "Boil the shallots, drumstick, brinjal, carrot and tomato with the tamarind pulp, salt and 1.5 cups of water until the vegetables are tender.",
+    "Add the ground paste and the mashed dal, and simmer for 10 minutes, adding water to adjust consistency.",
+    "Heat the remaining oil, crackle the mustard seeds, then add the last dried red chilli, hing and curry leaves.",
+    "Pour the tempering over the sambar and serve with rice, idli or dosa."
+  ]
+}
