@@ -1,5 +1,6 @@
 import { parseIngredientString } from '../ingredientString.js';
-import type { ParsedIngredient } from '../ingredientString.js';
+import { cleanText, normaliseIngredientList } from '../ingredientNormalisation/index.js';
+import type { NormalisedIngredient } from '../ingredientNormalisation/index.js';
 import { MAX_INGREDIENTS } from '../../validation/recipeShared.js';
 import { extractJsonLdBlocks } from './extract.js';
 import { selectRecipeNode } from './selectRecipeNode.js';
@@ -14,7 +15,7 @@ export interface JsonLdRecipeDraft {
   servings: number | null;
   prepMin: number | null;
   cookMin: number | null;
-  ingredients: ParsedIngredient[];
+  ingredients: NormalisedIngredient[];
   steps: string[];
   warnings: string[];
 }
@@ -35,7 +36,7 @@ const looksLikePlaceholder = (text: string): boolean => PLACEHOLDER_TEXT_PATTERN
  * multi-ingredient recipe that happens to mention "see the post" in one
  * step's text is not this case.
  */
-const detectPlaceholderWarning = (ingredients: ParsedIngredient[], steps: string[]): string | null => {
+const detectPlaceholderWarning = (ingredients: NormalisedIngredient[], steps: string[]): string | null => {
   const singleIngredientPlaceholder = ingredients.length === 1 && looksLikePlaceholder(ingredients[0]!.raw);
   const singleStepPlaceholder = steps.length === 1 && looksLikePlaceholder(steps[0]!);
   return singleIngredientPlaceholder || singleStepPlaceholder
@@ -51,13 +52,14 @@ const detectPlaceholderWarning = (ingredients: ParsedIngredient[], steps: string
  * `yield.ts` each document for the input shapes they don't attempt to
  * handle, rather than an accidental gap.
  */
-const toIngredientList = (value: unknown): ParsedIngredient[] => {
+const toIngredientList = (value: unknown): NormalisedIngredient[] => {
   const rawStrings = typeof value === 'string' ? [value] : Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
-  return rawStrings
-    .map((entry) => entry.trim())
+  const parsed = rawStrings
+    .map(cleanText)
     .filter((entry) => entry !== '')
     .slice(0, MAX_INGREDIENTS)
     .map(parseIngredientString);
+  return normaliseIngredientList(parsed);
 };
 
 /**
@@ -81,15 +83,15 @@ export const parseJsonLdRecipe = (html: string): JsonLdRecipeDraft | null => {
     return null;
   }
 
-  const title = typeof recipeNode['name'] === 'string' ? recipeNode['name'].trim() : '';
+  const title = typeof recipeNode['name'] === 'string' ? cleanText(recipeNode['name']) : '';
   const ingredients = toIngredientList(recipeNode['recipeIngredient']);
-  const steps = flattenInstructions(recipeNode['recipeInstructions']);
+  const steps = flattenInstructions(recipeNode['recipeInstructions']).map(cleanText).filter((step) => step !== '');
 
   if (title === '' || ingredients.length === 0 || steps.length === 0) {
     return null;
   }
 
-  const description = typeof recipeNode['description'] === 'string' ? recipeNode['description'].trim() || null : null;
+  const description = typeof recipeNode['description'] === 'string' ? cleanText(recipeNode['description']) || null : null;
   const warning = detectPlaceholderWarning(ingredients, steps);
 
   return {

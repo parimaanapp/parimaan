@@ -139,6 +139,8 @@ export interface RecipeIngredientDraft {
   quantity: number | null;
   unit: string | null;
   notes: string | null;
+  /** Set by the server's import normaliser for salt/pepper "to taste"; absent on older responses. */
+  isStaple?: boolean | null;
 }
 
 /**
