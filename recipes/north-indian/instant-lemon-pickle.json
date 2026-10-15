@@ -1,0 +1,86 @@
+{
+  "title": "Instant Lemon Pickle",
+  "description": "Quick lemon pickle with salt, mustard and chilli that is ready to eat the same day.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "gujarati",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "jain",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Lemon",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cut into small wedges"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Fenugreek Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Mustard Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Sugar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Wash and dry the lemons well and cut them into small wedges, removing seeds.",
+    "Toss the wedges with salt, turmeric, chilli powder, fenugreek powder and sugar.",
+    "Heat the mustard oil until it just begins to smoke, then cool it for 1 minute.",
+    "Add the mustard seeds and hing, and pour the warm oil over the lemons.",
+    "Mix well, store in a clean dry jar and let it rest for 4-6 hours before serving."
+  ]
+}

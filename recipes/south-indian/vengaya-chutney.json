@@ -1,0 +1,78 @@
+{
+  "title": "Vengaya Chutney",
+  "description": "Tamil sautéed onion and red chilli chutney with a sweet-hot depth, a classic with idli.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "roughly chopped"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Urad Dal (Split, White)",
+      "quantity": 10,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 1,
+      "unit": "g",
+      "category": "spice",
+      "notes": "a small piece"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 6 leaves",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Heat 2 tsp of oil in a pan and fry the urad dal and dried red chilli until golden.",
+    "Add the onion and tamarind and sauté on medium heat for 8-10 minutes until the onion is soft and browned.",
+    "Let the mixture cool and add salt.",
+    "Grind to a coarse or smooth paste with a little water as you prefer.",
+    "Heat the remaining oil, crackle the mustard seeds, add curry leaves and pour over the chutney."
+  ]
+}

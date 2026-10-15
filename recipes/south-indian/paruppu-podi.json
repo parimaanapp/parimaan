@@ -1,0 +1,84 @@
+{
+  "title": "Paruppu Podi",
+  "description": "Roasted toor and chana dal powder with chilli and garlic, mixed with hot rice and ghee.",
+  "servings": 4,
+  "prepMin": 5,
+  "cookMin": 10,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Toor Dal",
+      "quantity": 50,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Chana Dal",
+      "quantity": 25,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Urad Dal (Split, White)",
+      "quantity": 25,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Black Pepper (Whole)",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 10 leaves",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Dry-roast the toor dal on low heat for 3 minutes, stirring, until it just starts to colour, then add the chana dal and urad dal.",
+    "Add the dried red chilli, pepper and cumin seeds and roast for another 3 minutes until fragrant.",
+    "Add the curry leaves and hing and roast until the leaves turn crisp.",
+    "Let everything cool completely.",
+    "Grind with the salt to a coarse powder and store in an airtight jar."
+  ]
+}

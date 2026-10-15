@@ -1,0 +1,78 @@
+{
+  "title": "Karuveppilai Podi",
+  "description": "Curry leaf podi roasted with dals and chilli, a fragrant rice and idli companion that keeps for weeks.",
+  "servings": 4,
+  "prepMin": 5,
+  "cookMin": 10,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free"
+  ],
+  "role": "accompaniment",
+  "ingredients": [
+    {
+      "name": "Curry Leaves",
+      "quantity": 2,
+      "unit": "g",
+      "category": "produce",
+      "notes": "about 20 leaves, fully dry",
+      "isStaple": true
+    },
+    {
+      "name": "Urad Dal (Split, White)",
+      "quantity": 25,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Chana Dal",
+      "quantity": 25,
+      "unit": "g",
+      "category": "dal"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 5,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 1,
+      "unit": "g",
+      "category": "spice",
+      "notes": "a small piece"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Wash the curry leaves and pat them completely dry.",
+    "Dry roast the urad dal and chana dal on low heat for 3 minutes until golden.",
+    "Add the dried red chilli, cumin seeds and hing and roast for 1 minute.",
+    "Add the curry leaves and tamarind and roast until the leaves turn crisp; cool completely.",
+    "Grind with the salt to a coarse powder and store in an airtight jar."
+  ]
+}
