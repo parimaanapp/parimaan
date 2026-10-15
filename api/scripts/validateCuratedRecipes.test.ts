@@ -16,7 +16,7 @@ const validRecipe = {
   cuisineTier1: 'north_indian',
   dietaryTags: ['veg', 'gluten_free'],
   role: 'sabzi_dal',
-  ingredients: [{ name: 'toor dal', quantity: 1, unit: 'cup', category: 'pantry', isStaple: true }],
+  ingredients: [{ name: 'Toor Dal', quantity: 200, unit: 'g', category: 'dal' }],
   steps: ['Rinse and pressure-cook the dal until soft.', 'Temper with ghee, cumin, and garlic; mix in.'],
 };
 
@@ -117,14 +117,18 @@ describe('validateCuratedRecipe', () => {
 
 describe('validateCuratedRecipe — diet tagging lint (§32.3)', () => {
   const withTags = (dietaryTags: string[], ...names: string[]) =>
-    validateCuratedRecipe(northIndianPath, {
-      ...validRecipe,
-      dietaryTags,
-      ingredients: [
-        ...validRecipe.ingredients,
-        ...names.map((name) => ({ name, quantity: 1, unit: 'piece', category: 'produce' })),
-      ],
-    });
+    validateCuratedRecipe(
+      northIndianPath,
+      {
+        ...validRecipe,
+        dietaryTags,
+        ingredients: [
+          ...validRecipe.ingredients,
+          ...names.map((name) => ({ name, quantity: 1, unit: 'piece', category: 'produce' })),
+        ],
+      },
+      { catalog: null },
+    );
 
   it('requires at least one style tag', () => {
     const result = withTags(['gluten_free', 'dairy_free']);
