@@ -188,12 +188,15 @@ void main() {
     testWidgets('more than three names collapse to two names and +N', (
       WidgetTester tester,
     ) async {
-      final Menu menu = _menu(<String>['lunch'], <MenuItem>[
-        _item('a', 'Rice', role: RecipeRole.carb),
-        _item('b', 'Dal'),
-        _item('c', 'Aloo'),
-        _item('d', 'Raita', role: RecipeRole.accompaniment),
-      ]);
+      final Menu menu = _menu(
+        <String>['lunch'],
+        <MenuItem>[
+          _item('a', 'Rice', role: RecipeRole.carb),
+          _item('b', 'Dal'),
+          _item('c', 'Aloo'),
+          _item('d', 'Raita', role: RecipeRole.accompaniment),
+        ],
+      );
       await _pump(tester, menu);
       expect(find.text('Rice\nDal\n+2'), findsOneWidget);
     });
@@ -326,10 +329,13 @@ void main() {
       final SemanticsHandle handle = tester.ensureSemantics();
       await _pump(
         tester,
-        _menu(<String>['breakfast', 'lunch'], <MenuItem>[
-          _item('a', 'Rice', role: RecipeRole.carb),
-          _item('b', 'Dal'),
-        ]),
+        _menu(
+          <String>['breakfast', 'lunch'],
+          <MenuItem>[
+            _item('a', 'Rice', role: RecipeRole.carb),
+            _item('b', 'Dal'),
+          ],
+        ),
       );
       expect(find.bySemanticsLabel('Monday lunch: Rice, Dal'), findsOneWidget);
       expect(
@@ -364,10 +370,13 @@ void main() {
       final List<(int, PlannedSlot)> calls = <(int, PlannedSlot)>[];
       await _pump(
         tester,
-        _menu(<String>['lunch'], <MenuItem>[
-          _item('a', 'Rice', role: RecipeRole.carb),
-          _item('b', 'Dal'),
-        ]),
+        _menu(
+          <String>['lunch'],
+          <MenuItem>[
+            _item('a', 'Rice', role: RecipeRole.carb),
+            _item('b', 'Dal'),
+          ],
+        ),
         onAdd: (int d, PlannedSlot s) => calls.add((d, s)),
       );
       await tester.tap(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)));
@@ -379,10 +388,13 @@ void main() {
       final List<(int, PlannedSlot)> calls = <(int, PlannedSlot)>[];
       await _pump(
         tester,
-        _menu(<String>['dinner'], <MenuItem>[
-          _item('a', 'Roti', meal: 'dinner', role: RecipeRole.carb),
-          _item('b', 'Bhindi', meal: 'dinner'),
-        ]),
+        _menu(
+          <String>['dinner'],
+          <MenuItem>[
+            _item('a', 'Roti', meal: 'dinner', role: RecipeRole.carb),
+            _item('b', 'Bhindi', meal: 'dinner'),
+          ],
+        ),
         onAdd: (int d, PlannedSlot s) => calls.add((d, s)),
       );
       await tester.tap(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.dinner)));
@@ -419,13 +431,7 @@ void main() {
                 meal: 'breakfast',
                 role: RecipeRole.breakfast,
               ),
-              _item(
-                'd$d',
-                long,
-                day: d,
-                meal: 'dinner',
-                role: RecipeRole.carb,
-              ),
+              _item('d$d', long, day: d, meal: 'dinner', role: RecipeRole.carb),
             ],
           ];
           await _pump(tester, _menu(meals, items), width: 320, textScale: 1.3);
