@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/shared/ui/components/components.dart';
 
-
 Widget _icons(int n) => Row(
   mainAxisSize: MainAxisSize.min,
   children: <Widget>[
@@ -48,10 +47,7 @@ void main() {
     testWidgets('3 trailing icons never overlap the title at 1.0x', (
       WidgetTester tester,
     ) async {
-      await _pump(
-        tester,
-        PTopBar(title: 'Weekly plan', trailing: _icons(3)),
-      );
+      await _pump(tester, PTopBar(title: 'Weekly plan', trailing: _icons(3)));
 
       final Rect title = _r(tester, find.text('Weekly plan'));
       final Rect trailing = _r(tester, find.byType(Row).last);
@@ -161,14 +157,42 @@ void main() {
     testWidgets('falls back to a start-aligned title when space is tight', (
       WidgetTester tester,
     ) async {
-      await _pump(
-        tester,
-        PTopBar(title: 'Weekly plan', trailing: _icons(3)),
-      );
+      await _pump(tester, PTopBar(title: 'Weekly plan', trailing: _icons(3)));
 
       final Rect title = _r(tester, find.text('Weekly plan'));
       // Not centred (180) — pulled to the start edge (16 padding).
       expect(title.left, closeTo(16, 1));
     });
+
+    testWidgets(
+      'a trailing control too wide to sit beside the title drops to its own '
+      'row instead of crushing the title',
+      (WidgetTester tester) async {
+        await _pump(
+          tester,
+          PTopBar(
+            title: 'This week',
+            trailing: SizedBox(
+              key: const ValueKey<String>('wide'),
+              width: 300,
+              height: 44,
+            ),
+          ),
+          scale: 2,
+        );
+
+        final Rect title = _r(tester, find.text('This week'));
+        final Rect wide = _r(
+          tester,
+          find.byKey(const ValueKey<String>('wide')),
+        );
+        // Title keeps a readable width (one or two lines, not per-letter) and
+        // the control sits fully below it.
+        expect(title.width, greaterThan(120));
+        expect(title.height, lessThan(160));
+        expect(wide.top, greaterThanOrEqualTo(title.bottom - 0.5));
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
