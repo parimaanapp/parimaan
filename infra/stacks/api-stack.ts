@@ -5,6 +5,7 @@ import {
   Definition,
   FieldLogLevel,
   GraphqlApi,
+  MappingTemplate,
 } from 'aws-cdk-lib/aws-appsync';
 import { Alarm, ComparisonOperator, Metric, TreatMissingData } from 'aws-cdk-lib/aws-cloudwatch';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
@@ -243,6 +244,7 @@ export class ApiStack extends cdk.Stack {
     this.createHealthResolver();
     this.createHouseholdResolvers(props);
     this.createAiAndNetResolvers(props);
+    this.createCatalogAliasesResolver();
     this.createAiCostAlarm(props.alertsTopic);
 
     // Build-time config for the Flutter mobile app
@@ -501,6 +503,35 @@ export class ApiStack extends cdk.Stack {
 
       this.wireResolver(entry.id, fn, entry.typeName, entry.fieldName);
     }
+  }
+
+  /**
+   * `CatalogIngredient.aliases(limit)` (B2a). A field with an argument needs its
+   * own resolver, but a Lambda per item would mean up to ~1,500 invocations
+   * for one `ingredientCatalog { aliases }` query. The parent resolver already
+   * returns the full alias list, so this slices it in AppSync itself on a NONE
+   * data source (VTL; no Lambda, no VPC, no cost). Deliberate, isolated
+   * deviation from the stack's otherwise VTL-free direct-Lambda resolvers.
+   */
+  private createCatalogAliasesResolver(): void {
+    const dataSource = this.api.addNoneDataSource('CatalogIngredientAliasesDataSource');
+    dataSource.createResolver('CatalogIngredientAliasesResolver', {
+      typeName: 'CatalogIngredient',
+      fieldName: 'aliases',
+      requestMappingTemplate: MappingTemplate.fromString('{"version": "2018-05-29", "payload": {}}'),
+      responseMappingTemplate: MappingTemplate.fromString(
+        [
+          '#set($all = $util.defaultIfNull($ctx.source.aliases, []))',
+          '#set($limit = $util.defaultIfNull($ctx.args.limit, 5))',
+          '#if($limit < 0)#set($limit = 0)#end',
+          '#if($limit >= $all.size())',
+          '$util.toJson($all)',
+          '#else',
+          '$util.toJson($all.subList(0, $limit))',
+          '#end',
+        ].join('\n'),
+      ),
+    });
   }
 
   /** Adds a Lambda data source and its resolver for one GraphQL field, sharing the `<Name>DataSource`/`<Name>Resolver` logical-id convention every resolver in this stack already follows. */

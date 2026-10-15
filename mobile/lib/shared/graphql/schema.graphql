@@ -160,6 +160,42 @@ type Query {
   (no existence oracle), matching `menu`'s own pattern.
   """
   shoppingList(menuId: ID!): ShoppingList
+
+  """
+  The global ingredient catalog (E2E_MVP_PLAN.md §32.2 B1/B2): canonical
+  English names, category, allowed units, default unit and aliases
+  (arhar/tuvar -> Toor Dal). Reference data shared by every household, so
+  there is no household argument, but the caller must be signed in. With
+  `category` (a stored value such as `dal` or `meat_fish`, case-
+  insensitive) only that category is returned; an unknown category is an
+  empty list, not an error. Sorted by name.
+  """
+  ingredientCatalog(category: String): [CatalogIngredient!]!
+
+  """
+  Ranked search over catalog names and aliases (exact name, exact alias,
+  prefix, word prefix, substring; plural-insensitive). `query` is at most
+  100 characters; a blank query returns an empty list. `limit` defaults
+  to 20 and is clamped to 1..50. Intended for add-item pickers.
+  """
+  searchIngredients(query: String!, limit: Int = 20): [CatalogIngredient!]!
+}
+
+"""
+One canonical ingredient from the global catalog. `category` is the
+stored value (`dal`, `meat_fish`, ...); `categoryLabel` is the approved
+UI copy (E2E_MVP_PLAN.md §32.6). `allowedUnits` lists units in preference
+order and always contains `defaultUnit`. `aliases` are the other names
+that resolve to this ingredient, at most `limit` of them (default 5).
+"""
+type CatalogIngredient {
+  id: ID!
+  name: String!
+  category: String!
+  categoryLabel: String!
+  allowedUnits: [String!]!
+  defaultUnit: String!
+  aliases(limit: Int = 5): [String!]!
 }
 
 type Mutation {
