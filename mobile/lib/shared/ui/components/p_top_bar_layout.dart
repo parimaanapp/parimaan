@@ -9,7 +9,9 @@ import 'package:flutter/widgets.dart';
 /// (plus [gap]) reserved on **both** sides, so it is truly centred and never
 /// touches either control. It wraps within what remains. If that would fall
 /// below [minTitleWidth], the title falls back to start alignment in the
-/// space between the two controls, so nothing overlaps.
+/// space between the two controls, so nothing overlaps. If even that is below
+/// [minTitleWidth], the trailing control moves to its own end-aligned row
+/// beneath the title.
 ///
 /// Children are exactly three; an absent slot is a `SizedBox.shrink()`.
 class PTopBarLayout extends MultiChildRenderObjectWidget {
@@ -28,12 +30,8 @@ class PTopBarLayout extends MultiChildRenderObjectWidget {
   final double minHeight;
 
   @override
-  RenderObject createRenderObject(BuildContext context) => _RenderTopBar(
-    Directionality.of(context),
-    gap,
-    minTitleWidth,
-    minHeight,
-  );
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderTopBar(Directionality.of(context), gap, minTitleWidth, minHeight);
 
   @override
   void updateRenderObject(BuildContext context, RenderObject renderObject) {
@@ -49,7 +47,10 @@ class _TopBarParentData extends ContainerBoxParentData<RenderBox> {}
 
 class _RenderTopBar extends RenderBox
     with
-        ContainerRenderObjectMixin<RenderBox, ContainerBoxParentData<RenderBox>>,
+        ContainerRenderObjectMixin<
+          RenderBox,
+          ContainerBoxParentData<RenderBox>
+        >,
         RenderBoxContainerDefaultsMixin<
           RenderBox,
           ContainerBoxParentData<RenderBox>
@@ -132,33 +133,50 @@ class _RenderTopBar extends RenderBox
     final double titleStart = centred
         ? 0
         : lead.width + (lead.width > 0 ? _gap : 0);
+    final double betweenAvail = math.max(
+      maxW - titleStart - trail.width - (trail.width > 0 ? _gap : 0),
+      0,
+    );
+    // Neither centring nor sitting beside the trailing control leaves the
+    // title a readable width (narrow screen and/or large text scale): drop
+    // the trailing control onto its own row, end-aligned, so the title keeps
+    // the full width beside the leading control instead of wrapping per
+    // letter.
+    final bool stacked =
+        !centred && trail.width > 0 && betweenAvail < _minTitleWidth;
     final double titleMaxW = centred
         ? math.max(centredAvail, 0)
-        : math.max(
-            maxW - titleStart - trail.width - (trail.width > 0 ? _gap : 0),
-            0,
-          );
+        : stacked
+        ? math.max(maxW - titleStart, 0)
+        : betweenAvail;
     final Size title = measure(s[1], BoxConstraints(maxWidth: titleMaxW));
 
+    final double rowHeight = math.max(
+      _minHeight,
+      math.max(title.height, math.max(lead.height, stacked ? 0 : trail.height)),
+    );
     final double height = constraints.constrainHeight(
-      math.max(
-        _minHeight,
-        math.max(title.height, math.max(lead.height, trail.height)),
-      ),
+      stacked ? rowHeight + trail.height : rowHeight,
     );
     final Size size = Size(maxW, height);
     if (dry) return size;
 
     final double titleX = centred ? (maxW - title.width) / 2 : titleStart;
-    void place(RenderBox b, double startX, double w) {
+    void place(RenderBox b, double startX, double w, double rowH) {
       final ContainerBoxParentData<RenderBox> pd =
           b.parentData! as ContainerBoxParentData<RenderBox>;
-      pd.offset = Offset(_x(startX, w, maxW), (height - b.size.height) / 2);
+      pd.offset = Offset(_x(startX, w, maxW), (rowH - b.size.height) / 2);
     }
 
-    place(s[0], 0, lead.width);
-    place(s[1], titleX, title.width);
-    place(s[2], maxW - trail.width, trail.width);
+    place(s[0], 0, lead.width, rowHeight);
+    place(s[1], titleX, title.width, rowHeight);
+    if (stacked) {
+      final ContainerBoxParentData<RenderBox> pd =
+          s[2].parentData! as ContainerBoxParentData<RenderBox>;
+      pd.offset = Offset(_x(maxW - trail.width, trail.width, maxW), rowHeight);
+    } else {
+      place(s[2], maxW - trail.width, trail.width, rowHeight);
+    }
     return size;
   }
 
