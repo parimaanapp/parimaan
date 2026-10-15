@@ -8,7 +8,70 @@ import '../../../support/component_harness.dart';
 InputDecoration _decoration(WidgetTester tester) =>
     tester.widget<TextField>(find.byType(TextField)).decoration!;
 
+BorderSide _side(OutlineInputBorder? b) => b!.borderSide;
+
 void main() {
+  group('PInput — wireframe field style', () {
+    testWidgets('label is mono, uppercase, muted and semibold', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        const PInput(label: 'Household name'),
+        width: 320,
+      );
+
+      final Text label = tester.widget<Text>(find.text('HOUSEHOLD NAME'));
+      expect(label.style!.fontFamily, AppFontFamily.mono);
+      expect(label.style!.color, AppColors.inkMid);
+      expect(label.style!.fontWeight, FontWeight.w600);
+    });
+
+    testWidgets('rests on a 1px ink@15% border, focuses terracotta 1.5px', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        const PInput(label: 'Name'),
+        width: 320,
+      );
+
+      final InputDecoration d = _decoration(tester);
+      expect(_side(d.enabledBorder as OutlineInputBorder).color,
+          AppColors.outlineSoft);
+      expect(_side(d.enabledBorder as OutlineInputBorder).width, 1);
+      expect(_side(d.focusedBorder as OutlineInputBorder).color,
+          AppColors.terracotta);
+      expect(_side(d.focusedBorder as OutlineInputBorder).width, 1.5);
+    });
+
+    testWidgets('shows a 3px terracotta@12% ring only while focused', (
+      WidgetTester tester,
+    ) async {
+      final FocusNode node = FocusNode();
+      addTearDown(node.dispose);
+      await pumpComponent(
+        tester,
+        PInput(label: 'Name', focusNode: node),
+        width: 320,
+      );
+
+      Finder ring() => find.byKey(PInput.focusRingKey);
+      BoxDecoration ringDecoration() =>
+          tester.widget<DecoratedBox>(ring()).decoration as BoxDecoration;
+
+      expect(ringDecoration().boxShadow, isNull);
+
+      node.requestFocus();
+      await tester.pump();
+
+      final BoxShadow shadow = ringDecoration().boxShadow!.single;
+      expect(shadow.color, AppColors.terracottaRing);
+      expect(shadow.spreadRadius, 3);
+      expect(shadow.blurRadius, 0);
+    });
+  });
+
   group('PInput — basics', () {
     testWidgets('renders its label and hint', (WidgetTester tester) async {
       await pumpComponent(
@@ -17,7 +80,7 @@ void main() {
         width: 320,
       );
 
-      expect(find.text('Recipe name'), findsOneWidget);
+      expect(find.text('RECIPE NAME'), findsOneWidget);
       expect(_decoration(tester).hintText, 'e.g. Aloo Gobi');
     });
 
@@ -79,7 +142,7 @@ void main() {
         isA<OutlineInputBorder>().having(
           (OutlineInputBorder b) => b.borderSide.color,
           'colour',
-          AppColors.inkMid,
+          AppColors.outlineSoft,
         ),
       );
     });
@@ -116,7 +179,7 @@ void main() {
 
         expect(find.text("Codes don't contain 0, O, I, or L."), findsOneWidget);
         expect(
-          _decoration(tester).errorBorder,
+          _decoration(tester).enabledBorder,
           isA<OutlineInputBorder>().having(
             (OutlineInputBorder b) => b.borderSide.color,
             'colour',

@@ -89,6 +89,15 @@ class PInput extends StatelessWidget {
   final int minLines;
   final int maxLines;
 
+  /// Key of the focus-ring [DecoratedBox] around the field box.
+  static const Key focusRingKey = Key('p-input-focus-ring');
+
+  /// Focused border width (wireframe: 1.5 px terracotta).
+  static const double _focusedBorderWidth = 1.5;
+
+  /// Spread of the focus ring outside the border (wireframe: 3 px).
+  static const double _focusRingSpread = 3;
+
   bool get _hasError => errorText != null;
 
   @override
@@ -113,26 +122,45 @@ class PInput extends StatelessWidget {
       decoration: _decoration(),
     );
 
+    final Widget box = _FocusRing(
+      child: trailing == null
+          ? field
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Expanded(child: field),
+                const SizedBox(width: AppSpacing.s1),
+                trailing!,
+              ],
+            ),
+    );
+
+    final String? message = _hasError ? errorText : helperText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
-          label,
-          style: AppTypography.label.copyWith(color: AppColors.inkSoft),
+          label.toUpperCase(),
+          style: AppTypography.mono.copyWith(
+            color: AppColors.inkMid,
+            fontWeight: FontWeight.w600,
+            fontSize: AppTypography.meta.fontSize,
+            letterSpacing: 0.12 * AppTypography.meta.fontSize!,
+          ),
         ),
         const SizedBox(height: AppSpacing.s0),
-        if (trailing == null)
-          field
-        else
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Expanded(child: field),
-              const SizedBox(width: AppSpacing.s1),
-              trailing!,
-            ],
+        box,
+        if (message != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.s0),
+          Text(
+            message,
+            style: AppTypography.label.copyWith(
+              color: _hasError ? AppColors.danger : AppColors.inkMid,
+            ),
           ),
+        ],
       ],
     );
   }
@@ -140,10 +168,8 @@ class PInput extends StatelessWidget {
   InputDecoration _decoration() => InputDecoration(
     hintText: hintText,
     hintStyle: AppTypography.body.copyWith(color: AppColors.inkMid),
-    helperText: _hasError ? null : helperText,
-    helperStyle: AppTypography.label.copyWith(color: AppColors.inkMid),
-    errorText: errorText,
-    errorStyle: AppTypography.label.copyWith(color: AppColors.danger),
+    // Helper and error copy render below the field box (see [build]) so the
+    // focus ring hugs the box itself, not the message.
     filled: true,
     fillColor: enabled ? AppColors.card : AppColors.paper2,
     isDense: false,
@@ -161,23 +187,21 @@ class PInput extends StatelessWidget {
       horizontal: AppSpacing.s2,
       vertical: AppSpacing.s2,
     ),
-    border: _border(AppColors.inkMid),
-    enabledBorder: _border(AppColors.inkMid),
+    // `errorText` is not passed to the decoration, so the framework never
+    // selects an error border; the danger colour is chosen here instead.
+    border: _border(AppColors.outlineSoft),
+    enabledBorder: _hasError
+        ? _border(AppColors.danger)
+        : _border(AppColors.outlineSoft),
     disabledBorder: _border(AppColors.paper2),
-    focusedBorder: _border(AppColors.terracotta),
-    errorBorder: _border(AppColors.danger),
-    // Default width, same as errorBorder — the design source has no
-    // focused+error example to check against, and AppSizing.focusRingWidth
-    // is reserved for the haldi keyboard-focus ring elsewhere in this file
-    // set (see PButton._side), not for a danger-coloured border. Keeping
-    // this state a predictable composition of its two independent parts
-    // (danger colour, default width) rather than inventing a third look.
-    focusedErrorBorder: _border(AppColors.danger),
+    focusedBorder: _hasError
+        ? _border(AppColors.danger)
+        : _border(AppColors.terracotta, _focusedBorderWidth),
   );
 
   /// Field borders use [AppRadius.m] — `radius.r-m` is the token whose stated
-  /// usage is "buttons, inputs". (The design source's HTML draws them at 10px,
-  /// which is not on the radius scale at all; the token wins.)
+  /// usage is "buttons, inputs". (The wireframe draws them at 10px, which is
+  /// not on the radius scale at all; the token wins.)
   OutlineInputBorder _border(Color color, [double? width]) =>
       OutlineInputBorder(
         borderRadius: AppRadius.borderM,
@@ -185,4 +209,38 @@ class PInput extends StatelessWidget {
             ? BorderSide(color: color)
             : BorderSide(color: color, width: width),
       );
+}
+
+/// Draws the wireframe's 3px terracotta@12% ring around its child while a
+/// descendant holds focus.
+class _FocusRing extends StatelessWidget {
+  const _FocusRing({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Focus(
+    canRequestFocus: false,
+    skipTraversal: true,
+    child: Builder(
+      builder: (BuildContext context) {
+        final bool focused = Focus.of(context).hasFocus;
+        return DecoratedBox(
+          key: PInput.focusRingKey,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.borderM,
+            boxShadow: focused
+                ? const <BoxShadow>[
+                    BoxShadow(
+                      color: AppColors.terracottaRing,
+                      spreadRadius: PInput._focusRingSpread,
+                    ),
+                  ]
+                : null,
+          ),
+          child: child,
+        );
+      },
+    ),
+  );
 }
