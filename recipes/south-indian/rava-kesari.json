@@ -1,0 +1,72 @@
+{
+  "title": "Rava Kesari",
+  "description": "A bright saffron-scented South Indian sooji sweet cooked in ghee with cashews and raisins.",
+  "servings": 4,
+  "prepMin": 5,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": [
+    "veg"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Sooji",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Water",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Saffron",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice",
+      "notes": "powdered"
+    },
+    {
+      "name": "Cashew Nuts",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Raisins",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods"
+    }
+  ],
+  "steps": [
+    "Warm the water and dissolve the saffron in it.",
+    "Heat 1 tbsp of the ghee and fry the cashews and raisins until golden; set aside.",
+    "Add 2 tbsp more ghee and roast the sooji on low heat until it smells nutty and turns slightly pink.",
+    "Pour in the saffron water carefully and stir continuously to avoid lumps; cook until the sooji absorbs it.",
+    "Add the sugar and cardamom; the mixture will loosen, then cook until thick and glossy.",
+    "Stir in the remaining ghee and the fried nuts and serve warm."
+  ]
+}

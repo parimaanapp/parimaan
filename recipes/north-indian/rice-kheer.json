@@ -1,0 +1,82 @@
+{
+  "title": "Rice Kheer",
+  "description": "Slow-simmered basmati rice and milk pudding flavoured with cardamom and saffron, a staple festival sweet across North India.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 50,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Basmati Rice",
+      "quantity": 60,
+      "unit": "g",
+      "category": "grain",
+      "notes": "washed and soaked 20 minutes"
+    },
+    {
+      "name": "Milk",
+      "quantity": 1,
+      "unit": "l",
+      "category": "dairy"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 100,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice",
+      "notes": "crushed"
+    },
+    {
+      "name": "Saffron",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Almonds",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "sliced"
+    },
+    {
+      "name": "Pistachios",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "sliced"
+    },
+    {
+      "name": "Raisins",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "oil"
+    }
+  ],
+  "steps": [
+    "Bring the milk to a boil in a heavy-bottomed pan, then lower the heat.",
+    "Heat the ghee in a small pan, add the drained rice and sauté 1 minute, then add it to the milk.",
+    "Simmer on low, stirring often and scraping the base, for 35 to 40 minutes until the rice is very soft and the milk reduces by about a third.",
+    "Add the sugar, cardamom, saffron and raisins and cook for 5 more minutes.",
+    "Stir in half the almonds and pistachios.",
+    "Serve warm or chilled, topped with the remaining nuts."
+  ]
+}

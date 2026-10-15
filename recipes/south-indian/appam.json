@@ -1,0 +1,72 @@
+{
+  "title": "Appam",
+  "description": "Lacy, soft-centred Kerala rice and coconut pancakes with crisp edges, fermented overnight and served with stew or kurma.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Raw Rice (Ponni)",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "soaked 4 hours"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 60,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Yeast (Dry)",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "other"
+    },
+    {
+      "name": "Water",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "beverages",
+      "notes": "approximately, for grinding and thinning"
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil",
+      "notes": "for greasing"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Drain the soaked rice and grind with the coconut and a little of the water to a smooth batter.",
+    "Stir the yeast and sugar with a spoon of warm water and let it froth for 5 minutes.",
+    "Mix the yeast into the batter with the salt, cover and ferment 6 to 8 hours until bubbly.",
+    "Thin the batter with water to a pouring consistency of single cream.",
+    "Heat an appam pan and wipe it with a little coconut oil.",
+    "Pour a ladle of batter, swirl the pan to coat the sides, cover and cook 2 minutes until the edges are crisp and the centre is spongy."
+  ]
+}

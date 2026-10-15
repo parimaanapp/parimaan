@@ -1,0 +1,59 @@
+{
+  "title": "Poori",
+  "description": "Puffed, golden deep-fried wheat breads that are the traditional partner for aloo sabzi, chole or halwa.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Atta (Whole Wheat Flour)",
+      "quantity": 300,
+      "unit": "g",
+      "category": "grain"
+    },
+    {
+      "name": "Sooji",
+      "quantity": 30,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "fine"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 150,
+      "unit": "ml",
+      "category": "beverages",
+      "notes": "approximately"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 450,
+      "unit": "ml",
+      "category": "oil",
+      "notes": "about 30 ml for the dough, the rest for deep frying"
+    }
+  ],
+  "steps": [
+    "Mix the atta, sooji and salt, then rub in about 30 ml of the oil.",
+    "Add the water gradually and knead a stiff dough; cover and rest for 20 minutes.",
+    "Divide into 16 small balls and roll each into a 4-inch round, lightly oiling instead of dusting with flour.",
+    "Heat the frying oil until a pinch of dough rises immediately.",
+    "Slide in one poori, press it gently with a slotted spoon so it puffs, and fry for about 20 seconds per side until golden.",
+    "Drain on paper and serve hot."
+  ]
+}

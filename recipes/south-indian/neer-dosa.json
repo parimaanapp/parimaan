@@ -1,0 +1,60 @@
+{
+  "title": "Neer Dosa",
+  "description": "Delicate, lace-thin rice and coconut crepes from coastal Karnataka that need no fermentation.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Raw Rice (Ponni)",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "soaked 3 hours"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Water",
+      "quantity": 2.5,
+      "unit": "cup",
+      "category": "beverages",
+      "notes": "approximately"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "oil",
+      "notes": "for greasing"
+    }
+  ],
+  "steps": [
+    "Drain the soaked rice and grind with the coconut and a little water to a very fine batter.",
+    "Thin with more water to a watery, flowing consistency and stir in the salt.",
+    "Heat a non-stick tawa on medium-high and lightly grease with coconut oil.",
+    "Stir the batter well, then pour a ladle from a little height, tilting the pan to cover it.",
+    "Cover and cook for 1 minute without flipping until the edges lift.",
+    "Fold into quarters and serve with coconut chutney or chicken curry."
+  ]
+}
