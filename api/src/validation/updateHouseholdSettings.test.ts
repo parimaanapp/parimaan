@@ -153,6 +153,37 @@ describe('updateHouseholdSettingsArgsSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it.each([
+    ['empty', []],
+    ['modifiers only', ['gluten_free', 'dairy_free']],
+  ])('rejects dietaryTags that are %s — a household needs an eating style (M3)', (_label, dietaryTags) => {
+    const result = updateHouseholdSettingsArgsSchema.safeParse({
+      householdId: VALID_HOUSEHOLD_ID,
+      input: { dietaryTags },
+    });
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toContain('eating style');
+  });
+
+  it.each([['non_veg'], ['veg', 'gluten_free'], ['vegan', 'jain', 'dairy_free']])(
+    'accepts dietaryTags %s with at least one style',
+    (...dietaryTags) => {
+      const result = updateHouseholdSettingsArgsSchema.safeParse({
+        householdId: VALID_HOUSEHOLD_ID,
+        input: { dietaryTags },
+      });
+      expect(result.success).toBe(true);
+    },
+  );
+
+  it('leaves a patch without dietaryTags alone', () => {
+    const result = updateHouseholdSettingsArgsSchema.safeParse({
+      householdId: VALID_HOUSEHOLD_ID,
+      input: { allergens: ['peanuts'] },
+    });
+    expect(result.success).toBe(true);
+  });
+
   it('accepts a full multi-field patch', () => {
     const result = updateHouseholdSettingsArgsSchema.safeParse({
       householdId: VALID_HOUSEHOLD_ID,

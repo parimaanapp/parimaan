@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { householdIdSchema } from './householdId.js';
 import { CUISINE_TIER1_VALUES } from '../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../domain/dietaryTags.js';
+import { isDietStyle } from '../domain/dietMatch.js';
 
 // Mirrors `shared/schema.graphql`'s enum value names exactly — these are
 // TEXT-backed values persisted verbatim (see `householdRepository.ts`'s own
@@ -104,7 +105,10 @@ export const householdSettingsInputSchema = z
     mealStructure: mealStructureSchema.optional(),
     cuisineTier1: z.array(cuisineTier1Schema).optional(),
     cuisineTier2Weights: cuisineTier2WeightsSchema.optional(),
-    dietaryTags: z.array(dietaryTagSchema).optional(),
+    dietaryTags: z
+      .array(dietaryTagSchema)
+      .refine((tags) => tags.some(isDietStyle), 'dietaryTags must include at least one eating style (veg, non_veg, vegan, eggetarian or jain)')
+      .optional(),
     allergens: z.array(z.string()).optional(),
     skipIngredients: z.array(z.string()).optional(),
   })
