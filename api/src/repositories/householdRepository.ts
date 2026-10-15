@@ -286,8 +286,7 @@ export const findRecentPrimaryHouseholdByName = async (
      LIMIT 1`,
     [userId, name, windowSeconds],
   );
-  const row = result.rows[0];
-  return row === undefined ? null : mapHouseholdRow(row);
+  return result.rows[0] === undefined ? null : mapHouseholdRow(result.rows[0]);
 };
 
 /**
