@@ -253,10 +253,9 @@ export const findMembershipsForUser = async (
 };
 
 /**
- * Serializes concurrent `createHousehold` calls for one user for the rest of
- * the current transaction (transaction-scoped advisory lock keyed on the
- * user id). Without it, a timed-out original request still running server-side
- * and the client's retry could both pass the "already created?" check.
+ * Serializes one user's concurrent `createHousehold` calls for the rest of the
+ * transaction (64-bit advisory lock on the user id), so a timed-out original
+ * and its retry cannot both pass the "already created?" check.
  */
 export const lockUserForHouseholdCreate = async (
   client: PoolClient,
@@ -277,9 +276,7 @@ export const findRecentPrimaryHouseholdByName = async (
   name: string,
   windowSeconds: number,
 ): Promise<HouseholdRow | null> => {
-  // Window is computed in SQL (DB clock) and the caller must still hold a
-  // membership row, so a household whose membership is gone falls through to
-  // a fresh create instead of surfacing NotFound downstream.
+  // DB-clock window; the caller must still hold a membership row, else a fresh create.
   const result = await client.query<RawHouseholdRow>(
     `SELECT h.* FROM households h
      JOIN household_memberships m ON m.household_id = h.id AND m.user_id = $1
