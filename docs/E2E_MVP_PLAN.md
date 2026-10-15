@@ -5666,3 +5666,17 @@ After Build A: deploy backend to dev, run the wipe dry run for founder approval,
 ### 33.4 Wireframe status
 Original v2 bundle remains the component reference; deliberate deviations and the approved weekly-plan layouts are recorded in `docs/wireframes/README.md`. The setup-flow screens (2.x), weekly plan (6.1), bottom nav, chips, AI badge and back control change in Builds A and C as listed there; no new screens are added.
 
+### 33.5 Founder decisions during Builds B and C (recorded)
+| Topic | Decision |
+|---|---|
+| Recipe library size | Author **150** original recipes for beta (cuisine batches, canonical ingredients, explicit diet tags, founder samples ~50); **500 recipes total is a post-beta goal**, scaled in batches. |
+| Account wipe | **Not doing any wipe.** The wipe tool stays merged but unused. Requirement instead: a user must never be silently added to another household (audit and tests, §33.6). |
+| Salt and pepper | **Always staples**, whether or not the source says "to taste". |
+| New app version | Cut the TestFlight and Android builds **after Builds A, B and C are all done** (the Build A builds already produced are not to be distributed). |
+| Other beta work | PostHog, Firebase/W22, store readiness and website items wait until after the Build A–C app version. |
+| Catalog | Approved. Bird's-eye chilli merged into Dried Red Chilli; named varieties kept; **English only** — aliases are Latin-script (including transliterations such as "lal mirch"); no native-script aliases, no regional-language pass for now. |
+| Quantity display | Quantities show at most 2 decimals AND long rows wrap so the unit is never truncated (2 decimals alone does not fix a narrow row at large text scale). |
+
+### 33.6 Household membership guarantee
+Audit all paths that create or change `household_memberships` / the primary household and prove with tests that no sign-in, email match, invite code or retry can add a user to a household they did not create or explicitly join; the app shows the active household name on the first screen (done in A2).
+
