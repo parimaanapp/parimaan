@@ -1,0 +1,31 @@
+{
+  "title": "Bombay Vegetable Sandwich",
+  "description": "A Mumbai street sandwich of green chutney, boiled potato, beetroot, cucumber, tomato and onion layered between buttered bread.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 5,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": ["veg"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Bread (White)", "quantity": 6, "unit": "slice", "category": "bakery" },
+    { "name": "Butter (Salted)", "quantity": 3, "unit": "tbsp", "category": "oil" },
+    { "name": "Coriander Chutney", "quantity": 3, "unit": "tbsp", "category": "condiment" },
+    { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "boiled and thinly sliced" },
+    { "name": "Beetroot", "quantity": 1, "unit": "piece", "category": "produce", "notes": "boiled and thinly sliced" },
+    { "name": "Cucumber", "quantity": 1, "unit": "piece", "category": "produce", "notes": "thinly sliced" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "thinly sliced" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "thinly sliced" },
+    { "name": "Chaat Masala", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.25, "unit": "tsp", "category": "dry_goods", "isStaple": true }
+  ],
+  "steps": [
+    "Butter one side of all 6 slices of bread and spread the coriander chutney over 3 of them.",
+    "Arrange the potato, beetroot, cucumber, tomato and onion in layers on the chutney slices.",
+    "Sprinkle the chaat masala and salt evenly over the vegetables.",
+    "Close with the remaining slices, buttered side down, and press gently.",
+    "Toast on a hot tawa or sandwich griller until golden, or serve untoasted.",
+    "Cut into triangles and serve with ketchup."
+  ]
+}

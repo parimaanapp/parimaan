@@ -1,0 +1,30 @@
+{
+  "title": "Appam",
+  "description": "Lacy-edged, bowl-shaped Kerala rice hoppers with a soft fluffy centre, made from a fermented rice and coconut batter.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Raw Rice (Ponni)", "quantity": 2, "unit": "cup", "category": "grain", "notes": "soaked for 4 hours" },
+    { "name": "Coconut (Grated)", "quantity": 45, "unit": "g", "category": "produce" },
+    { "name": "Rice", "quantity": 0.5, "unit": "cup", "category": "grain", "notes": "cooked, cooled" },
+    { "name": "Sugar", "quantity": 1, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Yeast (Dry)", "quantity": 1, "unit": "tsp", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Water", "quantity": 1.5, "unit": "cup", "category": "beverages", "notes": "approximate" },
+    { "name": "Coconut Oil", "quantity": 1, "unit": "tbsp", "category": "oil", "notes": "for greasing" }
+  ],
+  "steps": [
+    "Drain the soaked raw rice and grind it with the grated coconut and cooked rice, adding about 1.5 cup of water, to a smooth batter.",
+    "Stir in the sugar, yeast and salt, then cover and ferment in a warm place for 6 to 8 hours until bubbly and doubled.",
+    "The batter should flow like thin pancake batter, so add a splash of water if it seems thick.",
+    "Heat an appam pan or small kadai over medium heat and brush with a little of the coconut oil.",
+    "Pour a ladle of batter into the pan and swirl so it coats the sides and leaves a thicker centre.",
+    "Cover and cook 2 to 3 minutes until the centre is fluffy and the edges are crisp and golden; no flipping needed.",
+    "Serve hot with vegetable stew or coconut milk."
+  ]
+}

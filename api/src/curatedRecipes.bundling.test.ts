@@ -1,4 +1,5 @@
 import { mkdtemp, rm, cp } from 'node:fs/promises';
+import { readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -31,7 +32,7 @@ const thisDir = fileURLToPath(new URL('.', import.meta.url));
  * the real `recipes/` directory next to the bundle output (mirroring
  * `api-stack.ts`'s own `afterBundling` copy step), and then actually
  * `require()`s and executes the bundled output — not the source module —
- * asserting it resolves the real 53-file corpus without throwing.
+ * asserting it resolves the real recipes/ corpus without throwing.
  */
 describe('curatedRecipes.ts — bundled-Lambda (CJS) shape', () => {
   let outDir: string;
@@ -71,6 +72,11 @@ describe('curatedRecipes.ts — bundled-Lambda (CJS) shape', () => {
     };
 
     const recipes = bundled.getCuratedRecipesFromCorpus();
-    expect(recipes).toHaveLength(53);
+    const corpusDir = join(thisDir, '..', '..', 'recipes');
+    const fileCount = (readdirSync(corpusDir, { recursive: true }) as string[]).filter((entry) =>
+      entry.endsWith('.json'),
+    ).length;
+    expect(fileCount).toBeGreaterThan(0);
+    expect(recipes).toHaveLength(fileCount);
   });
 });

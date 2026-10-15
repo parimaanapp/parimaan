@@ -1,0 +1,25 @@
+{
+  "title": "Sweet Lassi",
+  "description": "A thick, chilled Punjabi yoghurt drink sweetened with sugar and scented with cardamom and rose water.",
+  "servings": 2,
+  "prepMin": 5,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Curd", "quantity": 300, "unit": "g", "category": "dairy", "notes": "chilled, not sour" },
+    { "name": "Water", "quantity": 100, "unit": "ml", "category": "beverages", "notes": "cold" },
+    { "name": "Sugar", "quantity": 3, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Cardamom Powder", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Rose Water", "quantity": 0.5, "unit": "tsp", "category": "other" },
+    { "name": "Almonds", "quantity": 10, "unit": "g", "category": "dry_goods", "notes": "chopped" }
+  ],
+  "steps": [
+    "Put the curd, sugar and cold water in a blender.",
+    "Blend for 1 minute until frothy and the sugar has dissolved.",
+    "Add the cardamom powder and rose water and pulse once.",
+    "Pour into tall glasses and top with the chopped almonds; serve cold."
+  ]
+}

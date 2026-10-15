@@ -1,0 +1,29 @@
+{
+  "title": "Egg Dosa",
+  "description": "A Tamil street-style dosa topped with beaten egg, pepper and onion, folded over for a protein rich breakfast.",
+  "servings": 2,
+  "prepMin": 5,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["eggetarian", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Dosa Batter", "quantity": 300, "unit": "g", "category": "frozen", "notes": "ready fermented batter" },
+    { "name": "Egg", "quantity": 2, "unit": "piece", "category": "eggs" },
+    { "name": "Onion", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Black Pepper Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil" }
+  ],
+  "steps": [
+    "Beat the 2 eggs in a bowl with the onion, green chilli, coriander leaves, salt and black pepper powder.",
+    "Heat a tawa over medium heat and brush with a little of the oil.",
+    "Pour a ladle of the dosa batter and spread it into a round that is slightly thicker than usual.",
+    "Pour a quarter of the egg mixture over the dosa and spread it evenly with the back of the spoon.",
+    "Drizzle a little oil around the edges and cook for 2 minutes until the egg is set.",
+    "Fold or flip as you prefer, cook another minute, and repeat for the remaining batter; serve hot with chutney."
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "title": "Dabeli",
+  "description": "Kutchi street snack of a sweet, spicy potato filling in a buttered pav, studded with peanuts, pomegranate and sev.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 15,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "gujarati",
+  "dietaryTags": ["veg"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Pav", "quantity": 4, "unit": "piece", "category": "bakery" },
+    { "name": "Potato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "boiled and mashed" },
+    { "name": "Dabeli Masala", "quantity": 1.5, "unit": "tsp", "category": "spice" },
+    { "name": "Jaggery Tamarind Chutney", "quantity": 2, "unit": "tbsp", "category": "condiment" },
+    { "name": "Coriander Chutney", "quantity": 1, "unit": "tbsp", "category": "condiment" },
+    { "name": "Roasted Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Pomegranate", "quantity": 30, "unit": "g", "category": "produce", "notes": "seeds" },
+    { "name": "Sev", "quantity": 20, "unit": "g", "category": "snacks" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Butter (Salted)", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true }
+  ],
+  "steps": [
+    "Heat 1 tbsp of the butter in a pan and add the dabeli masala, stirring for 10 seconds.",
+    "Add the mashed potato, tamarind chutney and salt and cook for 3 minutes, mashing well, then cool slightly.",
+    "Mix in the roasted peanuts and half the pomegranate seeds.",
+    "Slit each pav, spread the coriander chutney inside and fill with the potato mixture.",
+    "Press a little onion and sev onto the filling and top with the remaining pomegranate seeds.",
+    "Toast the stuffed pav on a tawa with the remaining butter until golden on both sides, and serve warm."
+  ]
+}

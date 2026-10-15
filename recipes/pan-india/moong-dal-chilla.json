@@ -1,0 +1,32 @@
+{
+  "title": "Moong Dal Chilla",
+  "description": "Thin, protein rich pancakes made from soaked yellow moong dal ground with ginger, green chilli and cumin.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 15,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Moong Dal (Split, Yellow)", "quantity": 150, "unit": "g", "category": "dal", "notes": "soaked for 2 hours" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
+    { "name": "Ginger", "quantity": 10, "unit": "g", "category": "produce", "notes": "peeled" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Asafoetida (Hing)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Onion", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Water", "quantity": 100, "unit": "ml", "category": "beverages", "notes": "approximate, for grinding" },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "Drain the soaked moong dal and grind with the green chilli, ginger, cumin seeds, turmeric powder, hing, salt and about 100 ml of water to a smooth, pourable batter.",
+    "Stir in the chopped onion and coriander leaves.",
+    "Heat a non-stick tawa over medium heat and brush with a little oil.",
+    "Pour a ladle of batter and spread it quickly into a thin round.",
+    "Drizzle a little oil around the edges and cook for 2 minutes until the underside is golden.",
+    "Flip, cook for another minute and serve hot with mint chutney or curd."
+  ]
+}
