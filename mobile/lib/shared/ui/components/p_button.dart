@@ -26,6 +26,10 @@ enum PButtonVariant {
   /// Danger-coloured and **always outlined, never filled**, at every widget
   /// state. Destroying something should never look like the happy path.
   destructive,
+
+  /// Filled ink with paper text (the wireframe's `dark` CTA): a strong action
+  /// that is not the screen's one primary, e.g. a week-header action.
+  dark,
 }
 
 /// Standard (44-high, comfortable) vs. compact (tighter padding, smaller type).
@@ -193,7 +197,8 @@ ButtonStyle pButtonStyle({
 }) {
   final bool filled =
       variant == PButtonVariant.primary ||
-      variant == PButtonVariant.affirmative;
+      variant == PButtonVariant.affirmative ||
+      variant == PButtonVariant.dark;
 
   return ButtonStyle(
     backgroundColor: WidgetStateProperty.resolveWith<Color>(
@@ -228,9 +233,14 @@ ButtonStyle pButtonStyle({
             ),
     ),
     textStyle: WidgetStatePropertyAll<TextStyle>(
-      size == PButtonSize.small
-          ? AppTypography.label
-          : AppTypography.bodyStrong,
+      (size == PButtonSize.small
+              ? AppTypography.label
+              : AppTypography.bodyStrong)
+          .copyWith(
+            fontWeight: _weight(variant),
+            fontSize: filled ? _filledLabelSize : null,
+            height: filled ? _filledLabelHeight : null,
+          ),
     ),
     minimumSize: const WidgetStatePropertyAll<Size>(
       Size(AppSizing.minTouchTargetWidth, AppSizing.buttonMinHeight),
@@ -257,6 +267,26 @@ ButtonStyle pButtonStyle({
 // visually flatter than the source intends.
 final Color _disabledFill = AppColors.ink.withValues(alpha: 0.12);
 
+/// Filled-variant labels are WCAG "large text" (>= 14 pt bold = 18.66 px at
+/// w600), so the paper-on-terracotta pair (~3.9:1) is judged at 3:1. Founder
+/// decision: raise the size rather than the weight.
+const double _filledLabelSize = 18.7;
+const double _filledLabelHeight = 24 / 18.7;
+
+/// Wireframe weights: 600 on the filled variants, 500 on outlined / ghost.
+FontWeight _weight(PButtonVariant variant) {
+  switch (variant) {
+    case PButtonVariant.primary:
+    case PButtonVariant.affirmative:
+    case PButtonVariant.dark:
+      return FontWeight.w600;
+    case PButtonVariant.secondary:
+    case PButtonVariant.ghost:
+    case PButtonVariant.destructive:
+      return FontWeight.w500;
+  }
+}
+
 Color _background(PButtonVariant variant, Set<WidgetState> states) {
   switch (variant) {
     case PButtonVariant.secondary:
@@ -272,6 +302,9 @@ Color _background(PButtonVariant variant, Set<WidgetState> states) {
     case PButtonVariant.affirmative:
       if (states.contains(WidgetState.disabled)) return _disabledFill;
       return AppColors.cardamom;
+    case PButtonVariant.dark:
+      if (states.contains(WidgetState.disabled)) return _disabledFill;
+      return AppColors.ink;
   }
 }
 
@@ -280,6 +313,7 @@ Color _foreground(PButtonVariant variant, Set<WidgetState> states) {
   switch (variant) {
     case PButtonVariant.primary:
     case PButtonVariant.affirmative:
+    case PButtonVariant.dark:
       return AppColors.paper;
     case PButtonVariant.secondary:
       return AppColors.ink;
@@ -304,13 +338,14 @@ BorderSide? _side(PButtonVariant variant, Set<WidgetState> states) {
   switch (variant) {
     case PButtonVariant.primary:
     case PButtonVariant.affirmative:
+    case PButtonVariant.dark:
     case PButtonVariant.ghost:
       return null;
     case PButtonVariant.secondary:
-      // Hairline at the framework default width; the token set defines no
-      // border-thickness token (same call `theme.dart` made).
-      return const BorderSide(color: AppColors.inkMid);
+      // Wireframe: 1px ink@20%.
+      return const BorderSide(color: AppColors.outline);
     case PButtonVariant.destructive:
-      return const BorderSide(color: AppColors.danger);
+      // Wireframe: 1px danger@25%.
+      return const BorderSide(color: AppColors.dangerOutline);
   }
 }

@@ -1,0 +1,39 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## dal_pulse
+Moth Dal | moth dal split; matki dal; moth ki dal; mat beans split |  | 200
+Chana Dal (Roasted Split) | bhuna chana dal; fried gram dal; putnala pappu |  | 180
+Kala Chana Dal | black chana dal; split kala chana; kale chane ki dal |  | 200
+Pavta | pavta beans; pavta dal; field bean split; dalimbi dal; birda; vaal dal |  | 200
+Dalimbi | dalimbi beans; lima beans fresh; avarebele |  | 200
+Black Soybean | kala bhat; black soya beans; bhatt; bhatt dal; black soyabean |  | 200
+Split Peas (Green) | green split peas; hare matar dal; matar dal green |  | 200
+Black Turtle Beans | black beans; turtle beans; frijoles negros |  | 200
+Moong Dal (Mogar) | mogar; mogar dal; moong dal washed; moong dhuli |  | 200
+Soya Granules | soya mince; soy granules; textured soy protein; soy keema; tvp; soya keema |  | 80
+## whole_grain
+Sama Rice | sama ke chawal; moraiyo; moriyo; samvat rice; bhagar; varai |  | 180
+Browntop Millet | browntop; korale; korle; hari kangni; pedda sama |  | 180
+Corn Popcorn Kernels | popcorn kernels; makai dana; corn kernels popping; popcorn seeds |  | 190
+Bulgur | bulgur wheat; cracked wheat bulgur; burghul; bulgar; kibbled wheat |  | 150
+Couscous | cous cous; couscous semolina; moghrabieh; maftoul |  | 170
+Wheat Germ | gehun ka germ; gehu germ |  | 100
+Wheat Bran | bran; chokar; bhusi; gehun ka bhusa; wheat chokar; atta bran |  | 60
+## rice
+Seeraga Samba | jeerakasala; jeera samba; jeerakasala rice; seeragasamba rice |  | 185
+Hand Pounded Rice | kai kuthal arisi; kai kutta; hand pound rice; unpolished rice; ukda; hand-pounded rice |  | 185
+Joha Rice | joha; assam joha; joha chawal; aromatic assam rice |  | 185
+Basmati Rice (Aged) | aged basmati; 1121 basmati; pusa basmati; tibar; dubar; mogra basmati |  | 185
+## flour
+Barley Flour | jau ka atta; jau atta; sattu barley; barley powder |  | 110
+Sharbati Atta | sharbati wheat flour; mp wheat flour |  | 120
+Khapli Atta | khapli; khapli wheat flour; emmer atta; khapli gehu; samba wheat flour; godhi hittu |  | 120
+Sattu Flour | chana sattu; sattu maavu; sattu mavu |  | 110
+Potato Starch | aloo starch; potato flour |  | 140
+Semolina (Durum) | durum semolina; durum rava; pasta flour; semolina pasta |  | 170
+Sooji (Coarse) | coarse rava; thick rava; bombay ravai; upma sooji; chiroti rava |  | 170
+Idiyappam Flour | string hopper flour; puttu podi; puttu flour; roasted rice flour |  | 120
+Gram Flour (Coarse) | coarse besan; bhajia pith; ladoo besan; boondi besan; pith; chickpea flour coarse |  | 110
+Flaxseed Meal | linseed powder; alsi powder; flaxseed powder; ground flaxseed; flax meal; alasi powder |  | 100
+Wheat Flour (Pizza 00) | 00 flour; tipo 00; italian flour; doppio zero |  | 120
+Bread Flour | strong flour; strong bread flour; high gluten flour; bakers flour |  | 125
+Self Raising Flour | self rising flour; self-raising flour; sr flour |  | 120

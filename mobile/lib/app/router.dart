@@ -474,6 +474,10 @@ typedef RecipePickerExtra = ({
   int dayOfWeek,
   String mealSlot,
   RecipeRole slotRole,
+
+  /// Monday (UTC midnight) of the week being edited. The picker writes to
+  /// and refreshes THIS week's menu, never "the current week".
+  DateTime weekStartDate,
 });
 
 /// `extra` payload for [AppRoutes.shoppingListGeneratedPrompt],

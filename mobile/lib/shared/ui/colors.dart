@@ -50,6 +50,9 @@ abstract final class AppColors {
   /// Foreground paired with [cardamomSoft].
   static const Color cardamomSoftForeground = Color(0xFF3A5236);
 
+  /// Foreground paired with [haldiSoft] (the AI proposal badge).
+  static const Color haldiSoftForeground = Color(0xFF7A5A18);
+
   // ---- semantic -------------------------------------------------------
   /// Have-it, bought.
   static const Color success = Color(0xFF4F6B4A);
@@ -62,4 +65,25 @@ abstract final class AppColors {
 
   /// Activity, notices.
   static const Color info = Color(0xFF3A5A7C);
+
+  // ---- derived alpha washes (wireframe v2 component values) ------------
+  // Intentionally outside design-tokens.json: the token file has no alpha
+  // ramp by design. Each is a named brand colour at a fixed alpha, exactly as
+  // the wireframe's component styles draw them, and is used only by the
+  // component that names it.
+
+  /// Ink at 20%: unselected chip and secondary button outline.
+  static const Color outline = Color(0x331F1A15);
+
+  /// Ink at 15%: resting input border.
+  static const Color outlineSoft = Color(0x261F1A15);
+
+  /// Danger at 25%: destructive button outline.
+  static const Color dangerOutline = Color(0x409E2A2B);
+
+  /// Terracotta at 12%: the 3 px ring around a focused input.
+  static const Color terracottaRing = Color(0x1FC25A2B);
+
+  /// Danger at 12%: the focus ring of an input in its error state.
+  static const Color dangerRing = Color(0x1F9E2A2B);
 }

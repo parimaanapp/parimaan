@@ -5633,6 +5633,8 @@ Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf
 - **Recipes**: sample format approved; Methi Thepla is vegan and dairy free.
 - **Components**: sign-off list items 1–6 and 8 approved (drawn tab icons, "Today" label, centred titles, bold back chevron with 44×44 target, solid-ink chips without ✓, haldi "◆ AI proposal" badge, column header). Item 7 is **decided**: four meals planned → option B (2×2 block per day, meal name under the ＋ and in each cell, no column header); one to three meals planned → option C (one column per planned meal with a column header). Replaces the four-column layout in C1.
 
+- **C3 landed (shared components)**: drawn tab glyphs (`PTabGlyph`), "Today" label, 56 high bar; centred `PTopBar` title with leading/trailing slots (title still `display-m`, the nearest token to the wireframe's 20 scaled ~1.3x); chips default to solid ink without the tick and a 1 px ink@20% outline; `PAiBadge` ("◆ AI PROPOSAL", haldi-soft, mono) replaces the blue "AI suggests" pill; buttons gain the `dark` variant and wireframe weights/outline washes; `PInput` label is mono 9-caps scaled with a terracotta 1.5 px focus border and 3 px ring. Derived alpha washes live in `AppColors` (`outline`, `outlineSoft`, `dangerOutline`, `terracottaRing`).
+
 ## 33. Project status and sequence (snapshot after beta feedback round 1)
 
 ### 33.1 Where we are
@@ -5665,4 +5667,20 @@ After Build A: deploy backend to dev, run the wipe dry run for founder approval,
 
 ### 33.4 Wireframe status
 Original v2 bundle remains the component reference; deliberate deviations and the approved weekly-plan layouts are recorded in `docs/wireframes/README.md`. The setup-flow screens (2.x), weekly plan (6.1), bottom nav, chips, AI badge and back control change in Builds A and C as listed there; no new screens are added.
+
+### 33.5 Founder decisions during Builds B and C (recorded)
+| Topic | Decision |
+|---|---|
+| Recipe library size | Author **150** original recipes for beta (cuisine batches, canonical ingredients, explicit diet tags, founder samples ~50); **500 recipes total is a post-beta goal**, scaled in batches. |
+| Account wipe | **Not doing any wipe.** The wipe tool stays merged but unused. Requirement instead: a user must never be silently added to another household (audit and tests, §33.6). |
+| Salt and pepper | **Always staples**, whether or not the source says "to taste". |
+| New app version | Cut the TestFlight and Android builds **after Builds A, B and C are all done** (the Build A builds already produced are not to be distributed). |
+| Other beta work | PostHog, Firebase/W22, store readiness and website items wait until after the Build A–C app version. |
+| Catalog | Approved. Bird's-eye chilli merged into Dried Red Chilli; named varieties kept; **English only** — aliases are Latin-script (including transliterations such as "lal mirch"); no native-script aliases, no regional-language pass for now. |
+| Invite codes | **No change for now** (codes stay permanent, multi-use, no approval). **Post-beta:** decide expiry / single-use / owner approval / member removal. |
+| Primary button contrast | Paper on terracotta is ≈3.9:1; fix by raising the filled-button label size to ≥18.7 px at semibold (WCAG large text) rather than changing the token. |
+| Quantity display | Quantities show at most 2 decimals AND long rows wrap so the unit is never truncated (2 decimals alone does not fix a narrow row at large text scale). |
+
+### 33.6 Household membership guarantee
+Audit all paths that create or change `household_memberships` / the primary household and prove with tests that no sign-in, email match, invite code or retry can add a user to a household they did not create or explicitly join; the app shows the active household name on the first screen (done in A2).
 

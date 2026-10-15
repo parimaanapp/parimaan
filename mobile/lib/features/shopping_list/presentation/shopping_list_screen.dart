@@ -6,12 +6,17 @@ import '../../../app/router.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
+import '../../../shared/ui/radius.dart';
+import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_item.dart';
+import '../domain/shopping_list_summary.dart';
 import '../state/current_shopping_list_controller.dart';
 import 'checklist_item.dart';
 import 'shopping_list_regenerate_confirm_dialog.dart';
+import 'glyph_label.dart';
+import 'staples_check_card.dart';
 
 /// Wireframe "Shopping List" (37-38/49, E2E_MVP_PLAN.md §17.1/§17.3 S6) —
 /// the persistent, live view of the current menu's shopping list, showing
@@ -244,7 +249,12 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             PTopBar(
-              title: 'Shopping list',
+              title: 'This week',
+              // The whole list, not what is left: the line must not shrink as
+              // the user buys things.
+              subtitle: loaded == null
+                  ? null
+                  : shoppingListSummary(loaded.items),
               onBack: () => context.go(AppRoutes.weeklyPlan),
               backSemanticLabel: 'Back to weekly plan',
               trailing: loaded == null
@@ -252,10 +262,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        PIconButton(
+                        _ShareAction(
                           key: ShoppingListScreen.shareButtonKey,
-                          icon: Icons.ios_share,
-                          semanticLabel: 'Share shopping list as image',
                           onPressed: () => _onSharePressed(loaded),
                         ),
                         const SizedBox(width: AppSpacing.s2),
@@ -331,64 +339,98 @@ class _Loaded extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? staplesNote = list.aiStaplesNote;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        // D5 (E2E_MVP_PLAN.md §23.2.5): no live push for this note — it's
-        // whatever was present on the LAST fetch this screen's `state`
-        // holds. `null` renders literally nothing here: no empty box, no
-        // placeholder, no loading spinner — there is nothing to "wait" for
-        // from this screen's perspective (that section's own doc).
-        if (staplesNote != null)
-          Padding(
-            key: ShoppingListScreen.staplesNoteKey,
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s3,
-              AppSpacing.s3,
-              AppSpacing.s3,
-              0,
-            ),
-            child: Text(
-              staplesNote,
-              style: AppTypography.body.copyWith(color: AppColors.inkSoft),
-            ),
-          ),
-        Expanded(child: _Checklist(list: list, menuId: menuId)),
-      ],
-    );
-  }
-}
-
-class _Checklist extends StatelessWidget {
-  const _Checklist({required this.list, required this.menuId});
-
-  final ShoppingList list;
-  final String menuId;
-
-  @override
-  Widget build(BuildContext context) {
     final List<ShoppingListItem> toBuy = list.toBuy;
+    // D5 (E2E_MVP_PLAN.md §23.2.5): no live push for this note — it's
+    // whatever was present on the LAST fetch this screen's `state` holds.
+    // `null` renders literally nothing: no empty box, no placeholder.
+    final String? staplesNote = list.aiStaplesNote;
+    final Widget? staplesCard = staplesNote == null
+        ? null
+        : StaplesCheckCard(
+            key: ShoppingListScreen.staplesNoteKey,
+            note: staplesNote,
+          );
+
     if (toBuy.isEmpty) {
       // A plain message, deliberately NOT a `PEmptyState` — that component's
       // own doc requires a real `action` ("no dead ends"), and "everything
       // on this list is already checked off" genuinely has no further step
-      // from here. Inventing an action just to satisfy the component would
-      // be the "wall" that doc explicitly warns against, from the other
-      // direction. (The Regenerate affordance for this state lives on the
+      // from here. (The Regenerate affordance for this state lives on the
       // `PTopBar` trailing action, not here.)
-      return Center(
-        key: ShoppingListScreen.emptyKey,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.s4),
-          child: Text(
-            'Nothing left to buy — every item has been checked off.',
-            textAlign: TextAlign.center,
-            style: AppTypography.body.copyWith(color: AppColors.inkSoft),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (staplesCard != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s3,
+                0,
+                AppSpacing.s3,
+                0,
+              ),
+              child: staplesCard,
+            ),
+          Expanded(
+            child: Center(
+              key: ShoppingListScreen.emptyKey,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.s4),
+                child: Text(
+                  'Nothing left to buy — every item has been checked off.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.body.copyWith(color: AppColors.inkSoft),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       );
     }
-    return CategorizedChecklist(items: toBuy, menuId: menuId);
+    return CategorizedChecklist(
+      items: toBuy,
+      menuId: menuId,
+      footer: staplesCard == null ? null : <Widget>[staplesCard],
+    );
   }
+}
+
+/// The wireframe's bordered "↗ Share" action. A text label, so it reads as
+/// an action rather than an icon to guess at; 44 pt minimum target.
+class _ShareAction extends StatelessWidget {
+  const _ShareAction({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    label: 'Share shopping list as image',
+    excludeSemantics: true,
+    onTap: onPressed,
+    child: Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: AppRadius.borderS,
+        child: Container(
+          constraints: const BoxConstraints(
+            minWidth: AppSizing.minTouchTargetWidth,
+            minHeight: AppSizing.minTouchTargetHeight,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.borderS,
+            border: Border.all(color: AppColors.ink.withValues(alpha: 0.2)),
+          ),
+          child: GlyphLabel(
+            glyph: '↗',
+            text: 'Share',
+            style: AppTypography.label.copyWith(color: AppColors.ink),
+          ),
+        ),
+      ),
+    ),
+  );
 }

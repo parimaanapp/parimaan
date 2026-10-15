@@ -1,0 +1,27 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## vegetable
+Ridge Gourd (Turai) | dodka; dodki; heerekai; jhinge | 150 | 
+Parval | palwal; patal; potol; potoli | 30 | 
+Ivy Gourd (Tendli) | tendli | 15 | 
+Spiny Gourd (Kakrol) | kakrol; kartule; bhat karela | 25 | 
+Valor Papdi | valor; val papdi; surti papdi; surti valor | 5 | 
+Papdi (Flat Beans) | papdi beans; sem phali; flat beans; chikkudu | 6 | 
+Tuvar Lilva | lilva; fresh pigeon peas; tur lilva; hara toor; togari kaalu; kandi kaya |  | 150
+Fresh Green Chickpeas | hara chana; choliya; green chickpeas; hare chane; harbara; hara bhara chana |  | 160
+Taro Tuber (Large) | kachalu; kachu; mukhi; chamadumpa | 40 | 
+Purple Yam | ratalu kand; dioscorea | 150 | 
+Madras Cucumber | sambar cucumber; dosakai; mogi kai; yellow cucumber; sambar vellarikai | 400 | 
+Mogri | rat tail radish; mogri pods; rattail radish; mogri phali | 5 | 
+Ker Berries | ker; kair; kair berries; ker berry | 2 | 
+Sangri Beans | sangri; khejri beans; khejri pods; sangri pods | 3 | 
+Gunda | gonda; lasoda; lasora; bhokar; indian cherry; gundi | 8 | 
+Red Pumpkin | lal kaddu; lal bhopla; red kaddu | 1500 | 
+Moringa Pods | shevgyachya shenga; munaga kaya; nugge kai | 40 | 
+Chawli Beans | chowli; alasande kai; karamani; chori | 8 | 
+Water Chestnut (Singhara) | singhoda | 20 | 
+Bean Sprouts | moong bean sprouts; taugey; beansprouts; toge |  | 100
+Snow Peas | mangetout; sugar snap peas; snow pea pods | 3 | 
+Edamame | edamame beans; soy pods; green soybean pods |  | 150
+Romaine Lettuce | cos lettuce | 300 | 
+Rocket Leaves | arugula; rucola; arugula leaves; jarjir |  | 20
+Daikon Radish | japanese radish; mooli japanese | 400 | 

@@ -35,15 +35,25 @@ Future<ValueNotifier<bool?>> _pump(
 
 void main() {
   group('RegenerateConfirmDialog', () {
-    testWidgets('states plainly that manually-placed items are replaced too, and that made meals are kept', (
-      WidgetTester tester,
-    ) async {
-      await _pump(tester, unmadeItemCount: 3);
+    testWidgets(
+      'states plainly that manually-placed items are replaced too, and that made meals are kept',
+      (WidgetTester tester) async {
+        await _pump(tester, unmadeItemCount: 3);
 
-      expect(find.textContaining('including ones you picked yourself'), findsOneWidget);
-      expect(find.textContaining('not just earlier auto-fill picks'), findsOneWidget);
-      expect(find.textContaining('Meals already marked made are always kept'), findsOneWidget);
-    });
+        expect(
+          find.textContaining('including ones you picked yourself'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('not just earlier auto-fill picks'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Meals already marked made are always kept'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('names the unmade item count', (WidgetTester tester) async {
       await _pump(tester, unmadeItemCount: 5);
@@ -51,14 +61,21 @@ void main() {
       expect(find.text('Replace 5 planned items?'), findsOneWidget);
     });
 
-    testWidgets('singular copy for exactly one unmade item', (WidgetTester tester) async {
+    testWidgets('singular copy for exactly one unmade item', (
+      WidgetTester tester,
+    ) async {
       await _pump(tester, unmadeItemCount: 1);
 
       expect(find.text('Replace 1 planned item?'), findsOneWidget);
     });
 
-    testWidgets('Cancel calls nothing and resolves false', (WidgetTester tester) async {
-      final ValueNotifier<bool?> result = await _pump(tester, unmadeItemCount: 2);
+    testWidgets('Cancel calls nothing and resolves false', (
+      WidgetTester tester,
+    ) async {
+      final ValueNotifier<bool?> result = await _pump(
+        tester,
+        unmadeItemCount: 2,
+      );
 
       await tester.tap(find.byKey(RegenerateConfirmDialog.cancelButtonKey));
       await tester.pumpAndSettle();
@@ -68,7 +85,10 @@ void main() {
     });
 
     testWidgets('Replace resolves true', (WidgetTester tester) async {
-      final ValueNotifier<bool?> result = await _pump(tester, unmadeItemCount: 2);
+      final ValueNotifier<bool?> result = await _pump(
+        tester,
+        unmadeItemCount: 2,
+      );
 
       await tester.tap(find.byKey(RegenerateConfirmDialog.confirmButtonKey));
       await tester.pumpAndSettle();

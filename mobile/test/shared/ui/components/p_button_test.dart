@@ -143,7 +143,8 @@ void main() {
       );
 
       expect(_bg(tester)!.a, 0);
-      expect(_side(tester)!.color, AppColors.inkMid);
+      expect(_side(tester)!.color, AppColors.outline);
+      expect(_side(tester)!.width, 1);
       expect(_fg(tester), AppColors.ink);
     });
 
@@ -191,7 +192,7 @@ void main() {
       );
 
       expect(_fg(tester), AppColors.danger);
-      expect(_side(tester)!.color, AppColors.danger);
+      expect(_side(tester)!.color, AppColors.dangerOutline);
       for (final Set<WidgetState> states in <Set<WidgetState>>[
         <WidgetState>{},
         <WidgetState>{WidgetState.pressed},
@@ -205,6 +206,116 @@ void main() {
           reason: 'destructive is always outlined, never filled ($states)',
         );
       }
+    });
+
+    testWidgets('dark is filled ink with paper text', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        PButton(
+          label: 'Auto-fill',
+          variant: PButtonVariant.dark,
+          onPressed: () {},
+        ),
+      );
+
+      expect(_bg(tester), AppColors.ink);
+      expect(_fg(tester), AppColors.paper);
+      expect(_side(tester), isNull);
+    });
+
+    testWidgets('weights follow the wireframe: 600 filled, 500 the rest', (
+      WidgetTester tester,
+    ) async {
+      const Map<PButtonVariant, FontWeight> expected =
+          <PButtonVariant, FontWeight>{
+            PButtonVariant.primary: FontWeight.w600,
+            PButtonVariant.affirmative: FontWeight.w600,
+            PButtonVariant.dark: FontWeight.w600,
+            PButtonVariant.secondary: FontWeight.w500,
+            PButtonVariant.ghost: FontWeight.w500,
+            PButtonVariant.destructive: FontWeight.w500,
+          };
+      for (final MapEntry<PButtonVariant, FontWeight> e in expected.entries) {
+        await pumpComponent(
+          tester,
+          PButton(label: 'Go', variant: e.key, onPressed: () {}),
+        );
+        final TextStyle? style = _styleOf(tester).textStyle?.resolve(const {});
+        expect(style!.fontWeight, e.value, reason: e.key.name);
+      }
+    });
+
+    testWidgets('filled variants use large text: >= 18.66 px at w600', (
+      WidgetTester tester,
+    ) async {
+      for (final PButtonVariant v in <PButtonVariant>[
+        PButtonVariant.primary,
+        PButtonVariant.affirmative,
+        PButtonVariant.dark,
+      ]) {
+        for (final PButtonSize size in PButtonSize.values) {
+          await pumpComponent(
+            tester,
+            PButton(label: 'Go', variant: v, size: size, onPressed: () {}),
+          );
+          final TextStyle style = _styleOf(tester).textStyle!.resolve(const {})!;
+          expect(style.fontSize, greaterThanOrEqualTo(18.66), reason: '$v $size');
+          expect(
+            style.fontWeight!.value,
+            greaterThanOrEqualTo(FontWeight.w600.value),
+          );
+        }
+      }
+    });
+
+    testWidgets('a long filled label wraps instead of truncating, at 320 pt '
+        'and 2x text scale', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(320, 640),
+              textScaler: TextScaler.linear(2),
+            ),
+            child: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16),
+                child: PButton(
+                  label: 'Create household and continue to setup',
+                  expand: true,
+                  onPressed: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final Size size = tester.getSize(find.byType(PButton));
+      expect(size.width, lessThanOrEqualTo(320));
+      expect(size.height, greaterThan(AppSizing.buttonMinHeight));
+      final Text text = tester.widget<Text>(
+        find.text('Create household and continue to setup'),
+      );
+      expect(text.overflow, isNot(TextOverflow.ellipsis));
+    });
+
+    testWidgets('every standard button is radius 12', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(tester, PButton(label: 'Go', onPressed: () {}));
+
+      final OutlinedBorder? shape = _styleOf(tester).shape?.resolve(const {});
+      expect(
+        (shape! as RoundedRectangleBorder).borderRadius,
+        AppRadius.borderM,
+      );
     });
 
     testWidgets('every variant renders its text label — colour never alone', (

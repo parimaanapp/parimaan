@@ -28,6 +28,11 @@ Applied to `src/*.txt`, rebuilt into `ingredients.csv` / `ingredients.md` / `con
 - **One to three meals planned:** option C, one column per planned meal with a column header.
 - A zoomed-out week overview is not part of Build C unless requested later.
 
+## Catalog expansion (B1a) founder decisions
+- **Bird's-eye chilli is Dried Red Chilli.** `Dried Chilli (Bird's Eye)` removed; its aliases moved onto **Dried Red Chilli**.
+- **Named varieties stay** (mango, date, jaggery, tea, cheese, meat cuts) as separate ingredients.
+- **English only for now.** No alias in a non-Latin script; Latin transliterations (Hinglish such as "lal mirch", "doodh") stay. Source files were checked: none contained non-Latin script.
+
 ## Recipes
 - **Methi Thepla** is tagged veg, vegan, dairy free. The sample recipe previously kneaded with curd, which contradicted that, so it now kneads with water.
 - The remaining eleven samples are approved as drafted. Chilli powder lines now use **Red Chilli Powder**; milk lines use **Milk**.

@@ -7,7 +7,7 @@ const MAX_FIELD_LENGTH = 1000;
 
 /** An ingredient after the shared import normalisation step. */
 export interface NormalisedIngredient extends ParsedIngredient {
-  /** True only for salt/pepper written "to taste"-style; see `normaliseIngredient`. */
+  /** True for salt/pepper in any form (quantity or not); see `isAlwaysStaple`. */
   isStaple: boolean;
 }
 
@@ -25,6 +25,12 @@ const isSaltOrPepper = (name: string): boolean => {
   const key = name.toLowerCase().replace(/\([^()]*\)/g, ' ').replace(/\s+/g, ' ').trim();
   return SALT_NAME.test(key) || PEPPER_NAME.test(key) || SALT_AND_PEPPER_NAME.test(key);
 };
+
+/**
+ * Founder decision: salt and pepper are ALWAYS staples, measured or not.
+ * Whole peppercorns are a spice used in counted amounts, so they are not.
+ */
+export const isAlwaysStaple = (name: string): boolean => isSaltOrPepper(name) && !/peppercorn/i.test(name);
 
 const stripTastePhrase = (text: string): string =>
   text
@@ -73,7 +79,7 @@ const normaliseQuantityless = (fields: CleanedFields): NormalisedIngredient => {
   };
 };
 
-/** To-taste phrase on a row that DID parse a quantity: the quantity is kept, the phrase moves into notes, never staple. */
+/** To-taste phrase on a row that DID parse a quantity: the quantity is kept, the phrase moves into notes; salt/pepper stay staple. */
 const normaliseMeasuredToTaste = (fields: CleanedFields, quantity: number): NormalisedIngredient => {
   const phraseInName = TASTE_PHRASE.exec(fields.name)?.[0] ?? '';
   const movedPhrase = phraseInName.replace(/^[\s,;(-]+/, '').replace(/^(?:or|and|&)\s+/i, '').replace(/\)$/, '').trim();
@@ -81,7 +87,8 @@ const normaliseMeasuredToTaste = (fields: CleanedFields, quantity: number): Norm
   const unitText = TASTE_PHRASE.test(fields.unit) ? '' : fields.unit;
   const amount = toCanonicalAmount(quantity, normaliseUnit(unitText) ?? 'piece');
   const notes = [fields.notes, movedPhrase].filter((part) => part !== '').join(', ');
-  return { raw: fields.raw, name: strippedName === '' ? fields.raw : strippedName, ...amount, notes: nullIfEmpty(notes), isStaple: false };
+  const name = strippedName === '' ? fields.raw : strippedName;
+  return { raw: fields.raw, name, ...amount, notes: nullIfEmpty(notes), isStaple: isAlwaysStaple(name) };
 };
 
 /**
@@ -103,5 +110,6 @@ export const normaliseIngredient = (input: ParsedIngredient): NormalisedIngredie
     return input.quantity === null ? normaliseQuantityless(fields) : normaliseMeasuredToTaste(fields, input.quantity);
   }
   const amount = toCanonicalAmount(input.quantity, normaliseUnit(fields.unit) ?? (input.quantity === null ? null : 'piece'));
-  return { raw: fields.raw, name: stripNameDebris(fields.name) || fields.raw, ...amount, notes: nullIfEmpty(fields.notes), isStaple: false };
+  const name = stripNameDebris(fields.name) || fields.raw;
+  return { raw: fields.raw, name, ...amount, notes: nullIfEmpty(fields.notes), isStaple: isAlwaysStaple(name) };
 };

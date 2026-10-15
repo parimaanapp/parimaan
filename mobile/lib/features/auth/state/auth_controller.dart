@@ -5,7 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/storage/app_database.dart';
 import '../../household/state/current_household_controller.dart';
 import '../../household/state/current_user_id_controller.dart';
+import '../../household/state/create_household_controller.dart';
+import '../../household/state/household_wizard_controller.dart';
+import '../../household/state/join_household_controller.dart';
 import '../../household/state/me_households_controller.dart';
+import '../../household/state/pending_join_code_controller.dart';
 import '../../household/state/notification_preferences_controller.dart';
 import '../../menu/state/current_menu_controller.dart';
 import '../../menu/state/recipe_picker_controller.dart';
@@ -50,6 +54,23 @@ class AuthController extends AsyncNotifier<AuthSession> {
               _write(AsyncError<AuthSession>(error, stackTrace)),
         );
     ref.onDispose(subscription.cancel);
+
+    // A different signed-in user than before (A -> B without an observed
+    // sign-out) must never inherit A's session-scoped household state. A
+    // signedOut -> signedIn transition is deliberately excluded so a deep-link
+    // join code captured while signed out survives the sign-in.
+    listenSelf((
+      AsyncValue<AuthSession>? previous,
+      AsyncValue<AuthSession> next,
+    ) {
+      final AuthSession? before = previous?.valueOrNull;
+      final AuthSession? after = next.valueOrNull;
+      if (before is SignedIn &&
+          after is SignedIn &&
+          before.userId != after.userId) {
+        _invalidateSessionScopedState();
+      }
+    });
 
     return repository.currentSession();
   }
@@ -107,6 +128,11 @@ class AuthController extends AsyncNotifier<AuthSession> {
     } on Object {
       // Best-effort — see the method doc above.
     }
+    _invalidateSessionScopedState();
+    return const AuthSession.signedOut();
+  });
+
+  void _invalidateSessionScopedState() {
     ref.invalidate(meHouseholdsControllerProvider);
     ref.invalidate(currentUserIdControllerProvider);
     ref.invalidate(currentHouseholdControllerProvider);
@@ -117,8 +143,12 @@ class AuthController extends AsyncNotifier<AuthSession> {
     ref.invalidate(currentMenuControllerProvider);
     ref.invalidate(recipePickerControllerProvider);
     ref.invalidate(currentShoppingListControllerProvider);
-    return const AuthSession.signedOut();
-  });
+    // A9: session-scoped household state, so user B never sees A's household.
+    ref.invalidate(joinHouseholdControllerProvider);
+    ref.invalidate(householdWizardControllerProvider);
+    ref.invalidate(createHouseholdControllerProvider);
+    ref.invalidate(pendingJoinCodeControllerProvider);
+  }
 
   Future<void> _run(Future<AuthSession> Function() action) async {
     final int startedAt = ++_generation;

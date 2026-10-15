@@ -10,6 +10,10 @@ import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
 import 'package:mobile/features/household/state/current_household_controller.dart';
+import 'package:mobile/features/household/state/household_wizard_controller.dart';
+import 'package:mobile/features/household/state/join_household_controller.dart';
+import 'package:mobile/features/household/state/create_household_controller.dart';
+import 'package:mobile/features/household/state/pending_join_code_controller.dart';
 import 'package:mobile/features/household/state/me_households_controller.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/shared/errors/app_error.dart';
@@ -347,6 +351,114 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(authControllerProvider).value, testSignedInSession);
+    });
+  });
+
+  group('AuthController session-scoped household state (A9)', () {
+    ProviderContainer containerFor(
+      MockAuthRepository auth,
+      FakeHouseholdRepository households,
+    ) {
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          authRepositoryProvider.overrideWithValue(auth),
+          appDatabaseProvider.overrideWithValue(
+            AppDatabase(NativeDatabase.memory()),
+          ),
+          householdRepositoryProvider.overrideWithValue(households),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('signOut clears join/wizard/pending-code state so the next user '
+        'does not inherit the active household', () async {
+      final FakeHouseholdRepository households = FakeHouseholdRepository(
+        result: testHousehold,
+        joinResult: testHouseholdWithMembers,
+        myHouseholdsResult: const <Household>[],
+      );
+      final ProviderContainer container = containerFor(
+        stubbedAuthRepository(session: testSignedInSession),
+        households,
+      );
+      await container.read(authControllerProvider.future);
+      await container.read(joinHouseholdControllerProvider.future);
+      await container.read(householdWizardControllerProvider.future);
+      await container
+          .read(joinHouseholdControllerProvider.notifier)
+          .join('K4M9PQ');
+      container
+          .read(householdWizardControllerProvider.notifier)
+          .adoptHousehold(testHousehold);
+      container.read(pendingJoinCodeControllerProvider.notifier).set('ABC123');
+      expect(container.read(activeHouseholdProvider), isNotNull);
+
+      await container.read(authControllerProvider.notifier).signOut();
+      await container.read(meHouseholdsControllerProvider.future);
+      await container.read(joinHouseholdControllerProvider.future);
+      await container.read(householdWizardControllerProvider.future);
+      await container.read(createHouseholdControllerProvider.future);
+
+      expect(container.read(joinHouseholdControllerProvider).valueOrNull, isNull);
+      expect(
+        container.read(householdWizardControllerProvider).valueOrNull?.household,
+        isNull,
+      );
+      expect(container.read(pendingJoinCodeControllerProvider), isNull);
+      expect(container.read(createHouseholdControllerProvider).valueOrNull, isNull);
+      expect(container.read(activeHouseholdProvider), isNull);
+    });
+
+    test('a signed-in user change clears the previous user\'s session '
+        'state', () async {
+      final StreamController<AuthSession> changes =
+          StreamController<AuthSession>.broadcast();
+      addTearDown(changes.close);
+      final MockAuthRepository auth = stubbedAuthRepository(
+        session: testSignedInSession,
+      );
+      when(auth.sessionChanges).thenAnswer((_) => changes.stream);
+      final FakeHouseholdRepository households = FakeHouseholdRepository(
+        joinResult: testHouseholdWithMembers,
+        myHouseholdsResult: const <Household>[],
+      );
+      final ProviderContainer container = containerFor(auth, households);
+      await container.read(authControllerProvider.future);
+      await container.read(joinHouseholdControllerProvider.future);
+      await container
+          .read(joinHouseholdControllerProvider.notifier)
+          .join('K4M9PQ');
+      container.read(pendingJoinCodeControllerProvider.notifier).set('ABC123');
+
+      changes.add(
+        const AuthSession.signedIn(userId: 'user-B', email: 'b@example.com'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await container.read(joinHouseholdControllerProvider.future);
+
+      expect(container.read(joinHouseholdControllerProvider).valueOrNull, isNull);
+      expect(container.read(pendingJoinCodeControllerProvider), isNull);
+    });
+
+    test('signing in from signed-out keeps a pending deep-link code', () async {
+      final StreamController<AuthSession> changes =
+          StreamController<AuthSession>.broadcast();
+      addTearDown(changes.close);
+      final MockAuthRepository auth = stubbedAuthRepository();
+      when(auth.sessionChanges).thenAnswer((_) => changes.stream);
+      final ProviderContainer container = containerFor(
+        auth,
+        FakeHouseholdRepository(),
+      );
+      await container.read(authControllerProvider.future);
+      container.read(pendingJoinCodeControllerProvider.notifier).set('ABC123');
+
+      changes.add(testSignedInSession);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(pendingJoinCodeControllerProvider), 'ABC123');
     });
   });
 }

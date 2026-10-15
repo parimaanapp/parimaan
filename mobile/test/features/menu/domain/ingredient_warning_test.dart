@@ -2,11 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/menu/domain/ingredient_warning.dart';
 import 'package:mobile/features/recipes/domain/recipe_ingredient.dart';
 
-RecipeIngredient _ingredient(String name) => RecipeIngredient(
-  id: 'ingredient-$name',
-  name: name,
-  isStaple: false,
-);
+RecipeIngredient _ingredient(String name) =>
+    RecipeIngredient(id: 'ingredient-$name', name: name, isStaple: false);
 
 void main() {
   group('matchedIngredientWarningTerms', () {
@@ -110,21 +107,21 @@ void main() {
       expect(mismatches, <String>['veg']);
     });
 
-    test('returns an empty list when the recipe carries every household tag', () {
-      final List<String> mismatches = mismatchedDietaryTags(
-        <String>['veg', 'gluten_free'],
-        <String>['veg'],
-      );
+    test(
+      'returns an empty list when the recipe carries every household tag',
+      () {
+        final List<String> mismatches = mismatchedDietaryTags(
+          <String>['veg', 'gluten_free'],
+          <String>['veg'],
+        );
 
-      expect(mismatches, isEmpty);
-    });
+        expect(mismatches, isEmpty);
+      },
+    );
 
     test('a veg recipe does not mismatch a [veg, eggetarian] household', () {
       expect(
-        mismatchedDietaryTags(
-          <String>['veg'],
-          <String>['veg', 'eggetarian'],
-        ),
+        mismatchedDietaryTags(<String>['veg'], <String>['veg', 'eggetarian']),
         isEmpty,
       );
     });
@@ -159,13 +156,16 @@ void main() {
       expect(mismatches, isEmpty);
     });
 
-    test('preserves the household\'s own tag order for multiple mismatches', () {
-      final List<String> mismatches = mismatchedDietaryTags(
-        const <String>[],
-        <String>['veg', 'dairy_free'],
-      );
+    test(
+      'preserves the household\'s own tag order for multiple mismatches',
+      () {
+        final List<String> mismatches = mismatchedDietaryTags(
+          const <String>[],
+          <String>['veg', 'dairy_free'],
+        );
 
-      expect(mismatches, <String>['veg', 'dairy_free']);
-    });
+        expect(mismatches, <String>['veg', 'dairy_free']);
+      },
+    );
   });
 }
