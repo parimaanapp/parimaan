@@ -1,4 +1,5 @@
-import { DIETARY_TAG_VALUES } from './dietaryTags.js';
+import { effectiveRecipeTags, expandStyle, householdModifiers, householdStyles } from './dietMatch.js';
+import type { DietStyle } from './dietMatch.js';
 
 /**
  * W21 D4 — the household's rules, applied to what the model proposed. The
@@ -53,11 +54,15 @@ const wordPattern = (word: string, plantExempt: boolean): RegExp => {
 
 /**
  * Phrases that contain a keyword but are harmless, removed before matching:
- * "egg-free mayo", "meatless mince" (the word it says the product is free of,
- * plus the product), any other "-free" marker, goat cheese (not meat), butter
- * beans, cream of tartar.
+ * "egg-free mayo", "meatless mince" (egg/dairy/meat only: the word it says the
+ * product is free of, plus the substitute product), any other "-free" marker
+ * on its own ("oil-free chicken" is still chicken), vegan substitutes ("vegan
+ * mayo", "egg replacer"), goat cheese (not meat), butter beans, cream of
+ * tartar. "gluten-free" is left in place on purpose: it is what exempts
+ * generic bread words (`GLUTEN_FREE_GRAIN`), and it must never hide the
+ * ingredient it modifies ("gluten-free chicken").
  */
-const HARMLESS_PHRASES = /\b(?:egg|dairy|meat|gluten)-free(?: [a-z]+)?\b|\b[a-z]+-free\b|\b(?:meat|egg|dairy|gluten)less(?: [a-z]+)?\b|\bgoat(?:'s)? (?:cheese|milk)\b|\bbutter beans?\b|\bcream of tartar\b/g;
+const HARMLESS_PHRASES = /\b(?:egg|dairy|meat)-free(?: [a-z]+)?\b|\b(?!gluten-)[a-z]+-free\b|\b(?:meat|egg|dairy)less(?: [a-z]+)?\b|\bvegan (?:mayo|mayonnaise|eggs?|butter|cheese|milk|ghee)\b|\begg (?:replacer|substitute|replacement)\b|\bgoat(?:'s)? (?:cheese|milk)\b|\bbutter beans?\b|\bcream of tartar\b/g;
 
 const neutralise = (text: string): string => text.replace(HARMLESS_PHRASES, ' ');
 
@@ -79,13 +84,15 @@ export const findSkipViolations = (suggestion: FilterableSuggestion, skipIngredi
 const MEAT_AND_FISH = [
   'chicken', 'mutton', 'lamb', 'goat', 'beef', 'pork', 'bacon', 'ham', 'turkey', 'duck', 'lard', 'gelatin', 'gelatine', 'mince', 'keema', 'sausage', 'meat',
   'fish', 'prawn', 'shrimp', 'crab', 'lobster', 'oyster', 'clam', 'mussel', 'squid', 'salmon', 'tuna', 'sardine', 'mackerel', 'anchovy', 'rohu', 'pomfret', 'hilsa',
+  // Hindi / regional names.
+  'gosht', 'murgh', 'kheema', 'machli', 'machhi', 'meen', 'maachh', 'maach', 'jhinga',
 ];
-const EGG = ['egg', 'mayonnaise', 'mayo'];
+const EGG = ['egg', 'mayonnaise', 'mayo', 'anda', 'omelette', 'omelet'];
 const DAIRY = [
   'milk', 'paneer', 'cheese', 'curd', 'dahi', 'yogurt', 'yoghurt', 'ghee', 'butter', 'buttermilk', 'cream', 'malai', 'khoa', 'khowa', 'mawa', 'whey',
   'lassi', 'chaas', 'makhan', 'shrikhand', 'chhena', 'kefir',
 ];
-const ROOT_VEG_FOR_JAIN = [
+export const ROOT_VEG_FOR_JAIN = [
   'onion', 'garlic', 'potato', 'aloo', 'alu', 'ginger', 'adrak', 'carrot', 'radish', 'mooli', 'beetroot', 'turnip', 'shallot', 'pyaz', 'pyaaz', 'lehsun',
   'yam', 'suran', 'arbi', 'colocasia', 'mushroom',
 ];
@@ -103,16 +110,11 @@ export const DIETARY_VIOLATION_KEYWORDS: Readonly<Record<string, readonly string
   vegan: [...MEAT_AND_FISH, ...EGG, ...DAIRY, 'honey'],
   jain: [...MEAT_AND_FISH, ...EGG, ...ROOT_VEG_FOR_JAIN],
   eggetarian: MEAT_AND_FISH,
+  non_veg: [],
   dairy_free: DAIRY,
   gluten_free: GLUTEN,
 };
 
-/** A suggestion tagged with the key also satisfies the tags it implies (a vegan dish is a vegetarian and a dairy-free one). */
-const IMPLIED_TAGS: Readonly<Record<string, readonly string[]>> = {
-  vegan: ['veg', 'eggetarian', 'dairy_free'],
-  jain: ['veg', 'eggetarian'],
-  veg: ['eggetarian'],
-};
 
 const DAIRY_WORDS: ReadonlySet<string> = new Set(DAIRY);
 const GRAIN_DEPENDENT_WORDS: ReadonlySet<string> = new Set(GLUTEN_DEPENDS_ON_GRAIN);
@@ -127,17 +129,55 @@ const mentions = (text: string, word: string): boolean => {
 
 const normalizeTag = (tag: string): string => tag.trim().toLowerCase();
 
-export const findDietaryViolations = (suggestion: FilterableSuggestion, householdTags: readonly string[]): string[] => {
-  const required = [...new Set(householdTags.map(normalizeTag))].filter((tag) => (DIETARY_TAG_VALUES as readonly string[]).includes(tag));
-  const claimed = new Set(suggestion.dietaryTags.map(normalizeTag));
-  for (const tag of [...claimed]) {
-    (IMPLIED_TAGS[tag] ?? []).forEach((implied) => claimed.add(implied));
+/**
+ * The tags a suggestion claims, including the modifier it implies
+ * (`dietMatch.effectiveRecipeTags`: vegan implies dairy_free); style
+ * implications are handled on the household side by `dietMatch.expandStyle`.
+ */
+const claimedTags = (suggestion: FilterableSuggestion): ReadonlySet<string> => {
+  return new Set(effectiveRecipeTags(suggestion.dietaryTags.map(normalizeTag)));
+};
+
+/** Everything wrong with `suggestion` for ONE tag: not claimed, plus each keyword that breaks it. */
+const problemsFor = (
+  tag: string,
+  acceptedClaims: readonly string[],
+  claimed: ReadonlySet<string>,
+  clean: readonly string[],
+): string[] => [
+  ...(acceptedClaims.some((accepted) => claimed.has(accepted)) ? [] : [`Not tagged ${tag}`]),
+  ...(DIETARY_VIOLATION_KEYWORDS[tag] ?? [])
+    .filter((word) => clean.some((text) => mentions(text, word)))
+    .map((word) => `Contains ${word} (not ${tag})`),
+];
+
+/** Styles are a union: satisfied by any one style; otherwise the closest style's problems are reported. */
+const styleProblems = (
+  styles: readonly DietStyle[],
+  claimed: ReadonlySet<string>,
+  clean: readonly string[],
+): string[] => {
+  const perStyle = styles.map((style) => problemsFor(style, expandStyle(style), claimed, clean));
+  if (perStyle.length === 0 || perStyle.some((problems) => problems.length === 0)) {
+    return [];
   }
+  return perStyle.reduce((best, current) => (current.length < best.length ? current : best));
+};
+
+/**
+ * Same semantics as `dietMatch.isRecipeEligible` (the single source of
+ * truth), plus the ingredient keywords because the model's own tags are not
+ * trusted: the suggestion must satisfy at least ONE of the household's styles
+ * and EVERY modifier.
+ */
+export const findDietaryViolations = (suggestion: FilterableSuggestion, householdTags: readonly string[]): string[] => {
+  const tags = householdTags.map(normalizeTag);
+  const claimed = claimedTags(suggestion);
   const clean = texts(suggestion).map(neutralise);
-  return required.flatMap((tag) => [
-    ...(claimed.has(tag) ? [] : [`Not tagged ${tag}`]),
-    ...(DIETARY_VIOLATION_KEYWORDS[tag] ?? []).filter((word) => clean.some((text) => mentions(text, word))).map((word) => `Contains ${word} (not ${tag})`),
-  ]);
+  return [
+    ...styleProblems(householdStyles(tags), claimed, clean),
+    ...householdModifiers(tags).flatMap((modifier) => problemsFor(modifier, [modifier], claimed, clean)),
+  ];
 };
 
 const TREE_NUTS = ['almond', 'cashew', 'walnut', 'pistachio', 'hazelnut', 'pecan', 'macadamia', 'brazil nut', 'pine nut'];

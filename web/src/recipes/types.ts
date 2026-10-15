@@ -35,10 +35,11 @@ export const CUISINE_TIER1_VALUES: readonly CuisineTier1[] = [
   'continental',
 ];
 
-export type DietaryTag = 'veg' | 'vegan' | 'jain' | 'eggetarian' | 'gluten_free' | 'dairy_free';
+export type DietaryTag = 'veg' | 'non_veg' | 'vegan' | 'jain' | 'eggetarian' | 'gluten_free' | 'dairy_free';
 
 export const DIETARY_TAG_VALUES: readonly DietaryTag[] = [
   'veg',
+  'non_veg',
   'vegan',
   'jain',
   'eggetarian',

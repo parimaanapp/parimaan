@@ -119,6 +119,37 @@ void main() {
       expect(mismatches, isEmpty);
     });
 
+    test('a veg recipe does not mismatch a [veg, eggetarian] household', () {
+      expect(
+        mismatchedDietaryTags(
+          <String>['veg'],
+          <String>['veg', 'eggetarian'],
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a veg recipe does not mismatch a [non_veg] household', () {
+      expect(
+        mismatchedDietaryTags(<String>['veg'], <String>['non_veg']),
+        isEmpty,
+      );
+    });
+
+    test('a non_veg recipe mismatches a veg household', () {
+      expect(
+        mismatchedDietaryTags(<String>['non_veg'], <String>['veg']),
+        <String>['veg'],
+      );
+    });
+
+    test('a vegan recipe satisfies dairy_free', () {
+      expect(
+        mismatchedDietaryTags(<String>['vegan'], <String>['veg', 'dairy_free']),
+        isEmpty,
+      );
+    });
+
     test('an empty household dietaryTags list never mismatches', () {
       final List<String> mismatches = mismatchedDietaryTags(
         const <String>[],

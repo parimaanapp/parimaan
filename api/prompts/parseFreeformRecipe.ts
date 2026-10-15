@@ -40,7 +40,7 @@ Respond with ONLY a single JSON object — no markdown code fences, no prose, no
 Field guidance:
 - "cuisineTier1": one of north_indian, south_indian, pan_india, indo_chinese, continental if one clearly fits; otherwise your best-guess label as free text, or null.
 - "cuisineTier2": a more specific cuisine label if the recipe suggests one, e.g. "Bengali", "Konkani", "Hyderabadi" — otherwise null.
-- "dietaryTags": any that clearly apply, from veg, vegan, jain, eggetarian, gluten_free, dairy_free. Leave empty if none are clearly indicated — never guess.
+- "dietaryTags": any that clearly apply, from veg, non_veg, vegan, jain, eggetarian, gluten_free, dairy_free. Leave empty if none are clearly indicated — never guess.
 - "role": the single meal-slot this recipe best fits — one of breakfast, carb, sabzi_dal, accompaniment, snack, sweet, drink. Omit (null) if genuinely unclear; never guess just to fill the field.
 - "quantity" on each ingredient is ALWAYS a string, even for a clean numeric amount (e.g. "2", "1/2", "1 1/2"). If the amount is vague or descriptive ("a pinch", "to taste", "double the rava"), put that exact phrase in "quantity" rather than inventing a number.
 - Never fabricate an ingredient, step, quantity, or detail that is not present in the source text below.

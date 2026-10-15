@@ -6,6 +6,7 @@ import { CUISINE_TIER1_VALUES } from '../../domain/cuisineTiers.js';
 import type { CuisineTier1 } from '../../domain/cuisineTiers.js';
 import { DIETARY_TAG_VALUES } from '../../domain/dietaryTags.js';
 import type { DietaryTag } from '../../domain/dietaryTags.js';
+import { reconcileDraftStyle } from '../../domain/inferDietStyle.js';
 import { RECIPE_ROLE_VALUES } from '../../domain/recipeRoles.js';
 import type { RecipeRole } from '../../domain/recipeRoles.js';
 import {
@@ -170,6 +171,14 @@ const toParsedIngredient = (ingredient: GeminiRecipeDraft['ingredients'][number]
   };
 };
 
+/** Recognised tags only, reconciled with the ingredient evidence and given an inferred style when none is present (H3/F4). */
+const withDraftStyle = (values: readonly (DietaryTag | null)[], raw: GeminiRecipeDraft): DietaryTag[] =>
+  reconcileDraftStyle(
+    values.filter((tag): tag is DietaryTag => tag !== null),
+    raw.title ?? '',
+    raw.ingredients.map((ingredient) => ingredient.name),
+  ) as DietaryTag[];
+
 const cleanNullable = (value: string | null | undefined): string | null => {
   const cleaned = cleanText(value ?? '');
   return cleaned === '' ? null : cleaned;
@@ -191,7 +200,10 @@ export const toRecipeDraft = (raw: GeminiRecipeDraft): RecipeDraftResult => {
 
   const cuisineTier1 = cuisineResult.value;
   const role = roleResult.value;
-  const dietaryTags = dietaryTagResults.map((result) => result.value).filter((tag): tag is DietaryTag => tag !== null);
+  const dietaryTags = withDraftStyle(
+    dietaryTagResults.map((result) => result.value),
+    raw,
+  );
   const warnings = [cuisineResult, roleResult, ...dietaryTagResults]
     .map((result) => result.warning)
     .filter((warning): warning is string => warning !== null);

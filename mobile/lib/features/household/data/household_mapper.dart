@@ -228,6 +228,7 @@ GCuisineTier1 _cuisineRegionToGraphQL(CuisineRegion region) => switch (region) {
 
 GDietaryTag _dietaryTagToGraphQL(DietaryTag tag) => switch (tag) {
   DietaryTag.veg => GDietaryTag.veg,
+  DietaryTag.nonVeg => GDietaryTag.non_veg,
   DietaryTag.vegan => GDietaryTag.vegan,
   DietaryTag.jain => GDietaryTag.jain,
   DietaryTag.eggetarian => GDietaryTag.eggetarian,

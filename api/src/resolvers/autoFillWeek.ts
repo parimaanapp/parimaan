@@ -17,7 +17,7 @@ import { findRecipesByIds } from '../repositories/recipeRepository.js';
 import type { RecipeRow } from '../repositories/recipeRepository.js';
 import { findSettingsForHousehold } from '../repositories/householdRepository.js';
 import { getMealSlotCap, isMealSlotEnabled, slotCountKeyRole } from '../domain/mealStructure.js';
-import { recipeMatchesDietaryTags } from '../domain/rotationSelection.js';
+import { isRecipeEligible } from '../domain/dietMatch.js';
 import type { RotationHouseholdSettings } from '../domain/rotationSelection.js';
 import { toGraphQLMenu } from '../mappers/menu.js';
 import type { GraphQLAutoFillResult, GraphQLUnfilledSlot } from '../mappers/menu.js';
@@ -34,7 +34,7 @@ export const productionDeps: AutoFillWeekResolverDeps = { getPool };
 
 /**
  * Commits one submitted item if it still passes every live check —
- * household ownership, `mealsEnabled`, in-rotation, dietary-tag match
+ * household ownership, `mealsEnabled`, dietary match (`dietMatch.ts`; out-of-rotation recipes are valid fallback picks)
  * (§16.2.4 D8), and cap, all re-verified against the CURRENT database
  * state rather than trusted from whatever `autoFillPreview` proposed (time
  * passed; another device could have acted in between). `runningCounts` is
@@ -55,11 +55,11 @@ const tryCommitItem = async (
     return { committed: false };
   }
   const recipe = recipesById.get(item.recipeId);
-  if (recipe === undefined || recipe.householdId !== householdId || !recipe.inRotation) {
+  if (recipe === undefined || recipe.householdId !== householdId) {
     return { committed: false };
   }
 
-  if (!recipeMatchesDietaryTags(recipe.dietaryTags, settings.dietaryTags)) {
+  if (!isRecipeEligible(recipe.dietaryTags, settings.dietaryTags)) {
     return { committed: false };
   }
 
@@ -93,7 +93,7 @@ const slotCountKey = (dayOfWeek: number, mealSlot: string, slotRole: string): st
  * dietary tags into the snapshot's envelope ("the snapshot carries exactly
  * the three existing types under lunch/dinner; snapshotting a config shape
  * is not an invitation to widen it"), and this resolver's own commit-time
- * re-validation (`tryCommitItem`'s `recipeMatchesDietaryTags` check,
+ * re-validation (`tryCommitItem`'s `isRecipeEligible` check,
  * `autoFillWeek.test.ts`'s "never commits a recipe missing one of the
  * household dietary tags" test) depends on that staying a live read. Do NOT
  * widen this to also source `mealsEnabled`/`mealStructure` from the live

@@ -104,6 +104,9 @@ export const householdSettingsInputSchema = z
     mealStructure: mealStructureSchema.optional(),
     cuisineTier1: z.array(cuisineTier1Schema).optional(),
     cuisineTier2Weights: cuisineTier2WeightsSchema.optional(),
+    // No style requirement here (F1): shipped clients may send empty or
+    // modifiers-only lists, so the resolver reconciles them against the
+    // stored styles (`dietMatch.reconcileHouseholdTags`) instead of rejecting.
     dietaryTags: z.array(dietaryTagSchema).optional(),
     allergens: z.array(z.string()).optional(),
     skipIngredients: z.array(z.string()).optional(),

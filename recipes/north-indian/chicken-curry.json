@@ -6,7 +6,7 @@
   "cookMin": 40,
   "cuisineTier1": "north_indian",
   "cuisineTier2": "punjabi",
-  "dietaryTags": ["gluten_free", "dairy_free"],
+  "dietaryTags": ["non_veg", "gluten_free", "dairy_free"],
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Chicken Curry Cut", "quantity": 700, "unit": "g", "category": "frozen", "notes": "or fresh, bone-in" },

@@ -6,7 +6,7 @@
   "cookMin": 40,
   "cuisineTier1": "south_indian",
   "cuisineTier2": "tamil",
-  "dietaryTags": ["gluten_free", "dairy_free"],
+  "dietaryTags": ["non_veg", "gluten_free", "dairy_free"],
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Chicken", "quantity": 750, "unit": "g", "category": "meat", "notes": "bone-in, curry cut" },

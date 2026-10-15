@@ -249,8 +249,8 @@ String _fillSummaryHeadline(int filledCount, List<UnfilledSlot> unfilledSlots) {
 /// line for a partial fill.
 String _unfilledDetail(List<UnfilledSlot> unfilledSlots) {
   final int count = unfilledSlots.length;
-  return '$count slot${count == 1 ? '' : 's'} could not be filled — not '
-      'enough in-rotation recipes for ${count == 1 ? 'that meal' : 'those meals'} yet.';
+  return '$count slot${count == 1 ? '' : 's'} could not be filled — no recipes match '
+      "your household's diet for ${count == 1 ? 'that meal' : 'those meals'} yet.";
 }
 
 /// Resolves the household/menu/preview reads and picks the loading, error,
@@ -443,7 +443,7 @@ class _LoadedPreview extends StatelessWidget {
 /// render on `WeeklyPlanScreen` itself, but read-only and three-way rather
 /// than two — already filled (existing [MenuItem]), proposed (a
 /// [ProposedMenuItem] this preview offers for that empty slot), or unfilled
-/// (no proposal matched — either no in-rotation recipe exists for that role,
+/// (no proposal matched — either no diet-matching recipe exists for that role,
 /// or every candidate for that slot was already exhausted this run).
 ///
 /// Rendering exactly one row per [PlannedSlot] — never more, never fewer —

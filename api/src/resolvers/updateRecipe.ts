@@ -4,7 +4,11 @@ import { extractCallerIdentity } from '../auth/identity.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
+import { isDietStyle } from '../domain/dietMatch.js';
+import { inferDietStyle, withInferredStyle } from '../domain/inferDietStyle.js';
 import {
+  findRecipeById,
+  findRecipeIngredientsByRecipeId,
   deleteRecipeIngredientsByRecipeId as deleteRecipeIngredientsByRecipeIdRepo,
   insertRecipeIngredient as insertRecipeIngredientRepo,
   updateRecipePartial as updateRecipePartialRepo,
@@ -28,6 +32,63 @@ const toRecipePatch = (input: RecipePatchInput): RecipePatch => {
   void ingredients;
   const entries = Object.entries(scalarFields).filter(([, value]) => value !== undefined);
   return Object.fromEntries(entries) as RecipePatch;
+};
+
+/**
+ * F4: the ingredients changed and no tags were sent. Re-infer the style only
+ * when the stored style looks inferred — absent, or exactly what inference
+ * would have given the OLD ingredients. Anything else is a deliberate choice
+ * ("vegan" on a recipe the keywords call veg) and is left alone. Must run
+ * before the old ingredients are replaced. Returns `undefined` for "no change".
+ */
+const reinferStoredStyle = async (
+  client: PoolClient,
+  id: string,
+  input: RecipePatchInput,
+): Promise<string[] | undefined> => {
+  const stored = await findRecipeById(client, id);
+  if (stored === null) {
+    return undefined;
+  }
+  const oldNames = (await findRecipeIngredientsByRecipeId(client, id)).map((ingredient) => ingredient.name);
+  const storedStyles = stored.dietaryTags.filter(isDietStyle);
+  const looksInferred =
+    storedStyles.length === 0 ||
+    (storedStyles.length === 1 && storedStyles[0] === inferDietStyle(stored.title, oldNames));
+  if (!looksInferred) {
+    return undefined;
+  }
+  const newStyle = inferDietStyle(
+    input.title ?? stored.title,
+    (input.ingredients ?? []).map((ingredient) => ingredient.name),
+  );
+  const next = [...stored.dietaryTags.filter((tag) => !isDietStyle(tag)), newStyle];
+  const unchanged = storedStyles.length === 1 && storedStyles[0] === newStyle;
+  return unchanged ? undefined : next;
+};
+
+/**
+ * H3: a patched `dietaryTags` with no style tag gets one inferred from the
+ * recipe's ingredients (the patch's own list when it carries one, else the
+ * stored list) and title. Explicit style tags always win; an absent
+ * `dietaryTags` leaves the stored tags alone.
+ */
+const resolveDietaryTagsPatch = async (
+  client: PoolClient,
+  id: string,
+  input: RecipePatchInput,
+): Promise<string[] | undefined> => {
+  if (input.dietaryTags === undefined) {
+    return input.ingredients === undefined ? undefined : reinferStoredStyle(client, id, input);
+  }
+  if (input.dietaryTags.some(isDietStyle)) {
+    return input.dietaryTags;
+  }
+  const ingredientNames =
+    input.ingredients?.map((ingredient) => ingredient.name) ??
+    (await findRecipeIngredientsByRecipeId(client, id)).map((ingredient) => ingredient.name);
+  const title = input.title ?? (await findRecipeById(client, id))?.title ?? '';
+  return withInferredStyle(input.dietaryTags, title, ingredientNames);
 };
 
 export interface UpdateRecipeResolverDeps {
@@ -109,7 +170,13 @@ export const createUpdateRecipeHandler =
           deps.deleteRecipeIngredientsByRecipeId ?? deleteRecipeIngredientsByRecipeIdRepo;
         const insertRecipeIngredient = deps.insertRecipeIngredient ?? insertRecipeIngredientRepo;
 
-        const recipe = await updateRecipePartial(client, id, toRecipePatch(input));
+        const dietaryTags = await resolveDietaryTagsPatch(client, id, input);
+        const patch = toRecipePatch(input);
+        const recipe = await updateRecipePartial(
+          client,
+          id,
+          dietaryTags === undefined ? patch : ({ ...patch, dietaryTags } as RecipePatch),
+        );
         if (recipe === null) {
           throw new NotFoundError('Recipe not found.');
         }

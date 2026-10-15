@@ -8,6 +8,7 @@
  */
 export const DIETARY_TAG_VALUES = [
   'veg',
+  'non_veg',
   'vegan',
   'jain',
   'eggetarian',

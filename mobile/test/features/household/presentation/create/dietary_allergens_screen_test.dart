@@ -61,9 +61,12 @@ void main() {
       for (final DietaryTag tag in DietaryTag.values) {
         expect(find.byKey(DietaryAllergensScreen.tagKey(tag)), findsOne);
       }
-      // The two labels that are not their enum names.
-      expect(find.text('egg-friendly'), findsOne);
-      expect(find.text('GF'), findsOne);
+      // Sentence-case copy (§32.6), not the enum names.
+      expect(find.text('Vegetarian'), findsOne);
+      expect(find.text('Non-vegetarian'), findsOne);
+      expect(find.text('Egg friendly'), findsOne);
+      expect(find.text('Gluten free'), findsOne);
+      expect(find.text('Dairy free'), findsOne);
       expect(find.text('eggetarian'), findsNothing);
       expect(find.text('gluten_free'), findsNothing);
     });
@@ -237,7 +240,7 @@ void main() {
       await tester.tap(find.byKey(DietaryAllergensScreen.finishButtonKey));
       await tester.pump();
 
-      expect(find.text('veg'), findsOne);
+      expect(find.text('Vegetarian'), findsOne);
       expect(find.byType(CircularProgressIndicator), findsOne);
 
       await tester.pumpAndSettle();

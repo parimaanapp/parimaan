@@ -1,21 +1,14 @@
-/// The six `DietaryTag` values from `shared/schema.graphql`.
+/// The seven `DietaryTag` values from `shared/schema.graphql`.
 ///
-/// Two of the six have display copy that differs from the wire value, and
-/// wireframe screen 2.6 uses the display copy — so the mapping is spelled out
-/// here rather than derived, because deriving it would be wrong:
-///
-/// | Wireframe chip | `DietaryTag` value |
-/// |---|---|
-/// | `egg-friendly` | `eggetarian` |
-/// | `GF` | `gluten_free` |
-///
-/// The other four (`veg`, `vegan`, `jain`, `dairy-free`) differ only in the
-/// hyphen/underscore, which is still a translation and still lives in
-/// [wireValue] rather than being produced by string surgery at a call site.
+/// Display copy is sentence case (E2E_MVP_PLAN.md §32.6) and several labels
+/// differ from the wire value, so the mapping is spelled out in
+/// [displayLabel] and [wireValue] rather than produced by string surgery at
+/// a call site.
 ///
 /// Same "encode-only, so no `unknown` member" rule as `meal_type.dart`.
 enum DietaryTag {
   veg,
+  nonVeg,
   vegan,
   jain,
   eggetarian,
@@ -25,6 +18,7 @@ enum DietaryTag {
   /// The exact `DietaryTag` value name in `shared/schema.graphql`.
   String get wireValue => switch (this) {
     DietaryTag.veg => 'veg',
+    DietaryTag.nonVeg => 'non_veg',
     DietaryTag.vegan => 'vegan',
     DietaryTag.jain => 'jain',
     DietaryTag.eggetarian => 'eggetarian',
@@ -32,19 +26,19 @@ enum DietaryTag {
     DietaryTag.dairyFree => 'dairy_free',
   };
 
-  /// Wireframe screen 2.6 chip copy — lower-case except `GF`, which the
-  /// design source draws as an initialism.
+  /// Chip copy, sentence case (§32.6).
   String get displayLabel => switch (this) {
-    DietaryTag.veg => 'veg',
-    DietaryTag.vegan => 'vegan',
-    DietaryTag.jain => 'jain',
-    DietaryTag.eggetarian => 'egg-friendly',
-    DietaryTag.glutenFree => 'GF',
-    DietaryTag.dairyFree => 'dairy-free',
+    DietaryTag.veg => 'Vegetarian',
+    DietaryTag.nonVeg => 'Non-vegetarian',
+    DietaryTag.vegan => 'Vegan',
+    DietaryTag.jain => 'Jain',
+    DietaryTag.eggetarian => 'Egg friendly',
+    DietaryTag.glutenFree => 'Gluten free',
+    DietaryTag.dairyFree => 'Dairy free',
   };
 }
 
-/// The two chips wireframe screen 2.6 draws pre-selected.
+/// The two chips pre-selected on the setup screen.
 const Set<DietaryTag> defaultDietaryTags = <DietaryTag>{
   DietaryTag.veg,
   DietaryTag.eggetarian,

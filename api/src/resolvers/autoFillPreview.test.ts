@@ -194,22 +194,102 @@ describe('autoFillPreview resolver (Query.autoFillPreview)', () => {
     expect(second.filledCount).toBeGreaterThan(0);
   });
 
-  it('never proposes an out-of-rotation recipe', async () => {
+  it('falls back to an out-of-rotation recipe when the household has no in-rotation recipe for the role', async () => {
     const owner = await createUser('sub-afp-rotation');
     const householdId = await createHouseholdWithOwner(owner, 'AFN234');
     const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
     await withUserTransaction(
       owner.id,
-      (client) => addRecipe(client, householdId, owner.id, { inRotation: false }),
+      (client) => addRecipe(client, householdId, owner.id, { title: 'Bench Carb', inRotation: false }),
       pool,
     );
 
     const handler = createAutoFillPreviewHandler(baseDeps);
     const result = await handler(buildEvent(menuId, 'sub-afp-rotation'));
 
-    expect(result.items).toHaveLength(0);
-    expect(result.filledCount).toBe(0);
+    // Default structure plans 2 carb slots a day (lunch, dinner) = 14, one
+    // recipe repeated across the week; other roles have no recipe at all.
+    expect(result.items.length).toBeGreaterThan(0);
+    expect(result.items.every((item) => item.recipe.title === 'Bench Carb')).toBe(true);
     expect(result.unfilledSlots.length).toBeGreaterThan(0);
+  });
+
+  it('prefers in-rotation recipes: an out-of-rotation recipe is not proposed while an in-rotation one exists for the role', async () => {
+    const owner = await createUser('sub-afp-rotation-pref');
+    const householdId = await createHouseholdWithOwner(owner, 'AFN235');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(
+      owner.id,
+      async (client) => {
+        await addRecipe(client, householdId, owner.id, { title: 'In Rotation Carb', inRotation: true });
+        await addRecipe(client, householdId, owner.id, { title: 'Bench Carb', inRotation: false });
+      },
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-rotation-pref'));
+
+    expect(result.items.length).toBeGreaterThan(0);
+    expect(result.items.every((item) => item.recipe.title === 'In Rotation Carb')).toBe(true);
+  });
+
+  it('regression (beta #10): household [veg, eggetarian] with only veg-tagged recipes still fills slots', async () => {
+    const owner = await createUser('sub-afp-regress');
+    const householdId = await createHouseholdWithOwner(owner, 'AFN236');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(
+      owner.id,
+      async (client) => {
+        await client.query(
+          `UPDATE household_settings SET dietary_tags = '["veg","eggetarian"]'::jsonb WHERE household_id = $1`,
+          [householdId],
+        );
+        await client.query(
+          `INSERT INTO recipes (household_id, source_type, title, role, in_rotation, dietary_tags, created_by)
+           VALUES ($1, 'user', 'Veg Poha', 'breakfast', false, '["veg"]'::jsonb, $2),
+                  ($1, 'user', 'Veg Roti', 'carb', true, '["veg"]'::jsonb, $2),
+                  ($1, 'user', 'Veg Dal', 'sabzi_dal', false, '["veg"]'::jsonb, $2),
+                  ($1, 'user', 'Veg Sabzi', 'sabzi_dal', true, '["veg"]'::jsonb, $2),
+                  ($1, 'user', 'Veg Raita', 'accompaniment', true, '["veg"]'::jsonb, $2)`,
+          [householdId, owner.id],
+        );
+      },
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-regress'));
+
+    // Every one of the 63 default slots has a matching recipe for its role.
+    expect(result.filledCount).toBe(63);
+    expect(result.unfilledSlots).toHaveLength(0);
+  });
+
+  it('a non-veg recipe is not proposed to a veg household even as a fallback', async () => {
+    const owner = await createUser('sub-afp-nonveg');
+    const householdId = await createHouseholdWithOwner(owner, 'AFN237');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    await withUserTransaction(
+      owner.id,
+      async (client) => {
+        await client.query(
+          `UPDATE household_settings SET dietary_tags = '["veg"]'::jsonb WHERE household_id = $1`,
+          [householdId],
+        );
+        await client.query(
+          `INSERT INTO recipes (household_id, source_type, title, role, in_rotation, dietary_tags, created_by)
+           VALUES ($1, 'user', 'Chicken Curry', 'carb', false, '["non_veg"]'::jsonb, $2)`,
+          [householdId, owner.id],
+        );
+      },
+      pool,
+    );
+
+    const handler = createAutoFillPreviewHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, 'sub-afp-nonveg'));
+
+    expect(result.items).toHaveLength(0);
   });
 
   it('a household with every meal type disabled proposes an empty result cleanly, not an error', async () => {

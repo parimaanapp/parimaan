@@ -14,6 +14,7 @@ import { toGraphQLRecipe } from '../mappers/recipe.js';
 import type { GraphQLRecipe } from '../mappers/recipe.js';
 import { createRecipeArgsSchema } from '../validation/createRecipe.js';
 import type { RecipeInput, RecipeSourceAttribution } from '../validation/createRecipe.js';
+import { withInferredStyle } from '../domain/inferDietStyle.js';
 import { ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
 
@@ -55,7 +56,12 @@ const toInsertRecipeInput = (
   cookMin: input.cookMin ?? null,
   cuisineTier1: input.cuisineTier1 ?? null,
   cuisineTier2: input.cuisineTier2 ?? null,
-  dietaryTags: input.dietaryTags ?? [],
+  // H3: explicit style tags win; a recipe with none gets one inferred.
+  dietaryTags: withInferredStyle(
+    input.dietaryTags,
+    input.title,
+    input.ingredients.map((ingredient) => ingredient.name),
+  ),
   role: input.role,
   inRotation: input.inRotation ?? true,
   steps: input.steps,

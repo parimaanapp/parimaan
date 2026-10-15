@@ -6,7 +6,7 @@
   "cookMin": 25,
   "cuisineTier1": "south_indian",
   "cuisineTier2": "kerala",
-  "dietaryTags": ["gluten_free", "dairy_free"],
+  "dietaryTags": ["non_veg", "gluten_free", "dairy_free"],
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Fish", "quantity": 500, "unit": "g", "category": "meat", "notes": "firm white fish (kingfish or pomfret), cut into steaks" },

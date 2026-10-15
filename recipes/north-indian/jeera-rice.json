@@ -6,7 +6,7 @@
   "cookMin": 20,
   "cuisineTier1": "north_indian",
   "cuisineTier2": "punjabi",
-  "dietaryTags": ["veg", "vegan", "gluten_free"],
+  "dietaryTags": ["veg", "gluten_free"],
   "role": "carb",
   "ingredients": [
     { "name": "Basmati Rice", "quantity": 1.5, "unit": "cup", "category": "grain" },

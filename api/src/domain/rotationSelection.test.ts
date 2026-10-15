@@ -11,7 +11,6 @@ import {
   computeUnfilledSlots,
   enumerateEmptySlots,
   pickForSlots,
-  recipeMatchesDietaryTags,
   scoreCandidate,
 } from './rotationSelection.js';
 
@@ -172,6 +171,50 @@ describe('pickForSlots', () => {
     expect(picks[0]?.slotRole).toBe('sabzi_dal');
   });
 
+  describe('fallback pool (out-of-rotation recipes)', () => {
+    it('prefers the primary (in-rotation) pool even when a fallback exists', () => {
+      const slots = [slot(0, 'lunch', 'carb')];
+      const primary = new Map([['carb', [candidate('in-rotation')]]]);
+      const fallback = new Map([['carb', [candidate('out-of-rotation', 1000)]]]);
+      const picks = pickForSlots(slots, primary, () => 0.5, fallback);
+      expect(picks.map((p) => p.recipeId)).toEqual(['in-rotation']);
+    });
+
+    it('falls back when the primary pool has no candidates for the role at all', () => {
+      const slots = [slot(0, 'lunch', 'carb')];
+      const fallback = new Map([['carb', [candidate('out-of-rotation')]]]);
+      const picks = pickForSlots(slots, new Map(), () => 0.5, fallback);
+      expect(picks.map((p) => p.recipeId)).toEqual(['out-of-rotation']);
+    });
+
+    it('falls back when the primary pool is exhausted by the within-meal uniqueness rule', () => {
+      const slots = [slot(0, 'lunch', 'sabzi_dal'), slot(0, 'lunch', 'sabzi_dal')];
+      const primary = new Map([['sabzi_dal', [candidate('a')]]]);
+      const fallback = new Map([['sabzi_dal', [candidate('b')]]]);
+      const picks = pickForSlots(slots, primary, () => 0.5, fallback);
+      expect(picks.map((p) => p.recipeId)).toEqual(['a', 'b']);
+    });
+
+    it('repeats a recipe across different days when the pool is small (never fails for lack of rotation)', () => {
+      const slots = [0, 1, 2, 3, 4, 5, 6].map((day) => slot(day, 'lunch', 'carb'));
+      const primary = new Map([['carb', [candidate('only-one')]]]);
+      const picks = pickForSlots(slots, primary, () => 0.5);
+      expect(picks).toHaveLength(7);
+    });
+
+    it('still never places the same recipe twice in one meal, even from the fallback', () => {
+      const slots = [slot(0, 'lunch', 'carb'), slot(0, 'lunch', 'carb')];
+      const fallback = new Map([['carb', [candidate('x')]]]);
+      const picks = pickForSlots(slots, new Map(), () => 0.5, fallback);
+      expect(picks).toHaveLength(1);
+    });
+
+    it('leaves the slot unfilled only when both pools have nothing', () => {
+      const picks = pickForSlots([slot(0, 'lunch', 'carb')], new Map(), () => 0.5, new Map());
+      expect(picks).toEqual([]);
+    });
+  });
+
   it('never places the same recipe twice within a single meal instance, even across different roles', () => {
     const slots = [slot(0, 'lunch', 'carb'), slot(0, 'lunch', 'sabzi_dal')];
     // The same recipe id is (unusually, but validly) the only candidate for both roles.
@@ -285,24 +328,5 @@ describe('computeUnfilledSlots', () => {
   it('an empty slots list with picks (should not happen, but must not throw or go negative) yields []', () => {
     const picks = [{ ...slot(0, 'lunch', 'carb'), recipeId: 'r1' }];
     expect(computeUnfilledSlots([], picks)).toEqual([]);
-  });
-});
-
-describe('recipeMatchesDietaryTags', () => {
-  it('matches when the recipe carries every household tag', () => {
-    expect(recipeMatchesDietaryTags(['veg', 'gluten_free'], ['veg'])).toBe(true);
-  });
-
-  it('does not match when the recipe is missing one household tag', () => {
-    expect(recipeMatchesDietaryTags(['gluten_free'], ['veg'])).toBe(false);
-  });
-
-  it('does not match a recipe with no tags at all against a non-empty household requirement', () => {
-    expect(recipeMatchesDietaryTags([], ['veg'])).toBe(false);
-  });
-
-  it('an empty household dietaryTags list always matches, regardless of the recipe', () => {
-    expect(recipeMatchesDietaryTags([], [])).toBe(true);
-    expect(recipeMatchesDietaryTags(['veg'], [])).toBe(true);
   });
 });

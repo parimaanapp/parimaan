@@ -6,7 +6,7 @@
   "cookMin": 45,
   "cuisineTier1": "north_indian",
   "cuisineTier2": "punjabi",
-  "dietaryTags": ["gluten_free"],
+  "dietaryTags": ["non_veg", "gluten_free"],
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Chicken Thighs (boneless)", "quantity": 600, "unit": "g", "category": "frozen", "notes": "or fresh, cut into pieces" },

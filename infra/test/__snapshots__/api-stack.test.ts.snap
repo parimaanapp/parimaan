@@ -6245,6 +6245,7 @@ enum CuisineTier1 {
 
 enum DietaryTag {
   veg
+  non_veg
   vegan
   jain
   eggetarian

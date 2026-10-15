@@ -5,8 +5,10 @@ import { requireHouseholdMember } from '../auth/requireHouseholdMember.js';
 import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
+import { reconcileHouseholdTags } from '../domain/dietMatch.js';
 import {
   findHouseholdById,
+  findSettingsForHousehold,
   updateSettingsPartial as updateSettingsPartialRepo,
 } from '../repositories/householdRepository.js';
 import type { SettingsPatch } from '../repositories/householdRepository.js';
@@ -82,6 +84,10 @@ export const createUpdateHouseholdSettingsHandler =
 
         const updateSettingsPartial = deps.updateSettingsPartial ?? updateSettingsPartialRepo;
         const patch = toSettingsPatch(input);
+        if (input.dietaryTags !== undefined) {
+          const stored = await findSettingsForHousehold(client, householdId);
+          patch.dietaryTags = reconcileHouseholdTags(input.dietaryTags, stored?.dietaryTags ?? []);
+        }
         const settings = await updateSettingsPartial(client, householdId, patch);
         if (settings === null) {
           // Shouldn't happen given requireHouseholdMember already confirmed

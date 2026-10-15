@@ -190,6 +190,67 @@ describe('updateHouseholdSettings resolver', () => {
     expect(result.settings.mealsEnabled).toEqual(['breakfast', 'lunch', 'dinner']);
   });
 
+  it('F1: a modifiers-only dietaryTags patch keeps the stored styles and applies the new modifiers', async () => {
+    const owner = await createUser('sub-owner-f1-stored');
+    const householdId = await createHousehold(owner, 'FST234');
+    const handler = createUpdateHouseholdSettingsHandler({ getPool: async () => pool });
+    await handler(buildEvent(householdId, { dietaryTags: ['veg', 'eggetarian', 'gluten_free'] }, 'sub-owner-f1-stored'));
+
+    const result = await handler(
+      buildEvent(householdId, { dietaryTags: ['dairy_free'] }, 'sub-owner-f1-stored'),
+    );
+
+    expect(result.settings.dietaryTags).toEqual(['veg', 'eggetarian', 'dairy_free']);
+  });
+
+  it('F1: an empty dietaryTags patch keeps the stored styles and drops the modifiers', async () => {
+    const owner = await createUser('sub-owner-f1-empty');
+    const householdId = await createHousehold(owner, 'FEM234');
+    const handler = createUpdateHouseholdSettingsHandler({ getPool: async () => pool });
+    await handler(buildEvent(householdId, { dietaryTags: ['jain', 'gluten_free'] }, 'sub-owner-f1-empty'));
+
+    const result = await handler(buildEvent(householdId, { dietaryTags: [] }, 'sub-owner-f1-empty'));
+
+    expect(result.settings.dietaryTags).toEqual(['jain']);
+  });
+
+  it('F1: with no stored style either, a modifiers-only or empty patch is accepted as sent (unrestricted at read)', async () => {
+    const owner = await createUser('sub-owner-f1-none');
+    const householdId = await createHousehold(owner, 'FNO234');
+    const handler = createUpdateHouseholdSettingsHandler({ getPool: async () => pool });
+
+    const modifiersOnly = await handler(
+      buildEvent(householdId, { dietaryTags: ['gluten_free'] }, 'sub-owner-f1-none'),
+    );
+    expect(modifiersOnly.settings.dietaryTags).toEqual(['gluten_free']);
+
+    const empty = await handler(buildEvent(householdId, { dietaryTags: [] }, 'sub-owner-f1-none'));
+    expect(empty.settings.dietaryTags).toEqual([]);
+  });
+
+  it('F1: a patch that carries a style replaces the stored tags outright', async () => {
+    const owner = await createUser('sub-owner-f1-replace');
+    const householdId = await createHousehold(owner, 'FRE234');
+    const handler = createUpdateHouseholdSettingsHandler({ getPool: async () => pool });
+    await handler(buildEvent(householdId, { dietaryTags: ['veg', 'gluten_free'] }, 'sub-owner-f1-replace'));
+
+    const result = await handler(buildEvent(householdId, { dietaryTags: ['non_veg'] }, 'sub-owner-f1-replace'));
+
+    expect(result.settings.dietaryTags).toEqual(['non_veg']);
+  });
+
+  it('F5: an allergens-only patch never touches stored (even style-less legacy) dietaryTags', async () => {
+    const owner = await createUser('sub-owner-f5');
+    const householdId = await createHousehold(owner, 'F5A234');
+    const handler = createUpdateHouseholdSettingsHandler({ getPool: async () => pool });
+    await handler(buildEvent(householdId, { dietaryTags: ['gluten_free'] }, 'sub-owner-f5'));
+
+    const result = await handler(buildEvent(householdId, { allergens: ['peanuts'] }, 'sub-owner-f5'));
+
+    expect(result.settings.dietaryTags).toEqual(['gluten_free']);
+    expect(result.settings.allergens).toEqual(['peanuts']);
+  });
+
   it('happy path: a non-primary member can also update settings', async () => {
     const owner = await createUser('sub-owner-member-update');
     const member = await createUser('sub-member-update');

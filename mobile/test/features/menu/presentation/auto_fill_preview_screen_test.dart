@@ -290,6 +290,11 @@ void main() {
         find.textContaining('23 slots could not be filled'),
         findsOneWidget,
       );
+      expect(
+        find.textContaining('no recipes match your household'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('in-rotation'), findsNothing);
       expect(find.text('Filled all 63 empty slots.'), findsNothing);
     });
   });
