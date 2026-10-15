@@ -11,6 +11,7 @@ import {
   findRecentPrimaryHouseholdByName,
   lockUserForHouseholdCreate,
 } from '../repositories/householdRepository.js';
+import { countMembershipsForUser } from '../repositories/membershipCount.js';
 import type { MembershipRow, SettingsRow } from '../repositories/householdRepository.js';
 import {
   insertRecipe,
@@ -37,6 +38,14 @@ import { withErrorHandling } from './withErrorHandling.js';
  * later still creates a new household.
  */
 export const CREATE_RETRY_WINDOW_SECONDS = 3 * 60;
+
+/**
+ * Most households one user may belong to (as primary or member, counting ones
+ * they created). Bounds the blast radius of a scripted or accidental flood of
+ * `createHousehold` calls; checked after the idempotent-retry lookup so a
+ * retry at the cap still succeeds.
+ */
+export const MAX_HOUSEHOLDS_PER_USER = 5;
 
 export interface CreateHouseholdResolverDeps {
   getPool: () => Promise<Pool>;
@@ -238,6 +247,13 @@ export const createCreateHouseholdHandler =
         );
         if (existing !== null) {
           return buildGraphQLHousehold(txClient, existing);
+        }
+
+        const owned = await countMembershipsForUser(txClient, callerUser.id);
+        if (owned >= MAX_HOUSEHOLDS_PER_USER) {
+          throw new ValidationError(
+            `You already have ${MAX_HOUSEHOLDS_PER_USER} households.`,
+          );
         }
 
         return createFreshHousehold(txClient, deps, callerUser.id, graphQLUser, name);

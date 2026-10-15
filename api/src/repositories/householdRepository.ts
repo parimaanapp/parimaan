@@ -241,7 +241,7 @@ export const findMembershipsForUser = async (
      JOIN households h ON h.id = m.household_id
      JOIN household_settings s ON s.household_id = m.household_id
      WHERE m.user_id = $1
-     ORDER BY m.joined_at ASC`,
+     ORDER BY m.joined_at ASC, m.id ASC`,
     [userId],
   );
 
