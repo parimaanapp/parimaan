@@ -1,5 +1,6 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { runMigrations } from '../db/runMigrations.js';
+import { syncCatalogToDatabase } from '../catalog/syncCatalog.js';
 import type { DbAdminCredentials, MigrationRunnerDeps } from './types.js';
 
 interface AppRoleSecretJson {
@@ -102,6 +103,7 @@ export const loadProductionDeps = (): MigrationRunnerDeps => {
     fetchDbAdminCredentials,
     fetchAppRolePassword,
     runMigrations,
+    syncCatalog: syncCatalogToDatabase,
     dbHost,
     dbPort: Number(dbPort),
     dbName,

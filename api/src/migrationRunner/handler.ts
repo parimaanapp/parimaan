@@ -59,6 +59,11 @@ export const createMigrationRunnerHandler =
       appRolePassword,
     ]);
 
+    // Reference data is loaded only after the schema is current, as the same
+    // admin connection. Hash-gated inside `syncCatalog`, so a deploy that did
+    // not change the bundled catalog costs one SELECT.
+    await deps.syncCatalog(databaseUrl);
+
     return { PhysicalResourceId: physicalResourceId(deps) };
   };
 

@@ -1,4 +1,5 @@
-import type { Client, PoolClient } from 'pg';
+import { Client } from 'pg';
+import type { PoolClient } from 'pg';
 import { normaliseKey } from '../domain/ingredientCatalog.js';
 import type { CatalogBundle } from './buildBundle.js';
 import { catalogBundle, catalogContentHash } from './bundle.js';
@@ -166,5 +167,23 @@ export const syncCatalog = async (
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
+  }
+};
+
+/**
+ * Opens a short-lived connection to `databaseUrl`, syncs, and always closes
+ * it. This is what the migration-runner Lambda calls, with the same admin
+ * URL it just ran migrations on.
+ */
+export const syncCatalogToDatabase = async (
+  databaseUrl: string,
+  bundle: CatalogBundle = catalogBundle,
+): Promise<CatalogSyncResult> => {
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
+  try {
+    return await syncCatalog(client, bundle);
+  } finally {
+    await client.end();
   }
 };

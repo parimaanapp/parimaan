@@ -51,6 +51,10 @@ describe('loadProductionDeps', () => {
     expect(deps.dbName).toBe(VALID_ENV.DB_NAME);
   });
 
+  it('wires the real catalog sync into the production deps', () => {
+    expect(typeof loadProductionDeps().syncCatalog).toBe('function');
+  });
+
   it.each(REQUIRED_ENV_VARS)('throws naming %s when it is unset', (missingVar) => {
     delete process.env[missingVar];
     expect(() => loadProductionDeps()).toThrow(new RegExp(missingVar));

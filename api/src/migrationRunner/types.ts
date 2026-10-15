@@ -1,5 +1,6 @@
 import type { CdkCustomResourceEvent, CdkCustomResourceResponse } from 'aws-lambda';
 import type { runMigrations } from '../db/runMigrations.js';
+import type { syncCatalogToDatabase } from '../catalog/syncCatalog.js';
 
 /**
  * The event/response shapes here come from `@types/aws-lambda`'s
@@ -32,6 +33,8 @@ export interface MigrationRunnerDeps {
   fetchDbAdminCredentials: () => Promise<DbAdminCredentials>;
   fetchAppRolePassword: () => Promise<string>;
   runMigrations: typeof runMigrations;
+  /** Loads the bundled ingredient catalog (hash-gated, idempotent) once migrations have run. */
+  syncCatalog: typeof syncCatalogToDatabase;
   dbHost: string;
   dbPort: number;
   dbName: string;
