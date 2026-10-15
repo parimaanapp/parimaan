@@ -38,7 +38,7 @@ import '../../../shared/ui/typography.dart';
 import '../domain/curated_pantry_items.dart';
 import '../domain/curated_pantry_selection.dart';
 import '../domain/pantry_category.dart';
-import '../domain/pantry_unit.dart';
+import '../domain/category_units.dart';
 
 /// Whether [category] has at least one curated entry (D5's "incomplete is
 /// allowed" property). A category with none — `produce`/`other` today, or
@@ -130,7 +130,7 @@ class _Selection {
 /// Lists `curatedPantryItems[category]` **in its declared order** — never
 /// sorted, never alphabetised (§20.2.5's whole point). Ticking an item
 /// raises a quantity + unit stepper for that item alone; the ten choices are
-/// read straight from [knownPantryUnits], never re-listed here, so the two
+/// read straight from [unitsForCategory], never re-listed here, so the two
 /// can never silently drift apart (D6).
 class CuratedItemsSheet extends StatefulWidget {
   const CuratedItemsSheet({
@@ -214,7 +214,11 @@ class _CuratedItemsSheetState extends State<CuratedItemsSheet> {
   void _toggle(String name, bool ticked) {
     setState(() {
       if (ticked) {
-        _selections[name] = const _Selection();
+        // The category's default unit is pre-selected (A5); quantity stays
+        // empty so no plausible amount is invented (D5).
+        _selections[name] = _Selection(
+          unit: defaultUnitForCategory(widget.category),
+        );
       } else {
         // Unticking removes the item from what will be committed *and*
         // clears its stepper, so a later re-tick starts empty again rather
@@ -307,6 +311,7 @@ class _CuratedItemsSheetState extends State<CuratedItemsSheet> {
                         name: name,
                         ticked: _selections[name] != null,
                         unit: _selections[name]?.unit,
+                        units: unitsForCategory(widget.category),
                         quantityController: _quantityControllers[name]!,
                         onToggle: (bool ticked) => _toggle(name, ticked),
                         onQuantityChanged: (String text) =>
@@ -338,6 +343,7 @@ class _CuratedItemRow extends StatelessWidget {
     required this.name,
     required this.ticked,
     required this.unit,
+    required this.units,
     required this.quantityController,
     required this.onToggle,
     required this.onQuantityChanged,
@@ -347,6 +353,7 @@ class _CuratedItemRow extends StatelessWidget {
   final String name;
   final bool ticked;
   final String? unit;
+  final List<String> units;
   final TextEditingController quantityController;
   final ValueChanged<bool> onToggle;
   final ValueChanged<String> onQuantityChanged;
@@ -409,7 +416,7 @@ class _CuratedItemRow extends StatelessWidget {
                   spacing: AppSpacing.s1,
                   runSpacing: AppSpacing.s1,
                   children: <Widget>[
-                    for (final String candidate in knownPantryUnits)
+                    for (final String candidate in units)
                       PChip(
                         key: CuratedItemsSheet.unitChipKey(name, candidate),
                         label: candidate,

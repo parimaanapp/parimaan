@@ -24,4 +24,12 @@ describe('canonicalizePantryUnit', () => {
     expect(KNOWN_PANTRY_UNITS as readonly string[]).toContain('jar');
     expect(KNOWN_PANTRY_UNITS as readonly string[]).toContain('bottle');
   });
+
+  it.each(['dozen', 'slice', 'loaf', 'pinch'])('knows the catalog unit %s', (unit) => {
+    expect(KNOWN_PANTRY_UNITS as readonly string[]).toContain(unit);
+  });
+
+  it('has no separate pack unit (pack is packet)', () => {
+    expect(KNOWN_PANTRY_UNITS as readonly string[]).not.toContain('pack');
+  });
 });

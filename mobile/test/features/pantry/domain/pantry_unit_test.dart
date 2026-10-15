@@ -17,6 +17,10 @@ void main() {
         'cup',
         'jar',
         'bottle',
+        'dozen',
+        'slice',
+        'loaf',
+        'pinch',
       ]);
     });
 
