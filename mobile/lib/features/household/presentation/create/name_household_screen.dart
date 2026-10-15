@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
+import '../../../../shared/errors/app_error.dart';
 import '../../../../shared/ui/colors.dart';
 import '../../../../shared/ui/components/components.dart';
 import '../../../../shared/ui/spacing.dart';
@@ -54,6 +55,12 @@ class NameHouseholdScreen extends ConsumerStatefulWidget {
       'This can take up to half a minute the first time — the kitchen is '
       'waking up. Please keep the app open.';
 
+  /// Shown for a transient failure (timeout / cold resume) instead of the
+  /// server's generic text. The typed name is kept and Continue is safe to
+  /// tap again — `createHousehold` is idempotent for a same-name retry.
+  static const String wakingUpMessage =
+      'Your kitchen is still waking up. Tap Continue to try again.';
+
   @override
   ConsumerState<NameHouseholdScreen> createState() =>
       _NameHouseholdScreenState();
@@ -66,6 +73,27 @@ class _NameHouseholdScreenState extends ConsumerState<NameHouseholdScreen> {
   /// cleared on edit — validating every keystroke would shout "must not be
   /// empty" at someone who has simply not started typing.
   String? _validationError;
+
+  @override
+  void initState() {
+    super.initState();
+    // A controller that outlives the screen must not replay a previous
+    // visit's error. Provider writes are not allowed during build/initState,
+    // so reset on the next microtask.
+    Future<void>.microtask(_resetCreateState);
+  }
+
+  void _resetCreateState() {
+    if (!mounted) {
+      return;
+    }
+    ref.read(createHouseholdControllerProvider.notifier).reset();
+  }
+
+  void _goBack() {
+    ref.read(createHouseholdControllerProvider.notifier).reset();
+    context.go(AppRoutes.firstRun);
+  }
 
   @override
   void dispose() {
@@ -133,9 +161,11 @@ class _NameHouseholdScreenState extends ConsumerState<NameHouseholdScreen> {
 
     return WizardStepScaffold(
       topBarTitle: 'New household',
-      onBack: () => context.go(AppRoutes.firstRun),
+      onBack: _goBack,
       backSemanticLabel: 'Back to setting up your kitchen',
-      errorMessage: wizardErrorMessage(state.error),
+      errorMessage: state.error is InternalError
+          ? NameHouseholdScreen.wakingUpMessage
+          : wizardErrorMessage(state.error),
       action: PButton(
         key: NameHouseholdScreen.continueButtonKey,
         label: 'Continue',
