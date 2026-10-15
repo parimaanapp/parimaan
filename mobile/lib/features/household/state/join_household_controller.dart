@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/errors/app_error.dart';
 import '../data/household_repository.dart';
 import '../domain/household.dart';
+import 'me_households_controller.dart';
 
 /// What the Enter-code screen does next, after a join attempt.
 ///
@@ -66,6 +67,7 @@ class JoinHouseholdController extends AsyncNotifier<Household?> {
 
     final Object? error = state.error;
     if (error == null) {
+      ref.invalidate(meHouseholdsControllerProvider);
       return JoinOutcome.joined;
     }
     return error is HouseholdFullError

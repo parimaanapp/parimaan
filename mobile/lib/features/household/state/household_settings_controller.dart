@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/household_repository.dart';
 import '../domain/household.dart';
+import 'me_households_controller.dart';
 import 'current_household_controller.dart';
 
 /// Which destructive/administrative action last ran, so the Settings hub can
@@ -73,6 +74,7 @@ class HouseholdSettingsController extends AsyncNotifier<void> {
   Future<bool> leaveHousehold(String householdId) =>
       _run(HouseholdSettingsAction.leave, () async {
         await _repository.leaveHousehold(householdId);
+        ref.invalidate(meHouseholdsControllerProvider);
       });
 
   /// Permanently deletes [householdId]. Primary-only, irreversible.
@@ -84,6 +86,7 @@ class HouseholdSettingsController extends AsyncNotifier<void> {
   Future<bool> deleteHousehold(String householdId, String confirmationName) =>
       _run(HouseholdSettingsAction.delete, () async {
         await _repository.deleteHousehold(householdId, confirmationName);
+        ref.invalidate(meHouseholdsControllerProvider);
       });
 
   /// The one place the three actions share: mark which action is running, park
