@@ -25,6 +25,17 @@ const sameTags = (a: readonly DietaryTag[], b: readonly DietaryTag[]): boolean =
 
 const EATING_STYLES: readonly DietaryTag[] = ['veg', 'non_veg', 'vegan', 'eggetarian', 'jain'];
 
+const withTagToggled = (prev: FormState, tag: DietaryTag, selected: boolean): FormState => ({
+  ...prev,
+  dietaryTags: selected ? [...prev.dietaryTags, tag] : prev.dietaryTags.filter((t) => t !== tag),
+});
+
+// M3/F5: editing the tags must leave an eating style selected. A legacy
+// household with no style is left alone until its tags are touched, so it
+// can still save allergens and skip-ingredients.
+const hasEatingStyle = (current: readonly DietaryTag[], initial: readonly DietaryTag[]): boolean =>
+  sameTags(current, initial) || current.some((tag) => EATING_STYLES.includes(tag));
+
 const buildPatch = (pristine: FormState, current: FormState) =>
   buildSettingsPatch(pristine, current, ['dietaryTags', 'allergens', 'skipIngredients']);
 
@@ -46,17 +57,8 @@ export function DietarySection({
     buildPatch,
   );
 
-  const toggleTag = (tag: DietaryTag, selected: boolean) =>
-    update((prev) => ({
-      ...prev,
-      dietaryTags: selected ? [...prev.dietaryTags, tag] : prev.dietaryTags.filter((t) => t !== tag),
-    }));
-
-  // M3/F5: editing the tags must leave an eating style selected. A legacy
-  // household with no style is left alone until its tags are touched, so it
-  // can still save allergens and skip-ingredients.
-  const tagsChanged = !sameTags(current.dietaryTags, initialDietaryTags);
-  const hasStyle = !tagsChanged || current.dietaryTags.some((tag) => EATING_STYLES.includes(tag));
+  const toggleTag = (tag: DietaryTag, selected: boolean) => update((prev) => withTagToggled(prev, tag, selected));
+  const hasStyle = hasEatingStyle(current.dietaryTags, initialDietaryTags);
 
   return (
     <section aria-label="Dietary and allergens">
