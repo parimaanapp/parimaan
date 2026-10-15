@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as fs from 'node:fs';
 import type * as NodeFs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -55,9 +56,14 @@ describe('getCuratedRecipesFromCorpus', () => {
     __resetCuratedRecipesCacheForTests();
   });
 
-  it('returns exactly 53 recipes from the real recipes/ corpus (30 north-indian + 23 south-indian)', () => {
+  it('returns one recipe per *.json file under the real recipes/ corpus', () => {
+    const corpusDir = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..', 'recipes');
+    const fileCount = (fs.readdirSync(corpusDir, { recursive: true }) as string[]).filter((entry) =>
+      entry.endsWith('.json'),
+    ).length;
     const recipes = getCuratedRecipesFromCorpus();
-    expect(recipes).toHaveLength(53);
+    expect(fileCount).toBeGreaterThan(0);
+    expect(recipes).toHaveLength(fileCount);
   });
 
   it('returns recipes with the correct shape, including the Dosa duplicate-role experiment (carb + breakfast)', () => {
