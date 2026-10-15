@@ -11,13 +11,15 @@ import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/menu/domain/current_week.dart';
 import 'package:mobile/features/menu/domain/menu.dart';
 import 'package:mobile/features/menu/presentation/auto_fill_preview_screen.dart';
-import 'package:mobile/features/menu/presentation/meal_slot_card.dart';
 import 'package:mobile/features/menu/presentation/recipe_picker_screen.dart';
+import 'package:mobile/features/menu/presentation/weekly_plan_grid.dart';
 import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
 import 'package:mobile/features/menu/state/current_menu_controller.dart';
 import 'package:mobile/features/recipes/data/recipe_repository.dart';
 import 'package:mobile/features/recipes/domain/recipe.dart';
+import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/ui/colors.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 import '../../../support/fake_household_repository.dart';
@@ -111,6 +113,7 @@ Future<ProviderContainer> _pump(
   // precedent), via this sync rather than by rebuilding every existing
   // test's own `Menu` fixture by hand.
   bool syncMenuSnapshotToHousehold = true,
+  DateTime? today,
 }) async {
   final Household resolvedHousehold = household ?? testMenuHousehold;
   if (syncMenuSnapshotToHousehold) {
@@ -167,7 +170,7 @@ Future<ProviderContainer> _pump(
       GoRoute(
         path: AppRoutes.weeklyPlan,
         builder: (BuildContext context, GoRouterState state) =>
-            const WeeklyPlanScreen(),
+            WeeklyPlanScreen(today: today),
       ),
       GoRoute(
         path: AppRoutes.recipePicker,
@@ -192,6 +195,28 @@ Future<ProviderContainer> _pump(
   return container;
 }
 
+MenuItem _lunchItem(String id, RecipeRole role) => MenuItem(
+  id: id,
+  menuId: 'menu-1',
+  recipe: testMenuRecipe,
+  dayOfWeek: 0,
+  mealSlot: 'lunch',
+  slotRole: role,
+);
+
+Menu _menuWith(List<MenuItem> items, {Household? household}) => Menu(
+  id: 'menu-1',
+  householdId: 'household-1',
+  weekStartDate: currentWeekStartDate(),
+  items: items,
+  mealConfigSnapshot: mealConfigSnapshotJsonFor(
+    (household ?? testMenuHousehold).settings,
+  ),
+);
+
+RecipePickerScreen _picker(WidgetTester tester) =>
+    tester.widget(find.byType(RecipePickerScreen));
+
 void main() {
   group('WeeklyPlanScreen', () {
     testWidgets('shows a loading indicator before the menu resolves', (
@@ -201,8 +226,6 @@ void main() {
         fetchResult: testEmptyMenu,
       );
       await _pump(tester, menuRepository: repository);
-      // No extra pump: the very first frame, before the fake repository's
-      // own async gap resolves, is the loading state under test.
 
       expect(find.byKey(WeeklyPlanScreen.loadingKey), findsOneWidget);
     });
@@ -218,8 +241,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(WeeklyPlanScreen.errorKey), findsOneWidget);
-      // A real PEmptyState with the AppError's own message and a retry
-      // affordance — not a raw-text dead end.
       expect(find.text('Not a member.'), findsOneWidget);
       expect(find.text('Try again'), findsOneWidget);
     });
@@ -241,205 +262,248 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(WeeklyPlanScreen.errorKey), findsNothing);
-      expect(find.byType(MealSlotCard), findsWidgets);
+      expect(find.byType(WeeklyPlanGrid), findsOneWidget);
+    });
+
+    testWidgets('an empty menu renders every planned meal as an empty cell', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: repository);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(WeeklyPlanGrid.plusKey), findsWidgets);
+      expect(
+        find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
-      'an empty menu renders every configured slot as empty ("+"), across all 7 days',
+      'a filled slot renders the recipe title and is inert on tap, as before',
       (WidgetTester tester) async {
+        final Menu menu = _menuWith(<MenuItem>[
+          testMenuItem,
+          _lunchItem('i2', RecipeRole.carb),
+          _lunchItem('i3', RecipeRole.sabziDal),
+          _lunchItem('i4', RecipeRole.accompaniment),
+        ]);
         final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: testEmptyMenu,
+          fetchResult: menu,
         );
         await _pump(tester, menuRepository: repository);
         await tester.pumpAndSettle();
 
-        // testMenuHousehold's settings enable breakfast/lunch/dinner: 1 + 4
-        // + 4 = 9 slots per day, and this is Monday's own section (first in
-        // the ListView, always built without scrolling).
-        expect(find.byType(MealSlotCard), findsWidgets);
-        expect(find.byIcon(Icons.add), findsWidgets);
-        expect(find.text('Carb'), findsWidgets);
-      },
-    );
-
-    testWidgets(
-      'a filled slot renders the recipe title and does NOT show the "+" affordance',
-      (WidgetTester tester) async {
-        // testMenuItem is dayOfWeek: 0 (Monday), mealSlot: lunch, slotRole:
-        // sabziDal — the screen always fetches the CURRENT week, so the fixture
-        // menu's own weekStartDate must match that, not a fixed date.
-        final Menu menuWithMondayItem = Menu(
-          id: 'menu-1',
-          householdId: 'household-1',
-          weekStartDate: currentWeekStartDate(),
-          items: <MenuItem>[testMenuItem],
-          mealConfigSnapshot: mealConfigSnapshotJsonFor(
-            testMenuHousehold.settings,
-          ),
+        final Finder cell = find.byKey(
+          WeeklyPlanGrid.cellKey(0, MealType.lunch),
         );
-        final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: menuWithMondayItem,
-        );
-        await _pump(tester, menuRepository: repository);
-        await tester.pumpAndSettle();
-
-        final Finder filledCard = find.byKey(
-          MealSlotCard.filledKey(testMenuItem.id),
-        );
-        expect(filledCard, findsOneWidget);
-        expect(find.text(testMenuItem.recipe.title), findsWidgets);
         expect(
-          find.descendant(of: filledCard, matching: find.byIcon(Icons.add)),
+          find.descendant(of: cell, matching: find.textContaining('Rajma')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: cell,
+            matching: find.byKey(WeeklyPlanGrid.plusKey),
+          ),
           findsNothing,
         );
 
-        // A filled slot has no view/replace/remove destination yet — it
-        // must NOT route into the "add" picker the way an empty slot does
-        // (no double-add into an already-filled slot).
-        await tester.tap(filledCard);
+        await tester.tap(cell);
         await tester.pumpAndSettle();
         expect(find.byType(RecipePickerScreen), findsNothing);
       },
     );
 
-    testWidgets('tapping an empty slot navigates to the recipe picker, carrying that slot\'s own coordinates', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(MealSlotCard).first);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(RecipePickerScreen), findsOneWidget);
-      // Monday's first slot in plannedSlotsForDay's own emission order is
-      // breakfast (MealType.values' own order) — the transposition class
-      // §15.6 exists to catch, asserted directly rather than assumed.
-      final RecipePickerScreen picker = tester.widget(
-        find.byType(RecipePickerScreen),
-      );
-      expect(picker.extra.dayOfWeek, 0);
-      expect(picker.extra.mealSlot, 'breakfast');
-    });
-
-    testWidgets('tapping the Auto-fill week action navigates to the auto-fill preview screen', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-        previewResult: const AutoFillPreviewResult(
-          items: <ProposedMenuItem>[],
-          filledCount: 0,
-          unfilledSlots: <UnfilledSlot>[],
-        ),
-      );
-      await _pump(tester, menuRepository: repository);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(WeeklyPlanScreen.autoFillButtonKey));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AutoFillPreviewScreen), findsOneWidget);
-      // The screen this pushed to is keyed by the CURRENT week — the very
-      // first thing it does is call `previewAutoFill()` against the SAME
-      // `CurrentMenuController` family member this screen reads, not a
-      // freshly re-resolved one.
-      expect(repository.previewCalls, hasLength(1));
-    });
-  });
-
-  group('WeeklyPlanScreen meal-instance headers (W13 S5)', () {
     testWidgets(
-      'a day with all four meals enabled renders four headers, in Breakfast → Lunch → Snacks → Dinner order',
+      "tapping an empty cell opens the picker for that cell's own slot",
       (WidgetTester tester) async {
-        final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: testEmptyMenu,
-        );
-        await _pump(
-          tester,
-          menuRepository: repository,
-          household: testMenuHouseholdAllMeals,
-        );
-        await tester.pumpAndSettle();
-
-        // Monday is dayOfWeek 0, and the first section built without
-        // scrolling — same convention the existing "9 slots" test above
-        // relies on.
-        final List<MealType> expectedOrder = <MealType>[
-          MealType.breakfast,
-          MealType.lunch,
-          MealType.snacks,
-          MealType.dinner,
-        ];
-        final List<Finder> headerFinders = expectedOrder
-            .map(
-              (MealType type) =>
-                  find.byKey(MealInstanceHeader.headerKey(0, type)),
-            )
-            .toList();
-
-        for (final Finder finder in headerFinders) {
-          expect(finder, findsOneWidget);
-        }
-
-        // Order, not just presence: each header's own vertical position on
-        // Monday's section must ascend Breakfast → Lunch → Snacks →
-        // Dinner, matching MealType.values' own declaration order.
-        final List<double> headerTops = headerFinders
-            .map((Finder finder) => tester.getTopLeft(finder).dy)
-            .toList();
-        for (int i = 1; i < headerTops.length; i++) {
-          expect(headerTops[i], greaterThan(headerTops[i - 1]));
-        }
-      },
-    );
-
-    testWidgets(
-      'a household with Snacks disabled renders three headers and no Snacks header anywhere',
-      (WidgetTester tester) async {
-        // testMenuHousehold's own mealsEnabled is breakfast/lunch/dinner —
-        // Snacks deliberately absent, exercising this without a bespoke
-        // fixture.
         final FakeMenuRepository repository = FakeMenuRepository(
           fetchResult: testEmptyMenu,
         );
         await _pump(tester, menuRepository: repository);
         await tester.pumpAndSettle();
 
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.breakfast)),
-          findsOneWidget,
+        await tester.tap(
+          find.byKey(WeeklyPlanGrid.cellKey(0, MealType.breakfast)),
         );
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.lunch)),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.dinner)),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
-          findsNothing,
-        );
-        // No Snacks header anywhere in the tree, not just at this key —
-        // asserted against the header's own display text too, across
-        // every day the ListView has built so far.
-        expect(
-          find.widgetWithText(MealInstanceHeader, 'Snacks'),
-          findsNothing,
-        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RecipePickerScreen), findsOneWidget);
+        expect(_picker(tester).extra.dayOfWeek, 0);
+        expect(_picker(tester).extra.mealSlot, 'breakfast');
       },
     );
 
     testWidgets(
-      'a Lunch group configured {carb: 2, sabzi_dal: 3, accompaniment: 2} renders seven slot cards under Lunch and none under any other header',
+      'the dark "Auto-fill empty slots" action opens the auto-fill preview',
       (WidgetTester tester) async {
         final FakeMenuRepository repository = FakeMenuRepository(
           fetchResult: testEmptyMenu,
+          previewResult: const AutoFillPreviewResult(
+            items: <ProposedMenuItem>[],
+            filledCount: 0,
+            unfilledSlots: <UnfilledSlot>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
+
+        expect(find.text('◆ Auto-fill empty slots'), findsOneWidget);
+        await tester.tap(find.byKey(WeeklyPlanScreen.autoFillButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AutoFillPreviewScreen), findsOneWidget);
+        expect(repository.previewCalls, hasLength(1));
+      },
+    );
+  });
+
+  group('WeeklyPlanScreen week header', () {
+    // Thursday 15 Oct 2026: its week is Mon 12 - Sun 18 Oct.
+    final DateTime thursday = DateTime.utc(2026, 10, 15);
+
+    testWidgets('shows the date range and outlines today', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: repository, today: thursday);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Text>(find.byKey(WeeklyPlanScreen.weekRangeKey)).data,
+        '12 – 18 Oct',
+      );
+      final Container today = tester.widget(
+        find.byKey(WeeklyPlanGrid.dayCardKey(3)),
+      );
+      expect(
+        ((today.decoration! as BoxDecoration).border! as Border).top.color,
+        AppColors.terracotta,
+      );
+    });
+
+    testWidgets('next/previous week fetch that week and drop the highlight', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: repository, today: thursday);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(WeeklyPlanScreen.nextWeekKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Text>(find.byKey(WeeklyPlanScreen.weekRangeKey)).data,
+        '19 – 25 Oct',
+      );
+      expect(
+        repository.fetchCalls.map((c) => c.$2),
+        contains(DateTime.utc(2026, 10, 19)),
+      );
+      final Container card = tester.widget(
+        find.byKey(WeeklyPlanGrid.dayCardKey(3)),
+      );
+      expect(
+        ((card.decoration! as BoxDecoration).border! as Border).top.color,
+        isNot(AppColors.terracotta),
+      );
+
+      await tester.tap(find.byKey(WeeklyPlanScreen.previousWeekKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(WeeklyPlanScreen.previousWeekKey));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.byKey(WeeklyPlanScreen.weekRangeKey)).data,
+        '5 – 11 Oct',
+      );
+    });
+
+    testWidgets('a range crossing a month names both months', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(
+        tester,
+        menuRepository: repository,
+        today: DateTime.utc(2026, 10, 28),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.byKey(WeeklyPlanScreen.weekRangeKey)).data,
+        '26 Oct – 1 Nov',
+      );
+    });
+  });
+
+  group('WeeklyPlanScreen layout by planned meals', () {
+    testWidgets('four meals render the 2x2 block with no header row', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(
+        tester,
+        menuRepository: repository,
+        household: testMenuHouseholdAllMeals,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(WeeklyPlanGrid.blockLayoutKey), findsOneWidget);
+      double top(MealType m) =>
+          tester.getTopLeft(find.byKey(WeeklyPlanGrid.cellKey(0, m))).dy;
+      double left(MealType m) =>
+          tester.getTopLeft(find.byKey(WeeklyPlanGrid.cellKey(0, m))).dx;
+      expect(top(MealType.breakfast), top(MealType.lunch));
+      expect(top(MealType.snacks), top(MealType.dinner));
+      expect(top(MealType.snacks), greaterThan(top(MealType.breakfast)));
+      expect(left(MealType.snacks), left(MealType.breakfast));
+      expect(left(MealType.dinner), left(MealType.lunch));
+    });
+
+    testWidgets('three meals render columns with exactly three headers', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: repository);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(WeeklyPlanGrid.columnLayoutKey), findsOneWidget);
+      for (final MealType m in <MealType>[
+        MealType.breakfast,
+        MealType.lunch,
+        MealType.dinner,
+      ]) {
+        expect(find.byKey(WeeklyPlanGrid.columnHeaderKey(m)), findsOneWidget);
+      }
+      expect(
+        find.byKey(WeeklyPlanGrid.columnHeaderKey(MealType.snacks)),
+        findsNothing,
+      );
+      expect(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.snacks)), findsNothing);
+    });
+
+    testWidgets(
+      'a Lunch configured {carb 2, sabzi_dal 3, accompaniment 2} is one cell; '
+      'tapping targets the next empty slot',
+      (WidgetTester tester) async {
+        final Menu menu = _menuWith(<MenuItem>[
+          _lunchItem('c1', RecipeRole.carb),
+          _lunchItem('c2', RecipeRole.carb),
+        ], household: testMenuHouseholdWideLunch);
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: menu,
         );
         await _pump(
           tester,
@@ -448,236 +512,151 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Monday's Breakfast contributes 1 slot, Dinner's default
-        // structure (unchanged by this fixture) contributes 4 — the widened
-        // Lunch group is the ONLY variable, so the total slot count on
-        // Monday pins it precisely: 1 (breakfast) + 7 (lunch) + 4 (dinner)
-        // = 12.
-        expect(find.byType(MealSlotCard), findsNWidgets(12));
-
-        final Finder lunchHeader = find.byKey(
-          MealInstanceHeader.headerKey(0, MealType.lunch),
+        expect(
+          find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)),
+          findsOneWidget,
         );
-        expect(lunchHeader, findsOneWidget);
-        final double lunchHeaderTop = tester.getTopLeft(lunchHeader).dy;
-        final double dinnerHeaderTop = tester
-            .getTopLeft(
-              find.byKey(MealInstanceHeader.headerKey(0, MealType.dinner)),
-            )
-            .dy;
+        await tester.tap(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)));
+        await tester.pumpAndSettle();
 
-        // Every MealSlotCard strictly between Lunch's own header and
-        // Dinner's own header belongs to the Lunch group — count them
-        // directly rather than trusting the domain module's own unit test
-        // to cover this screen's wiring too.
-        final Iterable<Element> allCards = find
-            .byType(MealSlotCard)
-            .evaluate();
-        final int cardsUnderLunch = allCards.where((Element element) {
-          final double top = (element.renderObject! as RenderBox)
-              .localToGlobal(Offset.zero)
-              .dy;
-          return top > lunchHeaderTop && top < dinnerHeaderTop;
-        }).length;
-        expect(cardsUnderLunch, 7);
+        expect(_picker(tester).extra.mealSlot, 'lunch');
+        expect(_picker(tester).extra.slotRole.wireValue, 'sabzi_dal');
       },
     );
 
-    testWidgets(
-      'tapping an empty slot under Dinner still opens the picker with mealSlot: dinner and the correct slotRole',
-      (WidgetTester tester) async {
-        final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: testEmptyMenu,
-        );
-        await _pump(tester, menuRepository: repository);
-        await tester.pumpAndSettle();
+    testWidgets('tapping an empty Dinner cell opens the picker for dinner', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: repository);
+      await tester.pumpAndSettle();
 
-        // Dinner's own first slot instance, addressed directly via
-        // `MealSlotCard.emptyKey` rather than positional indexing into
-        // `find.byType(MealSlotCard)` — the grouping must not change what
-        // a tap means, and this is the direct regression for that.
-        final Finder dinnerCarbSlot = find.byKey(
-          MealSlotCard.emptyKey(0, 'dinner', 'carb', 0),
-        );
-        expect(dinnerCarbSlot, findsOneWidget);
-        await tester.ensureVisible(dinnerCarbSlot);
-        await tester.pumpAndSettle();
+      await tester.tap(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.dinner)));
+      await tester.pumpAndSettle();
 
-        await tester.tap(dinnerCarbSlot);
-        await tester.pumpAndSettle();
+      expect(_picker(tester).extra.dayOfWeek, 0);
+      expect(_picker(tester).extra.mealSlot, 'dinner');
+      expect(_picker(tester).extra.slotRole.wireValue, 'carb');
+    });
 
-        expect(find.byType(RecipePickerScreen), findsOneWidget);
-        final RecipePickerScreen picker = tester.widget(
-          find.byType(RecipePickerScreen),
-        );
-        expect(picker.extra.dayOfWeek, 0);
-        expect(picker.extra.mealSlot, 'dinner');
-        expect(picker.extra.slotRole.wireValue, 'carb');
-      },
-    );
+    testWidgets('the loading and error states render no grid', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository loadingRepository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(tester, menuRepository: loadingRepository);
+      expect(find.byKey(WeeklyPlanScreen.loadingKey), findsOneWidget);
+      expect(find.byType(WeeklyPlanGrid), findsNothing);
 
-    testWidgets(
-      'a filled slot still renders its recipe under its own meal header and still routes on tap',
-      (WidgetTester tester) async {
-        final Menu menuWithMondayItem = Menu(
-          id: 'menu-1',
-          householdId: 'household-1',
-          weekStartDate: currentWeekStartDate(),
-          items: <MenuItem>[testMenuItem],
-          mealConfigSnapshot: mealConfigSnapshotJsonFor(
-            testMenuHousehold.settings,
-          ),
-        );
-        final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: menuWithMondayItem,
-        );
-        await _pump(tester, menuRepository: repository);
-        await tester.pumpAndSettle();
+      final FakeMenuRepository errorRepository = FakeMenuRepository(
+        fetchError: const ForbiddenError('Not a member.'),
+        createError: const ForbiddenError('Not a member.'),
+      );
+      await _pump(tester, menuRepository: errorRepository);
+      await tester.pumpAndSettle();
+      expect(find.byKey(WeeklyPlanScreen.errorKey), findsOneWidget);
+      expect(find.byType(WeeklyPlanGrid), findsNothing);
+    });
 
-        final Finder filledCard = find.byKey(
-          MealSlotCard.filledKey(testMenuItem.id),
-        );
-        expect(filledCard, findsOneWidget);
-        expect(find.text(testMenuItem.recipe.title), findsWidgets);
+    testWidgets('no label anywhere names Sweet or Drink', (
+      WidgetTester tester,
+    ) async {
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(
+        tester,
+        menuRepository: repository,
+        household: testMenuHouseholdAllMeals,
+      );
+      await tester.pumpAndSettle();
 
-        // testMenuItem is mealSlot: lunch — it must render UNDER the Lunch
-        // header, below it and above Dinner's.
-        final double filledCardTop = tester.getTopLeft(filledCard).dy;
-        final double lunchHeaderTop = tester
-            .getTopLeft(
-              find.byKey(MealInstanceHeader.headerKey(0, MealType.lunch)),
-            )
-            .dy;
-        final double dinnerHeaderTop = tester
-            .getTopLeft(
-              find.byKey(MealInstanceHeader.headerKey(0, MealType.dinner)),
-            )
-            .dy;
-        expect(filledCardTop, greaterThan(lunchHeaderTop));
-        expect(filledCardTop, lessThan(dinnerHeaderTop));
+      expect(find.textContaining('Sweet'), findsNothing);
+      expect(find.textContaining('Drink'), findsNothing);
+    });
 
-        await tester.tap(filledCard);
-        await tester.pumpAndSettle();
-        expect(find.byType(RecipePickerScreen), findsNothing);
-      },
-    );
+    testWidgets('renders at 320 pt wide without overflow', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final FakeMenuRepository repository = FakeMenuRepository(
+        fetchResult: testEmptyMenu,
+      );
+      await _pump(
+        tester,
+        menuRepository: repository,
+        household: testMenuHouseholdAllMeals,
+      );
+      await tester.pumpAndSettle();
 
-    testWidgets(
-      'the loading/error/empty states are unchanged by the grouping',
-      (WidgetTester tester) async {
-        final FakeMenuRepository loadingRepository = FakeMenuRepository(
-          fetchResult: testEmptyMenu,
-        );
-        await _pump(tester, menuRepository: loadingRepository);
-        expect(find.byKey(WeeklyPlanScreen.loadingKey), findsOneWidget);
-
-        final FakeMenuRepository errorRepository = FakeMenuRepository(
-          fetchError: const ForbiddenError('Not a member.'),
-          createError: const ForbiddenError('Not a member.'),
-        );
-        await _pump(tester, menuRepository: errorRepository);
-        await tester.pumpAndSettle();
-        expect(find.byKey(WeeklyPlanScreen.errorKey), findsOneWidget);
-        expect(find.byType(MealInstanceHeader), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'no header or label anywhere in the tree names Sweet or Drink',
-      (WidgetTester tester) async {
-        final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: testEmptyMenu,
-        );
-        await _pump(
-          tester,
-          menuRepository: repository,
-          household: testMenuHouseholdAllMeals,
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Sweet'), findsNothing);
-        expect(find.text('Drink'), findsNothing);
-        expect(find.widgetWithText(MealInstanceHeader, 'Sweet'), findsNothing);
-        expect(find.widgetWithText(MealInstanceHeader, 'Drink'), findsNothing);
-      },
-    );
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(WeeklyPlanScreen.autoFillButtonKey), findsOneWidget);
+    });
   });
 
   group('WeeklyPlanScreen reads the menu\'s own config snapshot (W14 S4)', () {
+    HouseholdSettings settingsWith(List<String> meals) => HouseholdSettings(
+      householdId: testMenuHousehold.settings.householdId,
+      mealsEnabled: meals,
+      mealStructureJson: testMenuHousehold.settings.mealStructureJson,
+      cuisineTier1: testMenuHousehold.settings.cuisineTier1,
+      cuisineTier2WeightsJson:
+          testMenuHousehold.settings.cuisineTier2WeightsJson,
+      dietaryTags: testMenuHousehold.settings.dietaryTags,
+      allergens: testMenuHousehold.settings.allergens,
+      skipIngredients: testMenuHousehold.settings.skipIngredients,
+    );
+
+    Household householdWith(HouseholdSettings settings) => Household(
+      id: testMenuHousehold.id,
+      name: testMenuHousehold.name,
+      inviteCode: testMenuHousehold.inviteCode,
+      primaryUserId: testMenuHousehold.primaryUserId,
+      subscriptionStatus: testMenuHousehold.subscriptionStatus,
+      settings: settings,
+      members: testMenuHousehold.members,
+    );
+
     testWidgets(
-      'the grid renders from the menu\'s snapshot, not from the household\'s live settings, when the two disagree',
+      "the grid renders from the menu's snapshot, not the household's live "
+      'settings, when the two disagree',
       (WidgetTester tester) async {
-        // Live settings: only breakfast. The menu's own snapshot: all four
-        // meals. If the grid were still reading `household.settings` (the
-        // pre-S4 behavior), only Breakfast would render — asserting Lunch/
-        // Snacks/Dinner headers here is the direct regression for "reads
-        // the snapshot, not the live household".
-        final HouseholdSettings liveSettingsBreakfastOnly = HouseholdSettings(
-          householdId: testMenuHousehold.settings.householdId,
-          mealsEnabled: const <String>['breakfast'],
-          mealStructureJson: testMenuHousehold.settings.mealStructureJson,
-          cuisineTier1: testMenuHousehold.settings.cuisineTier1,
-          cuisineTier2WeightsJson:
-              testMenuHousehold.settings.cuisineTier2WeightsJson,
-          dietaryTags: testMenuHousehold.settings.dietaryTags,
-          allergens: testMenuHousehold.settings.allergens,
-          skipIngredients: testMenuHousehold.settings.skipIngredients,
-        );
-        final Household householdWithMismatchedLiveSettings = Household(
-          id: testMenuHousehold.id,
-          name: testMenuHousehold.name,
-          inviteCode: testMenuHousehold.inviteCode,
-          primaryUserId: testMenuHousehold.primaryUserId,
-          subscriptionStatus: testMenuHousehold.subscriptionStatus,
-          settings: liveSettingsBreakfastOnly,
-          members: testMenuHousehold.members,
-        );
-        final Menu menuWithAllFourMealsSnapshot = Menu(
-          id: 'menu-1',
-          householdId: 'household-1',
-          weekStartDate: currentWeekStartDate(),
-          items: const <MenuItem>[],
-          mealConfigSnapshot: mealConfigSnapshotJsonFor(
-            testMenuHouseholdAllMeals.settings,
-          ),
-        );
         final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: menuWithAllFourMealsSnapshot,
+          fetchResult: _menuWith(
+            const <MenuItem>[],
+            household: testMenuHouseholdAllMeals,
+          ),
         );
 
         await _pump(
           tester,
           menuRepository: repository,
-          household: householdWithMismatchedLiveSettings,
+          household: householdWith(settingsWith(const <String>['breakfast'])),
           syncMenuSnapshotToHousehold: false,
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.breakfast)),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.lunch)),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.dinner)),
-          findsOneWidget,
-        );
+        expect(find.byKey(WeeklyPlanGrid.blockLayoutKey), findsOneWidget);
+        for (final MealType m in MealType.values) {
+          expect(
+            find.byKey(WeeklyPlanGrid.cellKey(0, m)),
+            findsOneWidget,
+            reason: m.name,
+          );
+        }
       },
     );
 
     testWidgets(
-      'a snapshot with Snacks disabled renders no Snacks header even when the live household settings enable it',
+      'a snapshot with Snacks disabled renders no Snacks cell even when the '
+      'live household settings enable it',
       (WidgetTester tester) async {
-        // Live settings (testMenuHouseholdAllMeals): Snacks ENABLED.
-        // Snapshot (testMenuHousehold's, via the default menu fixture):
-        // Snacks DISABLED. The grid must follow the snapshot.
         final FakeMenuRepository repository = FakeMenuRepository(
           fetchResult: testEmptyMenu,
         );
@@ -691,33 +670,22 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
+          find.byKey(WeeklyPlanGrid.cellKey(0, MealType.snacks)),
           findsNothing,
         );
-        expect(
-          find.widgetWithText(MealInstanceHeader, 'Snacks'),
-          findsNothing,
-        );
+        expect(find.byKey(WeeklyPlanGrid.blockLayoutKey), findsNothing);
       },
     );
 
     testWidgets(
-      'a snapshot with Snacks enabled renders a Snacks header even when the live household settings disable it',
+      'a snapshot with Snacks enabled renders a Snacks cell even when the '
+      'live household settings disable it',
       (WidgetTester tester) async {
-        // Live settings (testMenuHousehold): Snacks DISABLED. Snapshot
-        // (testMenuHouseholdAllMeals's): Snacks ENABLED. The grid must
-        // follow the snapshot, the mirror image of the previous case.
-        final Menu menuWithSnacksInSnapshot = Menu(
-          id: 'menu-1',
-          householdId: 'household-1',
-          weekStartDate: currentWeekStartDate(),
-          items: const <MenuItem>[],
-          mealConfigSnapshot: mealConfigSnapshotJsonFor(
-            testMenuHouseholdAllMeals.settings,
-          ),
-        );
         final FakeMenuRepository repository = FakeMenuRepository(
-          fetchResult: menuWithSnacksInSnapshot,
+          fetchResult: _menuWith(
+            const <MenuItem>[],
+            household: testMenuHouseholdAllMeals,
+          ),
         );
 
         await _pump(
@@ -728,19 +696,15 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.byKey(MealInstanceHeader.headerKey(0, MealType.snacks)),
+          find.byKey(WeeklyPlanGrid.cellKey(0, MealType.snacks)),
           findsOneWidget,
         );
       },
     );
 
     testWidgets(
-      'a malformed snapshot degrades to zero slots rather than throwing',
+      'a malformed snapshot degrades to a no-meals message rather than throwing',
       (WidgetTester tester) async {
-        // Not valid JSON at all — `Menu.mealConfigSettings`' own defensive
-        // decode (mirroring `meal_slot_plan.dart`'s `_decodeMealStructure`
-        // fail-closed posture) must degrade to an empty `mealsEnabled`
-        // rather than let this propagate as an uncaught exception.
         final Menu menuWithCorruptSnapshot = Menu(
           id: 'menu-1',
           householdId: 'household-1',
@@ -759,16 +723,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // No exception surfaced (pumpAndSettle above would have rethrown
-        // one), the screen itself loaded past its loading/error states, and
-        // zero slots/headers render for the one malformed day.
         expect(find.byKey(WeeklyPlanScreen.errorKey), findsNothing);
-        expect(find.byType(MealSlotCard), findsNothing);
-        expect(find.byType(MealInstanceHeader), findsNothing);
-        expect(
-          find.text('No meals configured for this day.'),
-          findsWidgets,
-        );
+        expect(find.byType(WeeklyPlanGrid), findsOneWidget);
+        expect(find.text('No meals configured for this week.'), findsOneWidget);
       },
     );
   });
