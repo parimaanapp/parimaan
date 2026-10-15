@@ -11,7 +11,7 @@
       "ink": { "hex": "#1F1A15", "usage": "primary text" }
     },
     "brand": {
-      "haldiSoft": { "hex": "#F5DEA3", "usage": "warm surface" },
+      "haldiSoft": { "hex": "#F5DEA3", "foreground": "#7A5A18", "usage": "warm surface; AI proposal badge" },
       "haldi": { "hex": "#E8B961", "usage": "accent, focus rings" },
       "terracotta": { "hex": "#C25A2B", "usage": "primary action" },
       "terracottaDeep": { "hex": "#A64420", "usage": "pressed / links" },

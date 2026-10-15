@@ -134,3 +134,44 @@ _PBadgeColors _colorsFor(PBadgeTone tone) {
       );
   }
 }
+
+/// The "◆ AI proposal" pill: a soft-haldi, mono all-caps badge marking a value
+/// the AI proposed and the user has not yet touched (wireframe v2 `ai` style).
+///
+/// Status only, like [PBadge]; its copy is fixed so every AI surface in the
+/// app reads identically.
+class PAiBadge extends StatelessWidget {
+  const PAiBadge({super.key});
+
+  /// Spoken label; the diamond is decoration.
+  static const String semanticLabel = 'AI proposal';
+
+  /// Visible copy.
+  static const String text = '◆ AI PROPOSAL';
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: semanticLabel,
+    child: ExcludeSemantics(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.haldiSoft,
+          borderRadius: AppRadius.borderFull,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s1,
+          vertical: AppSpacing.s0,
+        ),
+        child: Text(
+          text,
+          style: AppTypography.mono.copyWith(
+            fontSize: AppTypography.meta.fontSize,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.08 * AppTypography.meta.fontSize!,
+            color: AppColors.haldiSoftForeground,
+          ),
+        ),
+      ),
+    ),
+  );
+}

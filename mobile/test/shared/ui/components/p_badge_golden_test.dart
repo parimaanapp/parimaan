@@ -25,6 +25,7 @@ void main() {
             icon: Icons.circle,
           ),
         ),
+        scenario(name: 'ai proposal', child: const PAiBadge()),
         scenario(
           name: 'mixed case',
           child: const PBadge(label: 'In rotation', uppercase: false),

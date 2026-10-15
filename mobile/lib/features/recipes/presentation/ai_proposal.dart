@@ -108,11 +108,7 @@ class AIProposal<T> extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         if (hasProposal) ...<Widget>[
-          const PBadge(
-            key: proposedBadgeKey,
-            label: 'AI suggests',
-            tone: PBadgeTone.info,
-          ),
+          const PAiBadge(key: proposedBadgeKey),
           const SizedBox(height: AppSpacing.s0),
         ],
         if (hasProposal)
