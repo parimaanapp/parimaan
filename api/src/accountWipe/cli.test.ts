@@ -22,6 +22,23 @@ describe('parseCliArgs', () => {
     expect(parsed).toEqual({ mode: 'execute', emails: ['a@x.test'], confirm: 'abc' });
   });
 
+  it('accepts --full-listing <file> in both modes', () => {
+    expect(
+      parseCliArgs(['--emails', 'a@x.test', '--full-listing', 'out.json'], readFile),
+    ).toEqual({ mode: 'dry-run', emails: ['a@x.test'], fullListingPath: 'out.json' });
+    const executed = parseCliArgs(
+      ['--emails', 'a@x.test', '--execute', '--confirm', 'abc', '--full-listing', 'out.json'],
+      readFile,
+    );
+    expect(executed).toMatchObject({ mode: 'execute', fullListingPath: 'out.json' });
+  });
+
+  it('requires a value for --full-listing', () => {
+    expect(() => parseCliArgs(['--emails', 'a@x.test', '--full-listing'], readFile)).toThrow(
+      /requires a value/,
+    );
+  });
+
   it('rejects --execute without --confirm', () => {
     expect(() => parseCliArgs(['--emails', 'a@x.test', '--execute'], readFile)).toThrow(/--confirm/);
   });
@@ -53,6 +70,10 @@ describe('loadWipeConfig', () => {
     WIPE_EXPORTS_BUCKET: 'parimaan-exports-dev',
     WIPE_CACHE_TABLE: 'parimaan-cache-dev',
     WIPE_DATABASE_URL: 'postgres://u:p@localhost:5432/parimaan',
+    WIPE_EXPECTED_ACCOUNT_ID: '123456789012',
+    WIPE_EXPECTED_POOL_NAME: 'parimaan-dev',
+    WIPE_EXPECTED_DB_HOST: 'db.dev.rds.test',
+    WIPE_DATABASE_SERVERNAME: 'db.dev.rds.test',
   };
 
   it('loads a complete dev config', () => {
@@ -68,6 +89,59 @@ describe('loadWipeConfig', () => {
     expect(() => loadWipeConfig({ ...base, WIPE_UPLOADS_BUCKET: 'parimaan-uploads-prod' })).toThrow(
       /-dev/,
     );
+  });
+
+  it('has no default for the expected account, pool name or db host (fail closed)', () => {
+    for (const name of ['WIPE_EXPECTED_ACCOUNT_ID', 'WIPE_EXPECTED_POOL_NAME', 'WIPE_EXPECTED_DB_HOST']) {
+      expect(() => loadWipeConfig({ ...base, [name]: undefined })).toThrow(name);
+      expect(() => loadWipeConfig({ ...base, [name]: '' })).toThrow(name);
+    }
+  });
+
+  it('requires the expected account id to be 12 digits', () => {
+    expect(() => loadWipeConfig({ ...base, WIPE_EXPECTED_ACCOUNT_ID: 'dev' })).toThrow(/12 digits/);
+  });
+
+  it('exposes the expected target values', () => {
+    const config = loadWipeConfig(base);
+    expect(config.expected).toEqual({
+      accountId: '123456789012',
+      poolName: 'parimaan-dev',
+      dbHost: 'db.dev.rds.test',
+    });
+  });
+
+  it('uses the servername override as the effective db host (SSM port-forward)', () => {
+    const config = loadWipeConfig(base);
+    expect(config.dbHost).toBe('db.dev.rds.test');
+    expect(config.dbServername).toBe('db.dev.rds.test');
+    const direct = loadWipeConfig({
+      ...base,
+      WIPE_DATABASE_SERVERNAME: undefined,
+      WIPE_DATABASE_URL: 'postgres://u:p@db.dev.rds.test:5432/parimaan',
+    });
+    expect(direct.dbHost).toBe('db.dev.rds.test');
+    expect(direct.dbServername).toBeUndefined();
+  });
+
+  it('rejects sslmode in the URL, without echoing the URL', () => {
+    const url = 'postgres://u:secretpw@localhost:5432/parimaan?sslmode=disable';
+    try {
+      loadWipeConfig({ ...base, WIPE_DATABASE_URL: url });
+      throw new Error('should have thrown');
+    } catch (error) {
+      expect((error as Error).message).toMatch(/sslmode/);
+      expect((error as Error).message).not.toContain('secretpw');
+    }
+  });
+
+  it('rejects an unparseable URL without echoing it', () => {
+    try {
+      loadWipeConfig({ ...base, WIPE_DATABASE_URL: 'not a url secretpw' });
+      throw new Error('should have thrown');
+    } catch (error) {
+      expect((error as Error).message).not.toContain('secretpw');
+    }
   });
 
   it('names every missing variable without printing values', () => {

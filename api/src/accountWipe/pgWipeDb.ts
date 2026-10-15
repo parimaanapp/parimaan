@@ -203,13 +203,13 @@ const applyDeletes = async (
 /**
  * Postgres implementation of the wipe DB port. The caller owns the connection
  * (a single already-connected `pg.Client`); this adapter owns transactions:
- * snapshot runs `READ ONLY`, execute runs everything in ONE transaction and
+ * snapshot runs `REPEATABLE READ, READ ONLY`, execute runs everything in ONE `REPEATABLE READ` transaction (listing and deletes see one snapshot) and
  * rolls back if the database no longer matches the approved listing or any
  * step deletes a different number of rows than listed.
  */
 export const createPgWipeDb = (client: SqlClient): WipeDb => ({
   snapshot: async (emails, subs) => {
-    await client.query('BEGIN READ ONLY');
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     try {
       await assertCanBypassRls(client);
       return await loadDbListing(client, emails, subs);
@@ -219,7 +219,7 @@ export const createPgWipeDb = (client: SqlClient): WipeDb => ({
   },
 
   execute: async (emails, subs, expected) => {
-    await client.query('BEGIN');
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
     try {
       await assertCanBypassRls(client);
       const current = await loadDbListing(client, emails, subs);

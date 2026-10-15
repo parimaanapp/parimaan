@@ -1,9 +1,11 @@
 import {
   AdminDeleteUserCommand,
+  AdminDisableUserCommand,
   ListUsersCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { DeleteObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { assertUuidIdentifiers } from './identifiers.js';
 import type { CacheKey, CacheStore, CognitoUser, IdentityPool, ObjectRef, ObjectStore } from './types.js';
 
 /** Minimal structural client type: any AWS SDK v3 client (or a test double) satisfies it. */
@@ -20,43 +22,85 @@ const attribute = (
   name: string,
 ): string | undefined => attributes?.find((a) => a.Name === name)?.Value;
 
-export const createIdentityPool = (client: SendClient, userPoolId: string): IdentityPool => ({
-  findByEmail: async (email) => {
-    if (email.includes('"')) {
-      throw new Error(`Refusing to build a Cognito filter from "${email}".`);
+const notFoundIsSuccess = async (action: () => Promise<unknown>): Promise<void> => {
+  try {
+    await action();
+  } catch (error) {
+    if (error instanceof Error && error.name === 'UserNotFoundException') {
+      return;
     }
-    const users: CognitoUser[] = [];
-    let token: string | undefined;
-    do {
-      const page = await client.send(
-        new ListUsersCommand({
-          UserPoolId: userPoolId,
-          Filter: `email = "${email}"`,
-          ...(token !== undefined ? { PaginationToken: token } : {}),
-        }),
-      );
-      for (const user of page.Users ?? []) {
-        const sub = attribute(user.Attributes, 'sub');
-        if (user.Username !== undefined && sub !== undefined) {
-          users.push({ username: user.Username, sub, email });
-        }
-      }
-      token = page.PaginationToken;
-    } while (token !== undefined);
-    return users;
-  },
+    throw error;
+  }
+};
 
-  deleteUser: async (username) => {
-    try {
-      await client.send(new AdminDeleteUserCommand({ UserPoolId: userPoolId, Username: username }));
-    } catch (error) {
-      if (error instanceof Error && error.name === 'UserNotFoundException') {
-        return;
-      }
-      throw error;
+const listUsers = async (
+  client: SendClient,
+  userPoolId: string,
+  filter: string,
+  keep: (user: CognitoUser) => boolean,
+  fallbackEmail: string,
+): Promise<CognitoUser[]> => {
+  const users: CognitoUser[] = [];
+  let token: string | undefined;
+  do {
+    const page = await client.send(
+      new ListUsersCommand({
+        UserPoolId: userPoolId,
+        Filter: filter,
+        ...(token !== undefined ? { PaginationToken: token } : {}),
+      }),
+    );
+    for (const user of page.Users ?? []) {
+      const sub = attribute(user.Attributes, 'sub');
+      if (user.Username === undefined || sub === undefined) continue;
+      const candidate: CognitoUser = {
+        username: user.Username,
+        sub,
+        email: attribute(user.Attributes, 'email') ?? fallbackEmail,
+      };
+      if (keep(candidate)) users.push(candidate);
     }
-  },
-});
+    token = page.PaginationToken;
+  } while (token !== undefined);
+  return users;
+};
+
+export const createIdentityPool = (client: SendClient, userPoolId: string): IdentityPool => {
+  const listByFilter = (
+    filter: string,
+    keep: (user: CognitoUser) => boolean,
+    fallbackEmail: string,
+  ): Promise<CognitoUser[]> => listUsers(client, userPoolId, filter, keep, fallbackEmail);
+
+  const assertFilterSafe = (value: string): void => {
+    if (value.includes('"') || value.includes('\\')) {
+      throw new Error(`Refusing to build a Cognito filter from "${value}".`);
+    }
+  };
+
+  return {
+    findByEmail: async (email) => {
+      assertFilterSafe(email);
+      const wanted = email.toLowerCase();
+      return listByFilter(`email = "${email}"`, (u) => u.email.toLowerCase() === wanted, email);
+    },
+
+    findBySub: async (sub) => {
+      assertFilterSafe(sub);
+      return listByFilter(`sub = "${sub}"`, (u) => u.sub === sub, '');
+    },
+
+    disableUser: (username) =>
+      notFoundIsSuccess(() =>
+        client.send(new AdminDisableUserCommand({ UserPoolId: userPoolId, Username: username })),
+      ),
+
+    deleteUser: (username) =>
+      notFoundIsSuccess(() =>
+        client.send(new AdminDeleteUserCommand({ UserPoolId: userPoolId, Username: username })),
+      ),
+  };
+};
 
 export const createObjectStore = (client: SendClient): ObjectStore => ({
   list: async (prefixes) => {
@@ -111,11 +155,16 @@ const chunk = <T>(items: readonly T[], size: number): T[][] =>
 
 /**
  * The cache table (`parimaan-cache-<env>`) holds only TTL-expiring cache and
- * rate-limit items keyed by household/user ids, so a filtered Scan is cheap
- * and needs no index. Items are matched by identifier appearing in `PK`.
+ * rate-limit items whose partition key is `#`-separated:
+ * `RATELIMIT#<action>#<userId>` and `aiCache#cookFromPantry#<householdId>#<hash>`.
+ * A filtered Scan narrows server-side with `contains`, then an item is kept only
+ * if one `#` segment of PK equals an identifier exactly, so a prefix or
+ * substring of another identifier can never match. Every identifier must be a UUID.
  */
 export const createCacheStore = (client: SendClient, tableName: string): CacheStore => ({
   findByIdentifiers: async (identifiers) => {
+    assertUuidIdentifiers(identifiers.map((value) => ({ kind: 'cache identifier', value })));
+    const wanted = new Set(identifiers.map((id) => id.toLowerCase()));
     const found = new Map<string, CacheKey>();
     for (const ids of chunk(identifiers, SCAN_FILTER_CHUNK)) {
       const values = Object.fromEntries(ids.map((id, i) => [`:id${i}`, id]));
@@ -132,8 +181,11 @@ export const createCacheStore = (client: SendClient, tableName: string): CacheSt
           }),
         );
         for (const item of page.Items ?? []) {
-          const key = { pk: String(item['PK']), sk: String(item['SK']) };
-          found.set(`${key.pk}|${key.sk}`, key);
+          const pk: unknown = item['PK'];
+          const sk: unknown = item['SK'];
+          if (typeof pk !== 'string' || typeof sk !== 'string') continue;
+          if (!pk.split('#').some((segment) => wanted.has(segment.toLowerCase()))) continue;
+          found.set(`${pk}|${sk}`, { pk, sk });
         }
         startKey = page.LastEvaluatedKey;
       } while (startKey !== undefined);

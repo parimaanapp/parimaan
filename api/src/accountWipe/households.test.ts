@@ -33,6 +33,41 @@ describe('classifyHouseholds', () => {
     expect(result.deleted).toHaveLength(1);
   });
 
+  it('counts a non-wiped, non-null primary as remaining: keeps instead of deleting', () => {
+    const result = classifyHouseholds(
+      [{ id: 'h1', name: 'A', primaryUserId: 'u9', members: [member('u1', 'member', '2026-01-01')] }],
+      new Set(['u1']),
+    );
+    expect(result.deleted).toEqual([]);
+    expect(result.kept).toEqual([
+      { id: 'h1', name: 'A', remainingMemberCount: 1, wipedMemberCount: 1 },
+    ]);
+    expect(result.promotions).toEqual([]);
+  });
+
+  it('keeps a memberless household whose primary is not being wiped', () => {
+    const result = classifyHouseholds(
+      [{ id: 'h1', name: 'A', primaryUserId: 'u9', members: [] }],
+      new Set(['u1']),
+    );
+    expect(result.deleted).toEqual([]);
+  });
+
+  it('does not double count a non-wiped primary that also has a membership row', () => {
+    const result = classifyHouseholds(
+      [
+        {
+          id: 'h1',
+          name: 'A',
+          primaryUserId: 'u9',
+          members: [member('u9', 'primary', '2026-01-01'), member('u1', 'member', '2026-01-02')],
+        },
+      ],
+      new Set(['u1']),
+    );
+    expect(result.kept[0]?.remainingMemberCount).toBe(1);
+  });
+
   it('keeps a household shared with a non-wipe user and reports counts', () => {
     const households: HouseholdWithMembers[] = [
       {

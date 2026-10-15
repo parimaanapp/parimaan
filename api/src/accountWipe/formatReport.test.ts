@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatReport } from './formatReport.js';
+import { formatFullListing, formatReport } from './formatReport.js';
 import { hashListing } from './listingHash.js';
 import { emptyDbListing, emptyListing } from './testing/fakes.js';
 
@@ -31,5 +31,27 @@ describe('formatReport', () => {
     expect(text).toContain('--execute --confirm ' + hash);
     expect(text).toContain('KEPT');
     expect(text).toContain('Shared');
+  });
+
+  it('prints the verified target and any warnings, and they are in the hashed listing', () => {
+    const withWarning = { ...listing, warnings: ['WARNING: db user u9 has no Cognito user'] };
+    const text = formatReport({ mode: 'dry-run', listing: withWarning, hash: hashListing(withWarning) });
+    expect(text).toContain('AWS account: 123456789012');
+    expect(text).toContain('User pool: pool-1 (parimaan-dev)');
+    expect(text).toContain('Database host: db.dev.rds.test');
+    expect(text).toContain('WARNING: db user u9 has no Cognito user');
+    expect(hashListing(withWarning)).not.toBe(hashListing(listing));
+  });
+
+  it('formatFullListing writes every key with the hash, untruncated', () => {
+    const hash = hashListing(listing);
+    const parsed = JSON.parse(formatFullListing({ mode: 'dry-run', listing, hash })) as {
+      hash: string;
+      listing: typeof listing;
+    };
+    expect(parsed.hash).toBe(hash);
+    const pantry = parsed.listing.db.tables.find((t) => t.table === 'pantry_items');
+    expect(pantry?.keys).toHaveLength(7);
+    expect(parsed.listing.target.accountId).toBe('123456789012');
   });
 });

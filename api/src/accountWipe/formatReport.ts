@@ -12,9 +12,19 @@ const samples = (items: readonly string[]): string => {
 const line = (label: string, count: number, ids: readonly string[]): string =>
   `  ${label.padEnd(26)} ${String(count).padStart(5)}${count > 0 ? `   ${samples(ids)}` : ''}`;
 
-const listingLines = (listing: WipeListing): string[] => {
-  const { db } = listing;
+const headerLines = (listing: WipeListing): string[] => {
   const out: string[] = [];
+  out.push('Target (verified before listing; part of the approved hash)');
+  out.push(`  AWS account: ${listing.target.accountId}`);
+  out.push(`  User pool: ${listing.target.userPoolId} (${listing.target.userPoolName})`);
+  out.push(`  Database host: ${listing.target.dbHost}`);
+  out.push('');
+  for (const warning of listing.warnings) {
+    out.push(warning);
+  }
+  if (listing.warnings.length > 0) {
+    out.push('');
+  }
   out.push(`Emails: ${listing.emails.join(', ')}`);
   out.push('');
   out.push('Cognito users');
@@ -22,6 +32,12 @@ const listingLines = (listing: WipeListing): string[] => {
     line('cognito users', listing.cognito.length, listing.cognito.map((u) => `${u.username}(${u.sub})`)),
   );
   out.push('');
+  return out;
+};
+
+const listingLines = (listing: WipeListing): string[] => {
+  const { db } = listing;
+  const out: string[] = [...headerLines(listing)];
   out.push('Database (deletion order, one transaction)');
   out.push(line('users matched', db.users.length, db.users.map((u) => `${u.id} ${u.email}`)));
   out.push(
@@ -77,3 +93,7 @@ export const formatReport = (outcome: WipeOutcome): string => {
   }
   return out.join('\n');
 };
+
+/** The complete listing, untruncated, as JSON for sign-off. Contains emails: treat as sensitive. */
+export const formatFullListing = (outcome: WipeOutcome): string =>
+  `${JSON.stringify({ hash: outcome.hash, mode: outcome.mode, listing: outcome.listing }, null, 2)}\n`;

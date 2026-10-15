@@ -5,11 +5,26 @@ import type {
   PrimaryPromotion,
 } from './types.js';
 
+/** Surviving (non-wiped) members, counting a non-null non-wiped primary that has no membership row. */
+const survivingCount = (
+  household: HouseholdWithMembers,
+  remaining: readonly { readonly userId: string }[],
+  primaryWiped: boolean,
+): number => {
+  // A non-null primary that is not being wiped is a surviving member even if it
+  // has no membership row (inconsistent data): never delete a household out from under it.
+  const phantomPrimary =
+    household.primaryUserId !== null &&
+    !primaryWiped &&
+    !remaining.some((m) => m.userId === household.primaryUserId);
+  return remaining.length + (phantomPrimary ? 1 : 0);
+};
+
 const byId = <T extends { readonly id: string }>(a: T, b: T): number => a.id.localeCompare(b.id);
 
 /**
  * Household rule (documented in docs/RUNBOOK.md):
- *   - every member in the wipe set (or no members at all) -> DELETE the household;
+ *   - every member in the wipe set (or no members at all) and no surviving primary -> DELETE;
  *   - otherwise KEEP it, remove only the wiped members' memberships, and if the
  *     wiped user was the primary, promote the earliest-joined remaining member
  *     so the household is never left primary-less.
@@ -29,7 +44,9 @@ export const classifyHouseholds = (
     const primaryWiped =
       household.primaryUserId !== null && wipedUserIds.has(household.primaryUserId);
 
-    if (remaining.length === 0) {
+    const remainingCount = survivingCount(household, remaining, primaryWiped);
+
+    if (remainingCount === 0) {
       deleted.push({ id: household.id, name: household.name });
       continue;
     }
@@ -40,7 +57,7 @@ export const classifyHouseholds = (
     kept.push({
       id: household.id,
       name: household.name,
-      remainingMemberCount: remaining.length,
+      remainingMemberCount: remainingCount,
       wipedMemberCount: wiped.length,
     });
 

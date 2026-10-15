@@ -81,7 +81,23 @@ export interface CacheKey {
   readonly sk: string;
 }
 
+/** Non-secret description of what the tool is really pointed at. Part of the hashed listing. */
+export interface TargetInfo {
+  readonly accountId: string;
+  readonly userPoolId: string;
+  readonly userPoolName: string;
+  readonly dbHost: string;
+}
+
+/** Resolves and verifies the target; must throw (fail closed) on any mismatch. */
+export interface TargetVerifier {
+  verify(): Promise<TargetInfo>;
+}
+
 export interface WipeListing {
+  readonly target: TargetInfo;
+  /** Loud, human-readable problems found while listing. Hashed, so approval covers them. */
+  readonly warnings: readonly string[];
   readonly emails: readonly string[];
   readonly cognito: readonly CognitoUser[];
   readonly db: DbListing;
@@ -113,13 +129,20 @@ export interface ObjectStore {
 }
 
 export interface CacheStore {
-  /** Items whose partition key contains any of the given identifiers. */
+  /**
+   * Items whose partition key has a `#`-separated segment exactly equal to one
+   * of the identifiers (never a substring match). Identifiers must be UUIDs.
+   */
   findByIdentifiers(identifiers: readonly string[]): Promise<readonly CacheKey[]>;
   delete(keys: readonly CacheKey[]): Promise<void>;
 }
 
 export interface IdentityPool {
+  /** Cognito's email filter is case-sensitive; implementations match case-insensitively on the result. */
   findByEmail(email: string): Promise<readonly CognitoUser[]>;
+  findBySub(sub: string): Promise<readonly CognitoUser[]>;
+  /** Blocks sign-in so a login cannot re-provision rows. Must treat "user does not exist" as success. */
+  disableUser(username: string): Promise<void>;
   /** Must treat "user does not exist" as success (idempotent). */
   deleteUser(username: string): Promise<void>;
 }
@@ -129,5 +152,6 @@ export interface WipePorts {
   readonly objects: ObjectStore;
   readonly cache: CacheStore;
   readonly identity: IdentityPool;
+  readonly target: TargetVerifier;
   readonly buckets: { readonly uploads: string; readonly exports: string };
 }

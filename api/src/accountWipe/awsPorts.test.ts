@@ -39,6 +39,49 @@ describe('createIdentityPool', () => {
     expect(sent[1]?.input['PaginationToken']).toBe('next');
   });
 
+  it('matches case-insensitively on the returned email and reports the stored email', async () => {
+    const { client, sent } = recorder([
+      {
+        Users: [
+          { Username: 'u1', Attributes: [{ Name: 'sub', Value: 's1' }, { Name: 'email', Value: 'A@X.test' }] },
+          { Username: 'u2', Attributes: [{ Name: 'sub', Value: 's2' }, { Name: 'email', Value: 'a@x.test.evil' }] },
+        ],
+      },
+    ]);
+    const users = await createIdentityPool(client, 'p').findByEmail('A@X.test');
+    expect(users).toEqual([{ username: 'u1', sub: 's1', email: 'A@X.test' }]);
+    expect(sent[0]?.input['Filter']).toBe('email = "A@X.test"');
+  });
+
+  it('finds users by exact sub', async () => {
+    const { client, sent } = recorder([
+      { Users: [{ Username: 'u1', Attributes: [{ Name: 'sub', Value: 's1' }, { Name: 'email', Value: 'z@x.test' }] }] },
+    ]);
+    const users = await createIdentityPool(client, 'p').findBySub('s1');
+    expect(users).toEqual([{ username: 'u1', sub: 's1', email: 'z@x.test' }]);
+    expect(sent[0]?.input['Filter']).toBe('sub = "s1"');
+  });
+
+  it('refuses to build a filter from a sub containing a quote', async () => {
+    const { client } = recorder([]);
+    await expect(createIdentityPool(client, 'p').findBySub('a"b')).rejects.toThrow(/Refusing/);
+  });
+
+  it('disables a user, treating UserNotFoundException as success', async () => {
+    const { client, sent } = recorder([{}]);
+    await createIdentityPool(client, 'p').disableUser('u1');
+    expect(sent[0]?.name).toBe('AdminDisableUserCommand');
+    expect(sent[0]?.input).toEqual({ UserPoolId: 'p', Username: 'u1' });
+    const gone = {
+      send: async () => {
+        const error = new Error('gone');
+        error.name = 'UserNotFoundException';
+        throw error;
+      },
+    };
+    await expect(createIdentityPool(gone, 'p').disableUser('x')).resolves.toBeUndefined();
+  });
+
   it('treats UserNotFoundException on delete as success', async () => {
     const client = {
       send: async () => {
@@ -89,21 +132,54 @@ describe('createObjectStore', () => {
   });
 });
 
+const U1 = '11111111-1111-4111-8111-111111111111';
+const H1 = '22222222-2222-4222-8222-222222222222';
+
 describe('createCacheStore', () => {
-  it('scans with a contains filter and returns matching keys', async () => {
+  it('scans with a contains prefilter and returns keys whose PK has an exactly matching segment', async () => {
     const { client, sent } = recorder([
-      { Items: [{ PK: 'RATELIMIT#join#u1', SK: 'd' }], LastEvaluatedKey: { PK: 'x', SK: 'y' } },
-      { Items: [{ PK: 'aiCache#cook#h1#abc', SK: 'v' }] },
+      { Items: [{ PK: `RATELIMIT#join#${U1}`, SK: 'd' }], LastEvaluatedKey: { PK: 'x', SK: 'y' } },
+      { Items: [{ PK: `aiCache#cook#${H1}#abc`, SK: 'v' }] },
     ]);
     const store = createCacheStore(client, 'cache-table');
-    const keys = await store.findByIdentifiers(['u1', 'h1']);
+    const keys = await store.findByIdentifiers([U1, H1]);
     expect(keys).toEqual([
-      { pk: 'RATELIMIT#join#u1', sk: 'd' },
-      { pk: 'aiCache#cook#h1#abc', sk: 'v' },
+      { pk: `RATELIMIT#join#${U1}`, sk: 'd' },
+      { pk: `aiCache#cook#${H1}#abc`, sk: 'v' },
     ]);
     expect(sent[0]?.input['TableName']).toBe('cache-table');
     expect(String(sent[0]?.input['FilterExpression'])).toContain('contains(PK, :id0)');
     expect(sent[1]?.input['ExclusiveStartKey']).toEqual({ PK: 'x', SK: 'y' });
+  });
+
+  it('does not match an identifier that is only a substring of a segment', async () => {
+    const longer = `${U1}0`;
+    const { client } = recorder([
+      {
+        Items: [
+          { PK: `RATELIMIT#join#${longer}`, SK: 'd' },
+          { PK: `RATELIMIT#join#${U1}`, SK: 'd' },
+        ],
+      },
+    ]);
+    const keys = await createCacheStore(client, 't').findByIdentifiers([U1]);
+    expect(keys).toEqual([{ pk: `RATELIMIT#join#${U1}`, sk: 'd' }]);
+  });
+
+  it('skips scan items that have no SK or no PK', async () => {
+    const { client } = recorder([
+      { Items: [{ PK: `RATELIMIT#join#${U1}` }, { SK: 'd' }, { PK: `RATELIMIT#join#${U1}`, SK: 'd' }] },
+    ]);
+    const keys = await createCacheStore(client, 't').findByIdentifiers([U1]);
+    expect(keys).toEqual([{ pk: `RATELIMIT#join#${U1}`, sk: 'd' }]);
+  });
+
+  it('aborts before any scan when an identifier is empty or not a UUID', async () => {
+    const { client, sent } = recorder([{}]);
+    const store = createCacheStore(client, 't');
+    await expect(store.findByIdentifiers([''])).rejects.toThrow(/empty/);
+    await expect(store.findByIdentifiers([U1, 'sub-1'])).rejects.toThrow(/UUID/);
+    expect(sent).toEqual([]);
   });
 
   it('deletes each key', async () => {
