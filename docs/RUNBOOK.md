@@ -311,3 +311,68 @@ Also: close Xcode before building from the command line on this 16 GB machine (i
 **Result:** `mobile/build/ios/ipa/mobile.ipa` (27.7 MB), App Store distribution profile, signed `Apple Distribution: Amogh Kulkarni (632DT4UQ4R)`, version 1.0.0 build 10121400. Upload with Apple's **Transporter** app (drag the `.ipa`), or `UPLOAD=1` with an App Store Connect API key.
 
 **Seller name:** the team is an *individual* membership, so the App Store / TestFlight shows "Amogh Kulkarni" as the seller, not Tatva Research. An organization membership (needs a D-U-N-S number and a registered legal entity) is required to show a business name — open decision before the public App Store launch, not a TestFlight blocker.
+
+---
+
+## Account wipe tool (A6, dev only, destructive)
+
+> **WARNING: DESTRUCTIVE AND DEV-ONLY.** This permanently deletes every record tied to a set of email addresses: database rows, S3 objects, DynamoDB cache items and Cognito users. There is no undo. **The founder must approve the dry-run listing before `--execute` is ever run.** Do not run it until the fixes that must ship first have shipped (`E2E_MVP_PLAN.md` §32.5).
+
+**The dev-only guard is bound to the real targets, and fails closed.** `WIPE_ENV=dev` and the `-dev` name suffixes are only self-assertions. Before anything is listed the tool also requires, with no defaults:
+
+- STS `GetCallerIdentity` account id equals `WIPE_EXPECTED_ACCOUNT_ID`;
+- Cognito `DescribeUserPool` name equals `WIPE_EXPECTED_POOL_NAME`;
+- the database host equals `WIPE_EXPECTED_DB_HOST`. The host is `WIPE_DATABASE_SERVERNAME` when set (the TLS-verified RDS hostname, for an SSM port-forward where the URL host is `localhost`), otherwise the URL host. `sslmode` in `WIPE_DATABASE_URL` is rejected; TLS is always verified against the RDS CA bundle using that servername.
+
+The report prints the account id, user pool id and name, and DB host (none are secrets), and they are part of the hashed listing, so an approval is bound to the target it was produced against.
+
+**What it deletes, in this exact order**
+
+1. *Disable Cognito users*: `AdminDisableUser` for every matched user, so a login cannot re-provision rows while the wipe runs.
+2. *S3*: `pantry-photos/<cognito-sub>/` in the uploads bucket, and `exports/<household-id>/` for each deleted household in the exports bucket.
+3. *DynamoDB cache table*: items whose `PK` has a `#`-separated segment exactly equal to a wiped user id, Cognito sub, or deleted household id (`RATELIMIT#<action>#<userId>`, `aiCache#cookFromPantry#<householdId>#<hash>`). Never a substring match. The shared staples-note cache is keyed by recipe hash and is left alone.
+4. *Database, one `REPEATABLE READ` transaction* (`api/src/accountWipe/steps.ts`; the order is asserted against the FK graph derived from `api/migrations`): `shopping_list_items`, `shopping_lists`, `menu_items`, `menus`, `recipe_ingredients`, `recipes`, `pantry_items`, `notification_preferences`, `household_memberships`, `household_settings`, `households`, `users`. If the live DB no longer matches the approved listing, or any step deletes a different count than listed, the transaction rolls back.
+5. *Cognito*: `AdminDeleteUser` for every matched user. "User not found" counts as success.
+
+**Why this order (partial failure).** The database is the source of the ids that locate S3 and cache data, so external data is deleted *before* the DB commit, while those ids are still discoverable; Cognito is disabled first and deleted last so the users (and their subs) stay findable until the end. Consequences, each covered by a test:
+
+- failure at disable, S3 or cache: the DB is untouched; re-run the dry run, re-approve and execute (the hash changes once objects are gone);
+- failure in the DB transaction: external data is already gone, the DB is untouched (rolled back); same re-run;
+- failure at the final Cognito delete: the DB is clean and the users are disabled; re-run finds them by email/sub and deletes them.
+
+Every delete is a no-op when its data is already gone, so re-running a finished wipe is safe. There is no resume file; the database and Cognito are the resume state. After deleting, the tool re-lists and fails loudly unless zero items remain.
+
+**Identifier safety.** Before any S3 listing or cache scan, every database user id, Cognito sub and deleted household id must be a full UUID; an empty or malformed value aborts the run.
+
+**Cognito lookup.** Cognito's email filter is case-sensitive. The tool tries each spelling you typed plus the lowercase form, keeps only users whose email equals the account case-insensitively, and then looks up by `sub` every database user not otherwise found. A database user whose sub is in no Cognito user at all is reported as a `WARNING:` line at the top of the listing (and is part of the hash): that account will not be disabled or deleted.
+
+**Household rule.** A household is deleted only if every member is in the wipe set (or it has no members) and its `primary_user_id` is not a surviving user (a non-wiped non-null primary counts as remaining, so the household is kept). A household shared with anyone else is **kept**: only the wiped users' memberships and notification preferences are removed, `ON DELETE SET NULL` clears the attribution columns on rows they created (reported in the listing), and if the wiped user was the primary the earliest-joined remaining member is promoted to primary.
+
+**Prerequisite: a network path to Aurora.** Aurora is in an isolated subnet and the Data API is disabled (see the W10 section above), so the CLI cannot reach it from a laptop by default. Provide `WIPE_DATABASE_URL` for a connection that can (for example an SSM port-forward through a host inside the VPC; set `WIPE_DATABASE_SERVERNAME` to the real RDS hostname so the certificate is verified against it). **The role must be able to bypass row level security**: the tables use `FORCE ROW LEVEL SECURITY`, so connect as the cluster admin (a superuser or a role with `rolbypassrls`), not `parimaan_app`. The tool checks `rolsuper OR rolbypassrls` and refuses otherwise; without it the listing would be silently empty. A reviewed in-VPC runner Lambda is deliberately not part of this tool.
+
+**Usage** (from `api/`, with `AWS_PROFILE=parimaan-dev`):
+
+```bash
+export WIPE_ENV=dev AWS_REGION=ap-south-1
+export WIPE_USER_POOL_ID=...            # Cognito user pool id (CfnOutput UserPoolId)
+export WIPE_UPLOADS_BUCKET=parimaan-uploads-dev
+export WIPE_EXPORTS_BUCKET=parimaan-exports-dev
+export WIPE_CACHE_TABLE=parimaan-cache-dev
+export WIPE_DATABASE_URL=...            # admin connection URL, no sslmode; never commit or paste it
+export WIPE_DATABASE_SERVERNAME=...     # real RDS hostname (needed for a port-forward to localhost)
+export WIPE_EXPECTED_ACCOUNT_ID=...     # 12-digit dev AWS account id; no default
+export WIPE_EXPECTED_POOL_NAME=...      # expected Cognito user pool name; no default
+export WIPE_EXPECTED_DB_HOST=...        # expected RDS hostname; no default
+
+# 1. Dry run (default, read-only). Prints the verified target, counts, sample ids and a listing hash.
+#    --full-listing writes the COMPLETE listing (every key, untruncated) as owner-only JSON for sign-off.
+#    It contains emails and ids: keep it out of git and delete it afterwards.
+pnpm wipe:accounts --emails-file wipe-emails.txt --full-listing wipe-listing.json
+
+# 2. Founder reviews the listing and approves it.
+
+# 3. Execute. --confirm must equal the hash of a listing computed right now.
+pnpm wipe:accounts --emails-file wipe-emails.txt --execute --confirm <hash>
+```
+
+The hash covers the whole listing (target, DB ids, S3 keys, cache keys, Cognito users, warnings). If anything changed since the approved dry run, execute refuses; re-run the dry run and re-approve. Re-running is safe: an already-clean target is a no-op. Afterwards re-seed curated recipes and verify (steps 4 and 5 of §32.5).
