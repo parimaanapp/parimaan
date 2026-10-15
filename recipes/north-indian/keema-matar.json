@@ -1,0 +1,127 @@
+{
+  "title": "Keema Matar",
+  "description": "Punjabi-style mutton mince cooked with green peas, onion, tomato and warm spices, scooped up with roti or pav.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 35,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Mutton Mince",
+      "quantity": 500,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Green Peas",
+      "quantity": 150,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Water",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Heat the oil and add the cumin seeds and bay leaf.",
+    "Add the onions and green chillies and cook until deep golden, then stir in the ginger garlic paste.",
+    "Add the tomatoes with the coriander powder, chilli powder, turmeric and salt and cook to a thick paste.",
+    "Add the mince and cook on high heat for 8 to 10 minutes, breaking up lumps, until browned and dry.",
+    "Add the water and peas, cover and simmer for 15 minutes until the mince is tender.",
+    "Sprinkle the garam masala and coriander leaves and serve hot."
+  ]
+}

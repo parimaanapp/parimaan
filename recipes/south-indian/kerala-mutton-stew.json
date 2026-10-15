@@ -1,0 +1,129 @@
+{
+  "title": "Kerala Mutton Stew",
+  "description": "A delicately spiced, creamy Kerala stew of mutton and vegetables cooked in coconut milk, eaten with appam or bread.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 60,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Mutton (Curry Cut)",
+      "quantity": 600,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Coconut Milk",
+      "quantity": 400,
+      "unit": "ml",
+      "category": "dairy"
+    },
+    {
+      "name": "Potato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 15,
+      "unit": "g",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Black Pepper (Whole)",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Water",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Pressure cook the mutton with the water, salt, half the ginger and garlic and pepper until tender, about 5 whistles.",
+    "Heat the coconut oil in a pan and add the cinnamon, cloves, cardamom and curry leaves.",
+    "Add the onion, remaining ginger, garlic and green chillies and sauté until soft but not coloured.",
+    "Add the potato and carrot with the cooked mutton and its stock and simmer 12 minutes until the vegetables are tender.",
+    "Pour in the coconut milk and warm through on low heat for 5 minutes without boiling.",
+    "Adjust the salt and rest for 5 minutes before serving."
+  ]
+}

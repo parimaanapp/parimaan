@@ -1,0 +1,107 @@
+{
+  "title": "Goan Chicken Cafreal",
+  "description": "Grilled-style Goan chicken coated in a vivid green paste of coriander, green chilli and whole spices.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 30,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "goan",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Chicken (Curry Cut)",
+      "quantity": 700,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "bunch",
+      "category": "produce"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 5,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 8,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 15,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Black Pepper (Whole)",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Vinegar",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juiced"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Grind the coriander, green chillies, garlic, ginger, cloves, pepper, cumin, turmeric and vinegar to a smooth green paste.",
+    "Marinate the chicken with the paste, lemon juice and salt for at least 1 hour.",
+    "Heat the oil in a wide pan and add the marinated chicken.",
+    "Cook on medium heat for 10 minutes, stirring occasionally, until the chicken starts to colour.",
+    "Cover and cook 15 minutes on low heat, then uncover and cook until the coating is dry and clings to the chicken.",
+    "Serve with lemon wedges, onion rings and pav or rice."
+  ]
+}

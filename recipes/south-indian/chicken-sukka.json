@@ -1,0 +1,121 @@
+{
+  "title": "Chicken Sukka",
+  "description": "A dry Mangalorean chicken preparation coated in a roasted coconut and red chilli masala, made for neer dosa or rice.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 40,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Chicken (Curry Cut)",
+      "quantity": 600,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 60,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Coriander Seeds",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Fenugreek Seeds",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Black Pepper (Whole)",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 10,
+      "unit": "g",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 10,
+      "unit": "g",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 2,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "In a spoonful of the oil, roast the coriander seeds, dried red chillies, cumin, fenugreek and pepper until aromatic.",
+    "Add the grated coconut and roast until golden, cool and grind with the turmeric, tamarind and a splash of water to a coarse paste.",
+    "Heat the remaining oil, add the curry leaves, onions, garlic and ginger and cook until the onions turn golden.",
+    "Add the chicken and salt and cook on medium heat for 10 minutes.",
+    "Stir in the ground masala with a few tablespoons of water, cover and cook 15 minutes until the chicken is tender.",
+    "Uncover and stir-fry on higher heat until the masala is dry and coats each piece."
+  ]
+}

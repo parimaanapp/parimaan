@@ -1,0 +1,131 @@
+{
+  "title": "Mutton Kosha",
+  "description": "Bengali slow-cooked mutton with caramelised onions, mustard oil and potatoes in a thick, glossy gravy.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 75,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Mutton (Curry Cut)",
+      "quantity": 700,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Mustard Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Onion",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "thinly sliced"
+    },
+    {
+      "name": "Potato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "halved"
+    },
+    {
+      "name": "Curd",
+      "quantity": 100,
+      "unit": "g",
+      "category": "dairy",
+      "notes": "whisked"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Cumin Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Water",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Marinate the mutton with the curd, half the ginger garlic paste, chilli powder, turmeric, cumin powder and salt for at least 1 hour.",
+    "Heat the mustard oil, lightly fry the potatoes until golden and set aside.",
+    "In the same oil add the bay leaves, cardamom, cloves and cinnamon, then the onions and sugar and cook until deep brown.",
+    "Add the remaining ginger garlic paste and the mutton with its marinade; cook on medium-high for 15 minutes, stirring.",
+    "Add the water, cover and cook on low for 40 minutes, adding the potatoes for the last 15 minutes.",
+    "Cook uncovered until the gravy turns thick and oil floats on top, then sprinkle the garam masala."
+  ]
+}

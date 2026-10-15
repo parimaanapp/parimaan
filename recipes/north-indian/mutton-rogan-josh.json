@@ -1,0 +1,112 @@
+{
+  "title": "Mutton Rogan Josh",
+  "description": "Kashmiri slow-cooked mutton in a deep red gravy of mustard oil, ginger, fennel and Kashmiri chilli, without onion or garlic.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 70,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "kashmiri",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Mutton (Curry Cut)",
+      "quantity": 700,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Mustard Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Curd",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dairy",
+      "notes": "whisked"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "spice",
+      "notes": "Kashmiri type for colour"
+    },
+    {
+      "name": "Dry Ginger Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Fennel Seeds",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice",
+      "notes": "coarsely ground"
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Black Cardamom",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Water",
+      "quantity": 3,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Heat the mustard oil until it just smokes, then cool slightly and add the hing, bay leaf, cloves, cinnamon and both cardamoms.",
+    "Add the mutton and sear on high heat for 8 minutes until browned.",
+    "Mix the chilli powder with a little water and stir it in along with the whisked curd, a spoon at a time, cooking until the oil separates.",
+    "Add the dry ginger, ground fennel and salt and cook 5 minutes.",
+    "Add the water, bring to a boil, cover and simmer on low heat for 50 to 60 minutes until the mutton is falling tender.",
+    "Rest 10 minutes and serve with steamed rice or naan."
+  ]
+}
