@@ -1,0 +1,27 @@
+{
+  "title": "Kashmiri Kahwa",
+  "description": "A fragrant Kashmiri green tea infused with saffron, cardamom and cinnamon and finished with chopped almonds.",
+  "servings": 2,
+  "prepMin": 2,
+  "cookMin": 8,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "kashmiri",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Water", "quantity": 400, "unit": "ml", "category": "beverages" },
+    { "name": "Green Tea", "quantity": 2, "unit": "tsp", "category": "beverages" },
+    { "name": "Green Cardamom", "quantity": 2, "unit": "piece", "category": "spice", "notes": "lightly crushed" },
+    { "name": "Cinnamon Stick", "quantity": 1, "unit": "piece", "category": "spice" },
+    { "name": "Saffron", "quantity": 0.2, "unit": "g", "category": "spice" },
+    { "name": "Sugar", "quantity": 2, "unit": "tsp", "category": "dry_goods" },
+    { "name": "Almonds", "quantity": 10, "unit": "g", "category": "dry_goods", "notes": "thinly sliced" },
+    { "name": "Dry Rose Petals", "quantity": 1, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Bring the 400 ml of water to a boil with the cinnamon stick and cardamom and simmer for 3 minutes.",
+    "Add the saffron and sugar and simmer for 1 minute.",
+    "Add the green tea and rose petals, switch off the heat and cover for 2 minutes.",
+    "Strain into cups and top with the sliced almonds."
+  ]
+}

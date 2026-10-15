@@ -1,0 +1,25 @@
+{
+  "title": "Kokum Sherbet",
+  "description": "A cooling coastal Maharashtrian drink of soaked kokum with sugar, roasted cumin and black salt, served chilled.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": ["veg", "vegan", "jain", "gluten_free", "dairy_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Kokum", "quantity": 6, "unit": "piece", "category": "spice", "notes": "rinds" },
+    { "name": "Water", "quantity": 600, "unit": "ml", "category": "beverages" },
+    { "name": "Sugar", "quantity": 4, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Black Salt", "quantity": 0.25, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Rinse the kokum rinds and soak them in 200 ml of warm water for 30 minutes.",
+    "Squeeze and crush the kokum in the water to release the deep pink juice, then strain and discard the rinds.",
+    "Stir in the sugar until it dissolves completely.",
+    "Add the roasted cumin powder, black salt and the remaining cold water.",
+    "Chill well and serve over ice."
+  ]
+}
