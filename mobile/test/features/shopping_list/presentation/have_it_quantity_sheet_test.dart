@@ -168,4 +168,71 @@ void main() {
       },
     );
   });
+
+  group('HaveItQuantitySheet — wireframe 10.3 layout (C2)', () {
+    testWidgets('asks "How much of X?" and explains the consequence', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAndGetConfirmedQuantities(tester, item: testShoppingListItem);
+
+      expect(find.text('How much of Rice?'), findsOneWidget);
+      expect(find.text('Moves to pantry, drops off the list'), findsOneWidget);
+    });
+
+    testWidgets('quantity is mono and right-aligned with the unit beside it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAndGetConfirmedQuantities(tester, item: testShoppingListItem);
+
+      final TextField field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(HaveItQuantitySheet.quantityFieldKey),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.textAlign, TextAlign.end);
+      expect(field.style!.fontFamily, 'JetBrains Mono');
+      expect(
+        find.descendant(
+          of: find.byKey(HaveItQuantitySheet.quantityFieldKey),
+          matching: find.text('kg'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('confirm reads "✓ Have it" and is at least 44 pt tall', (
+      WidgetTester tester,
+    ) async {
+      await _pumpAndGetConfirmedQuantities(tester, item: testShoppingListItem);
+
+      expect(find.text('✓ Have it'), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(HaveItQuantitySheet.confirmButtonKey)).height,
+        greaterThanOrEqualTo(44),
+      );
+    });
+
+    testWidgets('does not overflow at 320 pt with a long item name', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final ShoppingListItem long = ShoppingListItem(
+        id: 'i',
+        name: 'Kashmiri red chilli powder with an extremely long name',
+        quantity: 250,
+        unit: 'g',
+        category: 'spice',
+        sourceRecipeId: null,
+        purchased: false,
+        purchasedBy: null,
+        purchasedAt: null,
+        movedToPantry: false,
+      );
+      await _pumpAndGetConfirmedQuantities(tester, item: long);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
