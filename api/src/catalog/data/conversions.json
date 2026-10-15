@@ -1,0 +1,2676 @@
+[
+  {
+    "scope": "ingredient",
+    "key": "almond_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "almonds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "almonds_blanched",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "amaranth_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "ambemohar_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "amla",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "apple",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "apricot",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "arborio_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "arrowroot_powder",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "artichoke",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "ash_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1500
+  },
+  {
+    "scope": "ingredient",
+    "key": "asparagus",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "atta_whole_wheat_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "avocado",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "baby_corn",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "baby_potato",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
+    "key": "bajra",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "bajra_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "bamboo_shoot",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "banana",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "banana_elaichi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "banana_flower",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "banana_stem",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
+    "key": "barley",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "barnyard_millet",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "basmati_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "basmati_rice_brown",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "basmati_rice_sella",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "bay_leaf",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 0.5
+  },
+  {
+    "scope": "ingredient",
+    "key": "beetroot",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "besan",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "bhavnagri_chilli",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "bitter_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "black_cardamom",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 2
+  },
+  {
+    "scope": "ingredient",
+    "key": "black_pepper_whole",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 0.05
+  },
+  {
+    "scope": "ingredient",
+    "key": "black_raisins",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "black_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "boiled_rice_parboiled",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "bottle_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 600
+  },
+  {
+    "scope": "ingredient",
+    "key": "bread_crumbs",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "brinjal_bharta",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
+  },
+  {
+    "scope": "ingredient",
+    "key": "brinjal_long",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "brinjal_round",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "brinjal_small",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "broad_beans",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "broccoli",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
+    "key": "brown_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "brown_sugar",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "brussels_sprouts",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "buckwheat",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "cabbage",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 700
+  },
+  {
+    "scope": "ingredient",
+    "key": "cannellini_beans",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "cantaloupe_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "capsicum_green",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "capsicum_red",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "capsicum_yellow",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "carrot",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 70
+  },
+  {
+    "scope": "ingredient",
+    "key": "cashew_nuts",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "cashew_pieces",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "cauliflower",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 500
+  },
+  {
+    "scope": "ingredient",
+    "key": "celery",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "chana_dal",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "chayote",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "cherry_tomato",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "chia_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "chicken_legs",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "chicken_whole",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1200
+  },
+  {
+    "scope": "ingredient",
+    "key": "chicken_wings",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 50
+  },
+  {
+    "scope": "ingredient",
+    "key": "chickpea_flour_roasted",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "chikoo",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "cinnamon_stick",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 3
+  },
+  {
+    "scope": "ingredient",
+    "key": "cloves",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 0.1
+  },
+  {
+    "scope": "ingredient",
+    "key": "cluster_beans",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "ingredient",
+    "key": "coconut_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "coconut_fresh",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
+  },
+  {
+    "scope": "ingredient",
+    "key": "coconut_grated",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "colocasia_arbi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "corn_dried_kernels",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "corn_sweet",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "cornflour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "cowpea_pods",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "cucumber",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "cucumber_english",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
+    "key": "curd",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 245
+  },
+  {
+    "scope": "ingredient",
+    "key": "curry_leaves",
+    "unit": "bunch",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "custard_apple",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "dalia_broken_wheat",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "dates_dry",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 175
+  },
+  {
+    "scope": "ingredient",
+    "key": "dates_fresh",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 175
+  },
+  {
+    "scope": "ingredient",
+    "key": "dates_seedless",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 175
+  },
+  {
+    "scope": "ingredient",
+    "key": "dhokla_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 115
+  },
+  {
+    "scope": "ingredient",
+    "key": "dragon_fruit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
+    "key": "dried_apricots",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "dried_cranberries",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "dried_figs",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "dried_red_chilli",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 2
+  },
+  {
+    "scope": "ingredient",
+    "key": "drumstick",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "dry_coconut_copra",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "dry_coconut_grated",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "egg",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 50
+  },
+  {
+    "scope": "ingredient",
+    "key": "egg_brown",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 50
+  },
+  {
+    "scope": "ingredient",
+    "key": "egg_duck",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 70
+  },
+  {
+    "scope": "ingredient",
+    "key": "egg_quail",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 10
+  },
+  {
+    "scope": "ingredient",
+    "key": "fennel_bulb",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "fig_fresh",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "flavoured_yogurt",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 245
+  },
+  {
+    "scope": "ingredient",
+    "key": "flax_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "foxtail_millet",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "french_beans",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "garlic",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "garlic_baby_single_clove",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "garlic_clove",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 4
+  },
+  {
+    "scope": "ingredient",
+    "key": "gilki",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "ginger",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "gobindobhog_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "greek_yogurt",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 245
+  },
+  {
+    "scope": "ingredient",
+    "key": "green_cardamom",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 0.5
+  },
+  {
+    "scope": "ingredient",
+    "key": "green_chilli",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "ingredient",
+    "key": "green_garlic",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
+    "key": "green_mango_tender",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "green_peas",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "green_peas_dried",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "guava",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "hemp_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "horse_gram",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "hung_curd",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 245
+  },
+  {
+    "scope": "ingredient",
+    "key": "idli_rava",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "idli_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "indrayani_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "ivy_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "jackfruit_ripe",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1500
+  },
+  {
+    "scope": "ingredient",
+    "key": "jaggery",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "jaggery_powder",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "jalapeno",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "jamun",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 10
+  },
+  {
+    "scope": "ingredient",
+    "key": "jasmine_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "jowar",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "jowar_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "kabuli_chana",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "kala_chana",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "kantola",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "karonda",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "kiwi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "kodo_millet",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "kohlrabi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "kolam_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "kulthi",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "kuttu_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "leek",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "lemon",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "lemon_sweet",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "lettuce",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
+    "key": "lima_beans_dried",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "litchi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "little_millet",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "lobiya_black",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "lobiya_white",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "lotus_stem",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "maida",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 125
+  },
+  {
+    "scope": "ingredient",
+    "key": "makhana",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
+    "key": "makki_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "mandarin",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_ripe",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "masoor_dal_red",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "masoor_whole",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "matki",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "mixed_dry_fruits",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "moong_dal_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "moong_dal_split_green",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "moong_dal_split_yellow",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "moong_whole",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "multigrain_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "murmura",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "mushroom_button",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "mushroom_oyster",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "mushroom_shiitake",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "muskmelon",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 800
+  },
+  {
+    "scope": "ingredient",
+    "key": "navratan_dal",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "noodles_dry",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "oat_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "oats_rolled",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "oats_steel_cut",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "okra",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 10
+  },
+  {
+    "scope": "ingredient",
+    "key": "onion",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "orange",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "orange_kinnow",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "palm_fruit_nungu",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "papaya_ripe",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 800
+  },
+  {
+    "scope": "ingredient",
+    "key": "parsnip",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "pasta_dry",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "peach",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "peanuts",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "peanuts_skinless",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "pear",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "pearl_onions",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 10
+  },
+  {
+    "scope": "ingredient",
+    "key": "phalsa",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 4
+  },
+  {
+    "scope": "ingredient",
+    "key": "pineapple",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "ingredient",
+    "key": "pink_radish",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
+    "key": "pistachios",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 125
+  },
+  {
+    "scope": "ingredient",
+    "key": "plum",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "poha_thick",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "poha_thin",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "pointed_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "pomegranate",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "pomelo",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 600
+  },
+  {
+    "scope": "ingredient",
+    "key": "potato",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "powdered_sugar",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "proso_millet",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "prunes",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "puffed_millet",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "pumpkin",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "ingredient",
+    "key": "pumpkin_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "quinoa",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "radish_red",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "radish_white",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "ragi_finger_millet_whole",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "ragi_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "raisins",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "rajgira_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "rajma_chitra",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "rajma_red",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "rava_dosa_mix",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "raw_banana",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "raw_berries_ber",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 10
+  },
+  {
+    "scope": "ingredient",
+    "key": "raw_jackfruit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1500
+  },
+  {
+    "scope": "ingredient",
+    "key": "raw_mango",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "raw_papaya",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
+  },
+  {
+    "scope": "ingredient",
+    "key": "raw_rice_ponni",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "raw_turmeric_root_amba_haldi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "red_cabbage",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 600
+  },
+  {
+    "scope": "ingredient",
+    "key": "red_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "rice_bean",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "rice_broken",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "rice_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "rice_noodles",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "ridge_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "roasted_chana",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "roasted_chana_dal",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "roasted_peanuts",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "roasted_vermicelli",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "sabudana",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "sabudana_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "shallots",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "singhara_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "snake_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "sona_masoori_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "sooji",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "sooji_fine",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "soy_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "soya_chunks",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "soybean_whole",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "spaghetti_squash",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "ingredient",
+    "key": "sponge_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "spring_onion",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "star_anise",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "ingredient",
+    "key": "star_fruit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "sticky_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 195
+  },
+  {
+    "scope": "ingredient",
+    "key": "strawberry",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "sugar",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "sunflower_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "sushi_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 195
+  },
+  {
+    "scope": "ingredient",
+    "key": "sweet_lime",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "sweet_potato",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "sword_beans",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "tapioca_cassava",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
+  },
+  {
+    "scope": "ingredient",
+    "key": "tapioca_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "tender_coconut",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
+  },
+  {
+    "scope": "ingredient",
+    "key": "thalipeeth_bhajani",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 125
+  },
+  {
+    "scope": "ingredient",
+    "key": "tinda",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "tomato",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "toor_dal",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "turmeric_raw",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "turnip",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "urad_dal_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "urad_dal_split_black",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "urad_dal_split_white",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "urad_dal_whole",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "val_field_beans",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "vermicelli",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "walnut_halves",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "walnuts",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "water_chestnut_fresh",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "watermelon",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 3000
+  },
+  {
+    "scope": "ingredient",
+    "key": "watermelon_seeds",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "wheat_whole",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "white_onion",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "white_peas",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "whole_wheat_pastry_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 115
+  },
+  {
+    "scope": "ingredient",
+    "key": "wood_apple",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "yam_elephant_foot",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 500
+  },
+  {
+    "scope": "ingredient",
+    "key": "yam_purple",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
+    "key": "yellow_pumpkin",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "ingredient",
+    "key": "zucchini",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "subcategory",
+    "key": "bakery",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "bakery",
+    "unit": "slice",
+    "baseUnit": "piece",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "baking_misc",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "baking_misc",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 14
+  },
+  {
+    "scope": "subcategory",
+    "key": "baking_misc",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 4.5
+  },
+  {
+    "scope": "subcategory",
+    "key": "beverage",
+    "unit": "cup",
+    "baseUnit": "ml",
+    "amount": 240
+  },
+  {
+    "scope": "subcategory",
+    "key": "beverage",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "beverage",
+    "unit": "l",
+    "baseUnit": "ml",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "beverage",
+    "unit": "ml",
+    "baseUnit": "ml",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "beverage",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 9
+  },
+  {
+    "scope": "subcategory",
+    "key": "beverage",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 3
+  },
+  {
+    "scope": "subcategory",
+    "key": "condiment_sauce",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "condiment_sauce",
+    "unit": "ml",
+    "baseUnit": "ml",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "condiment_sauce",
+    "unit": "tbsp",
+    "baseUnit": "ml",
+    "amount": 15
+  },
+  {
+    "scope": "subcategory",
+    "key": "condiment_sauce",
+    "unit": "tsp",
+    "baseUnit": "ml",
+    "amount": 5
+  },
+  {
+    "scope": "subcategory",
+    "key": "curd",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 245
+  },
+  {
+    "scope": "subcategory",
+    "key": "curd",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "curd",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "curd",
+    "unit": "ml",
+    "baseUnit": "ml",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "curd",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "subcategory",
+    "key": "dairy_liquid",
+    "unit": "cup",
+    "baseUnit": "ml",
+    "amount": 240
+  },
+  {
+    "scope": "subcategory",
+    "key": "dairy_liquid",
+    "unit": "l",
+    "baseUnit": "ml",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "dairy_liquid",
+    "unit": "ml",
+    "baseUnit": "ml",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "dairy_solid",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "dairy_solid",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "dal_pulse",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "subcategory",
+    "key": "dal_pulse",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "dal_pulse",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "egg",
+    "unit": "dozen",
+    "baseUnit": "piece",
+    "amount": 12
+  },
+  {
+    "scope": "subcategory",
+    "key": "fish",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "fish",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "subcategory",
+    "key": "flour",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "flour",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "frozen",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "frozen",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "fruit",
+    "unit": "dozen",
+    "baseUnit": "piece",
+    "amount": 12
+  },
+  {
+    "scope": "subcategory",
+    "key": "fruit",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "fruit",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "ghee_butter",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "ghee_butter",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "ghee_butter",
+    "unit": "ml",
+    "baseUnit": "g",
+    "amount": 0.91
+  },
+  {
+    "scope": "subcategory",
+    "key": "ghee_butter",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 14
+  },
+  {
+    "scope": "subcategory",
+    "key": "ghee_butter",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 4.5
+  },
+  {
+    "scope": "subcategory",
+    "key": "leafy_herb",
+    "unit": "bunch",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "subcategory",
+    "key": "leafy_herb",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "leafy_herb",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 4
+  },
+  {
+    "scope": "subcategory",
+    "key": "masala_blend",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "masala_blend",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 9
+  },
+  {
+    "scope": "subcategory",
+    "key": "masala_blend",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 3
+  },
+  {
+    "scope": "subcategory",
+    "key": "meat",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "meat",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "nut_seed",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "subcategory",
+    "key": "nut_seed",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "nut_seed",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "nut_seed",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 9
+  },
+  {
+    "scope": "subcategory",
+    "key": "oil",
+    "unit": "cup",
+    "baseUnit": "ml",
+    "amount": 240
+  },
+  {
+    "scope": "subcategory",
+    "key": "oil",
+    "unit": "l",
+    "baseUnit": "ml",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "oil",
+    "unit": "ml",
+    "baseUnit": "ml",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "oil",
+    "unit": "tbsp",
+    "baseUnit": "ml",
+    "amount": 15
+  },
+  {
+    "scope": "subcategory",
+    "key": "oil",
+    "unit": "tsp",
+    "baseUnit": "ml",
+    "amount": 5
+  },
+  {
+    "scope": "subcategory",
+    "key": "paste",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "paste",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "subcategory",
+    "key": "paste",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "subcategory",
+    "key": "pickle_chutney",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "pickle_chutney",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "subcategory",
+    "key": "pickle_chutney",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "subcategory",
+    "key": "rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "subcategory",
+    "key": "rice",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "rice",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "salt_sugar",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "subcategory",
+    "key": "salt_sugar",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "salt_sugar",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "salt_sugar",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "subcategory",
+    "key": "salt_sugar",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "subcategory",
+    "key": "snack",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "spice_ground",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "spice_ground",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "subcategory",
+    "key": "spice_ground",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 2.5
+  },
+  {
+    "scope": "subcategory",
+    "key": "spice_whole",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "spice_whole",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 7.5
+  },
+  {
+    "scope": "subcategory",
+    "key": "spice_whole",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 2.5
+  },
+  {
+    "scope": "subcategory",
+    "key": "vegetable",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "vegetable",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  },
+  {
+    "scope": "subcategory",
+    "key": "whole_grain",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "subcategory",
+    "key": "whole_grain",
+    "unit": "g",
+    "baseUnit": "g",
+    "amount": 1
+  },
+  {
+    "scope": "subcategory",
+    "key": "whole_grain",
+    "unit": "kg",
+    "baseUnit": "g",
+    "amount": 1000
+  }
+]
