@@ -1,0 +1,36 @@
+{
+  "title": "Khaman Dhokla",
+  "description": "Spongy, lemony steamed besan cakes finished with a mustard and sesame tempering, a classic Gujarati breakfast and tea-time bite.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "gujarati",
+  "dietaryTags": ["veg", "vegan", "jain", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Besan", "quantity": 150, "unit": "g", "category": "dry_goods" },
+    { "name": "Water", "quantity": 200, "unit": "ml", "category": "beverages" },
+    { "name": "Sugar", "quantity": 1, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Eno", "quantity": 1, "unit": "tsp", "category": "other" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil", "notes": "1 tbsp for the batter and 2 tbsp for tempering" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Sesame Seeds (White)", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "slit lengthwise" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Coconut (Grated)", "quantity": 20, "unit": "g", "category": "produce" }
+  ],
+  "steps": [
+    "Whisk 150 g of besan with the water, sugar, lemon juice, salt, turmeric powder and 1 tbsp of the oil into a smooth, lump-free batter and rest it for 5 minutes.",
+    "Grease a steaming plate and bring water to a boil in a steamer or large pot.",
+    "Sprinkle the 1 tsp of Eno over the batter, pour in a spoon of water over it, and stir gently just until it foams up.",
+    "Pour the batter into the greased plate straight away and steam covered on high heat for 15 minutes, until a toothpick comes out clean.",
+    "Cool for a few minutes, then cut into squares.",
+    "Heat the remaining 2 tbsp of oil, crackle the mustard seeds and sesame seeds, then add green chilli and curry leaves and pour this over the dhokla.",
+    "Garnish with coriander leaves and grated coconut."
+  ]
+}

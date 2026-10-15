@@ -1,0 +1,25 @@
+{
+  "title": "Puttu",
+  "description": "Steamed cylinders of coarse rice flour layered with fresh coconut, a soft traditional Kerala breakfast usually eaten with kadala curry.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Rice Flour", "quantity": 250, "unit": "g", "category": "grain", "notes": "coarse, puttu podi" },
+    { "name": "Coconut (Grated)", "quantity": 100, "unit": "g", "category": "produce" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Water", "quantity": 100, "unit": "ml", "category": "beverages", "notes": "approximate, sprinkled in" }
+  ],
+  "steps": [
+    "Dry roast the rice flour in a pan on low heat for 3 to 4 minutes until it feels warm and dry, then cool.",
+    "Mix the salt into the flour and sprinkle the water in small amounts, rubbing with your fingers until the flour looks like damp breadcrumbs that hold when pressed lightly.",
+    "Sieve to break any lumps.",
+    "Fill a puttu maker or cylindrical mould in layers, starting with a spoon of grated coconut, then flour, then coconut again, finishing with coconut.",
+    "Steam over boiling water for 6 to 8 minutes until steam pushes out of the top.",
+    "Push out the cylinder gently and serve hot with kadala curry or banana and sugar."
+  ]
+}

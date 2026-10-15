@@ -1,0 +1,28 @@
+{
+  "title": "Luchi",
+  "description": "Puffed, pale golden Bengali deep fried maida flatbreads, traditionally served with aloor dom or cholar dal for a weekend breakfast.",
+  "servings": 3,
+  "prepMin": 20,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": ["veg"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Maida", "quantity": 250, "unit": "g", "category": "grain" },
+    { "name": "Ghee", "quantity": 1, "unit": "tbsp", "category": "oil", "notes": "for the dough" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Sugar", "quantity": 0.5, "unit": "tsp", "category": "dry_goods" },
+    { "name": "Water", "quantity": 120, "unit": "ml", "category": "beverages", "notes": "approximate" },
+    { "name": "Vegetable Oil", "quantity": 300, "unit": "ml", "category": "oil", "notes": "for deep frying" }
+  ],
+  "steps": [
+    "Mix the maida with the salt and sugar, then rub in the ghee until the flour looks like breadcrumbs.",
+    "Add about 120 ml of water gradually and knead to a firm, smooth dough; cover and rest for 20 minutes.",
+    "Divide into 12 small balls and roll each into a thin 4 inch round, dusting lightly with flour.",
+    "Heat the oil to medium-high and test with a pinch of dough, which should rise at once.",
+    "Slide in one luchi at a time and press it down with the back of the spoon so it puffs.",
+    "Fry for about 30 seconds on each side without browning and drain on paper.",
+    "Serve immediately while hot and puffed."
+  ]
+}

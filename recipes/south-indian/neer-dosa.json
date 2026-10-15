@@ -1,60 +1,26 @@
 {
   "title": "Neer Dosa",
-  "description": "Delicate, lace-thin rice and coconut crepes from coastal Karnataka that need no fermentation.",
-  "servings": 4,
-  "prepMin": 10,
-  "cookMin": 25,
+  "description": "A paper-thin, soft, lace-like Mangalorean rice dosa made from a runny batter of rice and fresh coconut with no fermentation.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 15,
   "cuisineTier1": "south_indian",
   "cuisineTier2": "karnataka",
-  "dietaryTags": [
-    "veg",
-    "vegan",
-    "gluten_free",
-    "dairy_free"
-  ],
-  "role": "carb",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "breakfast",
   "ingredients": [
-    {
-      "name": "Raw Rice (Ponni)",
-      "quantity": 1.5,
-      "unit": "cup",
-      "category": "grain",
-      "notes": "soaked 3 hours"
-    },
-    {
-      "name": "Coconut (Grated)",
-      "quantity": 50,
-      "unit": "g",
-      "category": "produce"
-    },
-    {
-      "name": "Water",
-      "quantity": 2.5,
-      "unit": "cup",
-      "category": "beverages",
-      "notes": "approximately"
-    },
-    {
-      "name": "Salt",
-      "quantity": 1,
-      "unit": "tsp",
-      "category": "dry_goods",
-      "isStaple": true
-    },
-    {
-      "name": "Coconut Oil",
-      "quantity": 2,
-      "unit": "tsp",
-      "category": "oil",
-      "notes": "for greasing"
-    }
+    { "name": "Raw Rice (Ponni)", "quantity": 1, "unit": "cup", "category": "grain", "notes": "soaked for 3 hours" },
+    { "name": "Coconut (Grated)", "quantity": 30, "unit": "g", "category": "produce" },
+    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Water", "quantity": 350, "unit": "ml", "category": "beverages", "notes": "approximate" },
+    { "name": "Coconut Oil", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for greasing" }
   ],
   "steps": [
-    "Drain the soaked rice and grind with the coconut and a little water to a very fine batter.",
-    "Thin with more water to a watery, flowing consistency and stir in the salt.",
-    "Heat a non-stick tawa on medium-high and lightly grease with coconut oil.",
-    "Stir the batter well, then pour a ladle from a little height, tilting the pan to cover it.",
-    "Cover and cook for 1 minute without flipping until the edges lift.",
-    "Fold into quarters and serve with coconut chutney or chicken curry."
+    "Drain the soaked rice and grind it with the grated coconut and 150 ml of the water to a very smooth batter.",
+    "Add the remaining water and the salt, mixing until the batter is thin and flows like buttermilk.",
+    "Heat a flat non-stick tawa and brush it very lightly with coconut oil.",
+    "Stir the batter well and pour from the edge in a spiral, then swirl the tawa quickly to cover the base.",
+    "Cover and cook for 1 minute only, until the dosa turns opaque and cooked; do not brown it or flip it.",
+    "Fold into a triangle and serve warm with coconut chutney or a spicy curry."
   ]
 }

@@ -1,0 +1,30 @@
+{
+  "title": "Ragi Dosa",
+  "description": "Instant finger millet dosa made without fermentation, crisp, lacy and dotted with onion and curry leaves.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Ragi Flour", "quantity": 100, "unit": "g", "category": "grain" },
+    { "name": "Rice Flour", "quantity": 50, "unit": "g", "category": "grain" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce", "notes": "chopped" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Water", "quantity": 400, "unit": "ml", "category": "beverages", "notes": "approximate" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "Whisk the ragi flour and rice flour with the salt and about 400 ml of water to a thin, watery batter without lumps.",
+    "Stir in the onion, green chilli, curry leaves and cumin seeds.",
+    "Heat a cast iron or non-stick tawa until hot and grease lightly with oil.",
+    "Stir the batter well each time, then pour a ladle from a little height, starting at the outside and spiralling inward, so it forms a lacy round.",
+    "Drizzle a little oil on top and cook for 2 to 3 minutes until crisp and the edges lift.",
+    "Fold and serve with coconut chutney or sambar; no flipping is needed."
+  ]
+}

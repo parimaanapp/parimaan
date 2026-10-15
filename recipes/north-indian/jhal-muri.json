@@ -1,0 +1,31 @@
+{
+  "title": "Jhal Muri",
+  "description": "Kolkata's spicy puffed rice street snack tossed with mustard oil, onion, cucumber, peanuts and lemon.",
+  "servings": 2,
+  "prepMin": 10,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Murmura", "quantity": 100, "unit": "g", "category": "dry_goods" },
+    { "name": "Onion", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Cucumber", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Roasted Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Coconut (Grated)", "quantity": 15, "unit": "g", "category": "produce" },
+    { "name": "Mustard Oil", "quantity": 1, "unit": "tsp", "category": "oil" },
+    { "name": "Black Salt", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Chaat Masala", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" }
+  ],
+  "steps": [
+    "Put the onion, tomato, cucumber, green chilli, peanuts and grated coconut in a large bowl.",
+    "Add the mustard oil, black salt, chaat masala and lemon juice and mix well.",
+    "Add the murmura and coriander leaves and toss quickly so it stays crisp.",
+    "Serve at once in paper cones."
+  ]
+}

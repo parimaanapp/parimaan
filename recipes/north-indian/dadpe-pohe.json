@@ -1,0 +1,31 @@
+{
+  "title": "Dadpe Pohe",
+  "description": "A no-cook Maharashtrian poha made by soaking thin flattened rice and tossing it with coconut, lemon and chilli, light and refreshing.",
+  "servings": 2,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Poha (Thin)", "quantity": 150, "unit": "g", "category": "dry_goods" },
+    { "name": "Coconut (Grated)", "quantity": 40, "unit": "g", "category": "produce" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Sugar", "quantity": 1, "unit": "tsp", "category": "dry_goods" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce" }
+  ],
+  "steps": [
+    "Rinse the thin poha briefly in a colander so it softens, then drain and leave it for 5 minutes.",
+    "Add the grated coconut, green chilli, tomato, coriander leaves, lemon juice, sugar and salt and toss lightly.",
+    "Heat the oil in a small pan, crackle the mustard seeds, and add the curry leaves for a few seconds.",
+    "Pour the tempering over the poha and mix gently with a fork so the flakes stay separate.",
+    "Serve straight away at room temperature."
+  ]
+}

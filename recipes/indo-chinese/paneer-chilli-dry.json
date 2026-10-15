@@ -1,0 +1,36 @@
+{
+  "title": "Paneer Chilli Dry",
+  "description": "Crisp paneer cubes tossed on high heat with capsicum, onion and a soy and chilli sauce glaze.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 15,
+  "cuisineTier1": "indo_chinese",
+  "cuisineTier2": "indo_chinese",
+  "dietaryTags": ["veg"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Paneer", "quantity": 200, "unit": "g", "category": "dairy", "notes": "cubed" },
+    { "name": "Cornflour", "quantity": 30, "unit": "g", "category": "grain" },
+    { "name": "Capsicum (Green)", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into squares" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into squares" },
+    { "name": "Garlic (Clove)", "quantity": 4, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger", "quantity": 10, "unit": "g", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "slit" },
+    { "name": "Soy Sauce", "quantity": 1, "unit": "tbsp", "category": "condiment" },
+    { "name": "Red Chilli Sauce", "quantity": 1, "unit": "tbsp", "category": "condiment" },
+    { "name": "Tomato Ketchup", "quantity": 1, "unit": "tbsp", "category": "condiment" },
+    { "name": "Vinegar", "quantity": 1, "unit": "tsp", "category": "condiment" },
+    { "name": "Spring Onion", "quantity": 2, "unit": "piece", "category": "produce", "notes": "chopped" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil" },
+    { "name": "Black Pepper Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 0.25, "unit": "tsp", "category": "dry_goods", "isStaple": true }
+  ],
+  "steps": [
+    "Toss the paneer cubes with the cornflour, salt and a splash of water until lightly coated.",
+    "Heat 2 tbsp of the oil in a pan and shallow fry the paneer until golden on all sides, then remove.",
+    "In the remaining oil, fry the garlic, ginger and green chilli for 30 seconds on high heat.",
+    "Add the onion and capsicum and stir fry for 2 minutes so they stay crunchy.",
+    "Add the soy sauce, red chilli sauce, tomato ketchup, vinegar and black pepper powder and mix.",
+    "Return the paneer, toss for a minute to glaze, and finish with the spring onion."
+  ]
+}

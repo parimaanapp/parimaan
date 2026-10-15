@@ -1,0 +1,32 @@
+{
+  "title": "Semiya Upma",
+  "description": "Roasted vermicelli cooked with mustard seeds, curry leaves and vegetables into a soft, fluffy upma.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Roasted Vermicelli", "quantity": 150, "unit": "g", "category": "dry_goods" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Carrot", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "slit" },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Urad Dal (Split, White)", "quantity": 10, "unit": "g", "category": "dal" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce" },
+    { "name": "Water", "quantity": 350, "unit": "ml", "category": "beverages" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" }
+  ],
+  "steps": [
+    "Heat the oil in a pan and crackle the mustard seeds, then fry the urad dal until golden.",
+    "Add the curry leaves, green chilli and onion and sauté for 3 minutes until translucent.",
+    "Stir in the carrot and cook for 2 minutes.",
+    "Pour in the 350 ml of water, add the salt and bring to a rolling boil.",
+    "Add the roasted vermicelli, stir well, cover and cook on low heat for 3 to 4 minutes until the water is absorbed.",
+    "Turn off the heat, squeeze in the lemon juice and fluff with a fork before serving."
+  ]
+}

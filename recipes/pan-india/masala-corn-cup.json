@@ -1,0 +1,26 @@
+{
+  "title": "Masala Corn Cup",
+  "description": "Steamed sweet corn kernels tossed with butter, chaat masala and lemon, a quick mall-style snack made at home.",
+  "servings": 2,
+  "prepMin": 5,
+  "cookMin": 10,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Corn (Sweet)", "quantity": 2, "unit": "piece", "category": "produce", "notes": "kernels cut from the cob" },
+    { "name": "Butter (Salted)", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Chaat Masala", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Salt", "quantity": 0.25, "unit": "tsp", "category": "dry_goods", "isStaple": true }
+  ],
+  "steps": [
+    "Steam the corn kernels, or boil them in salted water, for 6 to 8 minutes until tender.",
+    "Drain well and return them to the pan with the butter on low heat.",
+    "Add the chaat masala, red chilli powder and salt and toss for 1 minute.",
+    "Take off the heat, add the lemon juice and coriander leaves and serve in cups."
+  ]
+}

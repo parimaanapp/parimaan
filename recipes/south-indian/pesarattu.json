@@ -1,0 +1,30 @@
+{
+  "title": "Pesarattu",
+  "description": "Andhra green moong dosa made from a ground whole-moong batter with ginger and green chilli, crisp at the edges and protein rich.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "andhra",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Moong (Whole)", "quantity": 200, "unit": "g", "category": "dal", "notes": "soaked for 6 hours" },
+    { "name": "Rice", "quantity": 25, "unit": "g", "category": "grain", "notes": "soaked with the moong" },
+    { "name": "Ginger", "quantity": 15, "unit": "g", "category": "produce", "notes": "peeled, roughly chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, for sprinkling" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "tbsp", "category": "oil", "notes": "for cooking" },
+    { "name": "Water", "quantity": 150, "unit": "ml", "category": "beverages", "notes": "approximate, for grinding" }
+  ],
+  "steps": [
+    "Drain the soaked moong and rice and grind with the ginger, green chilli, cumin seeds and salt, adding about 150 ml of water, to a smooth pourable batter.",
+    "The batter should be thinner than idli batter but thicker than neer dosa batter, so adjust with a splash of water if needed.",
+    "Heat a non-stick tawa and sprinkle a few drops of water; it should sizzle and evaporate quickly.",
+    "Pour a ladle of batter in the centre and spread outwards in a circular motion to a thin round.",
+    "Scatter a spoonful of chopped onion over the top, drizzle a little oil around the edges and cook for 2 minutes until crisp.",
+    "Fold and serve hot with coconut chutney or ginger chutney."
+  ]
+}

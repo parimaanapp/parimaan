@@ -1,0 +1,28 @@
+{
+  "title": "Sweet Dalia Porridge",
+  "description": "Broken wheat simmered in milk with jaggery, cardamom, almonds and raisins, a comforting North Indian breakfast.",
+  "servings": 3,
+  "prepMin": 5,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": ["veg"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Dalia (Broken Wheat)", "quantity": 100, "unit": "g", "category": "grain" },
+    { "name": "Ghee", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Milk", "quantity": 500, "unit": "ml", "category": "dairy" },
+    { "name": "Water", "quantity": 100, "unit": "ml", "category": "beverages" },
+    { "name": "Jaggery Powder", "quantity": 3, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Green Cardamom", "quantity": 2, "unit": "piece", "category": "spice", "notes": "crushed" },
+    { "name": "Almonds", "quantity": 10, "unit": "g", "category": "dry_goods", "notes": "chopped" },
+    { "name": "Raisins", "quantity": 1, "unit": "tbsp", "category": "dry_goods" }
+  ],
+  "steps": [
+    "Heat the ghee in a heavy pan and roast the dalia on low heat for 3 to 4 minutes until it smells nutty.",
+    "Pour in the milk and the water and bring to a boil, stirring.",
+    "Cover and simmer on low heat for 15 to 18 minutes, stirring occasionally, until the dalia is soft.",
+    "Add the jaggery powder, crushed cardamom, almonds and raisins and cook for 3 minutes more.",
+    "Serve hot, adding a splash of warm milk if you want it looser."
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "title": "Sattu Sharbat",
+  "description": "A salty-sour Bihari summer cooler of roasted gram flour with lemon, cumin and mint, filling and cooling.",
+  "servings": 2,
+  "prepMin": 5,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bihari",
+  "dietaryTags": ["veg", "vegan", "jain", "gluten_free", "dairy_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Sattu", "quantity": 4, "unit": "tbsp", "category": "beverages" },
+    { "name": "Water", "quantity": 500, "unit": "ml", "category": "beverages", "notes": "cold" },
+    { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Mint Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, optional" }
+  ],
+  "steps": [
+    "Put the sattu in a large jug and add about 100 ml of the cold water, whisking to a smooth paste with no lumps.",
+    "Add the remaining water gradually while whisking.",
+    "Stir in the lemon juice, black salt and roasted cumin powder.",
+    "Add the mint leaves and green chilli, taste and adjust, then serve cold over ice."
+  ]
+}
