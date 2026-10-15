@@ -27,6 +27,28 @@ describe('DietarySection', () => {
     expect(input.dietaryTags).toEqual(['veg', 'vegan']);
   });
 
+  it('blocks saving when no eating style is selected, and explains why (M3)', async () => {
+    const { requests } = renderWithUrql(
+      <DietarySection
+        householdId="hh-1"
+        initialDietaryTags={['veg', 'gluten_free']}
+        initialAllergens={[]}
+        initialSkipIngredients={[]}
+      />,
+      () => ({ data: { updateHouseholdSettings: { id: 'hh-1', settings: {} } } }),
+    );
+
+    fireEvent.click(screen.getByLabelText('Vegetarian'));
+
+    expect(screen.getByRole('alert').textContent).toContain('at least one eating style');
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(requests).toHaveLength(0);
+
+    fireEvent.click(screen.getByLabelText('Non-vegetarian'));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it('adding an allergen patches only allergens', async () => {
     const { requests } = renderWithUrql(
       <DietarySection
