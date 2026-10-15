@@ -1,0 +1,87 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## condiment_sauce
+Teriyaki Sauce | teriyaki; teriyaki marinade; teriyaki glaze |  | 
+Mirin | sweet rice wine; japanese cooking wine; hon mirin |  | 
+Rice Wine (Shaoxing) | shaoxing wine; chinese cooking wine; shaohsing wine; huadiao |  | 
+Tamari | gluten free soy sauce; tamari soy sauce |  | 
+Sambal Oelek | sambal; ground chilli paste; indonesian chilli paste |  | 
+Chilli Oil | chili oil; hot chilli oil; chilli crisp |  | 
+Chilli Garlic Sauce | chili garlic sauce; garlic chilli sauce |  | 
+Plum Sauce | duck sauce; chinese plum sauce |  | 
+Black Bean Sauce | fermented black bean sauce; douchi sauce |  | 
+Tom Yum Paste | tom yum; tomyum paste; thai hot sour paste |  | 
+Satay Sauce | peanut satay; satay |  | 
+Sweet and Sour Sauce | sweet n sour; sweet sour sauce |  | 
+Manchurian Sauce | gobi manchurian sauce; manchurian gravy; manchurian paste |  | 
+Ranch Dressing | ranch; ranch sauce |  | 
+Caesar Dressing | caesar sauce; caesar salad dressing |  | 
+Salad Dressing | vinaigrette; salad sauce |  | 
+Honey Mustard | honey mustard sauce; honey mustard dressing |  | 
+Wholegrain Mustard | whole grain mustard; seeded mustard; grainy mustard |  | 
+Garlic Mayo | garlic mayonnaise; aioli; garlic sauce |  | 
+Chipotle Sauce | chipotle mayo; chipotle in adobo; chipotle |  | 
+Guacamole | guac; avocado dip |  | 
+Tzatziki | tzatziki sauce; greek yogurt dip; cucumber yogurt dip |  | 
+Cheese Sauce | nacho cheese sauce; liquid cheese; cheddar sauce |  | 
+Alfredo Sauce | alfredo; white pasta sauce; creamy alfredo |  | 
+Arrabbiata Sauce | arrabiata sauce; spicy tomato pasta sauce |  | 
+Marinara Sauce | tomato basil sauce; napoletana sauce |  | 
+Bolognese Sauce | bolognese; meat sauce; ragu |  | 
+Passata | tomato passata; sieved tomatoes; strained tomatoes |  | 
+Capers | caper berries; kapers; caperberries |  | 
+Olives (Green) | green olives; olive green; pitted green olives; zaitoon green |  | 
+Olives (Black) | black olives; olive black; sliced black olives; zaitoon black; kalamata olives |  | 
+Jalapeno (Pickled) | pickled jalapeno; jalapenos sliced; jalapeno slices; sliced jalapeno |  | 
+Gherkins | pickled gherkins; cornichons; pickled cucumber; dill pickle; dill pickles |  | 
+Sauerkraut | fermented cabbage; sour cabbage; sauerkraut cabbage |  | 
+Pickled Ginger | gari; sushi ginger; sushi gari; japanese pickled ginger |  | 
+Kombu | dried kelp; kelp; konbu; dashi kombu |  | 
+Dashi | dashi powder; japanese stock; bonito stock |  | 
+Bonito Flakes | katsuobushi; dried bonito; fish flakes |  | 
+Rice Paper | rice paper sheets; spring roll wrappers; banh trang; vietnamese rice paper |  | 
+Wonton Wrappers | wanton wrappers; wonton sheets; dumpling wrappers; gyoza wrappers |  | 
+Spring Roll Sheets | spring roll pastry; samosa sheets |  | 
+Gochugaru | korean chilli flakes; korean red pepper flakes; korean chilli powder |  | 
+Vinegar (White) | distilled vinegar; safed sirka |  | 
+Vinegar (Malt) | malt vinegar; brown vinegar; fish and chips vinegar |  | 
+Lemon Juice (Bottled) | lemon juice bottled; bottled lime juice; nimbu juice bottle; lemon concentrate; lime juice |  | 
+Green Chutney (Mint Coriander) | pudina hari chutney; mint coriander chutney |  | 
+Mango Chutney | aam chutney; major grey chutney; mango relish |  | 
+Cranberry Sauce | cranberry jelly; cranberry relish |  | 
+Apple Sauce | applesauce; apple puree; stewed apple |  | 
+Tartar Sauce | tartare sauce; tartar dip |  | 
+## paste
+Lemongrass Paste | lemon grass paste; serai paste |  | 
+Yellow Curry Paste | thai yellow curry; kaeng kari paste |  | 
+Tikka Paste | tikka masala paste; tandoori paste; tandoori marinade paste |  | 
+Recheado Paste | goan recheado paste; goan red masala paste |  | 
+Mint Paste | pudina paste; mint puree; pudina puree |  | 
+Coriander Paste | dhania paste; cilantro paste; coriander puree; green coriander paste |  | 
+Curry Leaf Paste | kadi patta paste; curry leaves paste; karivepaku paste |  | 
+Dates Paste | khajoor paste; date paste; date puree; date purée |  | 
+Hazelnut Spread | chocolate hazelnut spread; choco spread; chocolate spread |  | 
+Shrimp Paste | belacan; terasi; kapi; blachan; prawn paste; balachaung |  | 
+Miso (White) | white miso; shiro miso; mild miso; white miso paste |  | 
+Miso (Red) | red miso; aka miso; dark miso; red miso paste |  | 
+Chilli Paste (Dry Red) | red chilli paste; dry red chilli paste; lal mirch paste; byadgi paste; red chilli puree |  | 
+Green Masala Paste | hara masala paste; green masala; hara masala; green paste |  | 
+Onion Tomato Masala | onion tomato paste; masala gravy paste; ready gravy |  | 
+## pickle_chutney
+Kairi Pickle (Gujarati) | gujarati kairi pickle; kairi nu athanu; methia keri nu athanu; raw mango pickle gujarati |  | 
+Chhundo | chundo; sweet grated mango pickle; shredded mango pickle sweet |  | 
+Sangri Pickle | sangri achar; ker sangri pickle; kair sangri achar |  | 
+Gajar Gobhi Shalgam | gajar gobhi shalgam achar; mixed pickle punjabi; punjabi mixed pickle; carrot cauliflower turnip pickle; gajar gobhi shalgam pickle |  | 
+Karela Pickle | karela achar; bitter gourd pickle; pavakka achar; hagalakayi uppinakayi; pavakkai oorugai |  | 
+Mirchi Ka Achar (Stuffed) | stuffed mirchi achar; bharwa mirchi achar; bharli mirchi lonche; stuffed green chilli pickle; bharwan mirch achar |  | 
+Prawn Balchao | balchao; goan prawn pickle; goan balchao; balchao prawns; prawn balchao goan; balchao pickle |  | 
+Ginger Chutney | adrak chutney; allam chutney; inji chammanthi; inji puli; inji thuvaiyal; shunti chutney |  | 
+Peanut Chutney | groundnut chutney; shengdana chutney; shengdana chutney wet; palli chutney; verusenaga pachadi; kadalekai chutney |  | 
+Coconut Chutney (Fresh) | coconut chutney; nariyal chutney; thengai chutney; kobbari pachadi; thengai thogayal; thenga chammanthi |  | 
+Tomato Chutney | thakkali chutney; tamatar chutney; tomato pachadi south indian; tamatar ki chutney; tomato thokku chutney |  | 
+Onion Chutney | vengaya chutney; pyaz chutney; ulli chutney; ullipaya pachadi; erulli chutney; eerulli chutney |  | 
+Tamarind Chutney | imli ki chutney; imli chutney; sonth chutney; khajoor imli chutney; puli chutney |  | 
+Raw Mango Chutney | kairi chutney; aam ki chutney; kacha aam chutney; mamidikaya pachadi; mangai thogayal; maavinakayi chutney |  | 
+Pickled Onions | onion pickle; sirke wala pyaz; vinegar onions; pickled onion rings; pyaz achar; kanda pickle |  | 
+Jam (Mango) | mango jam; aam jam; mango fruit spread; mango preserve; mango jelly |  | 
+Fruit Spread | low sugar jam; no added sugar jam; fruit preserve; preserves |  | 
+Murabba (Apple) | apple murabba; seb ka murabba; seb murabba; apple preserve indian |  | 

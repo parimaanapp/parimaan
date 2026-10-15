@@ -1,0 +1,50 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## spice_whole
+Green Peppercorns | green pepper whole; fresh pepper corn; hari mirch whole pepper; kali mirch green |  | 
+Dried Galangal | galangal dried; kulanjan; aratha; dried galangal root; khao laos |  | 
+Dried Turmeric Root | haldi gaanth; haldi whole; turmeric finger; dried turmeric sticks; manjal kombu; pasupu kommu | 8 | 
+Nagkesar | naag kesar; nag kesar; cobra saffron; nagakesara |  | 
+Dried Hibiscus | hibiscus flowers; gudhal dried; hibiscus tea flowers; roselle; gongura dried flower; jamaica flower |  | 
+Dried Butterfly Pea Flower | butterfly pea; aparajita; shankhpushpi flowers; clitoria; sangu pushpam; gokarna flower |  | 
+Sun Dried Tomatoes | sundried tomatoes; sun-dried tomato; dried tomato halves |  | 
+Black Mustard Seeds | kali sarson; rai kali |  | 
+Brown Mustard Seeds | brown mustard; indian mustard seeds; rai brown |  | 
+Fennel Seeds (Lucknowi) | lucknowi saunf; fine saunf; small fennel; sweet saunf; mouri |  | 
+Coriander Seeds (Split) | dhana dal; dhania dal; split coriander; coriander dal; kothamalli dal |  | 
+Aniseed | anise seeds; anise; sompu; saunf anise; badi saunf; aniseeds |  | 
+Sumac | sumac powder; sumak; sumach |  | 
+## spice_ground
+Anardana Powder | pomegranate seed powder; dried pomegranate powder; anar dana powder |  | 
+Tamarind Powder | imli powder; tamarind pulp powder; imli ka powder |  | 
+Moringa Powder | drumstick leaf powder; murungai powder; sahjan powder; moringa leaf powder; munaga podi; nuggekai soppu pudi |  | 
+Garlic Granules | lahsun granules; dried garlic granules; garlic flakes |  | 
+Onion Flakes | dried onion flakes; dehydrated onion; onion granules; pyaz flakes; kanda flakes |  | 
+Curry Powder | madras curry powder; yellow curry powder; curry masala powder |  | 
+## masala_blend
+Paruppu Podi | pappula podi; dal podi; toor dal podi; pappu podi; tuvar dal powder; lentil podi |  | 
+Karuveppilai Podi | curry leaf podi; karivepaku karam; kariveppila podi; curry leaves chutney powder |  | 
+Pickle Masala | achar masala; achaar masala; pickle spice mix |  | 
+Meen Curry Masala | fish curry masala kerala; meen masala; fish curry powder; meen kari podi |  | 
+Malabar Biryani Masala | thalassery biryani masala; kerala biryani masala; malabar dum biryani masala |  | 
+Bengali Garam Masala | gorom moshla; gorom mosla; bangali garam masala; bengali whole garam masala |  | 
+Kadhi Masala | kadhi powder; punjabi kadhi masala; pakoda kadhi masala |  | 
+Amritsari Chole Masala | amritsari chhole masala; chole masala amritsari |  | 
+Seekh Kebab Masala | seekh kabab masala; kebab masala; kabab masala; shami kebab masala; kebab spice |  | 
+Paneer Tikka Masala | paneer tikka spice; tikka marinade masala; paneer tikka powder |  | 
+Shahi Paneer Masala | shahi paneer mix; shahi masala |  | 
+Rogan Josh Masala | rogan josh powder; kashmiri rogan josh masala; roghan josh masala |  | 
+Goan Recheado Masala | recheado masala; recheado paste powder; goan recheado; reichado; recheado |  | 
+Kanda Lasun Masala | onion garlic masala; kanda lasun chutney; kanda lasun powder; kanda lasoon masala |  | 
+Gujarati Garam Masala | gujju garam masala; gujarati masala; tikha masala gujarati; gujarat garam masala |  | 
+Shaak Masala | sabji no masala; sabzi no masala; gujarati shaak masala; shak masala |  | 
+Bharwan Masala | stuffed masala; stuffed vegetable masala; bharwa masala; bharela masala; bharela shaak masala |  | 
+Bhel Masala | bhel puri masala; bhel spice; bhelpuri masala |  | 
+Lemon Pepper Seasoning | lemon pepper; lemon and pepper; lemon pepper mix |  | 
+Cajun Seasoning | cajun spice; cajun mix; cajun spice mix; creole seasoning |  | 
+Herbes de Provence | provencal herbs; provence herb mix |  | 
+Za'atar | zaatar; zatar; zahtar; zaater; thyme sumac mix |  | 
+Ras el Hanout | ras al hanout; moroccan spice mix; moroccan seasoning |  | 
+Baharat | arabic seven spice; lebanese seven spice; seven spice mix; saudi baharat |  | 
+Berbere | ethiopian spice; berbere spice mix; berbere powder |  | 
+Chinese Five Spice | five spice powder; 5 spice powder; five-spice |  | 
+Mukhwas | mouth freshener; mukhwas mix; digestive mix; saunf mukhwas; after meal mix; mukwas |  | 
