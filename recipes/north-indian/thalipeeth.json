@@ -1,0 +1,32 @@
+{
+  "title": "Thalipeeth",
+  "description": "Maharashtrian multigrain flatbread made from roasted bhajani flour with onion, chilli and coriander, pressed thin and crisped on a tawa.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": ["veg", "vegan", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Thalipeeth Bhajani", "quantity": 200, "unit": "g", "category": "grain" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Sesame Seeds (White)", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Turmeric Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Water", "quantity": 150, "unit": "ml", "category": "beverages", "notes": "approximate, added gradually" },
+    { "name": "Vegetable Oil", "quantity": 4, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+  ],
+  "steps": [
+    "Mix 200 g of bhajani with the chopped onion, green chilli, coriander, sesame seeds, cumin seeds, turmeric powder, red chilli powder and salt in a wide bowl.",
+    "Add about 150 ml of water a little at a time and knead to a soft, slightly sticky dough that holds together.",
+    "Divide the dough into 6 portions and keep a bowl of water nearby for wetting your hands.",
+    "Place a portion on a damp cloth or greased plastic sheet and pat it into a thin round, making a small hole in the centre.",
+    "Heat a tawa over medium heat, slide the thalipeeth on, and pour a little of the oil into the hole and around the edges.",
+    "Cook covered for 2 minutes, flip, and cook until both sides are crisp and speckled brown, then repeat with the remaining portions."
+  ]
+}
