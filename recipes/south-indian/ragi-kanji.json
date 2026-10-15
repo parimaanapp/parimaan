@@ -1,0 +1,26 @@
+{
+  "title": "Ragi Kanji",
+  "description": "A warm, mildly sweet finger millet porridge made with jaggery and milk, a nourishing breakfast for all ages.",
+  "servings": 2,
+  "prepMin": 5,
+  "cookMin": 10,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Ragi Flour", "quantity": 30, "unit": "g", "category": "grain" },
+    { "name": "Water", "quantity": 400, "unit": "ml", "category": "beverages" },
+    { "name": "Milk", "quantity": 100, "unit": "ml", "category": "dairy" },
+    { "name": "Jaggery Powder", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Cardamom Powder", "quantity": 0.25, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Mix the ragi flour with 100 ml of the water in a bowl and whisk to a smooth paste with no lumps.",
+    "Bring the remaining water to a boil in a saucepan and lower the heat.",
+    "Pour in the ragi paste slowly while stirring continuously so it does not clump.",
+    "Cook for 5 to 6 minutes, stirring often, until the porridge thickens and loses its raw smell.",
+    "Add the jaggery powder, milk and cardamom powder and simmer for 2 minutes.",
+    "Serve warm."
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Roasted Masala Makhana",
+  "description": "Crunchy fox nuts roasted in a little ghee and tossed with pepper, rock salt and chaat masala, a light evening snack.",
+  "servings": 2,
+  "prepMin": 2,
+  "cookMin": 10,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "jain", "gluten_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Makhana", "quantity": 50, "unit": "g", "category": "dry_goods" },
+    { "name": "Ghee", "quantity": 1, "unit": "tsp", "category": "oil" },
+    { "name": "Black Pepper Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Rock Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods" },
+    { "name": "Chaat Masala", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true }
+  ],
+  "steps": [
+    "Heat the ghee in a wide pan on low heat.",
+    "Add the makhana and roast, stirring constantly, for 8 to 10 minutes until they turn crisp and a piece breaks easily.",
+    "Turn off the heat and sprinkle the black pepper powder, rock salt, chaat masala and red chilli powder.",
+    "Toss well to coat, cool for a few minutes and store airtight."
+  ]
+}

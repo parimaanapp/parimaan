@@ -1,0 +1,28 @@
+{
+  "title": "Bread Omelette",
+  "description": "A Mumbai street-style omelette with chopped onion, chilli and coriander cooked on a tawa and pressed between toasted bread.",
+  "servings": 2,
+  "prepMin": 5,
+  "cookMin": 10,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": ["eggetarian", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Egg", "quantity": 3, "unit": "piece", "category": "eggs" },
+    { "name": "Bread (White)", "quantity": 4, "unit": "slice", "category": "bakery" },
+    { "name": "Onion", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Black Pepper Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil" }
+  ],
+  "steps": [
+    "Beat the 3 eggs with the onion, green chilli, coriander leaves, black pepper powder and salt.",
+    "Heat half the oil on a tawa over medium heat and pour in the egg mixture, spreading it to the size of the bread.",
+    "Cook for 2 minutes until the base sets and flip once to cook the other side lightly.",
+    "Toast the bread slices in the remaining oil until golden on both sides.",
+    "Place the omelette between two slices of toast, cut in half and serve hot with ketchup."
+  ]
+}

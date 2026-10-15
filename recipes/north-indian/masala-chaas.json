@@ -1,0 +1,28 @@
+{
+  "title": "Masala Chaas",
+  "description": "Cooling spiced buttermilk with roasted cumin, black salt, mint and green chilli, a light accompaniment to a heavy meal.",
+  "servings": 3,
+  "prepMin": 5,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "gujarati",
+  "dietaryTags": ["veg", "jain", "gluten_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Curd", "quantity": 200, "unit": "g", "category": "dairy" },
+    { "name": "Water", "quantity": 400, "unit": "ml", "category": "beverages", "notes": "cold" },
+    { "name": "Roasted Cumin Powder", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.25, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Mint Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Asafoetida (Hing)", "quantity": 0.25, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Whisk the curd with the cold water in a large jug until smooth and thin.",
+    "Add the roasted cumin powder, black salt, salt and hing and mix well.",
+    "Stir in the green chilli, mint leaves and coriander leaves.",
+    "Chill for 15 minutes if you can and serve over ice."
+  ]
+}

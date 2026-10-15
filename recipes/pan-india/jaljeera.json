@@ -1,0 +1,26 @@
+{
+  "title": "Jaljeera",
+  "description": "A tangy, digestive cumin and mint cooler made with jaljeera powder, lemon and a touch of sugar.",
+  "servings": 3,
+  "prepMin": 5,
+  "cookMin": 0,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "vegan", "jain", "gluten_free", "dairy_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Jaljeera Powder", "quantity": 2, "unit": "tbsp", "category": "spice" },
+    { "name": "Water", "quantity": 600, "unit": "ml", "category": "beverages", "notes": "cold" },
+    { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Mint Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "finely chopped" },
+    { "name": "Sugar", "quantity": 1, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" }
+  ],
+  "steps": [
+    "Stir the jaljeera powder, sugar, black salt and roasted cumin powder into 100 ml of the cold water until dissolved.",
+    "Add the lemon juice and mint leaves.",
+    "Pour in the remaining water and mix well.",
+    "Let it stand for 10 minutes so the flavours develop, then chill and serve over ice."
+  ]
+}

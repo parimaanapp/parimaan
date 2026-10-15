@@ -1,0 +1,28 @@
+{
+  "title": "Masala Chai",
+  "description": "Strong milky tea simmered with ginger, cardamom, cloves and black pepper, the everyday Indian cup.",
+  "servings": 2,
+  "prepMin": 2,
+  "cookMin": 8,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Water", "quantity": 250, "unit": "ml", "category": "beverages" },
+    { "name": "Milk", "quantity": 250, "unit": "ml", "category": "dairy" },
+    { "name": "Tea Leaves", "quantity": 2, "unit": "tsp", "category": "beverages" },
+    { "name": "Sugar", "quantity": 2, "unit": "tsp", "category": "dry_goods" },
+    { "name": "Green Cardamom", "quantity": 2, "unit": "piece", "category": "spice", "notes": "lightly crushed" },
+    { "name": "Ginger", "quantity": 10, "unit": "g", "category": "produce", "notes": "grated" },
+    { "name": "Cloves", "quantity": 2, "unit": "piece", "category": "spice" },
+    { "name": "Black Pepper (Whole)", "quantity": 2, "unit": "piece", "category": "spice", "isStaple": true }
+  ],
+  "steps": [
+    "Bring the 250 ml of water to a boil in a saucepan with the ginger, cardamom, cloves and black pepper.",
+    "Simmer for 2 minutes so the spices release their flavour.",
+    "Add the tea leaves and simmer for 2 minutes more until the water turns dark.",
+    "Pour in the milk and sugar and bring to a boil, letting it rise twice.",
+    "Strain into cups and serve hot."
+  ]
+}

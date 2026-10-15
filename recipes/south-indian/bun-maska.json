@@ -1,0 +1,22 @@
+{
+  "title": "Bun Maska",
+  "description": "A Hyderabadi Irani cafe favourite of soft pav lightly toasted and spread generously with butter, best with a cup of chai.",
+  "servings": 2,
+  "prepMin": 3,
+  "cookMin": 5,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "hyderabadi",
+  "dietaryTags": ["veg"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Pav", "quantity": 4, "unit": "piece", "category": "bakery" },
+    { "name": "Butter (Salted)", "quantity": 50, "unit": "g", "category": "oil" },
+    { "name": "Sugar", "quantity": 1, "unit": "tbsp", "category": "dry_goods" }
+  ],
+  "steps": [
+    "Slit the pav horizontally without cutting through so it opens like a book.",
+    "Heat a tawa on low heat and warm the pav for a minute on each side.",
+    "Spread the butter generously inside each pav and sprinkle a little sugar over the butter.",
+    "Close and serve immediately with hot chai."
+  ]
+}

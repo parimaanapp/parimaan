@@ -1,0 +1,33 @@
+{
+  "title": "Oats Upma",
+  "description": "A quick, fibre-rich savoury porridge of rolled oats tempered like upma with mustard seeds, vegetables and peanuts.",
+  "servings": 2,
+  "prepMin": 10,
+  "cookMin": 12,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "vegan", "dairy_free"],
+  "role": "breakfast",
+  "ingredients": [
+    { "name": "Oats (Rolled)", "quantity": 100, "unit": "g", "category": "grain" },
+    { "name": "Vegetable Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Peanuts", "quantity": 1, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Carrot", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely grated" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Water", "quantity": 250, "unit": "ml", "category": "beverages" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" }
+  ],
+  "steps": [
+    "Dry roast the oats in a pan on medium heat for 3 minutes until fragrant, then set aside.",
+    "Heat the oil, crackle the mustard seeds and fry the peanuts until lightly golden.",
+    "Add curry leaves, onion and green chilli and sauté for 3 minutes until soft.",
+    "Add the carrot and the 250 ml of water with the salt and bring to a boil.",
+    "Stir in the roasted oats and cook on low heat for 2 to 3 minutes, stirring, until thick and creamy.",
+    "Finish with lemon juice and coriander leaves."
+  ]
+}

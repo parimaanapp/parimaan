@@ -1,0 +1,24 @@
+{
+  "title": "South Indian Filter Coffee",
+  "description": "Frothy, strong decoction coffee mixed with hot sweetened milk and poured between steel tumblers.",
+  "servings": 2,
+  "prepMin": 5,
+  "cookMin": 10,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "gluten_free"],
+  "role": "drink",
+  "ingredients": [
+    { "name": "Coffee Powder", "quantity": 3, "unit": "tbsp", "category": "beverages", "notes": "filter coffee blend" },
+    { "name": "Water", "quantity": 150, "unit": "ml", "category": "beverages", "notes": "boiling" },
+    { "name": "Milk", "quantity": 300, "unit": "ml", "category": "dairy" },
+    { "name": "Sugar", "quantity": 2, "unit": "tbsp", "category": "dry_goods" }
+  ],
+  "steps": [
+    "Put the coffee powder in the upper chamber of a filter and pour over 150 ml of boiling water.",
+    "Cover and let the decoction drip for 10 to 15 minutes.",
+    "Heat the milk until it just boils.",
+    "Add the sugar to each tumbler with 2 tbsp of the decoction per cup, or more for a stronger brew.",
+    "Top with hot milk and pour between two tumblers a few times to froth before serving."
+  ]
+}
