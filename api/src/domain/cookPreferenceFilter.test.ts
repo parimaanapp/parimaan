@@ -108,6 +108,23 @@ describe('findDietaryViolations — tags AND keywords, because the model\'s self
   });
 });
 
+describe('findDietaryViolations — "-free" phrases and regional names (F2, F3)', () => {
+  const vegSuggestion = (...names: string[]): FilterableSuggestion =>
+    suggestion({ title: 'Dish', dietaryTags: ['veg'], ingredients: names.map((name) => ({ name })) });
+
+  it.each(['gluten-free chicken', 'oil-free chicken', 'sugar-free chicken breast'])('flags %s for a veg household', (name) => {
+    expect(findDietaryViolations(vegSuggestion(name), ['veg']).length).toBeGreaterThan(0);
+  });
+
+  it.each(['gosht', 'kheema', 'murgh', 'machli', 'meen', 'jhinga', 'anda', 'omelette'])('flags %s for a veg household', (name) => {
+    expect(findDietaryViolations(vegSuggestion(name), ['veg']).length).toBeGreaterThan(0);
+  });
+
+  it.each(['vegan mayo', 'egg replacer', 'gluten-free bread'])('does not flag the harmless %s', (name) => {
+    expect(findDietaryViolations(vegSuggestion(name), ['veg'])).toEqual([]);
+  });
+});
+
 describe('findDietaryViolations — household styles combine as a union (dietMatch semantics)', () => {
   const tagged = (dietaryTags: string[], ...names: string[]): FilterableSuggestion =>
     suggestion({ dietaryTags, ingredients: names.map((name) => ({ name })) });

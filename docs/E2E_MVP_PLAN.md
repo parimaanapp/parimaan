@@ -5619,9 +5619,50 @@ Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf
 - **Risks**: recipe generation quality and cost (B3); Aurora cold-resume masking real timeouts (#1); catalog alias collisions (Kashmiri vs plain lal mirch) — intended product semantics need founder calls case by case; plan layout density on small phones (C1) — verify on the smallest supported iPhone.
 - **Unchanged from §31**: PostHog slice (§31.4), Firebase/W22, store readiness — scheduled after Build C unless re-prioritised.
 
+### 32.5a A8 findings: recipes list load time and empty states
+- **Empty-state bug**: the Recipes screen rendered "No recipes yet" for any empty result, including a role/favorites filter with zero matches, and also while a filter refetch over an empty previous result was still loading. Fixed (filter-aware copy with Clear filter; progress while loading; error wins over empty).
+- **Query shape**: `Query.recipes` already omits `ingredients` (separate resolver). It still selects `steps` (a full text array per recipe) which the list card does not display; every recipe row is returned, no pagination, and `FetchPolicy.NoCache` is used on both list and detail.
+- **Refetch behaviour**: `recipeLibraryControllerProvider` is a non-autoDispose family and the Recipes tab is a `StatefulShellBranch`, so switching tabs does not refetch (now covered by a test). Refetches happen on cold start, on every mutation (`ref.invalidate`) and on every `onRecipeChanged` push, each a full-list fetch.
+- **Mobile change in A8**: `build()` now honours the controller's selected filters (previously an invalidate after create/edit reset the list to unfiltered while the chips still showed a selection); an invalidation keeps the previous list on screen while reloading.
+- **Needs API/schema (not done)**: (1) a slim list type or a `RecipeSummary` projection without `steps`; (2) cursor pagination on `Query.recipes` (Build B grows the library to ~500 recipes, where full-list fetch will dominate); (3) optionally an `updatedAt`/ETag-style conditional fetch so a change push can patch instead of refetching everything. Load time is still unmeasured on device; instrument before and after (3).
+- **Cook from pantry entry points**: route `AppRoutes.cook` (`/home/cook`) is reached from the Today top-bar icon, the Pantry top-bar icon, and (A8) a labelled "Cook from pantry" action on the Pantry list (empty and non-empty) and the Today empty state.
+
 ### 32.6 Sign-off record — catalog and components
 - **Catalog**: structure approved with the edits in `docs/catalog/decisions.md` (merged chillies, one Milk, one Toor Dal, generic Rice, no fresh/frozen meat split, eggs by piece/dozen, curry-leaf bunch ≈ 100–120 leaves). Remaining ~650 ingredients are generated in Build B and reviewed in batches.
 - **UI copy** (supersedes the labels in §32.1): categories **Dal, Grain, Spice, Dairy, Eggs, Produce, Dry Goods, Oil, Meat & Fish, Condiment, Bakery, Snacks, Beverages, Frozen, Other**; diet labels in sentence case **Vegetarian, Non-vegetarian, Vegan, Egg friendly, Jain, Gluten free, Dairy free**.
 - **Recipes**: sample format approved; Methi Thepla is vegan and dairy free.
 - **Components**: sign-off list items 1–6 and 8 approved (drawn tab icons, "Today" label, centred titles, bold back chevron with 44×44 target, solid-ink chips without ✓, haldi "◆ AI proposal" badge, column header). Item 7 is **decided**: four meals planned → option B (2×2 block per day, meal name under the ＋ and in each cell, no column header); one to three meals planned → option C (one column per planned meal with a column header). Replaces the four-column layout in C1.
+
+## 33. Project status and sequence (snapshot after beta feedback round 1)
+
+### 33.1 Where we are
+| Area | State |
+|---|---|
+| Backend and mobile feature set | W1–W21 shipped, merged and deployed to **dev AWS** (auth, households, pantry, recipes, menus, shopping list, share image, photo pantry, cook-from-pantry, web dashboard). |
+| Beta distribution | **iOS TestFlight** build 1.0.0 (10121400) processed and installable by internal testers; **Android** sideload APK via presigned S3 URL (`scripts/beta/`). Google sign-in gated by the OAuth consent screen's test-user list. |
+| Marketing site | Live at https://www.parimaan.app (S3 + CloudFront, operator named Tatva Research). AWS Activate resubmission is a founder action. |
+| Feedback | Round 1 triaged (§32) into Builds A, B, C; catalog and wireframe decisions signed off (§32.6). |
+| Blocked on founder | Firebase project (W22), PostHog account (§31.4), keystore backup, GCP consent-screen branding, Sign in with Apple decision, GoDaddy https forward. |
+
+### 33.2 Build A (bugs and copy) — in flight
+| Slice | PR | Contents |
+|---|---|---|
+| A1 diet matcher + rotation fallback | in progress (`feat/a1-diet-matcher`) | `non_veg`, union-style matcher with modifiers, sentence-case labels, auto-fill never fails for lack of rotation |
+| A2 household create | #222 | idempotent `createHousehold`, error reset on re-entry, household name on Today |
+| A3 back button | in progress (`fix/a3-back-button`) | bold 24 px chevron, 44×44 target, one component app-wide |
+| A4 import normalisation | #223 | shared unit/entity/to-taste/duplicate-merge step for URL and text import, `isStaple` on drafts |
+| A5 category units | #224 | per-category units, new categories and approved labels |
+| A6 wipe tool | #225 | dry-run-first account wipe CLI (not yet run; needs the founder's approval of its listing) |
+| A7 setup wizard | not started | dinner-structure toggle and page, Snacks, "Setup your Household", grouped diet chips (depends on A1) |
+| A8 empty states and entry points | not started | recipes filtered-empty copy and load time, Cook-from-Pantry entry point, `hintText: 'cup'` placeholder fix (found by A4) |
+After Build A: deploy backend to dev, run the wipe dry run for founder approval, execute, cut TestFlight and APK builds.
+
+### 33.3 Order of work from here
+1. Build A (above) → dev deploy → founder-approved wipe → TestFlight + APK.
+2. Build B: ingredient catalog (848 drafted → ~1,500), conversions, ~500 recipes with diet tags, full import canonicalisation.
+3. Build C: weekly plan (B/C layouts), shopping list, shared components aligned to the wireframes (`docs/wireframes/README.md`).
+4. §31.4 instrumentation slice (PostHog), then W22 push (needs the Firebase project), then §31.1–31.3 website and store readiness, W24/W25.
+
+### 33.4 Wireframe status
+Original v2 bundle remains the component reference; deliberate deviations and the approved weekly-plan layouts are recorded in `docs/wireframes/README.md`. The setup-flow screens (2.x), weekly plan (6.1), bottom nav, chips, AI badge and back control change in Builds A and C as listed there; no new screens are added.
 

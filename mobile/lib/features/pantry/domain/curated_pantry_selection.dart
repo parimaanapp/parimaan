@@ -27,8 +27,8 @@ class CuratedPantrySelection {
   /// fall back to here either.
   final double quantity;
 
-  /// One of `knownPantryUnits` — the stepper restricts entry to exactly
-  /// that list (D6), so this is never anything else.
+  /// One of `unitsForCategory(category)` — the stepper restricts entry to
+  /// exactly that list (D6, A5), so this is never anything else.
   final String unit;
 
   @override

@@ -88,3 +88,48 @@ describe('parseJsonLdRecipe — synthetic edge cases', () => {
     expect(parseJsonLdRecipe('<html><body>No JSON-LD here.</body></html>')).toBeNull();
   });
 });
+
+describe('parseJsonLdRecipe — Chicken Rara-like page (A4 import normalisation)', () => {
+  const draft = parseJsonLdRecipe(loadFixture('chicken-rara-reconstructed'));
+  const summary = (draft?.ingredients ?? []).map(({ name, quantity, unit, notes, isStaple }) => ({ name, quantity, unit, notes, isStaple }));
+
+  it('decodes entities and collapses whitespace in title, description and steps', () => {
+    expect(draft!.title).toBe('Chicken Rara & Mince Gravy');
+    expect(draft!.description).toBe('Punjabi chicken in a rich mince gravy \u2013 a dhaba favourite.');
+    expect(draft!.steps[0]).toBe('Marinate the chicken with ginger garlic paste, chilli powder and salt for 30 minutes.');
+    expect(draft!.steps[1]).toBe('Heat oil, add whole spices and the onion & tomato, cook until the oil separates.');
+  });
+
+  it('produces the final merged, clean ingredient list', () => {
+    expect(summary).toEqual([
+      { name: 'chicken', quantity: 300, unit: 'g', notes: null, isStaple: false },
+      { name: 'ginger garlic paste', quantity: 2, unit: 'tbsp', notes: null, isStaple: false },
+      { name: 'red chilli powder', quantity: 4, unit: 'tsp', notes: null, isStaple: false },
+      { name: 'salt', quantity: null, unit: null, notes: null, isStaple: true },
+      { name: 'water', quantity: 1, unit: 'cup', notes: null, isStaple: false },
+      { name: 'chicken mince', quantity: 250, unit: 'g', notes: null, isStaple: false },
+      { name: 'onions', quantity: 3, unit: 'piece', notes: 'puréed', isStaple: false },
+      { name: 'tomato', quantity: 3, unit: 'piece', notes: null, isStaple: false },
+      { name: 'coriander powder', quantity: 1, unit: 'tbsp', notes: null, isStaple: false },
+      { name: 'cumin powder', quantity: 1, unit: 'tsp', notes: null, isStaple: false },
+      { name: 'garam masala', quantity: 1, unit: 'tsp', notes: null, isStaple: false },
+      { name: 'cloves', quantity: 6, unit: 'piece', notes: null, isStaple: false },
+      { name: 'black peppercorns', quantity: 10, unit: 'piece', notes: null, isStaple: false },
+      { name: 'cinnamon', quantity: 1, unit: 'piece', notes: '1 inch', isStaple: false },
+      { name: 'black cardamom', quantity: 2, unit: 'piece', notes: null, isStaple: false },
+      { name: 'green cardamom', quantity: 4, unit: 'piece', notes: null, isStaple: false },
+      { name: 'mustard oil', quantity: 3, unit: 'tbsp', notes: null, isStaple: false },
+    ]);
+  });
+
+  it('never emits a cup unit that the source did not state', () => {
+    const cupRows = summary.filter((row) => row.unit === 'cup').map((row) => row.name);
+    expect(cupRows).toEqual(['water']);
+  });
+
+  it('leaves no entity or quote debris in any ingredient name', () => {
+    for (const ingredient of draft!.ingredients) {
+      expect(ingredient.name).not.toMatch(/&[a-z#0-9]+;|"|to taste/i);
+    }
+  });
+});

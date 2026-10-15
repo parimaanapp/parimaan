@@ -6,7 +6,7 @@
   "cookMin": 20,
   "cuisineTier1": "north_indian",
   "cuisineTier2": "punjabi",
-  "dietaryTags": ["veg", "vegan", "gluten_free", "jain"],
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "accompaniment",
   "ingredients": [
     { "name": "Potato", "quantity": 4, "unit": "piece", "category": "produce", "notes": "boiled, peeled, and cut into cubes" },

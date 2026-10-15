@@ -91,7 +91,7 @@ describe('parseFreeformRecipe resolver', () => {
     expect(result.role).toBe('sabzi_dal');
     expect(result.cuisineTier1).toBe('north_indian');
     expect(result.ingredients).toEqual([
-      { raw: '1 cup rajma', name: 'rajma', quantity: 1, unit: 'cup', notes: 'soaked overnight' },
+      { raw: '1 cup rajma', name: 'rajma', quantity: 1, unit: 'cup', notes: 'soaked overnight', isStaple: false },
     ]);
     expect(result.steps).toEqual(['Soak the rajma.', 'Pressure-cook until soft.']);
     expect(result.warnings).toEqual([]);

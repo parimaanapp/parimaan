@@ -68,6 +68,10 @@ class FakeHouseholdRepository implements HouseholdRepository {
   /// Thrown by [createHousehold] when set. Takes precedence over [result].
   Object? error;
 
+  /// Errors thrown by successive [createHousehold] calls, consumed front to
+  /// back before [error]/[result] apply — for "fails once, then succeeds".
+  final List<Object> createErrorQueue = <Object>[];
+
   /// Every name [createHousehold] was called with, in order.
   final List<String> calls = <String>[];
 
@@ -212,6 +216,9 @@ class FakeHouseholdRepository implements HouseholdRepository {
   @override
   Future<Household> createHousehold(String name) {
     calls.add(name);
+    if (createErrorQueue.isNotEmpty) {
+      return _answer<Household>(createErrorQueue.removeAt(0), result, 'result');
+    }
     return _answer<Household>(error, result, 'result');
   }
 

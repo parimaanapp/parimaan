@@ -33,6 +33,7 @@ ProviderContainer _container(FakeRecipeRepository repository) {
 }
 
 void main() {
+  _controllerCacheTests();
   group('RecipeLibraryController — build', () {
     test('fetches the household it is keyed on, unfiltered', () async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
@@ -237,6 +238,78 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(repository.calls, hasLength(1));
+    });
+  });
+}
+
+void _controllerCacheTests() {
+  group('RecipeLibraryController — caching', () {
+    test('a second read of the same household does not refetch', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = _container(repository);
+
+      await container.read(recipeLibraryControllerProvider('h').future);
+      // A tab switch re-mounts the screen, which re-reads the provider.
+      await container.read(recipeLibraryControllerProvider('h').future);
+      container.read(recipeLibraryControllerProvider('h'));
+
+      expect(repository.calls.length, 1);
+    });
+
+    test('invalidation keeps showing the cached list while it reloads', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+
+      repository.delay = const Duration(milliseconds: 20);
+      container.invalidate(recipeLibraryControllerProvider('h'));
+      final AsyncValue<List<Recipe>> during = container.read(
+        recipeLibraryControllerProvider('h'),
+      );
+
+      expect(during.isLoading, isTrue);
+      expect(during.valueOrNull, <Recipe>[_dalRecipe]);
+      await container.read(recipeLibraryControllerProvider('h').future);
+    });
+
+    test('a rebuild after invalidation keeps the selected filter', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      await container
+          .read(recipeLibraryControllerProvider('h').notifier)
+          .setRoleFilter(RecipeRole.carb);
+
+      container.invalidate(recipeLibraryControllerProvider('h'));
+      await container.read(recipeLibraryControllerProvider('h').future);
+
+      expect(repository.calls.last.role, RecipeRole.carb);
+    });
+
+    test('clearFilters drops role and favorites in a single refetch', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: <Recipe>[_dalRecipe],
+      );
+      final ProviderContainer container = _container(repository);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+      await container.read(recipeLibraryControllerProvider('h').future);
+      await controller.setRoleFilter(RecipeRole.carb);
+      await controller.setFavoritesFilter(true);
+      final int before = repository.calls.length;
+
+      await controller.clearFilters();
+
+      expect(repository.calls.length, before + 1);
+      expect(repository.calls.last.role, isNull);
+      expect(repository.calls.last.isFavorite, isNull);
     });
   });
 }

@@ -19,6 +19,12 @@ const hasControlCharacters = (value: string): boolean =>
  * rule. Trims first (so a client-side leading/trailing space doesn't count
  * against the length limit or trigger the empty-after-trim rejection), then
  * enforces non-empty and a 60-character cap.
+ *
+ * F5: `createHousehold` accepts ONLY a name — the household starts with the
+ * default settings (no dietary tags) and its eating style arrives through
+ * `updateHouseholdSettings`, where `dietMatch.reconcileHouseholdTags` keeps
+ * a style-less patch from erasing stored styles. There is therefore no
+ * `dietaryTags` input here to validate.
  */
 export const createHouseholdArgsSchema = z.object({
   name: z

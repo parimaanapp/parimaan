@@ -5,13 +5,18 @@
  */
 export const KNOWN_PANTRY_CATEGORIES = [
   'dal',
+  'grain',
   'spice',
   'dairy',
+  'eggs',
   'produce',
   'dry_goods',
-  'grain',
   'oil',
+  'meat_fish',
   'condiment',
+  'bakery',
+  'snacks',
+  'beverages',
   'frozen',
   'other',
 ] as const;

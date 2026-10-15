@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/features/pantry/domain/category_units.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -200,6 +201,64 @@ void main() {
             .controller
             ?.text,
         'Rice',
+      );
+    });
+
+    testWidgets(
+      'a blank unit shows a neutral hint, never a real unit name',
+      (WidgetTester tester) async {
+        await _pumpPushed(tester, repository: FakeRecipeRepository());
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.addIngredientButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+        await tester.pump();
+
+        final TextField field = tester.widget<TextField>(
+          find.descendant(
+            of: find.byKey(IngredientRowEditor.unitFieldKey(0)),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(field.controller?.text, isEmpty);
+        expect(field.decoration?.hintText, 'unit');
+        expect(recipeUnits, isNot(contains(field.decoration?.hintText)));
+      },
+    );
+
+    testWidgets('an ingredient row offers only recipe units and a tap fills the unit', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakeRecipeRepository());
+      await tester.ensureVisible(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+      await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+      await tester.pump();
+
+      for (final String unit in recipeUnits) {
+        expect(
+          find.byKey(IngredientRowEditor.unitChipKey(0, unit)),
+          findsOneWidget,
+          reason: '$unit should be offered',
+        );
+      }
+      expect(find.byKey(IngredientRowEditor.unitChipKey(0, 'dozen')), findsNothing);
+      expect(find.byKey(IngredientRowEditor.unitChipKey(0, 'slice')), findsNothing);
+
+      final Finder chip = find.byKey(IngredientRowEditor.unitChipKey(0, 'tbsp'));
+      await tester.ensureVisible(chip);
+      await tester.tap(chip);
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(IngredientRowEditor.unitFieldKey(0)),
+                matching: find.byType(TextField),
+              ),
+            )
+            .controller
+            ?.text,
+        'tbsp',
       );
     });
 

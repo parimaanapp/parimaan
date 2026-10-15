@@ -156,5 +156,85 @@ void main() {
       expect(state.hasError, isFalse);
       expect(state.value, testHousehold);
     });
+
+    group('timeout / transient failures (A2)', () {
+      ProviderContainer retryContainer(FakeHouseholdRepository repository) {
+        final ProviderContainer container = ProviderContainer(
+          overrides: <Override>[
+            householdRepositoryProvider.overrideWithValue(repository),
+            createHouseholdRetryDelayProvider.overrideWithValue(Duration.zero),
+          ],
+        );
+        addTearDown(container.dispose);
+        return container;
+      }
+
+      test('retries once after a transient failure and succeeds', () async {
+        final FakeHouseholdRepository repository = FakeHouseholdRepository(
+          result: testHousehold,
+        )..createErrorQueue.add(const InternalError('timeout'));
+        final ProviderContainer container = retryContainer(repository);
+
+        await container
+            .read(createHouseholdControllerProvider.notifier)
+            .createHousehold('Kulkarni Kitchen');
+
+        expect(repository.calls, <String>['Kulkarni Kitchen', 'Kulkarni Kitchen']);
+        expect(
+          container.read(createHouseholdControllerProvider).value,
+          testHousehold,
+        );
+      });
+
+      test('gives up after one retry and parks the error', () async {
+        final FakeHouseholdRepository repository = FakeHouseholdRepository(
+          error: const InternalError('timeout'),
+        );
+        final ProviderContainer container = retryContainer(repository);
+
+        await container
+            .read(createHouseholdControllerProvider.notifier)
+            .createHousehold('Kulkarni Kitchen');
+
+        expect(repository.calls, hasLength(2));
+        expect(
+          container.read(createHouseholdControllerProvider).error,
+          isA<InternalError>(),
+        );
+      });
+
+      test('does not retry a real (non-transient) error', () async {
+        final FakeHouseholdRepository repository = FakeHouseholdRepository(
+          error: const ValidationError('name must not be empty'),
+        );
+        final ProviderContainer container = retryContainer(repository);
+
+        await container
+            .read(createHouseholdControllerProvider.notifier)
+            .createHousehold('x');
+
+        expect(repository.calls, hasLength(1));
+      });
+
+      test('reset clears a parked error back to idle', () async {
+        final FakeHouseholdRepository repository = FakeHouseholdRepository(
+          error: const ValidationError('bad'),
+        );
+        final ProviderContainer container = retryContainer(repository);
+        final CreateHouseholdController notifier = container.read(
+          createHouseholdControllerProvider.notifier,
+        );
+        await notifier.createHousehold('x');
+        expect(container.read(createHouseholdControllerProvider).hasError, isTrue);
+
+        notifier.reset();
+
+        final AsyncValue<Household?> state = container.read(
+          createHouseholdControllerProvider,
+        );
+        expect(state.hasError, isFalse);
+        expect(state.value, isNull);
+      });
+    });
   });
 }

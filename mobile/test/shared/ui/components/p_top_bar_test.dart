@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/shared/ui/components/p_back_chevron.dart';
 import 'package:mobile/shared/ui/components/p_top_bar.dart';
 import 'package:mobile/shared/ui/tokens.dart';
 
@@ -55,6 +56,57 @@ void main() {
       await tester.pump();
 
       expect(backs, 1);
+    });
+
+    testWidgets('back chevron is bold, 24px and ink-coloured', (
+      WidgetTester tester,
+    ) async {
+      await pumpFullWidth(
+        tester,
+        PTopBar(title: 'Pantry', onBack: () {}, backSemanticLabel: 'Back'),
+      );
+
+      final Finder chevron = find.byType(PBackChevron);
+      expect(chevron, findsOneWidget);
+      final Size size = tester.getSize(chevron);
+      expect(size.width, greaterThanOrEqualTo(24));
+      expect(size.height, greaterThanOrEqualTo(24));
+      final PBackChevron widget = tester.widget<PBackChevron>(chevron);
+      expect(widget.color, AppColors.ink);
+      expect(widget.strokeWidth, greaterThanOrEqualTo(2.6));
+    });
+
+    testWidgets('back button has an ink response', (
+      WidgetTester tester,
+    ) async {
+      await pumpFullWidth(
+        tester,
+        PTopBar(title: 'Pantry', onBack: () {}, backSemanticLabel: 'Back'),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(PTopBarBackButton),
+          matching: find.byType(InkWell),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an explicit text glyph renders as text, null draws chevron', (
+      WidgetTester tester,
+    ) async {
+      await pumpFullWidth(
+        tester,
+        PTopBar(
+          title: 'Pantry',
+          onBack: () {},
+          backSemanticLabel: 'Back',
+          backGlyph: '<',
+        ),
+      );
+
+      expect(find.text('<'), findsOneWidget);
     });
 
     testWidgets('back button exposes the caller-supplied semantic label', (

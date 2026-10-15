@@ -9,13 +9,16 @@
     "lint": "eslint . -c ../eslint.config.mjs --max-warnings=0",
     "test": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage",
-    "validate:recipes": "vitest run scripts/validateCuratedRecipes.test.ts"
+    "validate:recipes": "vitest run scripts/validateCuratedRecipes.test.ts",
+    "wipe:accounts": "tsx scripts/accountWipe.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "3.1131.0",
     "@aws-sdk/client-dynamodb": "^3.933.0",
     "@aws-sdk/client-lambda": "^3.1130.0",
     "@aws-sdk/client-s3": "^3.933.0",
     "@aws-sdk/client-secrets-manager": "^3.933.0",
+    "@aws-sdk/client-sts": "3.1131.0",
     "@aws-sdk/lib-dynamodb": "^3.933.0",
     "@aws-sdk/s3-request-presigner": "^3.933.0",
     "@parimaan/shared": "workspace:*",
@@ -30,6 +33,7 @@
     "@types/pg": "^8.23.1",
     "@vitest/coverage-v8": "3.2.7",
     "esbuild": "^0.28.2",
-    "testcontainers": "^11.14.0"
+    "testcontainers": "^11.14.0",
+    "tsx": "^4.23.12"
   }
 }

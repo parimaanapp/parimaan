@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
+import 'package:mobile/features/pantry/domain/category_units.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
 import 'package:mobile/features/pantry/presentation/manual_add_screen.dart';
 import 'package:mobile/shared/ui/components/components.dart';
@@ -71,6 +72,167 @@ Future<ProviderContainer> _pumpPushed(
 
 void main() {
   group('ManualAddScreen — create mode', () {
+    testWidgets('choosing Dal offers only g, kg, cup and defaults to g', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Dal'));
+      await tester.tap(find.widgetWithText(PChip, 'Dal'));
+      await tester.pump();
+
+      for (final String unit in <String>['g', 'kg', 'cup']) {
+        expect(find.byKey(ManualAddScreen.unitChipKey(unit)), findsOneWidget);
+      }
+      for (final String unit in <String>['ml', 'l', 'piece', 'tsp']) {
+        expect(find.byKey(ManualAddScreen.unitChipKey(unit)), findsNothing);
+      }
+      expect(
+        tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text,
+        'g',
+      );
+    });
+
+    testWidgets('choosing Oil lists ml first and defaults to ml', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Oil'));
+      await tester.tap(find.widgetWithText(PChip, 'Oil'));
+      await tester.pump();
+
+      final List<String> shown = <String>[
+        for (final String unit in unitsForCategory('oil'))
+          if (find.byKey(ManualAddScreen.unitChipKey(unit)).evaluate().isNotEmpty)
+            unit,
+      ];
+      expect(shown, unitsForCategory('oil'));
+      expect(
+        tester.getTopLeft(find.byKey(ManualAddScreen.unitChipKey('ml'))).dx,
+        lessThan(
+          tester.getTopLeft(find.byKey(ManualAddScreen.unitChipKey('l'))).dx,
+        ),
+      );
+      expect(
+        tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text,
+        'ml',
+      );
+    });
+
+    testWidgets('a typed unit is never overwritten by choosing a category', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+      await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'ml');
+      await tester.pump();
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Dal'));
+      await tester.tap(find.widgetWithText(PChip, 'Dal'));
+      await tester.pump();
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'ml');
+    });
+
+    testWidgets('an empty unit is filled with the category default', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Dal'));
+      await tester.tap(find.widgetWithText(PChip, 'Dal'));
+      await tester.pump();
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'g');
+    });
+
+    testWidgets('an auto-filled default follows a category change', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Dal'));
+      await tester.tap(find.widgetWithText(PChip, 'Dal'));
+      await tester.pump();
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Oil'));
+      await tester.tap(find.widgetWithText(PChip, 'Oil'));
+      await tester.pump();
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'ml');
+    });
+
+    testWidgets('edit mode keeps the stored unit when the category changes', (
+      WidgetTester tester,
+    ) async {
+      // Stored unit 'g' equals dal's default; it must still not be rewritten.
+      await _pumpPushed(
+        tester,
+        repository: FakePantryRepository(),
+        initialItem: PantryItem(
+          id: 'item-3',
+          householdId: 'household-1',
+          name: 'Toor Dal',
+          quantity: 2,
+          unit: 'g',
+          category: 'dal',
+          isStaple: false,
+          addedBy: 'user-1',
+          addedAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        ),
+      );
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Oil'));
+      await tester.tap(find.widgetWithText(PChip, 'Oil'));
+      await tester.pump();
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'g');
+    });
+
+    testWidgets('a differently-cased unit still shows its matching chip selected', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+      await tester.enterText(find.byKey(ManualAddScreen.unitFieldKey), 'KG');
+      await tester.pump();
+      expect(
+        tester.widget<PChip>(find.byKey(ManualAddScreen.unitChipKey('kg'))).selected,
+        isTrue,
+      );
+      expect(tester.widget<PInput>(find.byKey(ManualAddScreen.unitFieldKey)).controller?.text, 'KG');
+    });
+
+    testWidgets('the category filter shows the approved labels', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+      for (final String label in <String>[
+        'Dry Goods',
+        'Meat & Fish',
+        'Eggs',
+        'Beverages',
+      ]) {
+        expect(find.widgetWithText(PChip, label), findsOneWidget, reason: label);
+      }
+    });
+
+    testWidgets('an existing unit outside the allow-list stays visible in edit', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(
+        tester,
+        repository: FakePantryRepository(),
+        initialItem: PantryItem(
+          id: 'item-2',
+          householdId: 'household-1',
+          name: 'Toor Dal',
+          quantity: 2,
+          unit: 'ml',
+          category: 'dal',
+          isStaple: false,
+          addedBy: 'user-1',
+          addedAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        ),
+      );
+
+      expect(find.byKey(ManualAddScreen.unitChipKey('ml')), findsOneWidget);
+      expect(find.byKey(ManualAddScreen.unitChipKey('g')), findsOneWidget);
+      expect(find.byKey(ManualAddScreen.unitChipKey('piece')), findsNothing);
+    });
+
     testWidgets('submit is disabled until name, quantity, and unit are valid', (
       WidgetTester tester,
     ) async {

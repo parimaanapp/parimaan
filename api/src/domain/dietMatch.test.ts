@@ -7,6 +7,7 @@ import {
   householdModifiers,
   householdStyles,
   isRecipeEligible,
+  reconcileHouseholdTags,
 } from './dietMatch.js';
 
 describe('dietMatch constants', () => {
@@ -44,6 +45,22 @@ describe('eligibleRecipeStyleTags', () => {
   it('is empty when the household has no styles', () => {
     expect(eligibleRecipeStyleTags(['gluten_free'])).toEqual([]);
     expect(eligibleRecipeStyleTags([])).toEqual([]);
+  });
+});
+
+describe('reconcileHouseholdTags (F1)', () => {
+  it('returns the incoming tags as sent when they carry a style', () => {
+    expect(reconcileHouseholdTags(['non_veg'], ['veg', 'gluten_free'])).toEqual(['non_veg']);
+  });
+
+  it('keeps stored styles and applies only the incoming modifiers', () => {
+    expect(reconcileHouseholdTags(['dairy_free'], ['veg', 'jain', 'gluten_free'])).toEqual(['veg', 'jain', 'dairy_free']);
+    expect(reconcileHouseholdTags([], ['veg', 'gluten_free'])).toEqual(['veg']);
+  });
+
+  it('accepts a style-less patch as sent when nothing stored has a style', () => {
+    expect(reconcileHouseholdTags(['gluten_free'], [])).toEqual(['gluten_free']);
+    expect(reconcileHouseholdTags([], ['gluten_free'])).toEqual([]);
   });
 });
 

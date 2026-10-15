@@ -6,7 +6,7 @@
   "cookMin": 20,
   "cuisineTier1": "north_indian",
   "cuisineTier2": "punjabi",
-  "dietaryTags": ["veg", "vegan"],
+  "dietaryTags": ["veg"],
   "role": "carb",
   "ingredients": [
     { "name": "Whole Wheat Flour (Aata)", "quantity": 2, "unit": "cup", "category": "grain" },

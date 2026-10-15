@@ -236,6 +236,48 @@ describe('createRecipe resolver', () => {
     expect(ingredients.map((i) => i.name)).toEqual(['Onion', 'Rajma beans']);
   });
 
+  it('infers a style tag from the ingredients when none is supplied (H3)', async () => {
+    const owner = await createUser('sub-owner-infer');
+    const householdId = await createHouseholdWithMember(owner, 'INF234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    const veg = await handler(buildEvent(householdId, { ...validInput, ingredients: [{ name: 'Rajma beans' }] }, 'sub-owner-infer'));
+    const egg = await handler(buildEvent(householdId, { ...validInput, ingredients: [{ name: 'Eggs' }] }, 'sub-owner-infer'));
+    const meat = await handler(
+      buildEvent(householdId, { ...validInput, ingredients: [{ name: 'Chicken' }], dietaryTags: ['gluten_free'] }, 'sub-owner-infer'),
+    );
+
+    expect(veg.dietaryTags).toEqual(['veg']);
+    expect(egg.dietaryTags).toEqual(['eggetarian']);
+    expect(meat.dietaryTags).toEqual(['gluten_free', 'non_veg']);
+  });
+
+  it('explicit style tags always win over inference', async () => {
+    const owner = await createUser('sub-owner-explicit');
+    const householdId = await createHouseholdWithMember(owner, 'EXP234');
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(
+      buildEvent(householdId, { ...validInput, ingredients: [{ name: 'Chicken' }], dietaryTags: ['vegan'] }, 'sub-owner-explicit'),
+    );
+
+    expect(result.dietaryTags).toEqual(['vegan']);
+  });
+
+  it.each([
+    ['veg', 'NVA234'],
+    ['vegan', 'NVB234'],
+    ['jain', 'NVC234'],
+  ])('rejects non_veg combined with %s (M2)', async (other, inviteCode) => {
+    const owner = await createUser(`sub-owner-nv-${other}`);
+    const householdId = await createHouseholdWithMember(owner, inviteCode);
+    const handler = createCreateRecipeHandler({ getPool: async () => pool });
+
+    await expect(
+      handler(buildEvent(householdId, { ...validInput, dietaryTags: ['non_veg', other] }, `sub-owner-nv-${other}`)),
+    ).rejects.toThrow(/non_veg/);
+  });
+
   it('sourceType cannot be set from input even if a client sends it', async () => {
     const owner = await createUser('sub-owner-spoof-source');
     const householdId = await createHouseholdWithMember(owner, 'SPS234');

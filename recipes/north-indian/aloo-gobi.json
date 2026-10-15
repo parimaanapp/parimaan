@@ -6,7 +6,7 @@
   "cookMin": 25,
   "cuisineTier1": "north_indian",
   "cuisineTier2": "punjabi",
-  "dietaryTags": ["veg", "vegan", "gluten_free", "jain"],
+  "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Potato", "quantity": 3, "unit": "piece", "category": "produce", "notes": "medium, cut into cubes" },

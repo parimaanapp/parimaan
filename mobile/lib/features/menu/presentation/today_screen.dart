@@ -39,6 +39,7 @@ class TodayScreen extends ConsumerWidget {
   static const Key loadingKey = Key('today-loading');
   static const Key errorKey = Key('today-error');
   static const Key emptyStateKey = Key('today-empty');
+  static const Key emptyCookButtonKey = Key('today-empty-cook');
   static const Key settingsButtonKey = Key('today-settings');
   static const Key cookButtonKey = Key('today-cook');
 
@@ -94,6 +95,8 @@ class _TodayForHousehold extends ConsumerWidget {
       children: <Widget>[
         PTopBar(
           title: 'Today',
+          // Names the household so signing in to an existing one is never silent.
+          subtitle: household.name,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -197,14 +200,28 @@ class _TodayBody extends StatelessWidget {
           key: TodayScreen.emptyStateKey,
           headline: 'Nothing planned for today',
           body: 'Add recipes to today\'s slots from the Weekly plan.',
-          action: PButton(
-            label: 'Go to Weekly plan',
-            variant: PButtonVariant.secondary,
-            // `context.go`, not `context.push` — `weeklyPlan` is a sibling
-            // shell-tab branch (S6's own tab wiring), and `go` is what
-            // switches to it cleanly instead of pushing a second, nested
-            // copy of the shell on top of this one.
-            onPressed: () => context.go(AppRoutes.weeklyPlan),
+          action: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              PButton(
+                label: 'Go to Weekly plan',
+                variant: PButtonVariant.secondary,
+                // `context.go`, not `context.push` — `weeklyPlan` is a
+                // sibling shell-tab branch (S6's own tab wiring), and `go` is
+                // what switches to it cleanly instead of pushing a second,
+                // nested copy of the shell on top of this one.
+                onPressed: () => context.go(AppRoutes.weeklyPlan),
+              ),
+              const SizedBox(height: AppSpacing.s1),
+              // Nothing planned is exactly when "what can I cook?" helps.
+              PButton(
+                key: TodayScreen.emptyCookButtonKey,
+                label: 'Cook from pantry',
+                icon: Icons.restaurant_menu,
+                variant: PButtonVariant.ghost,
+                onPressed: () => context.push(AppRoutes.cook(menu.householdId)),
+              ),
+            ],
           ),
         ),
       );

@@ -186,6 +186,100 @@ describe('updateRecipe resolver', () => {
     expect(new Date(result.updatedAt).getTime()).toBeGreaterThan(recipe.updatedAt.getTime());
   });
 
+  it('infers a style when a patched dietaryTags has none, from the patch ingredients (H3)', async () => {
+    const owner = await createUser('sub-owner-infer-ing');
+    const householdId = await createHouseholdWithMember(owner, 'IFA234');
+    const recipe = await createRecipeFixture(householdId, owner.id);
+    const handler = createUpdateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(
+      buildEvent(
+        recipe.id,
+        { dietaryTags: ['gluten_free'], ingredients: [{ name: 'Mutton' }] },
+        'sub-owner-infer-ing',
+      ),
+    );
+
+    expect(result.dietaryTags).toEqual(['gluten_free', 'non_veg']);
+  });
+
+  it('infers from the stored ingredients when the patch has tags but no ingredients (H3)', async () => {
+    const owner = await createUser('sub-owner-infer-stored');
+    const householdId = await createHouseholdWithMember(owner, 'IFS234');
+    const recipe = await createRecipeFixture(householdId, owner.id, { title: 'Egg Bhurji' });
+    const handler = createUpdateRecipeHandler({ getPool: async () => pool });
+    await handler(buildEvent(recipe.id, { ingredients: [{ name: 'Eggs' }] }, 'sub-owner-infer-stored'));
+
+    const result = await handler(buildEvent(recipe.id, { dietaryTags: [] }, 'sub-owner-infer-stored'));
+
+    expect(result.dietaryTags).toEqual(['eggetarian']);
+  });
+
+  it('re-infers the style when ingredients change and the stored style was the inferred one (F4)', async () => {
+    const owner = await createUser('sub-owner-reinfer');
+    const householdId = await createHouseholdWithMember(owner, 'RIN234');
+    const recipe = await createRecipeFixture(householdId, owner.id);
+    const handler = createUpdateRecipeHandler({ getPool: async () => pool });
+    await handler(
+      buildEvent(recipe.id, { dietaryTags: ['veg', 'gluten_free'], ingredients: [{ name: 'Rajma' }] }, 'sub-owner-reinfer'),
+    );
+
+    const result = await handler(buildEvent(recipe.id, { ingredients: [{ name: 'Chicken' }] }, 'sub-owner-reinfer'));
+
+    expect([...result.dietaryTags].sort()).toEqual(['gluten_free', 'non_veg']);
+  });
+
+  it('re-infers for a stored recipe that has no style at all (F4)', async () => {
+    const owner = await createUser('sub-owner-reinfer-none');
+    const householdId = await createHouseholdWithMember(owner, 'RIX234');
+    const recipe = await createRecipeFixture(householdId, owner.id);
+    const handler = createUpdateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(buildEvent(recipe.id, { ingredients: [{ name: 'Eggs' }] }, 'sub-owner-reinfer-none'));
+
+    expect(result.dietaryTags).toEqual(['eggetarian']);
+  });
+
+  it('keeps a deliberately chosen style when ingredients change (F4)', async () => {
+    const owner = await createUser('sub-owner-keep-explicit');
+    const householdId = await createHouseholdWithMember(owner, 'RIK234');
+    const recipe = await createRecipeFixture(householdId, owner.id);
+    const handler = createUpdateRecipeHandler({ getPool: async () => pool });
+    await handler(
+      buildEvent(recipe.id, { dietaryTags: ['vegan'], ingredients: [{ name: 'Rajma' }] }, 'sub-owner-keep-explicit'),
+    );
+
+    const result = await handler(
+      buildEvent(recipe.id, { ingredients: [{ name: 'Mock chicken' }] }, 'sub-owner-keep-explicit'),
+    );
+
+    expect(result.dietaryTags).toEqual(['vegan']);
+  });
+
+  it('explicit style tags win over inference on update', async () => {
+    const owner = await createUser('sub-owner-explicit-upd');
+    const householdId = await createHouseholdWithMember(owner, 'IFE234');
+    const recipe = await createRecipeFixture(householdId, owner.id);
+    const handler = createUpdateRecipeHandler({ getPool: async () => pool });
+
+    const result = await handler(
+      buildEvent(recipe.id, { dietaryTags: ['vegan'], ingredients: [{ name: 'Chicken' }] }, 'sub-owner-explicit-upd'),
+    );
+
+    expect(result.dietaryTags).toEqual(['vegan']);
+  });
+
+  it('rejects non_veg combined with veg (M2)', async () => {
+    const owner = await createUser('sub-owner-nv-upd');
+    const householdId = await createHouseholdWithMember(owner, 'IFN234');
+    const recipe = await createRecipeFixture(householdId, owner.id);
+    const handler = createUpdateRecipeHandler({ getPool: async () => pool });
+
+    await expect(
+      handler(buildEvent(recipe.id, { dietaryTags: ['non_veg', 'veg'] }, 'sub-owner-nv-upd')),
+    ).rejects.toThrow(/non_veg/);
+  });
+
   it('rejects an explicit null for a scalar field with ValidationError', async () => {
     const owner = await createUser('sub-owner-null');
     const householdId = await createHouseholdWithMember(owner, 'NUL234');
