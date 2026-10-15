@@ -1,6 +1,6 @@
 # Ingredient catalog — DRAFT for founder sign-off
 
-1468 canonical ingredients · 4919 aliases · 15 app categories.
+1467 canonical ingredients · 4919 aliases · 15 app categories.
 
 Columns: **Canonical name** (what the app stores and shows) · **Also called** (aliases mapped to it on import) · **Units** (first is the default).
 
@@ -1395,7 +1395,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Til Ladoo | til laddu; sesame ladoo; sesame laddu; tilgul ladoo; til ke ladoo; ellunda |
 | Upma Mix | instant upma |
 
-## Spice — 201
+## Spice — 200
 ### masala_blend — 97  ·  units: `g / tsp / tbsp / packet`
 | Canonical name | Also called |
 |---|---|
@@ -1536,7 +1536,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Turmeric Powder | haldi; haldi powder; manjal; arishina; pasupu; turmeric |
 | White Pepper Powder | safed mirch powder |
 
-### spice_whole — 69  ·  units: `g / tsp / tbsp / piece`
+### spice_whole — 68  ·  units: `g / tsp / tbsp / piece`
 | Canonical name | Also called |
 |---|---|
 | Alum (Edible) | phitkari |
@@ -1560,7 +1560,6 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Dried Basil |  |
 | Dried Bay Leaf (Indian) | cassia leaf; tejpat; malabathrum |
 | Dried Butterfly Pea Flower | butterfly pea; aparajita; shankhpushpi flowers; clitoria; sangu pushpam; gokarna flower |
-| Dried Chilli (Bird's Eye) | bird eye chilli dried; thai chilli dried; dried thai chilli; kanthari dried; dry bird's eye |
 | Dried Curry Leaves | dried kadi patta |
 | Dried Fenugreek Leaves | kasuri methi; dried methi; kasoori methi; kasturi methi |
 | Dried Galangal | galangal dried; kulanjan; aratha; dried galangal root; khao laos |
@@ -1572,7 +1571,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Dried Mushrooms (Shiitake) | dried shiitake; shiitake dried; dried mushroom chinese; black mushroom dried |
 | Dried Oregano | oregano |
 | Dried Porcini | porcini; porcini mushrooms; cep |
-| Dried Red Chilli | kashmiri mirch whole; kashmiri red chilli whole; byadgi chilli; byadgi mirch; dried kashmiri chilli; guntur chilli; sannam chilli; teja chilli; gundu mulagai; ramnad mundu; resham patti; sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai |
+| Dried Red Chilli | kashmiri mirch whole; kashmiri red chilli whole; byadgi chilli; byadgi mirch; dried kashmiri chilli; guntur chilli; sannam chilli; teja chilli; gundu mulagai; ramnad mundu; resham patti; sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai; bird eye chilli dried; thai chilli dried; dried thai chilli; kanthari dried; dry bird's eye |
 | Dried Rosemary |  |
 | Dried Thyme |  |
 | Dried Turmeric Root | haldi gaanth; haldi whole; turmeric finger; dried turmeric sticks; manjal kombu; pasupu kommu |

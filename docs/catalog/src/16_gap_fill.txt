@@ -61,7 +61,6 @@ Little Millet Flour | samai maavu; saame hittu; kutki flour; samalu flour; kutki
 Barnyard Millet Flour | kuthiraivali maavu; oodalu flour; sanwa flour; jhangora flour; udalu flour |  | 115
 ## spice_whole
 Dried Bay Leaf (Indian) | cassia leaf; tejpat; malabathrum |  | 
-Dried Chilli (Bird's Eye) | bird eye chilli dried; thai chilli dried; dried thai chilli; kanthari dried; dry bird's eye |  | 
 Ancho Chilli | ancho; dried poblano; ancho pepper |  | 
 Guajillo Chilli | guajillo; guajillo pepper |  | 
 Dried Morel Mushrooms | morel; guchhi; gucchi; morels dried; dried morels; kashmiri guchhi |  | 

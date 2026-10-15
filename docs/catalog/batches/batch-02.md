@@ -1,6 +1,6 @@
 # Catalog review batch 02
 
-97 new ingredients. Mark each row **keep / rename / drop**; add aliases people actually type.
+96 new ingredients. Mark each row **keep / rename / drop**; add aliases people actually type.
 
 ## Grain (37)
 
@@ -44,7 +44,7 @@
 | Wheat Flakes | whole wheat flakes; wheat cereal; wheat flake cereal | g / kg / cup (cup 40 g) |
 | Wheat Germ | gehun ka germ; gehu germ | g / kg / cup (cup 100 g) |
 
-## Spice (60)
+## Spice (59)
 
 | Canonical name | Also called | Units |
 |---|---|---|
@@ -94,7 +94,6 @@
 | Coriander Seeds (Split) | dhana dal; dhania dal; split coriander; coriander dal; kothamalli dal | g / tsp / tbsp / piece |
 | Dried Bay Leaf (Indian) | cassia leaf; tejpat; malabathrum | g / tsp / tbsp / piece |
 | Dried Butterfly Pea Flower | butterfly pea; aparajita; shankhpushpi flowers; clitoria; sangu pushpam; gokarna flower | g / tsp / tbsp / piece |
-| Dried Chilli (Bird's Eye) | bird eye chilli dried; thai chilli dried; dried thai chilli; kanthari dried; dry bird's eye | g / tsp / tbsp / piece |
 | Dried Galangal | galangal dried; kulanjan; aratha; dried galangal root; khao laos | g / tsp / tbsp / piece |
 | Dried Hibiscus | hibiscus flowers; gudhal dried; hibiscus tea flowers; roselle; gongura dried flower; jamaica flower | g / tsp / tbsp / piece |
 | Dried Morel Mushrooms | morel; guchhi; gucchi; morels dried; dried morels; kashmiri guchhi | g / tsp / tbsp / piece |

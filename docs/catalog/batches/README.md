@@ -1,11 +1,11 @@
 # Catalog expansion review batches (Build B, slice B1a)
 
-627 new ingredients (841 -> 1,468), split into seven batches of at most 120 rows, grouped by app category. Source of truth is `docs/catalog/src/08_*.txt` to `16_*.txt`; `ingredients.csv` is generated.
+626 new ingredients (841 -> 1,467), split into seven batches of at most 120 rows, grouped by app category. Source of truth is `docs/catalog/src/08_*.txt` to `16_*.txt`; `ingredients.csv` is generated.
 
 | Batch | Categories | Rows |
 |---|---|---|
 | 01 | Produce, Dal | 111 |
-| 02 | Grain, Spice | 97 |
+| 02 | Grain, Spice | 96 |
 | 03 | Dry Goods, Oil, Dairy, Eggs | 72 |
 | 04 | Meat & Fish | 75 |
 | 05 | Condiment | 103 |

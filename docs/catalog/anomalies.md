@@ -1,6 +1,6 @@
 # Alias hygiene report (generated)
 
-1468 ingredients. Founder decisions are in `decisions.md`.
+1467 ingredients. Founder decisions are in `decisions.md`.
 
 ## Aliases claimed by more than one ingredient (12)
 Kept in both places by founder decision; the importer must ask the user (or use context) when it meets one of these.
