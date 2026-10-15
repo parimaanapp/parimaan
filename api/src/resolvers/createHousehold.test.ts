@@ -419,13 +419,16 @@ describe('createHousehold resolver', () => {
       ['just outside the window', '190 seconds', false],
     ])('window boundary: %s', async (_label, age, reused) => {
       const handler = createCreateHouseholdHandler(fixture());
-      const first = await handler(buildEvent('Edge House', 'sub-edge'));
+      // Distinct sub per case: the caller-user lookup is cached by sub across
+      // tests, and `truncateAll` between them would leave a stale user id.
+      const sub = `sub-edge-${reused ? 'in' : 'out'}`;
+      const first = await handler(buildEvent('Edge House', sub));
       await db.adminClient.query(
         `UPDATE households SET created_at = NOW() - $2::interval WHERE id = $1`,
         [first.id, age],
       );
 
-      const second = await handler(buildEvent('Edge House', 'sub-edge'));
+      const second = await handler(buildEvent('Edge House', sub));
 
       expect(second.id === first.id).toBe(reused);
     });
