@@ -89,9 +89,9 @@ describe('normaliseIngredient — to taste', () => {
     expect(result.isStaple).toBe(true);
   });
 
-  it('keeps a parsed quantity and the phrase in notes, never staple', () => {
+  it('keeps a parsed quantity and the phrase in notes, and salt stays staple', () => {
     const result = normaliseIngredient(make({ name: 'salt', quantity: 1, unit: 'tsp', notes: 'to taste' }));
-    expect(result).toMatchObject({ quantity: 1, unit: 'tsp', notes: 'to taste', isStaple: false });
+    expect(result).toMatchObject({ quantity: 1, unit: 'tsp', notes: 'to taste', isStaple: true });
   });
 
   it('keeps quantity absent but not staple for non salt/pepper items', () => {
@@ -110,10 +110,34 @@ describe('normaliseIngredient — to taste', () => {
     expect(normaliseIngredient(make({ name: 'salted butter to taste' })).isStaple).toBe(false);
   });
 
-  it('does not flag salt as staple when there is no to-taste phrase', () => {
+  it('flags measured salt as staple while keeping its quantity', () => {
     const result = normaliseIngredient(make({ name: 'salt', quantity: 1, unit: 'tsp' }));
-    expect(result.isStaple).toBe(false);
-    expect(result.quantity).toBe(1);
+    expect(result).toMatchObject({ isStaple: true, quantity: 1, unit: 'tsp' });
+  });
+
+  it.each([
+    ['salt', true],
+    ['sea salt', true],
+    ['rock salt', true],
+    ['black salt', true],
+    ['table salt', true],
+    ['pepper', true],
+    ['black pepper', true],
+    ['white pepper', true],
+    ['pepper powder', true],
+    ['crushed pepper', true],
+    ['Salt', true],
+    ['black peppercorns', false],
+    ['pepper jack cheese', false],
+    ['bell pepper', false],
+    ['green pepper', false],
+    ['red pepper', false],
+    ['salt-free seasoning', false],
+    ['salted butter', false],
+    ['onion', false],
+  ])('measured %j (no to-taste phrase) staple=%s', (name, expected) => {
+    const result = normaliseIngredient(make({ name, quantity: 2, unit: 'tsp' }));
+    expect(result).toMatchObject({ isStaple: expected, quantity: 2, unit: 'tsp' });
   });
 
   it('keeps the original raw line cleaned', () => {
