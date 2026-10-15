@@ -103,9 +103,57 @@ void main() {
   });
 
   group('shoppingListCategoryLabel', () {
-    test('formats snake_case as a capitalized, spaced label', () {
-      expect(shoppingListCategoryLabel('dry_goods'), 'Dry goods');
-      expect(shoppingListCategoryLabel('other'), 'Other');
+    test('uses the approved catalog labels (docs/catalog/decisions.md)', () {
+      const Map<String, String> expected = <String, String>{
+        'dal': 'Dal',
+        'grain': 'Grain',
+        'grains': 'Grain',
+        'spice': 'Spice',
+        'dairy': 'Dairy',
+        'eggs': 'Eggs',
+        'produce': 'Produce',
+        'dry_goods': 'Dry Goods',
+        'oil': 'Oil',
+        'meat_fish': 'Meat & Fish',
+        'condiment': 'Condiment',
+        'bakery': 'Bakery',
+        'snacks': 'Snacks',
+        'beverages': 'Beverages',
+        'frozen': 'Frozen',
+        'other': 'Other',
+      };
+      expected.forEach((String key, String label) {
+        expect(shoppingListCategoryLabel(key), label, reason: key);
+      });
+    });
+
+    test('an unknown snake_case value falls back to a spaced, capitalised label', () {
+      expect(shoppingListCategoryLabel('fresh_herbs'), 'Fresh herbs');
+      expect(shoppingListCategoryLabel(''), '');
+    });
+  });
+
+  group('approved categories all have a defined slot', () {
+    test('spice, eggs, oil, meat_fish, bakery, snacks, beverages group ahead of unknowns and "other"', () {
+      final List<String> order = groupShoppingListItemsByCategory(
+        <ShoppingListItem>[
+          _item('1', 'other'),
+          _item('2', 'zzz_unknown'),
+          _item('3', 'beverages'),
+          _item('4', 'snacks'),
+          _item('5', 'bakery'),
+          _item('6', 'meat_fish'),
+          _item('7', 'oil'),
+          _item('8', 'eggs'),
+          _item('9', 'spice'),
+        ],
+      ).map((ShoppingListCategoryGroup g) => g.category).toList();
+      expect(order.last, 'other');
+      expect(order[order.length - 2], 'zzz_unknown');
+      expect(
+        order.sublist(0, 7).toSet(),
+        <String>{'spice', 'eggs', 'oil', 'meat_fish', 'bakery', 'snacks', 'beverages'},
+      );
     });
   });
 }

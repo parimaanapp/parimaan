@@ -34,9 +34,38 @@ const List<String> _knownShoppingListCategoryOrder = <String>[
   'grain',
   'grains',
   'dry_goods',
+  'spice',
+  'eggs',
+  'oil',
+  'meat_fish',
   'condiment',
+  'bakery',
+  'snacks',
+  'beverages',
   'frozen',
 ];
+
+/// Approved display labels (`docs/catalog/decisions.md`, "Ingredient
+/// categories"). `meat_fish` / `dry_goods` are stored values; these are the
+/// labels. Singular and plural grain spellings share one label.
+const Map<String, String> _categoryLabels = <String, String>{
+  'dal': 'Dal',
+  'grain': 'Grain',
+  'grains': 'Grain',
+  'spice': 'Spice',
+  'dairy': 'Dairy',
+  'eggs': 'Eggs',
+  'produce': 'Produce',
+  'dry_goods': 'Dry Goods',
+  'oil': 'Oil',
+  'meat_fish': 'Meat & Fish',
+  'condiment': 'Condiment',
+  'bakery': 'Bakery',
+  'snacks': 'Snacks',
+  'beverages': 'Beverages',
+  'frozen': 'Frozen',
+  'other': 'Other',
+};
 
 /// The bucket a `null` [ShoppingListItem.category] (or any category not
 /// otherwise recognised as staple-excluded — those never reach the client at
@@ -97,6 +126,8 @@ List<ShoppingListCategoryGroup> groupShoppingListItemsByCategory(
 /// `dry_goods` -> `Dry goods`, `other` -> `Other`. Display formatting only —
 /// same shape as `pantry_category.dart`'s `pantryCategoryLabel`.
 String shoppingListCategoryLabel(String category) {
+  final String? approved = _categoryLabels[category];
+  if (approved != null) return approved;
   final String spaced = category.replaceAll('_', ' ');
   if (spaced.isEmpty) return spaced;
   return spaced[0].toUpperCase() + spaced.substring(1);
