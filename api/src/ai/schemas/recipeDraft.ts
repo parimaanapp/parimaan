@@ -160,6 +160,14 @@ const toIngredientDraft = (ingredient: GeminiRecipeDraft['ingredients'][number])
   };
 };
 
+/** Recognised tags only, plus (H3) an inferred style when the draft has none — explicit tags win. */
+const withDraftStyle = (values: readonly (DietaryTag | null)[], raw: GeminiRecipeDraft): DietaryTag[] =>
+  withInferredStyle(
+    values.filter((tag): tag is DietaryTag => tag !== null),
+    raw.title ?? '',
+    raw.ingredients.map((ingredient) => ingredient.name),
+  ) as DietaryTag[];
+
 /**
  * The post-parse step implementing D4's enum leniency and D11/§13.2.2's
  * quantity coercion — deliberately separate from `geminiRecipeDraftSchema`
@@ -176,13 +184,10 @@ export const toRecipeDraft = (raw: GeminiRecipeDraft): RecipeDraftResult => {
 
   const cuisineTier1 = cuisineResult.value;
   const role = roleResult.value;
-  const recognisedTags = dietaryTagResults.map((result) => result.value).filter((tag): tag is DietaryTag => tag !== null);
-  // H3: a draft with no style tag gets one inferred from its ingredients (explicit tags win).
-  const dietaryTags = withInferredStyle(
-    recognisedTags,
-    raw.title ?? '',
-    raw.ingredients.map((ingredient) => ingredient.name),
-  ) as DietaryTag[];
+  const dietaryTags = withDraftStyle(
+    dietaryTagResults.map((result) => result.value),
+    raw,
+  );
   const warnings = [cuisineResult, roleResult, ...dietaryTagResults]
     .map((result) => result.warning)
     .filter((warning): warning is string => warning !== null);
