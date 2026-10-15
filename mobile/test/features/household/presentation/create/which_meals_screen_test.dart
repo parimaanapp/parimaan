@@ -7,6 +7,7 @@ import 'package:mobile/features/household/presentation/create/which_meals_screen
 import 'package:mobile/features/household/presentation/create/wizard_step_scaffold.dart';
 import 'package:mobile/features/household/state/household_wizard_controller.dart';
 import 'package:mobile/shared/errors/app_error.dart';
+import 'package:mobile/shared/ui/components/p_top_bar.dart';
 
 import '../../../../support/fake_household_repository.dart';
 import '../../../../support/household_fixtures.dart';
@@ -246,7 +247,7 @@ void main() {
     testWidgets('back returns to the name screen', (WidgetTester tester) async {
       final subject = await _pump(tester);
 
-      await tester.tap(find.text('‹'));
+      await tester.tap(find.byType(PTopBarBackButton));
       await tester.pumpAndSettle();
 
       expect(currentLocation(subject.router), AppRoutes.createHouseholdName);

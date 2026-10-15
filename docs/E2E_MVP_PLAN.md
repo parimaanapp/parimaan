@@ -5625,3 +5625,36 @@ Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf
 - **Recipes**: sample format approved; Methi Thepla is vegan and dairy free.
 - **Components**: sign-off list items 1–6 and 8 approved (drawn tab icons, "Today" label, centred titles, bold back chevron with 44×44 target, solid-ink chips without ✓, haldi "◆ AI proposal" badge, column header). Item 7 is **decided**: four meals planned → option B (2×2 block per day, meal name under the ＋ and in each cell, no column header); one to three meals planned → option C (one column per planned meal with a column header). Replaces the four-column layout in C1.
 
+## 33. Project status and sequence (snapshot after beta feedback round 1)
+
+### 33.1 Where we are
+| Area | State |
+|---|---|
+| Backend and mobile feature set | W1–W21 shipped, merged and deployed to **dev AWS** (auth, households, pantry, recipes, menus, shopping list, share image, photo pantry, cook-from-pantry, web dashboard). |
+| Beta distribution | **iOS TestFlight** build 1.0.0 (10121400) processed and installable by internal testers; **Android** sideload APK via presigned S3 URL (`scripts/beta/`). Google sign-in gated by the OAuth consent screen's test-user list. |
+| Marketing site | Live at https://www.parimaan.app (S3 + CloudFront, operator named Tatva Research). AWS Activate resubmission is a founder action. |
+| Feedback | Round 1 triaged (§32) into Builds A, B, C; catalog and wireframe decisions signed off (§32.6). |
+| Blocked on founder | Firebase project (W22), PostHog account (§31.4), keystore backup, GCP consent-screen branding, Sign in with Apple decision, GoDaddy https forward. |
+
+### 33.2 Build A (bugs and copy) — in flight
+| Slice | PR | Contents |
+|---|---|---|
+| A1 diet matcher + rotation fallback | in progress (`feat/a1-diet-matcher`) | `non_veg`, union-style matcher with modifiers, sentence-case labels, auto-fill never fails for lack of rotation |
+| A2 household create | #222 | idempotent `createHousehold`, error reset on re-entry, household name on Today |
+| A3 back button | in progress (`fix/a3-back-button`) | bold 24 px chevron, 44×44 target, one component app-wide |
+| A4 import normalisation | #223 | shared unit/entity/to-taste/duplicate-merge step for URL and text import, `isStaple` on drafts |
+| A5 category units | #224 | per-category units, new categories and approved labels |
+| A6 wipe tool | #225 | dry-run-first account wipe CLI (not yet run; needs the founder's approval of its listing) |
+| A7 setup wizard | not started | dinner-structure toggle and page, Snacks, "Setup your Household", grouped diet chips (depends on A1) |
+| A8 empty states and entry points | not started | recipes filtered-empty copy and load time, Cook-from-Pantry entry point, `hintText: 'cup'` placeholder fix (found by A4) |
+After Build A: deploy backend to dev, run the wipe dry run for founder approval, execute, cut TestFlight and APK builds.
+
+### 33.3 Order of work from here
+1. Build A (above) → dev deploy → founder-approved wipe → TestFlight + APK.
+2. Build B: ingredient catalog (848 drafted → ~1,500), conversions, ~500 recipes with diet tags, full import canonicalisation.
+3. Build C: weekly plan (B/C layouts), shopping list, shared components aligned to the wireframes (`docs/wireframes/README.md`).
+4. §31.4 instrumentation slice (PostHog), then W22 push (needs the Firebase project), then §31.1–31.3 website and store readiness, W24/W25.
+
+### 33.4 Wireframe status
+Original v2 bundle remains the component reference; deliberate deviations and the approved weekly-plan layouts are recorded in `docs/wireframes/README.md`. The setup-flow screens (2.x), weekly plan (6.1), bottom nav, chips, AI badge and back control change in Builds A and C as listed there; no new screens are added.
+

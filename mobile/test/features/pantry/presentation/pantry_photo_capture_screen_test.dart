@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/pantry/presentation/pantry_photo_capture_screen.dart';
 import 'package:mobile/shared/ui/components/components.dart';
+import 'package:mobile/shared/ui/components/p_back_chevron.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
 /// W19 §26.1 — this test environment has no real camera platform channel
@@ -61,6 +62,46 @@ void main() {
       await tester.pump();
 
       expect(backTaps, 1);
+    });
+
+    testWidgets('the back control is a PTopBarBackButton with a white chevron', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, onCaptured: (_) {});
+
+      final Finder back = find.descendant(
+        of: find.byKey(PantryPhotoCaptureScreen.backButtonKey),
+        matching: find.byType(PTopBarBackButton),
+      );
+      expect(back, findsOneWidget);
+      expect(
+        tester.widget<PBackChevron>(find.byType(PBackChevron)).color,
+        Colors.white,
+      );
+    });
+
+    testWidgets('the back control exposes label and tap action to a11y', (
+      WidgetTester tester,
+    ) async {
+      int backTaps = 0;
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await _pump(tester, onCaptured: (_) {}, onBack: () => backTaps++);
+
+      expect(
+        tester.getSemantics(find.byType(PTopBarBackButton)),
+        matchesSemantics(
+          label: 'Back',
+          isButton: true,
+          hasTapAction: true,
+          hasEnabledState: false,
+          isEnabled: false,
+          isFocusable: false,
+        ),
+      );
+      tester.semantics.tap(find.semantics.byLabel('Back'));
+      await tester.pump();
+      expect(backTaps, 1);
+      handle.dispose();
     });
 
     testWidgets('onCaptured is never called without a real capture happening', (
