@@ -128,8 +128,9 @@ _PBadgeColors _colorsFor(PBadgeTone tone) {
         foreground: AppColors.paper,
       );
     case PBadgeTone.accent:
+      // terracottaDeep keeps the small caps label above 4.5:1.
       return const _PBadgeColors(
-        background: AppColors.terracotta,
+        background: AppColors.terracottaDeep,
         foreground: AppColors.paper,
       );
   }

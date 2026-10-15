@@ -247,6 +247,65 @@ void main() {
       }
     });
 
+    testWidgets('filled variants use large text: >= 18.66 px at w600', (
+      WidgetTester tester,
+    ) async {
+      for (final PButtonVariant v in <PButtonVariant>[
+        PButtonVariant.primary,
+        PButtonVariant.affirmative,
+        PButtonVariant.dark,
+      ]) {
+        for (final PButtonSize size in PButtonSize.values) {
+          await pumpComponent(
+            tester,
+            PButton(label: 'Go', variant: v, size: size, onPressed: () {}),
+          );
+          final TextStyle style = _styleOf(tester).textStyle!.resolve(const {})!;
+          expect(style.fontSize, greaterThanOrEqualTo(18.66), reason: '$v $size');
+          expect(
+            style.fontWeight!.value,
+            greaterThanOrEqualTo(FontWeight.w600.value),
+          );
+        }
+      }
+    });
+
+    testWidgets('a long filled label wraps instead of truncating, at 320 pt '
+        'and 2x text scale', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(320, 640),
+              textScaler: TextScaler.linear(2),
+            ),
+            child: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16),
+                child: PButton(
+                  label: 'Create household and continue to setup',
+                  expand: true,
+                  onPressed: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final Size size = tester.getSize(find.byType(PButton));
+      expect(size.width, lessThanOrEqualTo(320));
+      expect(size.height, greaterThan(AppSizing.buttonMinHeight));
+      final Text text = tester.widget<Text>(
+        find.text('Create household and continue to setup'),
+      );
+      expect(text.overflow, isNot(TextOverflow.ellipsis));
+    });
+
     testWidgets('every standard button is radius 12', (
       WidgetTester tester,
     ) async {

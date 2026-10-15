@@ -236,7 +236,11 @@ ButtonStyle pButtonStyle({
       (size == PButtonSize.small
               ? AppTypography.label
               : AppTypography.bodyStrong)
-          .copyWith(fontWeight: _weight(variant)),
+          .copyWith(
+            fontWeight: _weight(variant),
+            fontSize: filled ? _filledLabelSize : null,
+            height: filled ? _filledLabelHeight : null,
+          ),
     ),
     minimumSize: const WidgetStatePropertyAll<Size>(
       Size(AppSizing.minTouchTargetWidth, AppSizing.buttonMinHeight),
@@ -262,6 +266,12 @@ ButtonStyle pButtonStyle({
 // than substituting an unrelated opaque token (e.g. paper2), which would be
 // visually flatter than the source intends.
 final Color _disabledFill = AppColors.ink.withValues(alpha: 0.12);
+
+/// Filled-variant labels are WCAG "large text" (>= 14 pt bold = 18.66 px at
+/// w600), so the paper-on-terracotta pair (~3.9:1) is judged at 3:1. Founder
+/// decision: raise the size rather than the weight.
+const double _filledLabelSize = 18.7;
+const double _filledLabelHeight = 24 / 18.7;
 
 /// Wireframe weights: 600 on the filled variants, 500 on outlined / ghost.
 FontWeight _weight(PButtonVariant variant) {

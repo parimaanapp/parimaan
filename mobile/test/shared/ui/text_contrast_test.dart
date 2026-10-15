@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/shared/ui/components/p_button.dart';
 import 'package:mobile/shared/ui/tokens.dart';
 
 double _lin(double c) =>
@@ -32,11 +33,32 @@ void main() {
         AppColors.haldiSoft,
       ),
     };
-    test('paper on terracotta (primary button) meets 3:1 (semibold, known '
-        'below 4.5:1 — see PR notes)', () {
+    // Pairs below 4.5:1 are only allowed as WCAG "large text": >= 18.66 px
+    // (14 pt) bold (>= w600), where 3:1 applies. The style is read from the
+    // real button, not restated here.
+    for (final PButtonVariant v in <PButtonVariant>[
+      PButtonVariant.primary,
+      PButtonVariant.affirmative,
+      PButtonVariant.dark,
+    ]) {
+      test('filled button ${v.name}: label pair passes at its real size', () {
+        final ButtonStyle style = pButtonStyle(variant: v);
+        final Color fg = style.foregroundColor!.resolve(const {})!;
+        final Color bg = style.backgroundColor!.resolve(const {})!;
+        final TextStyle text = style.textStyle!.resolve(const {})!;
+        final double ratio = contrast(fg, bg);
+        if (ratio < 4.5) {
+          expect(text.fontSize, greaterThanOrEqualTo(18.66));
+          expect(text.fontWeight!.value, greaterThanOrEqualTo(600));
+          expect(ratio, greaterThanOrEqualTo(3));
+        }
+      });
+    }
+
+    test('small accent tags (badge, chip) clear 4.5:1 at their small size', () {
       expect(
-        contrast(AppColors.paper, AppColors.terracotta),
-        greaterThanOrEqualTo(3),
+        contrast(AppColors.paper, AppColors.terracottaDeep),
+        greaterThanOrEqualTo(4.5),
       );
     });
 

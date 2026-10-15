@@ -234,8 +234,10 @@ _PChipColors _colorsFor(PChipVariant variant, PChipTone tone, bool selected) {
         foreground: AppColors.ink,
       );
     case PChipTone.accent:
+      // terracottaDeep, not terracotta: this tag's small label must clear
+      // 4.5:1 (paper on terracotta is ~3.9:1; only large button text may use it).
       return const _PChipColors(
-        background: AppColors.terracotta,
+        background: AppColors.terracottaDeep,
         foreground: AppColors.paper,
       );
   }
