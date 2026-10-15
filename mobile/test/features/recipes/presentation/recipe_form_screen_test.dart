@@ -220,7 +220,7 @@ void main() {
         );
       }
       expect(find.byKey(IngredientRowEditor.unitChipKey(0, 'dozen')), findsNothing);
-      expect(find.byKey(IngredientRowEditor.unitChipKey(0, 'jar')), findsNothing);
+      expect(find.byKey(IngredientRowEditor.unitChipKey(0, 'slice')), findsNothing);
 
       final Finder chip = find.byKey(IngredientRowEditor.unitChipKey(0, 'tbsp'));
       await tester.ensureVisible(chip);
