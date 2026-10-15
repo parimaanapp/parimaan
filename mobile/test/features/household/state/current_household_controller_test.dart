@@ -262,7 +262,10 @@ void main() {
 
     test('reports the household the join flow joined', () async {
       final ProviderContainer container = _container(
-        FakeHouseholdRepository(joinResult: testHouseholdWithMembers),
+        FakeHouseholdRepository(
+          joinResult: testHouseholdWithMembers,
+          myHouseholdsResult: <Household>[testHouseholdWithMembers],
+        ),
       );
       await container.read(joinHouseholdControllerProvider.future);
 
@@ -277,6 +280,7 @@ void main() {
       final FakeHouseholdRepository repository = FakeHouseholdRepository(
         result: testHousehold,
         joinResult: testHouseholdWithMembers,
+        myHouseholdsResult: <Household>[testHousehold, testHouseholdWithMembers],
       );
       final ProviderContainer container = _container(repository);
       await container.read(householdWizardControllerProvider.future);
@@ -322,7 +326,10 @@ void main() {
         final ProviderContainer container = _container(
           FakeHouseholdRepository(
             joinResult: testHouseholdWithMembers,
-            myHouseholdsResult: <Household>[testHousehold],
+            myHouseholdsResult: <Household>[
+              testHousehold,
+              testHouseholdWithMembers,
+            ],
           ),
         );
         await container.read(meHouseholdsControllerProvider.future);
@@ -333,6 +340,26 @@ void main() {
             .join('K4M9PQ');
 
         expect(container.read(activeHouseholdProvider), testHouseholdWithMembers);
+      },
+    );
+
+    test(
+      'ignores a session household the server does not list for this user '
+      '(stale state from a previous account, A9)',
+      () async {
+        final ProviderContainer container = _container(
+          FakeHouseholdRepository(
+            joinResult: testHouseholdWithMembers,
+            myHouseholdsResult: <Household>[testHousehold],
+          ),
+        );
+        await container.read(meHouseholdsControllerProvider.future);
+        await container.read(joinHouseholdControllerProvider.future);
+        await container
+            .read(joinHouseholdControllerProvider.notifier)
+            .join('K4M9PQ');
+
+        expect(container.read(activeHouseholdProvider), testHousehold);
       },
     );
 

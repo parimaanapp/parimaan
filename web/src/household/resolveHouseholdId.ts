@@ -3,8 +3,8 @@ import { MY_HOUSEHOLDS_QUERY, type MyHouseholdsQueryResult } from '@/graphql/que
 
 /**
  * D3 (`docs/E2E_MVP_PLAN.md` §24.2.3): every screen resolves
- * `me.households[0]` — the caller's first/primary membership, in whatever
- * order `Query.me`'s own resolver already returns — as the active
+ * the caller's earliest membership (`joinedAt` ascending, household id as a
+ * tiebreaker, so the answer never depends on server row order) as the active
  * household for the whole session, with no switcher UI.
  *
  * The one consolidated household-resolution helper: previously three
@@ -26,5 +26,10 @@ export const resolveHouseholdId = async (client: Client): Promise<string | null>
   if (result.error) {
     throw result.error;
   }
-  return result.data?.me.households[0]?.household.id ?? null;
+  const memberships = [...(result.data?.me.households ?? [])].sort(
+    (a, b) =>
+      (a.joinedAt ?? '').localeCompare(b.joinedAt ?? '') ||
+      a.household.id.localeCompare(b.household.id),
+  );
+  return memberships[0]?.household.id ?? null;
 };

@@ -13,6 +13,7 @@ import '../../domain/meal_type.dart';
 import '../../state/current_household_controller.dart';
 import '../../state/current_user_id_controller.dart';
 import '../../state/household_settings_controller.dart';
+import '../../state/me_households_controller.dart';
 import '../household_error_copy.dart';
 import 'delete_household_dialog.dart';
 import 'household_sync_scope.dart';
@@ -62,6 +63,7 @@ class SettingsHubScreen extends ConsumerWidget {
   final String householdId;
 
   static const Key householdRowKey = Key('settings-household');
+  static const Key householdCountRowKey = Key('settings-household-count');
   static const Key membersRowKey = Key('settings-members');
   static const Key mealsRowKey = Key('settings-meals');
   static const Key lunchStructureRowKey = Key('settings-lunch-structure');
@@ -161,7 +163,9 @@ class _HubBody extends ConsumerWidget {
     // An unresolved read is treated as "not the primary", which is the safe
     // default: it hides Delete rather than offering an irreversible action
     // to a caller whose identity is not yet established.
-    final String? userId = ref.watch(currentUserIdControllerProvider).valueOrNull;
+    final String? userId = ref
+        .watch(currentUserIdControllerProvider)
+        .valueOrNull;
     final bool isPrimary = userId != null && household.isPrimary(userId);
 
     final AsyncValue<void> settings = ref.watch(
@@ -172,6 +176,9 @@ class _HubBody extends ConsumerWidget {
         .action;
     final String? actionError = householdErrorMessage(settings.error);
     final String? refreshError = householdErrorMessage(error);
+
+    final int householdCount =
+        ref.watch(meHouseholdsControllerProvider).valueOrNull?.length ?? 0;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -191,6 +198,12 @@ class _HubBody extends ConsumerWidget {
           // schema, so this row shows the name and does not pretend to edit it.
           onTap: null,
         ),
+        if (householdCount > 1)
+          SettingsRow(
+            key: SettingsHubScreen.householdCountRowKey,
+            label: 'You belong to $householdCount households',
+            onTap: null,
+          ),
         SettingsRow(
           key: SettingsHubScreen.membersRowKey,
           label: 'Members (${household.members.length})',
