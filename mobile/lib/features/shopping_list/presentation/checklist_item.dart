@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
+import '../../../shared/ui/radius.dart';
+import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_category_order.dart';
 import '../domain/shopping_list_item.dart';
+import '../domain/shopping_quantity_format.dart';
 import '../state/current_shopping_list_controller.dart';
+import 'checklist_check_box.dart';
 import 'have_it_quantity_sheet.dart';
+
+export 'checklist_check_box.dart';
 
 /// One row on the List preview / Shopping List screens (§4's own named
 /// deliverable, "a `ChecklistItem` widget", E2E_MVP_PLAN.md §17.1/§17.3 S6).
@@ -20,44 +27,27 @@ import 'have_it_quantity_sheet.dart';
 /// as `pantry_list_screen.dart`'s own category-chip-filtered rows never
 /// repeating the active filter's name on every row.
 ///
-/// **Swipe-to-"Have it" (S7, wireframe 38/49).** Enabled only when [menuId]
-/// is non-null — the persistent Shopping List screen's own usage. The List
-/// preview screen (`list_preview_screen.dart`) passes no [menuId] and
-/// renders a plain, non-swipeable row: a freshly generated preview is not
-/// the same "act on it now" surface the persistent list is, and S6's own
-/// RED-test list never exercised a swipe there. Swiping [PCard.padding]'s
-/// own doc-mandated direction ("do not nest links or buttons inside a
-/// tappable card; use swipe actions") calls up
-/// [showHaveItQuantitySheet] — it never calls
-/// `CurrentShoppingListController.haveIt` directly (S7's own confirm-gate
-/// RED test). `Dismissible.confirmDismiss` always returns `false` here,
-/// deliberately: a successful `haveIt` already drops this item out of
-/// `ShoppingList.toBuy`, which removes this row by rebuilding the parent
-/// list from controller state — letting `Dismissible` ALSO remove the row
-/// itself would race that rebuild. Returning `false` unconditionally means
-/// a cancelled or failed attempt leaves the row exactly where it was, and a
-/// successful one is removed exactly once, by the state rebuild alone.
+/// **Swipes (wireframe 10.2).** Enabled only when [menuId] is non-null —
+/// the persistent Shopping List screen's own usage; the List preview passes
+/// no [menuId] and renders a plain, non-swipeable row. Swipe LEFT
+/// (`endToStart`) is "Have it": it opens [showHaveItQuantitySheet] and never
+/// calls `CurrentShoppingListController.haveIt` directly (S7's confirm
+/// gate). Swipe RIGHT (`startToEnd`) marks the item bought. (Before C2 the
+/// right swipe was Have it; the directions were reversed to match the
+/// approved wireframe.) `Dismissible.confirmDismiss` always returns `false`:
+/// a successful call drops the item out of `ShoppingList.toBuy`, which
+/// removes the row through the parent's rebuild — letting `Dismissible` also
+/// remove it would race that rebuild, and a cancelled or failed attempt
+/// leaves the row exactly where it was.
 ///
-/// **Leading "bought" checkbox (D6, E2E_MVP_PLAN.md §18.2.6, W12 S6).**
-/// A SEPARATE affordance from the swipe gesture above, sitting to the left
-/// of the row's name/quantity content — locked over a second swipe
-/// direction specifically to avoid "two different swipe gestures mean two
-/// different consequential actions" (this class's own swipe-gesture doc
-/// already cites `p_button.dart`'s "never rely on gesture-direction-alone
-/// semantics" rule; a second, oppositely-coloured swipe on the identical
-/// row would repeat that exact mistake). Gated on the identical
-/// `menuId != null` condition as the swipe gesture — same row, same
-/// "persistent Shopping List screen only" reasoning. Tapping it calls
-/// [CurrentShoppingListController.markPurchased] directly, no confirmation
-/// sheet: D5 already established `markPurchased` needs no quantity input,
-/// which is what makes a bare tap safe here, unlike `haveIt`'s
-/// quantity-sheet flow. Shows an immediate optimistic-checked state,
-/// reverting on failure with a visible error — mirroring
-/// `have_it_quantity_sheet.dart`'s own "honest UI feedback, never a silent
-/// no-op" convention. A successful call is never locally hidden by this
-/// widget — same "never let the widget remove itself" discipline as the
-/// swipe gesture above: the parent list rebuilds from
-/// `ShoppingList.toBuy`, which already excludes a just-purchased item.
+/// **Check box (D6, E2E_MVP_PLAN.md §18.2.6).** A tap target to the left of
+/// the name that calls [CurrentShoppingListController.markPurchased], the
+/// same action as swipe right, with no confirmation (D5: `markPurchased`
+/// needs no quantity). It shows an optimistic done state (green fill,
+/// strike-through) and reverts with a visible error on failure. The row is
+/// never hidden locally; the parent list's rebuild removes it. Because the
+/// optimistic flag lives in this State, rows are keyed by item id wherever
+/// they are listed, so it cannot be inherited by a neighbouring row.
 ///
 /// **Shared in-flight guard.** [_isProcessing] below guards BOTH triggers
 /// on this one row, not just the swipe gesture alone — a checkbox tap and a
@@ -118,14 +108,24 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
     if (quantity == null && unit == null) return '';
     final String quantityPart = quantity == null
         ? ''
-        : (quantity == quantity.roundToDouble()
-              ? quantity.toStringAsFixed(0)
-              : quantity.toString());
+        : formatShoppingQuantity(quantity);
     if (unit == null) return quantityPart;
     return quantityPart.isEmpty ? unit : '$quantityPart $unit';
   }
 
+  /// Swipe left (`endToStart`) = Have it, which opens the quantity sheet;
+  /// swipe right (`startToEnd`) = mark bought (wireframe 10.2). Both return
+  /// `false` so `Dismissible` never removes the row itself — see this
+  /// class's own doc.
   Future<bool> _handleSwipe(DismissDirection direction) async {
+    if (direction == DismissDirection.startToEnd) {
+      await _handleMarkPurchased();
+      return false;
+    }
+    return _handleHaveIt();
+  }
+
+  Future<bool> _handleHaveIt() async {
     if (_isProcessing) return false;
     setState(() => _isProcessing = true);
     final String menuId = widget.menuId!;
@@ -137,8 +137,6 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
           .haveIt(widget.item.id, quantity),
     );
     if (mounted) setState(() => _isProcessing = false);
-    // Never let `Dismissible` itself remove the row — see this file's own
-    // class doc for why.
     return false;
   }
 
@@ -166,7 +164,14 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
       // the parent list (`ShoppingList.toBuy` no longer includes it) — see
       // this class's own doc for why this widget never hides itself. If
       // this instance somehow survives that rebuild, just clear the guard.
-      if (mounted) setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          // If this instance survives the parent's rebuild, do not leave a
+          // stale done state behind.
+          _isOptimisticallyChecked = false;
+        });
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -184,40 +189,59 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
   @override
   Widget build(BuildContext context) {
     final String? menuId = widget.menuId;
+    final bool isDone = widget.item.purchased || _isOptimisticallyChecked;
+    final String quantity = _quantityLabel(widget.item);
     final Widget row = PCard(
       key: ChecklistItem.rowKey(widget.item.id),
-      child: Row(
-        children: <Widget>[
-          if (menuId != null) ...<Widget>[
-            // Labelled explicitly (rather than left to merge with the
-            // sibling name `Text` below) so a screen reader announces which
-            // item this checkbox marks bought, not just "checkbox".
-            Semantics(
-              label: 'Mark ${widget.item.name} as bought',
-              child: Checkbox(
+      padding: EdgeInsets.only(
+        left: menuId != null ? 0 : AppSpacing.s2,
+        right: AppSpacing.s2,
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppSizing.minTouchTargetHeight,
+        ),
+        child: Row(
+          children: <Widget>[
+            if (menuId != null)
+              ChecklistCheckBox(
                 key: ChecklistItem.checkboxKey(widget.item.id),
-                value: _isOptimisticallyChecked,
-                onChanged: _isProcessing
-                    ? null
-                    : (bool? _) => _handleMarkPurchased(),
+                itemId: widget.item.id,
+                isChecked: isDone,
+                semanticLabel: 'Mark ${widget.item.name} as bought',
+                onChanged: _isProcessing ? null : _handleMarkPurchased,
+              ),
+            Flexible(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s1),
+                child: Text(
+                  widget.item.name,
+                  style: AppTypography.body.copyWith(
+                    color: isDone ? AppColors.inkMid : AppColors.ink,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: AppSpacing.s1),
+            if (quantity.isNotEmpty) ...<Widget>[
+              const SizedBox(width: AppSpacing.s1),
+              // Never truncated: quantity and unit wrap rather than
+              // ellipsize, so "0.33 cup" can never read as "0.33 c…".
+              Flexible(
+                flex: 2,
+                child: Text(
+                  quantity,
+                  textAlign: TextAlign.end,
+                  style: AppTypography.mono.copyWith(
+                    color: AppColors.inkMid,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+            ],
           ],
-          Expanded(
-            child: Text(
-              widget.item.name,
-              style: AppTypography.body,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.s2),
-          Text(
-            _quantityLabel(widget.item),
-            style: AppTypography.meta.copyWith(color: AppColors.inkMid),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -225,40 +249,58 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
 
     return Dismissible(
       key: ValueKey<String>('checklist-item-dismissible-${widget.item.id}'),
-      direction: DismissDirection.startToEnd,
+      direction: DismissDirection.horizontal,
       confirmDismiss: _handleSwipe,
-      background: const _HaveItSwipeBackground(),
-      child: row,
+      background: const _SwipeBackground(
+        label: 'Bought',
+        alignment: AlignmentDirectional.centerStart,
+        color: AppColors.cardamomSoft,
+        foreground: AppColors.cardamomSoftForeground,
+      ),
+      secondaryBackground: const _SwipeBackground(
+        label: 'Have it',
+        alignment: AlignmentDirectional.centerEnd,
+        color: AppColors.cardamom,
+        foreground: AppColors.card,
+      ),
+      child: Semantics(
+        customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
+          const CustomSemanticsAction(label: 'Have it'): _handleHaveIt,
+          const CustomSemanticsAction(label: 'Mark bought'):
+              _handleMarkPurchased,
+        },
+        child: row,
+      ),
     );
   }
 }
 
-/// The affirmative-coloured reveal behind a [ChecklistItem] row mid-swipe —
-/// [AppColors.cardamom]/[AppColors.success] are this design system's own
-/// named "Have-it, bought" colour (`colors.dart`'s own doc on both tokens).
-/// Colour never carries the meaning alone (this codebase's own
-/// accessibility rule, `p_button.dart`'s doc states it for buttons, applied
-/// here too): the label and icon say "Have it" in words.
-class _HaveItSwipeBackground extends StatelessWidget {
-  const _HaveItSwipeBackground();
+/// The reveal behind a [ChecklistItem] row mid-swipe. Colour never carries
+/// the meaning alone: the label and tick say it in words (wireframe 10.2).
+class _SwipeBackground extends StatelessWidget {
+  const _SwipeBackground({
+    required this.label,
+    required this.alignment,
+    required this.color,
+    required this.foreground,
+  });
+
+  final String label;
+  final AlignmentGeometry alignment;
+  final Color color;
+  final Color foreground;
 
   @override
   Widget build(BuildContext context) => Container(
-    alignment: Alignment.centerLeft,
+    alignment: alignment,
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
-    decoration: BoxDecoration(
-      color: AppColors.cardamom,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: const Row(
-      children: <Widget>[
-        Icon(Icons.check_circle, color: AppColors.card),
-        SizedBox(width: AppSpacing.s1),
-        Text(
-          'Have it',
-          style: TextStyle(color: AppColors.card, fontWeight: FontWeight.w600),
-        ),
-      ],
+    decoration: BoxDecoration(color: color, borderRadius: AppRadius.borderL),
+    child: Text(
+      '✓ $label',
+      style: AppTypography.label.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w600,
+      ),
     ),
   );
 }
@@ -269,13 +311,26 @@ class _HaveItSwipeBackground extends StatelessWidget {
 /// and `ShoppingListScreen` so the grouping logic and the section layout
 /// never drift between the two screens that both render it.
 class CategorizedChecklist extends StatelessWidget {
-  const CategorizedChecklist({super.key, required this.items, this.menuId});
+  const CategorizedChecklist({
+    super.key,
+    required this.items,
+    this.menuId,
+    this.header,
+    this.footer,
+  });
 
   final List<ShoppingListItem> items;
 
   /// Threaded straight through to every [ChecklistItem] row — see that
   /// widget's own doc for what a non-null value enables.
   final String? menuId;
+
+  /// Widgets rendered before the first section, inside the same scroll view.
+  final List<Widget>? header;
+
+  /// Widgets rendered after the last section inside the same scroll view
+  /// (the screen's Staples check card).
+  final List<Widget>? footer;
 
   static const String categoryHeadingKeyPrefix = 'checklist-category-';
   static Key categoryHeadingKey(String category) =>
@@ -289,27 +344,57 @@ class CategorizedChecklist extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.s3),
       children: <Widget>[
+        ...?header,
         for (final ShoppingListCategoryGroup group in groups)
           Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.s4),
+            key: ValueKey<String>('checklist-group-${group.category}'),
+            padding: const EdgeInsets.only(bottom: AppSpacing.s3),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  shoppingListCategoryLabel(group.category),
+                _SectionLabel(
                   key: CategorizedChecklist.categoryHeadingKey(group.category),
-                  style: AppTypography.title,
+                  label: shoppingListCategoryLabel(group.category),
                 ),
-                const SizedBox(height: AppSpacing.s2),
                 for (final ShoppingListItem item in group.items)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-                    child: ChecklistItem(item: item, menuId: menuId),
+                    key: ValueKey<String>('checklist-pad-${item.id}'),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.s1),
+                    child: ChecklistItem(
+                      key: ValueKey<String>('checklist-${item.id}'),
+                      item: item,
+                      menuId: menuId,
+                    ),
                   ),
               ],
             ),
           ),
+        ...?footer,
       ],
     );
   }
+}
+
+/// Mono-caps section label (wireframe `S.label`).
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    label: label,
+    excludeSemantics: true,
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s1),
+      child: Text(
+        label.toUpperCase(),
+        style: AppTypography.meta.copyWith(
+          fontFamily: AppFontFamily.mono,
+          color: AppColors.inkMid,
+        ),
+      ),
+    ),
+  );
 }

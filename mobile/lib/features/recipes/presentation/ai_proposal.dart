@@ -108,11 +108,9 @@ class AIProposal<T> extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         if (hasProposal) ...<Widget>[
-          const PBadge(
-            key: proposedBadgeKey,
-            label: 'AI suggests',
-            tone: PBadgeTone.info,
-          ),
+          // The field's own semantics label below already says "AI
+          // proposed"; the badge is visual only so it is not read twice.
+          const ExcludeSemantics(child: PAiBadge(key: proposedBadgeKey)),
           const SizedBox(height: AppSpacing.s0),
         ],
         if (hasProposal)

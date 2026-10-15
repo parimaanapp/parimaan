@@ -5,6 +5,7 @@ import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_category_order.dart';
 import '../domain/shopping_list_item.dart';
+import '../domain/shopping_quantity_format.dart';
 
 /// The exact category grouping the share-image render uses — literally
 /// [groupShoppingListItemsByCategory], the SAME function
@@ -77,19 +78,23 @@ class ShoppingListShareImageContent extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Text(
-                        shoppingListCategoryLabel(group.category),
+                        shoppingListCategoryLabel(group.category).toUpperCase(),
                         key: ShoppingListShareImageContent.categoryHeadingKey(
                           group.category,
                         ),
-                        style: AppTypography.title,
+                        style: AppTypography.meta.copyWith(
+                          fontFamily: AppFontFamily.mono,
+                          color: AppColors.inkMid,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.s1),
                       for (final ShoppingListItem item in group.items)
                         Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppSpacing.s0,
+                          padding: const EdgeInsets.only(bottom: AppSpacing.s0),
+                          child: Text(
+                            _itemLine(item),
+                            style: AppTypography.body,
                           ),
-                          child: Text(_itemLine(item), style: AppTypography.body),
                         ),
                     ],
                   ),
@@ -117,12 +122,8 @@ class ShoppingListShareImageContent extends StatelessWidget {
     return amount.isEmpty ? item.name : '${item.name} — $amount';
   }
 
-  static String _formatQuantity(double quantity) {
-    if (quantity == quantity.roundToDouble()) {
-      return quantity.toStringAsFixed(0);
-    }
-    return quantity.toString();
-  }
+  static String _formatQuantity(double quantity) =>
+      formatShoppingQuantity(quantity);
 
   static String _formatDate(DateTime date) {
     const List<String> months = <String>[

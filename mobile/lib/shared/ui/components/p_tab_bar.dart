@@ -1,26 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../tokens.dart';
+import 'p_tab_glyph.dart';
 
 /// One destination in a [PTabBar].
 ///
-/// The bar knows nothing about Today / Plan / Pantry / List — the glyphs and
-/// the copy are the caller's, which keeps this component reusable and keeps
-/// the app's route names out of the design system.
+/// The bar knows nothing about Today / Plan / Pantry / Recipes routes — the
+/// glyph and the copy are the caller's, which keeps the app's route names out
+/// of the design system.
 @immutable
 class PTabBarItem {
-  const PTabBarItem({required this.icon, required this.label, this.activeIcon});
+  const PTabBarItem({required this.glyph, required this.label});
 
-  /// Resting glyph.
-  final IconData icon;
-
-  /// Optional glyph for the selected tab.
-  ///
-  /// `iconography.duotoneAllowedOnlyIn` names the tab-bar active state as the
-  /// **only** place a duotone icon may appear in the whole product — this is
-  /// the slot for it. When omitted, [icon] is used for both states and the
-  /// selection still reads through weight and colour.
-  final IconData? activeIcon;
+  /// Drawn glyph (shared design-system set, no stock icon font).
+  final PTabGlyph glyph;
 
   /// Visible destination label. Supplied by the caller.
   final String label;
@@ -28,9 +21,8 @@ class PTabBarItem {
 
 /// The bottom navigation bar from the design source's *Mobile app shell*.
 ///
-/// Selection is communicated three ways at once — glyph (optional duotone
-/// swap), ink colour, and label weight — so the active tab survives greyscale
-/// and colour blindness, per the "never rely on colour alone" rule.
+/// Selection is communicated by ink colour and label weight (semibold vs
+/// regular), plus `Semantics.selected` for screen readers.
 class PTabBar extends StatelessWidget {
   const PTabBar({
     super.key,
@@ -89,6 +81,9 @@ class PTabBarTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color tint = isSelected ? AppColors.ink : AppColors.inkMid;
+    // Text must clear 4.5:1, so the inactive label is inkSoft; inkMid stays
+    // for the (non-text) glyph.
+    final Color labelColor = isSelected ? AppColors.ink : AppColors.inkSoft;
 
     return Semantics(
       button: true,
@@ -101,7 +96,7 @@ class PTabBarTab extends StatelessWidget {
             onTap: onTap,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                minHeight: AppSizing.minTouchTargetHeight,
+                minHeight: AppSizing.tabBarHeight,
                 minWidth: AppSizing.minTouchTargetWidth,
               ),
               child: Padding(
@@ -113,23 +108,18 @@ class PTabBarTab extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Icon(
-                      isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-                      size: AppSizing.icon24,
-                      color: tint,
-                    ),
+                    PTabGlyphIcon(glyph: item.glyph, color: tint),
                     const SizedBox(height: AppSpacing.s0),
                     Text(
                       item.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.meta.copyWith(
-                        color: tint,
+                      style: AppTypography.label.copyWith(
+                        color: labelColor,
                         // Weight, not just hue, marks the active destination.
                         fontWeight: isSelected
-                            ? FontWeight.w700
-                            : AppTypography.meta.fontWeight,
-                        letterSpacing: AppTypography.meta.letterSpacing,
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
                   ],

@@ -35,4 +35,5 @@ AiRecipeDraftIngredient _aiRecipeDraftIngredientFromGraphQL(
   quantity: data.quantity,
   unit: data.unit,
   notes: data.notes,
+  isStaple: data.isStaple ?? false,
 );

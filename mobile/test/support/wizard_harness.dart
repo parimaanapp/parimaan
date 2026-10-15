@@ -51,8 +51,10 @@ Future<WizardHarness> pumpWizardRoute(
         // every splash landing (W8 S1), and this harness always navigates
         // past that landing to an explicit `route`, so this default is inert
         // for every test here; it exists so none of them depend on the
-        // redirect's error-handling path by accident.
-        myHouseholdsResult: const <Household>[],
+        // redirect's error-handling path by accident. It lists the adopted
+        // household because `activeHouseholdProvider` (A9) only trusts a
+        // session household the server's list confirms.
+        myHouseholdsResult: <Household>[testHousehold],
       );
 
   final ProviderContainer container = ProviderContainer(

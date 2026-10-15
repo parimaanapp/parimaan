@@ -23,6 +23,7 @@ import {
   updateSettingsPartial,
 } from './householdRepository.js';
 import type { MembershipRow } from './householdRepository.js';
+import { countMembershipsForUser } from './membershipCount.js';
 import type { UserRow } from './userRepository.js';
 import type { CallerIdentity } from '../auth/identity.js';
 
@@ -124,6 +125,40 @@ describe('householdRepository', () => {
         await insertDefaultSettings(client, household.id);
       }),
     ).rejects.toThrow();
+  });
+
+  it(
+    'findMembershipsForUser breaks joined_at ties by membership id, so the ' +
+      'order is deterministic when two memberships share a timestamp (A9)',
+    async () => {
+      const owner = await createUser();
+      await createFullHousehold(owner, 'TIE001');
+      await createFullHousehold(owner, 'TIE002');
+      await createFullHousehold(owner, 'TIE003');
+      await db.adminClient.query(
+        `UPDATE household_memberships SET joined_at = '2026-01-01T00:00:00Z' WHERE user_id = $1`,
+        [owner.id],
+      );
+
+      const memberships = await asUser(owner.id, (client) =>
+        findMembershipsForUser(client, owner.id),
+      );
+
+      const ids = memberships.map((m) => m.id);
+      expect(ids).toHaveLength(3);
+      expect(ids).toEqual([...ids].sort());
+    },
+  );
+
+  it('countMembershipsForUser counts every household the user belongs to', async () => {
+    const owner = await createUser();
+    const other = await createUser();
+    await createFullHousehold(owner, 'CNT001');
+    await createFullHousehold(owner, 'CNT002');
+    await createFullHousehold(other, 'CNT003');
+
+    expect(await asUser(owner.id, (c) => countMembershipsForUser(c, owner.id))).toBe(2);
+    expect(await asUser(other.id, (c) => countMembershipsForUser(c, other.id))).toBe(1);
   });
 
   it('findMembershipsForUser returns [] for a user with no memberships', async () => {

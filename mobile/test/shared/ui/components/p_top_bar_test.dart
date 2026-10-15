@@ -18,6 +18,65 @@ void main() {
       expect(title.style!.fontSize, AppTypography.displayM.fontSize);
     });
 
+    testWidgets('centres the title on the bar, with or without slots', (
+      WidgetTester tester,
+    ) async {
+      await pumpFullWidth(tester, const PTopBar(title: 'Pantry'));
+      final double barCentre = tester.getCenter(find.byType(PTopBar)).dx;
+      expect(tester.getCenter(find.text('Pantry')).dx, closeTo(barCentre, 0.5));
+
+      await pumpFullWidth(
+        tester,
+        PTopBar(
+          title: 'Pantry',
+          onBack: () {},
+          backSemanticLabel: 'Back',
+          trailing: const Text('2/4'),
+        ),
+      );
+      expect(tester.getCenter(find.text('Pantry')).dx, closeTo(barCentre, 0.5));
+      final Text title = tester.widget<Text>(find.text('Pantry'));
+      expect(title.textAlign, TextAlign.center);
+    });
+
+    testWidgets('back sits at the left edge and trailing at the right on the '
+        'title row', (WidgetTester tester) async {
+      await pumpFullWidth(
+        tester,
+        PTopBar(
+          title: 'Pantry',
+          onBack: () {},
+          backSemanticLabel: 'Back',
+          trailing: const Text('2/4'),
+        ),
+      );
+
+      final double titleY = tester.getCenter(find.text('Pantry')).dy;
+      final Offset back = tester.getCenter(find.byType(PTopBarBackButton));
+      final Offset trailing = tester.getCenter(find.text('2/4'));
+      final double mid = tester.getCenter(find.byType(PTopBar)).dx;
+      expect(back.dx, lessThan(mid));
+      expect(trailing.dx, greaterThan(mid));
+      expect(back.dy, closeTo(titleY, 6));
+      expect(trailing.dy, closeTo(titleY, 6));
+    });
+
+    testWidgets('renders a centred optional subtitle below the title', (
+      WidgetTester tester,
+    ) async {
+      await pumpFullWidth(
+        tester,
+        const PTopBar(title: 'Pantry', subtitle: '42 items'),
+      );
+
+      final double barCentre = tester.getCenter(find.byType(PTopBar)).dx;
+      expect(tester.getCenter(find.text('42 items')).dx, closeTo(barCentre, 0.5));
+      expect(
+        tester.getTopLeft(find.text('42 items')).dy,
+        greaterThan(tester.getBottomLeft(find.text('Pantry')).dy - 1),
+      );
+    });
+
     testWidgets('renders an optional subtitle', (WidgetTester tester) async {
       await pumpFullWidth(
         tester,

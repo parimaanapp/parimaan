@@ -6,10 +6,14 @@ import '../../../app/router.dart';
 import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
+import '../../../shared/ui/radius.dart';
 import '../../../shared/ui/spacing.dart';
+import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_item.dart';
+import '../domain/shopping_list_summary.dart';
 import '../state/current_shopping_list_controller.dart';
 import 'checklist_item.dart';
+import 'glyph_label.dart';
 
 /// Wireframe "List preview" (36/49, E2E_MVP_PLAN.md §17.1/§17.3 S6) — the
 /// categorized preview of a freshly generated shopping list.
@@ -31,6 +35,7 @@ class ListPreviewScreen extends ConsumerStatefulWidget {
   static const Key errorKey = Key('shopping-list-preview-error');
   static const Key emptyKey = Key('shopping-list-preview-empty');
   static const Key doneButtonKey = Key('shopping-list-preview-done');
+  static const Key badgeKey = Key('shopping-list-preview-badge');
 
   @override
   ConsumerState<ListPreviewScreen> createState() => _ListPreviewScreenState();
@@ -88,7 +93,7 @@ class _ListPreviewScreenState extends ConsumerState<ListPreviewScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             PTopBar(
-              title: 'List preview',
+              title: 'Shopping list preview',
               onBack: () => context.pop(),
               backSemanticLabel: 'Back',
             ),
@@ -140,6 +145,12 @@ class _ListPreviewScreenState extends ConsumerState<ListPreviewScreen> {
   }
 }
 
+String _generatedFromLabel(List<ShoppingListItem> items) {
+  final int recipes = shoppingListSourceRecipeCount(items);
+  if (recipes == 0) return 'Generated from this week\'s menu';
+  return 'Generated from $recipes ${recipes == 1 ? 'recipe' : 'recipes'}';
+}
+
 class _Loaded extends StatelessWidget {
   const _Loaded({required this.list, required this.onDone});
 
@@ -168,12 +179,49 @@ class _Loaded extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Expanded(child: CategorizedChecklist(items: list.items)),
+        Expanded(
+          child: CategorizedChecklist(
+            items: list.items,
+            header: <Widget>[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: DecoratedBox(
+                  key: ListPreviewScreen.badgeKey,
+                  decoration: const BoxDecoration(
+                    color: AppColors.haldiSoft,
+                    borderRadius: AppRadius.borderFull,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s2,
+                      vertical: AppSpacing.s0,
+                    ),
+                    child: GlyphLabel(
+                      glyph: '◆',
+                      text: _generatedFromLabel(list.items),
+                      style: AppTypography.label.copyWith(
+                        color: AppColors.ink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s0),
+              Text(
+                'Aggregated ingredients. Already in pantry are excluded.',
+                style: AppTypography.label.copyWith(color: AppColors.inkMid),
+              ),
+              const SizedBox(height: AppSpacing.s2),
+            ],
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.all(AppSpacing.s3),
           child: PButton(
             key: ListPreviewScreen.doneButtonKey,
-            label: 'Done',
+            label: 'Confirm list',
+            variant: PButtonVariant.affirmative,
             onPressed: onDone,
           ),
         ),

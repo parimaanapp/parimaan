@@ -26,16 +26,35 @@ void main() {
   });
 
   group('UnfilledSlot equality', () {
-    test('two UnfilledSlots with the same fields are equal, distinct instances', () {
-      const UnfilledSlot a = UnfilledSlot(dayOfWeek: 0, mealSlot: 'lunch', slotRole: RecipeRole.carb);
-      const UnfilledSlot b = UnfilledSlot(dayOfWeek: 0, mealSlot: 'lunch', slotRole: RecipeRole.carb);
-      expect(a, b);
-      expect(a.hashCode, b.hashCode);
-    });
+    test(
+      'two UnfilledSlots with the same fields are equal, distinct instances',
+      () {
+        const UnfilledSlot a = UnfilledSlot(
+          dayOfWeek: 0,
+          mealSlot: 'lunch',
+          slotRole: RecipeRole.carb,
+        );
+        const UnfilledSlot b = UnfilledSlot(
+          dayOfWeek: 0,
+          mealSlot: 'lunch',
+          slotRole: RecipeRole.carb,
+        );
+        expect(a, b);
+        expect(a.hashCode, b.hashCode);
+      },
+    );
 
     test('a differing field breaks equality', () {
-      const UnfilledSlot a = UnfilledSlot(dayOfWeek: 0, mealSlot: 'lunch', slotRole: RecipeRole.carb);
-      const UnfilledSlot b = UnfilledSlot(dayOfWeek: 1, mealSlot: 'lunch', slotRole: RecipeRole.carb);
+      const UnfilledSlot a = UnfilledSlot(
+        dayOfWeek: 0,
+        mealSlot: 'lunch',
+        slotRole: RecipeRole.carb,
+      );
+      const UnfilledSlot b = UnfilledSlot(
+        dayOfWeek: 1,
+        mealSlot: 'lunch',
+        slotRole: RecipeRole.carb,
+      );
       expect(a, isNot(b));
     });
   });
@@ -88,7 +107,11 @@ void main() {
         mealSlot: 'lunch',
         slotRole: RecipeRole.carb,
       );
-      const UnfilledSlot slot = UnfilledSlot(dayOfWeek: 1, mealSlot: 'lunch', slotRole: RecipeRole.sabziDal);
+      const UnfilledSlot slot = UnfilledSlot(
+        dayOfWeek: 1,
+        mealSlot: 'lunch',
+        slotRole: RecipeRole.sabziDal,
+      );
 
       final AutoFillPreviewResult a = AutoFillPreviewResult(
         items: <ProposedMenuItem>[item],
@@ -105,52 +128,58 @@ void main() {
       expect(a.hashCode, b.hashCode);
     });
 
-    test('a different item order breaks equality — order is part of the value', () {
-      final ProposedMenuItem first = ProposedMenuItem(
-        recipeId: 'recipe-1',
-        recipe: testMenuRecipe,
-        dayOfWeek: 0,
-        mealSlot: 'lunch',
-        slotRole: RecipeRole.carb,
-      );
-      final ProposedMenuItem second = ProposedMenuItem(
-        recipeId: 'recipe-2',
-        recipe: testMenuRecipe,
-        dayOfWeek: 1,
-        mealSlot: 'lunch',
-        slotRole: RecipeRole.carb,
-      );
+    test(
+      'a different item order breaks equality — order is part of the value',
+      () {
+        final ProposedMenuItem first = ProposedMenuItem(
+          recipeId: 'recipe-1',
+          recipe: testMenuRecipe,
+          dayOfWeek: 0,
+          mealSlot: 'lunch',
+          slotRole: RecipeRole.carb,
+        );
+        final ProposedMenuItem second = ProposedMenuItem(
+          recipeId: 'recipe-2',
+          recipe: testMenuRecipe,
+          dayOfWeek: 1,
+          mealSlot: 'lunch',
+          slotRole: RecipeRole.carb,
+        );
 
-      final AutoFillPreviewResult a = AutoFillPreviewResult(
-        items: <ProposedMenuItem>[first, second],
-        filledCount: 2,
-        unfilledSlots: const <UnfilledSlot>[],
-      );
-      final AutoFillPreviewResult b = AutoFillPreviewResult(
-        items: <ProposedMenuItem>[second, first],
-        filledCount: 2,
-        unfilledSlots: const <UnfilledSlot>[],
-      );
+        final AutoFillPreviewResult a = AutoFillPreviewResult(
+          items: <ProposedMenuItem>[first, second],
+          filledCount: 2,
+          unfilledSlots: const <UnfilledSlot>[],
+        );
+        final AutoFillPreviewResult b = AutoFillPreviewResult(
+          items: <ProposedMenuItem>[second, first],
+          filledCount: 2,
+          unfilledSlots: const <UnfilledSlot>[],
+        );
 
-      expect(a, isNot(b));
-    });
+        expect(a, isNot(b));
+      },
+    );
   });
 
   group('AutoFillResult equality', () {
-    test('two results with the same menu/filledCount/unfilledSlots are equal', () {
-      final AutoFillResult a = AutoFillResult(
-        menu: testEmptyMenu,
-        filledCount: 0,
-        unfilledSlots: const <UnfilledSlot>[],
-      );
-      final AutoFillResult b = AutoFillResult(
-        menu: testEmptyMenu,
-        filledCount: 0,
-        unfilledSlots: const <UnfilledSlot>[],
-      );
-      expect(a, b);
-      expect(a.hashCode, b.hashCode);
-    });
+    test(
+      'two results with the same menu/filledCount/unfilledSlots are equal',
+      () {
+        final AutoFillResult a = AutoFillResult(
+          menu: testEmptyMenu,
+          filledCount: 0,
+          unfilledSlots: const <UnfilledSlot>[],
+        );
+        final AutoFillResult b = AutoFillResult(
+          menu: testEmptyMenu,
+          filledCount: 0,
+          unfilledSlots: const <UnfilledSlot>[],
+        );
+        expect(a, b);
+        expect(a.hashCode, b.hashCode);
+      },
+    );
 
     test('a differing filledCount breaks equality', () {
       final AutoFillResult a = AutoFillResult(

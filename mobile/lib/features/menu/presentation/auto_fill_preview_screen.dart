@@ -85,8 +85,7 @@ class AutoFillPreviewScreen extends ConsumerStatefulWidget {
       _AutoFillPreviewScreenState();
 }
 
-class _AutoFillPreviewScreenState
-    extends ConsumerState<AutoFillPreviewScreen> {
+class _AutoFillPreviewScreenState extends ConsumerState<AutoFillPreviewScreen> {
   AsyncValue<AutoFillPreviewResult> _preview =
       const AsyncValue<AutoFillPreviewResult>.loading();
 
@@ -165,9 +164,7 @@ class _AutoFillPreviewScreenState
   }
 
   Future<void> _commit(AutoFillPreviewResult preview) async {
-    setState(
-      () => _commitState = const AsyncValue<AutoFillResult>.loading(),
-    );
+    setState(() => _commitState = const AsyncValue<AutoFillResult>.loading());
 
     final AsyncValue<AutoFillResult> result =
         await AsyncValue.guard<AutoFillResult>(
@@ -381,7 +378,10 @@ class _LoadedPreview extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                _fillSummaryHeadline(preview.filledCount, preview.unfilledSlots),
+                _fillSummaryHeadline(
+                  preview.filledCount,
+                  preview.unfilledSlots,
+                ),
                 key: AutoFillPreviewScreen.summaryKey,
                 style: AppTypography.bodyStrong,
               ),
@@ -651,11 +651,17 @@ class _ProposedRow extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.auto_awesome, color: AppColors.terracotta, size: 16),
+            const Icon(
+              Icons.auto_awesome,
+              color: AppColors.terracotta,
+              size: 16,
+            ),
             const SizedBox(width: AppSpacing.s0),
             Text(
               'Auto-fill pick',
-              style: AppTypography.meta.copyWith(color: AppColors.terracottaDeep),
+              style: AppTypography.meta.copyWith(
+                color: AppColors.terracottaDeep,
+              ),
             ),
           ],
         ),

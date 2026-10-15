@@ -10,6 +10,7 @@ class AiRecipeDraftIngredient {
     this.quantity,
     this.unit,
     this.notes,
+    this.isStaple = false,
   });
 
   final String raw;
@@ -17,6 +18,10 @@ class AiRecipeDraftIngredient {
   final double? quantity;
   final String? unit;
   final String? notes;
+
+  /// Server-suggested staple flag (salt/pepper); pre-sets the review row's
+  /// Staple toggle, which the user may still change before saving.
+  final bool isStaple;
 
   @override
   bool operator ==(Object other) =>
@@ -26,8 +31,9 @@ class AiRecipeDraftIngredient {
           other.name == name &&
           other.quantity == quantity &&
           other.unit == unit &&
-          other.notes == notes;
+          other.notes == notes &&
+          other.isStaple == isStaple;
 
   @override
-  int get hashCode => Object.hash(raw, name, quantity, unit, notes);
+  int get hashCode => Object.hash(raw, name, quantity, unit, notes, isStaple);
 }
