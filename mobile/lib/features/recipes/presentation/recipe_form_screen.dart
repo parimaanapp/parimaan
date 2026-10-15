@@ -49,7 +49,7 @@ import 'step_row_editor.dart';
 /// [Recipe] — a **seeded wrapper over this one screen, not a second form
 /// implementation** (§11.2.7's pattern, third use). Every reviewable field
 /// wraps its existing widget in [AIProposal], which renders the shared
-/// "AI suggests" badge/semantics treatment until the user's first
+/// "AI proposal" badge/semantics treatment until the user's first
 /// interaction with that field, tracked through
 /// [aiRecipeDraftControllerProvider] — the same shared draft-review
 /// controller W7 S7 built for both this screen and S9's URL-import path.
