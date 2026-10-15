@@ -13,7 +13,9 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
+import '../../../shared/ui/radius.dart';
 import '../../../shared/ui/spacing.dart';
+import '../../../shared/ui/typography.dart';
 import '../data/shopping_list_image_export_repository.dart';
 import '../domain/shopping_list_item.dart';
 import 'share_sheet_launcher.dart';
@@ -188,22 +190,47 @@ class _ShoppingListShareImageScreenState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             PTopBar(
-              title: 'Share image preview',
+              title: 'Share list',
               onBack: () => context.pop(),
               backSemanticLabel: 'Back to shopping list',
             ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.s3),
-                child: RepaintBoundary(
-                  key: _boundaryKey,
-                  child: KeyedSubtree(
-                    key: ShoppingListShareImageScreen.captureKey,
-                    child: ShoppingListShareImageContent(
-                      list: widget.list,
-                      generatedAt: DateTime.now(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    // The bordered card is the screen's own frame; only the
+                    // content inside the boundary is captured to the PNG.
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: AppRadius.borderM,
+                        border: Border.all(
+                          color: AppColors.ink.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: AppRadius.borderM,
+                        child: RepaintBoundary(
+                          key: _boundaryKey,
+                          child: KeyedSubtree(
+                            key: ShoppingListShareImageScreen.captureKey,
+                            child: ShoppingListShareImageContent(
+                              list: widget.list,
+                              generatedAt: DateTime.now(),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: AppSpacing.s1),
+                    Text(
+                      'Preview image · share it to WhatsApp or any app',
+                      style: AppTypography.label.copyWith(
+                        color: AppColors.inkMid,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -211,8 +238,7 @@ class _ShoppingListShareImageScreenState
               padding: const EdgeInsets.all(AppSpacing.s3),
               child: PButton(
                 key: ShoppingListShareImageScreen.shareButtonKey,
-                label: 'Share',
-                icon: Icons.ios_share,
+                label: '↗ Share to…',
                 isLoading: _isSharing,
                 expand: true,
                 onPressed: _isSharing ? null : _onSharePressed,

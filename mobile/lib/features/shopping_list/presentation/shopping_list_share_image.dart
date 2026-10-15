@@ -77,11 +77,14 @@ class ShoppingListShareImageContent extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Text(
-                        shoppingListCategoryLabel(group.category),
+                        shoppingListCategoryLabel(group.category).toUpperCase(),
                         key: ShoppingListShareImageContent.categoryHeadingKey(
                           group.category,
                         ),
-                        style: AppTypography.title,
+                        style: AppTypography.meta.copyWith(
+                          fontFamily: AppFontFamily.mono,
+                          color: AppColors.inkMid,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.s1),
                       for (final ShoppingListItem item in group.items)

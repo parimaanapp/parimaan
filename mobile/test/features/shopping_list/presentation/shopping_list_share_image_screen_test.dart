@@ -240,4 +240,55 @@ void main() {
       },
     );
   });
+
+  group('share image preview layout (wireframe 10.4, C2)', () {
+    testWidgets('titled "Share list" with a hint and a "↗ Share to…" action', (
+      WidgetTester tester,
+    ) async {
+      await pumpScreen(tester, launcher: _FakeShareSheetLauncher());
+
+      expect(find.text('Share list'), findsOneWidget);
+      expect(
+        find.text('Preview image · share it to WhatsApp or any app'),
+        findsOneWidget,
+      );
+      expect(find.text('↗ Share to…'), findsOneWidget);
+    });
+
+    testWidgets('the preview image is in a bordered card with caps sections', (
+      WidgetTester tester,
+    ) async {
+      await pumpScreen(tester, launcher: _FakeShareSheetLauncher());
+
+      // testShoppingList's single item is category 'grains' -> "Grain".
+      expect(find.text('GRAIN'), findsOneWidget);
+      final Text heading = tester.widget<Text>(find.text('GRAIN'));
+      expect(heading.style!.fontFamily, 'JetBrains Mono');
+    });
+
+    testWidgets('share target is at least 44 pt tall and labelled', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await pumpScreen(tester, launcher: _FakeShareSheetLauncher());
+
+      expect(
+        tester
+            .getSize(find.byKey(ShoppingListShareImageScreen.shareButtonKey))
+            .height,
+        greaterThanOrEqualTo(44),
+      );
+      expect(find.bySemanticsLabel('↗ Share to…'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('does not overflow at 320 pt', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpScreen(tester, launcher: _FakeShareSheetLauncher());
+
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
