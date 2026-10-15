@@ -31,6 +31,7 @@ class PantryListScreen extends ConsumerWidget {
   static const Key searchFieldKey = Key('pantry-list-search');
   static const Key addButtonKey = Key('pantry-list-add');
   static const Key cookButtonKey = Key('pantry-list-cook');
+  static const Key cookLabelledButtonKey = Key('pantry-list-cook-labelled');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -128,6 +129,13 @@ class _PantryForHousehold extends ConsumerWidget {
             (final List<PantryItem> items, _) when items.isNotEmpty => ListView(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
               children: <Widget>[
+                // A visible, text-labelled way into Flow 11: the top-bar
+                // icon alone went unnoticed in beta (§32 row 16).
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _cookButton(context),
+                ),
+                const SizedBox(height: AppSpacing.s2),
                 for (final PantryItem item in items)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.s1),
@@ -147,14 +155,25 @@ class _PantryForHousehold extends ConsumerWidget {
             ),
             (final List<PantryItem> items, _) when items.isEmpty => Center(
               key: PantryListScreen.emptyStateKey,
-              child: PEmptyState(
-                headline: 'No pantry items yet',
-                body: 'Add what\'s in your kitchen to get started.',
-                action: PButton(
-                  label: 'Add an item',
-                  variant: PButtonVariant.secondary,
-                  onPressed: () => context.push(
-                    AppRoutes.pantryAddChooseMethod(householdId),
+              // Scrollable: with the extra labelled action the empty state
+              // would otherwise overflow short viewports.
+              child: SingleChildScrollView(
+                child: PEmptyState(
+                  headline: 'No pantry items yet',
+                  body: 'Add what\'s in your kitchen to get started.',
+                  action: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      PButton(
+                        label: 'Add an item',
+                        variant: PButtonVariant.secondary,
+                        onPressed: () => context.push(
+                          AppRoutes.pantryAddChooseMethod(householdId),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s1),
+                      _cookButton(context),
+                    ],
                   ),
                 ),
               ),
@@ -178,4 +197,13 @@ class _PantryForHousehold extends ConsumerWidget {
       ],
     );
   }
+
+  Widget _cookButton(BuildContext context) => PButton(
+    key: PantryListScreen.cookLabelledButtonKey,
+    label: 'Cook from pantry',
+    icon: Icons.restaurant_menu,
+    variant: PButtonVariant.ghost,
+    size: PButtonSize.small,
+    onPressed: () => context.push(AppRoutes.cook(householdId)),
+  );
 }

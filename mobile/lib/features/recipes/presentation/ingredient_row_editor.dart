@@ -126,7 +126,9 @@ class IngredientRowEditor extends StatelessWidget {
               child: PInput(
                 key: unitFieldKey(index),
                 label: 'Unit',
-                hintText: 'cup',
+                // Neutral placeholder: a real unit name here read as a
+                // chosen value on a blank unit.
+                hintText: 'unit',
                 controller: unitController,
                 enabled: enabled,
               ),
@@ -145,7 +147,8 @@ class IngredientRowEditor extends StatelessWidget {
                   key: unitChipKey(index, unit),
                   label: unit,
                   selected:
-                      unitController.text.trim().toLowerCase() == unit.toLowerCase(),
+                      unitController.text.trim().toLowerCase() ==
+                      unit.toLowerCase(),
                   onTap: enabled ? () => unitController.text = unit : null,
                 ),
             ],

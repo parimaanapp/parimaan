@@ -44,7 +44,22 @@ class RecipeLibraryController
         .listen((_) => unawaited(_refetch()), onError: (Object _) {});
     ref.onDispose(() => unawaited(_changeSubscription?.cancel()));
 
-    return _repository.fetchRecipes(householdId);
+    // Honours the filters this notifier already holds: `build()` re-runs on
+    // every `ref.invalidate` (after a create/edit/delete), and the screen's
+    // chips still show the selection — an unfiltered fetch here would
+    // silently disagree with them.
+    return _repository.fetchRecipes(
+      householdId,
+      role: _role,
+      isFavorite: _isFavorite,
+    );
+  }
+
+  /// Drops both the role and favorites filters with a single refetch.
+  Future<void> clearFilters() {
+    _role = null;
+    _isFavorite = null;
+    return _refetch();
   }
 
   /// Applies (or clears, with `null`) a role filter and refetches
@@ -67,9 +82,14 @@ class RecipeLibraryController
     final AsyncValue<List<Recipe>> previous = state;
     state = const AsyncLoading<List<Recipe>>().copyWithPrevious(previous);
 
-    final AsyncValue<List<Recipe>> result = await AsyncValue.guard<List<Recipe>>(
-      () => _repository.fetchRecipes(arg, role: _role, isFavorite: _isFavorite),
-    );
+    final AsyncValue<List<Recipe>> result =
+        await AsyncValue.guard<List<Recipe>>(
+          () => _repository.fetchRecipes(
+            arg,
+            role: _role,
+            isFavorite: _isFavorite,
+          ),
+        );
 
     state = result.hasError ? result.copyWithPrevious(previous) : result;
   }

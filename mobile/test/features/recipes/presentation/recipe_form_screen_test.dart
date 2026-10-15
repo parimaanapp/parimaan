@@ -204,6 +204,28 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a blank unit shows a neutral hint, never a real unit name',
+      (WidgetTester tester) async {
+        await _pumpPushed(tester, repository: FakeRecipeRepository());
+        await tester.ensureVisible(
+          find.byKey(RecipeFormScreen.addIngredientButtonKey),
+        );
+        await tester.tap(find.byKey(RecipeFormScreen.addIngredientButtonKey));
+        await tester.pump();
+
+        final TextField field = tester.widget<TextField>(
+          find.descendant(
+            of: find.byKey(IngredientRowEditor.unitFieldKey(0)),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(field.controller?.text, isEmpty);
+        expect(field.decoration?.hintText, 'unit');
+        expect(recipeUnits, isNot(contains(field.decoration?.hintText)));
+      },
+    );
+
     testWidgets('an ingredient row offers only recipe units and a tap fills the unit', (
       WidgetTester tester,
     ) async {

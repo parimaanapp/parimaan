@@ -56,6 +56,11 @@ Future<ProviderContainer> _pump(
             const WeeklyPlanScreen(),
       ),
       GoRoute(
+        path: '/home/cook',
+        builder: (BuildContext context, GoRouterState state) =>
+            const Scaffold(body: Text('Cook route stub')),
+      ),
+      GoRoute(
         path: AppRoutes.settingsHubPattern,
         builder: (BuildContext context, GoRouterState state) =>
             const Scaffold(body: Text('Settings hub stub')),
@@ -126,6 +131,29 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(testMenuHousehold.name), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'an empty day offers a labelled Cook from pantry action that opens the cook trigger route',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: Menu(
+            id: 'menu-1',
+            householdId: 'household-1',
+            weekStartDate: currentWeekStartDate(),
+            mealConfigSnapshot: '{}',
+            items: const <MenuItem>[],
+          ),
+        );
+        await _pump(tester, menuRepository: repository);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Cook from pantry'), findsOneWidget);
+        await tester.tap(find.byKey(TodayScreen.emptyCookButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Cook route stub'), findsOneWidget);
       },
     );
 
