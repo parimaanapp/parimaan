@@ -2,6 +2,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { z } from 'zod';
+import { DIET_STYLES, isDietStyle } from '../src/domain/dietMatch.js';
+import { ROOT_VEG_FOR_JAIN } from '../src/domain/cookPreferenceFilter.js';
 import { curatedRecipeInputSchema } from '../src/validation/curatedRecipe.js';
 
 /**
@@ -67,6 +69,36 @@ function checkCuisineDirRule(filePath: string, cuisineTier1: string | null | und
   )})`;
 }
 
+const JAIN_ROOT_PATTERNS = ROOT_VEG_FOR_JAIN.map(
+  (word) => new RegExp(`(?<![a-z])${word}(?:s|es)?(?![a-z])`),
+);
+
+/**
+ * §32.3 curation lint on diet tags: at least one style tag; `non_veg` is
+ * never combined with another style (matching expands non_veg households to
+ * veg dishes, so the tags would only mislead); a `jain` recipe lists no
+ * root vegetable or allium.
+ */
+function checkDietTags(dietaryTags: readonly string[], ingredientNames: readonly string[]): string[] {
+  const errors: string[] = [];
+  const styles = dietaryTags.filter(isDietStyle);
+  if (styles.length === 0) {
+    errors.push(`dietaryTags: at least one style tag (${DIET_STYLES.join(', ')}) is required`);
+  }
+  if (styles.includes('non_veg') && styles.length > 1) {
+    errors.push('dietaryTags: non_veg must not be combined with another style tag');
+  }
+  if (styles.includes('jain')) {
+    const roots = ingredientNames
+      .map((name) => name.toLowerCase())
+      .filter((name) => JAIN_ROOT_PATTERNS.some((pattern) => pattern.test(name)));
+    if (roots.length > 0) {
+      errors.push(`dietaryTags: jain recipe contains root vegetable/allium ingredient(s): ${roots.join(', ')}`);
+    }
+  }
+  return errors;
+}
+
 export interface RecipeFileValidationResult {
   readonly filePath: string;
   readonly success: boolean;
@@ -96,6 +128,14 @@ export function validateCuratedRecipe(filePath: string, data: unknown): RecipeFi
   const dirRuleError = checkCuisineDirRule(filePath, parsed.data.cuisineTier1);
   if (dirRuleError) {
     return { filePath, success: false, errors: [dirRuleError] };
+  }
+
+  const dietErrors = checkDietTags(
+    parsed.data.dietaryTags ?? [],
+    parsed.data.ingredients.map((ingredient) => ingredient.name),
+  );
+  if (dietErrors.length > 0) {
+    return { filePath, success: false, errors: dietErrors };
   }
 
   return { filePath, success: true, errors: [] };

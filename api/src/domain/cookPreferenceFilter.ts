@@ -86,7 +86,7 @@ const DAIRY = [
   'milk', 'paneer', 'cheese', 'curd', 'dahi', 'yogurt', 'yoghurt', 'ghee', 'butter', 'buttermilk', 'cream', 'malai', 'khoa', 'khowa', 'mawa', 'whey',
   'lassi', 'chaas', 'makhan', 'shrikhand', 'chhena', 'kefir',
 ];
-const ROOT_VEG_FOR_JAIN = [
+export const ROOT_VEG_FOR_JAIN = [
   'onion', 'garlic', 'potato', 'aloo', 'alu', 'ginger', 'adrak', 'carrot', 'radish', 'mooli', 'beetroot', 'turnip', 'shallot', 'pyaz', 'pyaaz', 'lehsun',
   'yam', 'suran', 'arbi', 'colocasia', 'mushroom',
 ];

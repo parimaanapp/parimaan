@@ -115,6 +115,53 @@ describe('validateCuratedRecipe', () => {
   });
 });
 
+describe('validateCuratedRecipe — diet tagging lint (§32.3)', () => {
+  const withTags = (dietaryTags: string[], ...names: string[]) =>
+    validateCuratedRecipe(northIndianPath, {
+      ...validRecipe,
+      dietaryTags,
+      ingredients: [
+        ...validRecipe.ingredients,
+        ...names.map((name) => ({ name, quantity: 1, unit: 'piece', category: 'produce' })),
+      ],
+    });
+
+  it('requires at least one style tag', () => {
+    const result = withTags(['gluten_free', 'dairy_free']);
+    expect(result.success).toBe(false);
+    expect(result.errors.join(' ')).toContain('style tag');
+  });
+
+  it('accepts each style tag on its own', () => {
+    for (const tag of ['veg', 'non_veg', 'vegan', 'eggetarian', 'jain']) {
+      expect(withTags([tag]).success).toBe(true);
+    }
+  });
+
+  it.each(['veg', 'vegan', 'jain'])('rejects non_veg combined with %s', (other) => {
+    const result = withTags(['non_veg', other]);
+    expect(result.success).toBe(false);
+    expect(result.errors.join(' ')).toContain('non_veg');
+  });
+
+  it('allows non_veg with eggetarian-free modifiers', () => {
+    expect(withTags(['non_veg', 'gluten_free']).success).toBe(true);
+  });
+
+  it.each(['Potato', 'onion', 'Garlic', 'carrot', 'radish', 'beetroot', 'ginger', 'sweet potato', 'turnip', 'yam', 'arbi'])(
+    'rejects a jain recipe containing %s',
+    (name) => {
+      const result = withTags(['veg', 'jain'], name);
+      expect(result.success).toBe(false);
+      expect(result.errors.join(' ')).toContain('jain');
+    },
+  );
+
+  it('accepts a jain recipe built from non-root ingredients', () => {
+    expect(withTags(['veg', 'jain'], 'lauki', 'besan').success).toBe(true);
+  });
+});
+
 describe('validateAllCuratedRecipes — full corpus', () => {
   // §21.3 S1's own RED test: the full-corpus test globs the real
   // `recipes/**/*.json` on disk and must pass vacuously with zero real
