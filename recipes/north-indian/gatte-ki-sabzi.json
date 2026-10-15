@@ -1,0 +1,127 @@
+{
+  "title": "Gatte Ki Sabzi",
+  "description": "Rajasthani besan dumplings simmered in a tangy, spiced yogurt gravy.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 35,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "rajasthani",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Besan",
+      "quantity": 200,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Carom Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curd",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "dairy",
+      "notes": "whisked, a little used in the dough"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil",
+      "notes": "for the dough"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice",
+      "notes": "1 tsp for the dough, 1 tsp for the gravy",
+      "isStaple": true
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Mix the besan with a few spoonfuls of the curd, the vegetable oil, carom seeds, half of the chilli powder, half the salt and a pinch of turmeric, and knead into a stiff dough with a little water.",
+    "Roll the dough into thin ropes and boil them in a pot of water for 10 minutes until they float; drain, keeping 1 cup of the water, and cut into 1-inch pieces.",
+    "Heat the ghee in a pan, add cumin seeds and hing, then the onion and cook until golden.",
+    "Add the ginger garlic paste, coriander powder, remaining turmeric and the remaining chilli powder and stir for 1 minute.",
+    "Lower the heat and stir in the remaining whisked curd gradually, cooking for 3-4 minutes so it does not curdle.",
+    "Add the reserved cooking water, the remaining salt and the gatte, and simmer for 10 minutes.",
+    "Finish with garam masala and coriander leaves."
+  ]
+}

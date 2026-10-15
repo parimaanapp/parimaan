@@ -1,0 +1,110 @@
+{
+  "title": "Papad Ki Sabzi",
+  "description": "Rajasthani pantry-staple sabzi where roasted papad pieces are simmered in a spiced curd gravy.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "rajasthani",
+  "dietaryTags": [
+    "veg"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Papad (Uncooked)",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "bakery",
+      "notes": "roasted and broken into pieces"
+    },
+    {
+      "name": "Curd",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "dairy"
+    },
+    {
+      "name": "Besan",
+      "quantity": 10,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 0.5,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Roast the papads over a flame or on a dry tawa until crisp, then break them into medium pieces.",
+    "Whisk the curd with the besan, turmeric, chilli powder and coriander powder until smooth.",
+    "Heat the oil in a pan, add cumin seeds and hing, then the onion and green chilli and cook until soft.",
+    "Lower the heat, pour in the curd mixture with the water and stir constantly until it comes to a gentle simmer.",
+    "Cook for 5 minutes, stirring, so the gravy thickens slightly without splitting.",
+    "Add the papad pieces just before serving so they stay slightly firm, and garnish with coriander."
+  ]
+}
