@@ -771,7 +771,7 @@ void main() {
       await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
       await tester.pumpAndSettle();
 
-      final ingredients = repository.createCalls.single.ingredients;
+      final ingredients = repository.createCalls.single.draft.ingredients;
       expect(ingredients.map((i) => i.isStaple).toList(), <bool>[true, false]);
     });
 
