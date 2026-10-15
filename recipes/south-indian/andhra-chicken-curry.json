@@ -1,0 +1,139 @@
+{
+  "title": "Andhra Chicken Curry",
+  "description": "A fiery Andhra-style chicken curry with a roasted coconut and poppy seed base and plenty of green chillies.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 40,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "andhra",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Chicken (Curry Cut)",
+      "quantity": 700,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 40,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Poppy Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Water",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Grind the coconut and poppy seeds with a little water into a smooth paste.",
+    "Heat the oil, add the cloves, cinnamon and curry leaves, then the onions and green chillies and cook until golden.",
+    "Add the ginger garlic paste and cook for a minute, then add the tomatoes with the chilli powder, coriander powder, turmeric and salt and cook until the oil separates.",
+    "Add the chicken and sear on high heat for 5 minutes.",
+    "Stir in the coconut paste and water, cover and simmer for 20 minutes until the chicken is tender.",
+    "Sprinkle the garam masala, simmer uncovered 5 minutes to thicken and finish with the coriander leaves."
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "title": "Shorshe Ilish",
+  "description": "Bengal's most prized dish of hilsa steaks simmered in a pungent mustard paste with green chillies and mustard oil.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Hilsa",
+      "quantity": 600,
+      "unit": "g",
+      "category": "meat_fish",
+      "notes": "cut into 6 steaks"
+    },
+    {
+      "name": "Mustard Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Yellow Mustard Seeds",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "spice",
+      "notes": "soaked 15 minutes and ground with 2 green chillies and a pinch of salt"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "2 for the paste and 2 slit"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Nigella Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Water",
+      "quantity": 1,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Rub the fish with half the turmeric and the salt and rest 10 minutes.",
+    "Grind the soaked mustard seeds with 2 green chillies to a smooth paste, mixing in water to loosen it.",
+    "Heat 2 tbsp of the mustard oil and lightly sear the fish steaks for 1 minute each side; set aside.",
+    "Heat the remaining mustard oil gently, add the nigella seeds and the slit green chillies.",
+    "Add the mustard paste, remaining turmeric and the water and bring to a gentle simmer.",
+    "Slide in the fish, cover and cook for 5 to 6 minutes, spooning the gravy over; do not overcook.",
+    "Serve with steamed rice."
+  ]
+}

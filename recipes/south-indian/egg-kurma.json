@@ -1,0 +1,145 @@
+{
+  "title": "Egg Kurma",
+  "description": "A Tamil-style egg curry in a mild coconut, cashew and fennel gravy with boiled eggs and whole spices.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 30,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "eggetarian",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Egg",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "eggs",
+      "notes": "hard boiled and shelled"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Cashew Nuts",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Fennel Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Grind the coconut, cashews, fennel seeds and green chillies with a little water to a smooth paste.",
+    "Heat the oil and add the cinnamon, cloves, cardamom and bay leaf.",
+    "Add the onions and cook until golden, then add the ginger garlic paste and cook until the raw smell goes.",
+    "Add the tomatoes, coriander powder, chilli powder, turmeric and salt and cook until soft.",
+    "Stir in the ground paste and the water and simmer for 10 minutes.",
+    "Add the boiled eggs, simmer 5 minutes and finish with the coriander leaves."
+  ]
+}

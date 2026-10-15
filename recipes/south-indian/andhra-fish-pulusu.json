@@ -1,0 +1,135 @@
+{
+  "title": "Andhra Fish Pulusu",
+  "description": "A tangy, spicy Andhra fish stew with tamarind, tomato and onion, made with rohu and eaten with hot rice.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 30,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "andhra",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Rohu",
+      "quantity": 500,
+      "unit": "g",
+      "category": "meat_fish",
+      "notes": "cut into steaks"
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 40,
+      "unit": "g",
+      "category": "spice",
+      "notes": "soaked in warm water, pulp extracted"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Fenugreek Seeds",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "crushed"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Jaggery",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Water",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Heat the oil and crackle the mustard seeds, cumin and fenugreek; add the curry leaves and garlic.",
+    "Add the onions and green chillies and cook until soft and golden.",
+    "Add the tomatoes, chilli powder, coriander powder, turmeric and salt and cook until mushy.",
+    "Pour in the tamarind pulp and water, add the jaggery and simmer for 10 minutes until the raw tang mellows.",
+    "Gently add the fish steaks and simmer on low heat for 8 to 10 minutes, shaking the pan rather than stirring.",
+    "Rest for 10 minutes; the pulusu tastes better after standing."
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "title": "Desi Masala Pasta",
+  "description": "Penne tossed in a quick onion-tomato masala with capsicum and Indian spices, the kind of pasta kids and adults both finish.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "indo_chinese",
+  "cuisineTier2": "indian_fusion",
+  "dietaryTags": [
+    "veg"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Pasta (Dry)",
+      "quantity": 250,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Butter (Salted)",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "pureed"
+    },
+    {
+      "name": "Capsicum (Green)",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "diced"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Tomato Ketchup",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Boil the pasta in salted water until al dente, reserving half a cup of the pasta water, then drain.",
+    "Heat the butter and oil in a pan and crackle the cumin seeds.",
+    "Add the garlic and onion and sauté until soft and lightly golden.",
+    "Add the tomato puree, chilli powder, garam masala and salt and cook for 5 minutes until thick.",
+    "Add the capsicum and ketchup and cook for 2 minutes.",
+    "Toss in the pasta with a splash of the reserved water, cook 1 minute and finish with coriander."
+  ]
+}

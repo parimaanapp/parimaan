@@ -1,0 +1,56 @@
+{
+  "title": "Besan Laddu",
+  "description": "Melt-in-the-mouth gram flour laddus roasted slowly in ghee and rolled with powdered sugar and cardamom.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Besan",
+      "quantity": 250,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 120,
+      "unit": "g",
+      "category": "oil",
+      "notes": "melted"
+    },
+    {
+      "name": "Powdered Sugar",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Cardamom Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Almonds",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "chopped"
+    }
+  ],
+  "steps": [
+    "Heat the ghee in a heavy pan on low heat and add the besan.",
+    "Roast, stirring constantly, for 15 to 20 minutes until it turns golden, smells nutty and becomes loose and sandy.",
+    "Turn off the heat and stir in the almonds and cardamom; let the mixture cool until warm to touch.",
+    "Add the powdered sugar and mix thoroughly with your hands.",
+    "Shape into 12 equal laddus while the mixture is still warm, pressing firmly.",
+    "Cool completely and store in an airtight jar for up to 2 weeks."
+  ]
+}

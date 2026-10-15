@@ -1,0 +1,73 @@
+{
+  "title": "Sooji Halwa",
+  "description": "A quick Punjabi-style semolina halwa roasted in ghee and sweetened with milk, ideal for prasad or an after-dinner sweet.",
+  "servings": 4,
+  "prepMin": 5,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "punjabi",
+  "dietaryTags": [
+    "veg"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Sooji",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 5,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 120,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Milk",
+      "quantity": 250,
+      "unit": "ml",
+      "category": "dairy"
+    },
+    {
+      "name": "Water",
+      "quantity": 250,
+      "unit": "ml",
+      "category": "beverages"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice",
+      "notes": "crushed"
+    },
+    {
+      "name": "Almonds",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "sliced"
+    },
+    {
+      "name": "Raisins",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods"
+    }
+  ],
+  "steps": [
+    "Warm the milk and water together with the sugar in a saucepan and keep it just hot.",
+    "Heat the ghee in a heavy pan and roast the sooji on low heat, stirring constantly, until fragrant and light golden, about 8 minutes.",
+    "Add the almonds and raisins and stir for 30 seconds.",
+    "Carefully pour in the hot milk mixture, standing back as it will splutter.",
+    "Stir briskly, add the cardamom and cook until the halwa thickens and leaves the sides of the pan.",
+    "Cover for 2 minutes and serve warm."
+  ]
+}

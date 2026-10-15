@@ -1,0 +1,104 @@
+{
+  "title": "Veg Hakka Noodles",
+  "description": "Street-style Indo-Chinese noodles tossed on high heat with shredded vegetables, soy and a touch of vinegar.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 15,
+  "cuisineTier1": "indo_chinese",
+  "cuisineTier2": "indian_chinese",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Noodles (Dry)",
+      "quantity": 300,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 5,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Spring Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "whites and greens separated"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "julienned"
+    },
+    {
+      "name": "Cabbage",
+      "quantity": 100,
+      "unit": "g",
+      "category": "produce",
+      "notes": "shredded"
+    },
+    {
+      "name": "Capsicum (Green)",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Soy Sauce",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Red Chilli Sauce",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Vinegar",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Black Pepper Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Boil the noodles in salted water until just cooked, drain, rinse with cold water and toss with 1 tsp of the oil.",
+    "Heat the remaining oil in a wok on the highest flame and add the garlic and spring onion whites.",
+    "Add the carrot, cabbage and capsicum and stir-fry for 2 minutes so they stay crisp.",
+    "Add the soy sauce, chilli sauce, vinegar, pepper and salt.",
+    "Add the noodles and toss quickly for 2 minutes until evenly coated.",
+    "Finish with the spring onion greens and serve immediately."
+  ]
+}

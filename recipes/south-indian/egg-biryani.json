@@ -1,0 +1,131 @@
+{
+  "title": "Egg Biryani",
+  "description": "A quick weeknight biryani of spiced fried eggs layered with basmati rice, onion and mint.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 40,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "hyderabadi",
+  "dietaryTags": [
+    "eggetarian",
+    "gluten_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Egg",
+      "quantity": 6,
+      "unit": "piece",
+      "category": "eggs",
+      "notes": "hard boiled, shelled and slit"
+    },
+    {
+      "name": "Basmati Rice",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "soaked 30 minutes"
+    },
+    {
+      "name": "Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "thinly sliced"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Curd",
+      "quantity": 100,
+      "unit": "g",
+      "category": "dairy",
+      "notes": "whisked"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Biryani Masala",
+      "quantity": 1.5,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Mint Leaves",
+      "quantity": 0.5,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 0.5,
+      "unit": "bunch",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Heat the oil and shallow fry the boiled eggs with the turmeric until lightly golden; set aside.",
+    "In the same oil fry the onions until golden, saving a third for garnish.",
+    "Add the ginger garlic paste, green chillies, tomatoes, chilli powder, biryani masala and salt and cook until soft.",
+    "Stir in the curd and half the herbs and cook for 3 minutes, then add the eggs.",
+    "Boil the soaked rice with the bay leaf in salted water until 70 percent cooked and drain.",
+    "Layer the rice over the egg masala, scatter the remaining herbs and fried onion, dot with the ghee and seal the pot.",
+    "Cook on low heat for 15 minutes, rest 5 minutes and serve."
+  ]
+}

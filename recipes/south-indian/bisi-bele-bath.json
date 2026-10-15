@@ -1,0 +1,133 @@
+{
+  "title": "Bisi Bele Bath",
+  "description": "Karnataka's spiced rice and toor dal porridge, cooked with vegetables, tamarind and a fragrant masala powder.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 40,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Rice",
+      "quantity": 0.75,
+      "unit": "cup",
+      "category": "grain"
+    },
+    {
+      "name": "Toor Dal",
+      "quantity": 0.5,
+      "unit": "cup",
+      "category": "dal"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "diced"
+    },
+    {
+      "name": "Green Peas",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "French Beans",
+      "quantity": 50,
+      "unit": "g",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Potato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "cubed"
+    },
+    {
+      "name": "Tamarind",
+      "quantity": 15,
+      "unit": "g",
+      "category": "spice",
+      "notes": "soaked in warm water, pulp extracted"
+    },
+    {
+      "name": "Bisi Bele Bath Powder",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Jaggery",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "notes": "grated"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Mustard Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Dried Red Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 1,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Cashew Nuts",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Water",
+      "quantity": 5,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Pressure cook the rice and toor dal with the turmeric and 3 cups of the water until very soft, then mash lightly.",
+    "Boil the carrot, peas, beans and potato in the remaining water with the tamarind pulp and salt until tender.",
+    "Add the bisi bele bath powder and jaggery and simmer for 5 minutes.",
+    "Stir in the cooked rice and dal, adding hot water to reach a thick but flowing consistency, and simmer 8 minutes.",
+    "Heat the ghee, crackle the mustard seeds, then add the red chillies, curry leaves and cashews until golden.",
+    "Pour the tempering over the rice and serve hot with boondi or papad."
+  ]
+}

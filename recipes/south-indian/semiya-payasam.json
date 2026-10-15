@@ -1,0 +1,66 @@
+{
+  "title": "Semiya Payasam",
+  "description": "A silky South Indian vermicelli pudding simmered in milk with ghee-fried cashews, raisins and cardamom.",
+  "servings": 4,
+  "prepMin": 5,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "veg"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Roasted Vermicelli",
+      "quantity": 80,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Milk",
+      "quantity": 750,
+      "unit": "ml",
+      "category": "dairy"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 100,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cashew Nuts",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Raisins",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice",
+      "notes": "crushed"
+    }
+  ],
+  "steps": [
+    "Heat the ghee in a pan and fry the cashews and raisins until golden; remove and keep aside.",
+    "In the same ghee, lightly sauté the vermicelli for 1 to 2 minutes if it is not already roasted.",
+    "Add the milk and simmer on medium-low, stirring occasionally, until the vermicelli is soft, about 10 minutes.",
+    "Add the sugar and cardamom and cook 5 minutes until the payasam thickens slightly.",
+    "Stir in the fried cashews and raisins.",
+    "Serve warm or chilled; it thickens on standing, so loosen with a little milk if needed."
+  ]
+}

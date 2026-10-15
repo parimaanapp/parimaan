@@ -1,0 +1,46 @@
+{
+  "title": "Jowar Bhakri",
+  "description": "A rustic, gluten-free sorghum flatbread patted by hand and roasted on the tawa, eaten with pithla, thecha or a spicy curry.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Jowar Flour",
+      "quantity": 2.5,
+      "unit": "cup",
+      "category": "grain"
+    },
+    {
+      "name": "Water",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "beverages",
+      "notes": "hot, approximately"
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Mix the jowar flour and salt in a wide plate.",
+    "Add the hot water gradually and mix with a spoon, then knead with wet hands into a smooth, soft dough.",
+    "Divide into 8 balls and pat each one into a thin round on a dusted board or between damp palms.",
+    "Place on a hot tawa, sprinkle a little water on top and cook until the underside sets, about 1 minute.",
+    "Flip and roast until light spots form, then place directly on a low flame to puff.",
+    "Serve hot, brushed with ghee if you like."
+  ]
+}

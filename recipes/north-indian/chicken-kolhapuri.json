@@ -1,0 +1,103 @@
+{
+  "title": "Chicken Kolhapuri",
+  "description": "A fiery Maharashtrian chicken curry built on Kolhapuri masala, dry coconut and sesame, with a rust-red oily gravy.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 45,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Chicken (Curry Cut)",
+      "quantity": 700,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Dry Coconut (Grated)",
+      "quantity": 40,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Sesame Seeds (White)",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Kolhapuri Masala",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Water",
+      "quantity": 2,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Coriander Leaves",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Dry roast the coconut and sesame seeds until golden and set aside.",
+    "Fry one sliced onion in 1 tbsp of the oil until dark brown, then grind it with the coconut and sesame to a paste with a little water.",
+    "Heat the remaining oil and cook the remaining onions until golden, then add the ginger garlic paste.",
+    "Add the tomatoes, turmeric, Kolhapuri masala and salt and cook until the oil rises.",
+    "Add the chicken and sear for 5 minutes, then stir in the ground paste.",
+    "Add the water, cover and simmer for 25 minutes until the chicken is tender and the gravy is thick.",
+    "Finish with the coriander leaves."
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "title": "Rava Laddu",
+  "description": "Soft, coconut-studded semolina laddus bound with ghee and a little milk, a favourite for festivals and tea time.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "karnataka",
+  "dietaryTags": [
+    "veg"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Sooji",
+      "quantity": 200,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 4,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Powdered Sugar",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Coconut (Grated)",
+      "quantity": 60,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Milk",
+      "quantity": 60,
+      "unit": "ml",
+      "category": "dairy",
+      "notes": "warm"
+    },
+    {
+      "name": "Cashew Nuts",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "chopped"
+    },
+    {
+      "name": "Raisins",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice",
+      "notes": "powdered"
+    }
+  ],
+  "steps": [
+    "Heat 1 tbsp of the ghee and fry the cashews and raisins until golden; set aside.",
+    "Add 1 tbsp more ghee and roast the sooji on low heat for 8 to 10 minutes until fragrant and lightly coloured.",
+    "Add the grated coconut and roast 2 minutes more.",
+    "Transfer to a plate, cool slightly, and mix in the powdered sugar, cardamom, cashews and raisins.",
+    "Melt the remaining ghee and mix it in, then sprinkle the warm milk a little at a time until the mixture holds when pressed.",
+    "Shape into 12 laddus and let them firm up for 30 minutes before storing."
+  ]
+}

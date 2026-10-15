@@ -1,0 +1,121 @@
+{
+  "title": "Chingri Malai Curry",
+  "description": "A rich Bengali prawn curry in a mild coconut milk gravy scented with whole spices, cooked in mustard oil.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Prawns (Large)",
+      "quantity": 500,
+      "unit": "g",
+      "category": "meat_fish",
+      "notes": "cleaned and deveined"
+    },
+    {
+      "name": "Coconut Milk",
+      "quantity": 400,
+      "unit": "ml",
+      "category": "dairy"
+    },
+    {
+      "name": "Mustard Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Onion",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "grated"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 10,
+      "unit": "g",
+      "category": "produce",
+      "notes": "grated"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Marinate the prawns with half the turmeric and salt for 10 minutes.",
+    "Heat 1 tbsp of the mustard oil, fry the prawns for 1 minute until just pink and remove.",
+    "In the remaining oil add the bay leaves, cardamom, cloves and cinnamon for 20 seconds.",
+    "Add the onion and ginger and cook until the raw smell goes without browning, then add the remaining turmeric and the chilli powder.",
+    "Pour in the coconut milk with the sugar and green chillies and simmer for 5 minutes.",
+    "Return the prawns and cook for 3 minutes, then finish with the garam masala."
+  ]
+}

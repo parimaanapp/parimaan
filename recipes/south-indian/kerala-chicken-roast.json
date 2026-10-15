@@ -1,0 +1,123 @@
+{
+  "title": "Kerala Chicken Roast",
+  "description": "A dark, peppery Kerala chicken roast with caramelised shallots, fennel and coconut oil, best with appam or parotta.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 45,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "kerala",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Chicken (Curry Cut)",
+      "quantity": 700,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Coconut Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "thinly sliced"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Fennel Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "spice"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Kerala Garam Masala",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Black Pepper Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Curry Leaves",
+      "quantity": 2,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Lemon",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "juiced"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Marinate the chicken with half the chilli powder, the turmeric, lemon juice and salt for 20 minutes.",
+    "Heat the coconut oil in a heavy pan, add the fennel seeds and curry leaves and let them splutter.",
+    "Add the onions and green chillies and cook on medium heat until deep golden, about 12 minutes.",
+    "Add the ginger garlic paste and tomato and cook until mushy.",
+    "Add the coriander powder, remaining chilli powder and half the garam masala and cook 1 minute.",
+    "Add the chicken and cook covered on low heat for 20 minutes, stirring now and then, then uncover and roast until the masala is dark and coats the chicken.",
+    "Finish with the pepper powder and remaining garam masala."
+  ]
+}

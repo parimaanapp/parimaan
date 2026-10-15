@@ -1,0 +1,90 @@
+{
+  "title": "Egg Fried Rice",
+  "description": "Wok-tossed rice with scrambled egg, spring onion and soy, ready in about fifteen minutes from leftover rice.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 10,
+  "cuisineTier1": "indo_chinese",
+  "cuisineTier2": "indian_chinese",
+  "dietaryTags": [
+    "eggetarian",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Basmati Rice",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "cooked and cooled completely"
+    },
+    {
+      "name": "Egg",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "eggs"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Garlic",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely chopped"
+    },
+    {
+      "name": "Spring Onion",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "whites and greens separated, chopped"
+    },
+    {
+      "name": "Carrot",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "finely diced"
+    },
+    {
+      "name": "Green Peas",
+      "quantity": 40,
+      "unit": "g",
+      "category": "produce"
+    },
+    {
+      "name": "Soy Sauce",
+      "quantity": 1.5,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Black Pepper Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Salt",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Beat the eggs with a pinch of salt and pepper.",
+    "Heat 1 tbsp of the oil in a hot wok, scramble the eggs until just set, break them up and remove.",
+    "Add the remaining oil, then the garlic and spring onion whites and stir-fry for 20 seconds.",
+    "Add the carrot and peas and toss for 2 minutes.",
+    "Add the cold rice, soy sauce, pepper and salt and toss on high heat for 2 minutes.",
+    "Return the eggs, mix through, top with the spring onion greens and serve."
+  ]
+}

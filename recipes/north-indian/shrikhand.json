@@ -1,0 +1,63 @@
+{
+  "title": "Shrikhand",
+  "description": "A thick, creamy strained-curd dessert from Maharashtra and Gujarat, sweetened and scented with saffron and cardamom.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Curd",
+      "quantity": 800,
+      "unit": "g",
+      "category": "dairy",
+      "notes": "hung in muslin in the fridge for 5 hours, to yield about 400 g thick curd"
+    },
+    {
+      "name": "Powdered Sugar",
+      "quantity": 100,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Saffron",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Milk",
+      "quantity": 15,
+      "unit": "ml",
+      "category": "dairy",
+      "notes": "warm"
+    },
+    {
+      "name": "Cardamom Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Pistachios",
+      "quantity": 15,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "sliced"
+    }
+  ],
+  "steps": [
+    "Tie the curd in a clean muslin cloth and hang it for about 5 hours, until all the whey drains and a thick, firm mass remains.",
+    "Warm the milk and steep the saffron in it for 10 minutes.",
+    "Transfer the hung curd to a bowl and add the powdered sugar and saffron milk.",
+    "Whisk or fold for 2 to 3 minutes until completely smooth and glossy.",
+    "Stir in the cardamom powder and chill for at least 1 hour.",
+    "Serve topped with the sliced pistachios."
+  ]
+}

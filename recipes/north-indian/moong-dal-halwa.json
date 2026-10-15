@@ -1,0 +1,68 @@
+{
+  "title": "Moong Dal Halwa",
+  "description": "A rich, fragrant halwa of slow-roasted yellow moong dal, ghee and milk — a winter wedding and festival special.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 50,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "rajasthani",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Moong Dal (Split, Yellow)",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dal",
+      "notes": "soaked 3 hours and coarsely ground"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 100,
+      "unit": "g",
+      "category": "oil"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dry_goods"
+    },
+    {
+      "name": "Milk",
+      "quantity": 300,
+      "unit": "ml",
+      "category": "dairy"
+    },
+    {
+      "name": "Water",
+      "quantity": 300,
+      "unit": "ml",
+      "category": "beverages"
+    },
+    {
+      "name": "Cardamom Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Almonds",
+      "quantity": 20,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "sliced"
+    }
+  ],
+  "steps": [
+    "Drain the soaked dal and grind it coarsely with a splash of water.",
+    "Heat the ghee in a heavy pan and add the dal paste; roast on low heat, stirring constantly, for 20 to 25 minutes until it turns golden brown and releases ghee.",
+    "Warm the milk, water and sugar together until the sugar dissolves.",
+    "Add the hot milk mixture carefully to the roasted dal; it will bubble and splutter.",
+    "Cook on low heat, stirring, until the liquid is absorbed and the halwa leaves the pan.",
+    "Stir in the cardamom and garnish with the almonds."
+  ]
+}

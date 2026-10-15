@@ -1,0 +1,88 @@
+{
+  "title": "Moong Dal Khichdi",
+  "description": "Comforting rice and yellow moong dal cooked soft with ghee and cumin, the classic sick-day and Sunday-night meal.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 25,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Basmati Rice",
+      "quantity": 0.75,
+      "unit": "cup",
+      "category": "grain"
+    },
+    {
+      "name": "Moong Dal (Split, Yellow)",
+      "quantity": 0.75,
+      "unit": "cup",
+      "category": "dal"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cumin Seeds",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Ginger",
+      "quantity": 5,
+      "unit": "g",
+      "category": "produce",
+      "notes": "grated"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Asafoetida (Hing)",
+      "quantity": 0.25,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Water",
+      "quantity": 4,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Rinse the rice and dal together until the water runs clear and drain well.",
+    "Heat the ghee in a pressure cooker and add the cumin seeds, hing, ginger and green chilli.",
+    "Add the rice and dal with the turmeric and sauté for a minute.",
+    "Pour in the water, add the salt and pressure cook for 3 whistles.",
+    "Let the pressure release naturally, mash lightly and adjust the consistency with hot water if needed.",
+    "Serve hot with a spoonful of ghee, curd or pickle."
+  ]
+}

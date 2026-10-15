@@ -1,0 +1,123 @@
+{
+  "title": "Tomato Rice",
+  "description": "A bright, tangy rice cooked with ripe tomatoes, onion and a few whole spices that comes together in one pan.",
+  "servings": 4,
+  "prepMin": 15,
+  "cookMin": 25,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": [
+    "veg",
+    "vegan",
+    "gluten_free",
+    "dairy_free"
+  ],
+  "role": "carb",
+  "ingredients": [
+    {
+      "name": "Basmati Rice",
+      "quantity": 1.5,
+      "unit": "cup",
+      "category": "grain",
+      "notes": "soaked 20 minutes"
+    },
+    {
+      "name": "Vegetable Oil",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Onion",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "sliced"
+    },
+    {
+      "name": "Green Chilli",
+      "quantity": 2,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "slit"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Tomato",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Turmeric Powder",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice",
+      "isStaple": true
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Mint Leaves",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "produce",
+      "notes": "chopped"
+    },
+    {
+      "name": "Water",
+      "quantity": 3,
+      "unit": "cup",
+      "category": "beverages"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Heat the oil and add the cinnamon, cloves and bay leaf for 20 seconds.",
+    "Add the onion and green chillies and fry until golden brown.",
+    "Stir in the ginger garlic paste and cook until the raw smell goes.",
+    "Add the tomatoes with the chilli powder, turmeric, garam masala and salt and cook until mushy and the oil separates.",
+    "Add the mint, drained rice and water and bring to a boil.",
+    "Cover and cook on low heat for 12 minutes, rest 5 minutes and fluff before serving."
+  ]
+}
