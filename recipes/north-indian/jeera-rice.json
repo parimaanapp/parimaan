@@ -10,13 +10,13 @@
   "role": "carb",
   "ingredients": [
     { "name": "Basmati Rice", "quantity": 1.5, "unit": "cup", "category": "grain" },
-    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy", "notes": "or oil, for a vegan version" },
+    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "or oil, for a vegan version" },
     { "name": "Cumin Seeds", "quantity": 1.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Bay Leaf", "quantity": 1, "unit": "piece", "category": "spice" },
     { "name": "Cinnamon Stick", "quantity": 1, "unit": "piece", "category": "spice", "notes": "1-inch piece" },
     { "name": "Green Cardamom", "quantity": 2, "unit": "piece", "category": "spice" },
-    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "other" },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "beverages" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }
   ],
   "steps": [

@@ -9,10 +9,10 @@
   "dietaryTags": ["veg"],
   "role": "carb",
   "ingredients": [
-    { "name": "Whole Wheat Flour (Aata)", "quantity": 2, "unit": "cup", "category": "grain" },
-    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "other", "notes": "warm, added gradually" },
-    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Ghee", "quantity": 1, "unit": "tsp", "category": "dairy", "notes": "optional, for brushing" }
+    { "name": "Atta (Whole Wheat Flour)", "quantity": 2, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "beverages", "notes": "warm, added gradually" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Ghee", "quantity": 1, "unit": "tsp", "category": "oil", "notes": "optional, for brushing" }
   ],
   "steps": [
     "In a large bowl, mix the flour and salt. Add water gradually, kneading until you get a soft, smooth dough. Cover and rest for 15-20 minutes.",

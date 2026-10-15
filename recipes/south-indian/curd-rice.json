@@ -9,18 +9,18 @@
   "dietaryTags": ["veg", "gluten_free"],
   "role": "carb",
   "ingredients": [
-    { "name": "Rice (sonamasuri)", "quantity": 1, "unit": "cup", "category": "grain" },
-    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "other", "notes": "for cooking the rice" },
+    { "name": "Sona Masoori Rice", "quantity": 1, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "beverages", "notes": "for cooking the rice" },
     { "name": "Curd", "quantity": 2, "unit": "cup", "category": "dairy" },
     { "name": "Milk", "quantity": 0.5, "unit": "cup", "category": "dairy", "notes": "optional, for a smoother texture" },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
     { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
-    { "name": "Urad Dal (split)", "quantity": 1, "unit": "tsp", "category": "dal" },
+    { "name": "Urad Dal (Split, White)", "quantity": 4, "unit": "g", "category": "dal" },
     { "name": "Dried Red Chilli", "quantity": 1, "unit": "piece", "category": "spice" },
     { "name": "Curry Leaves", "quantity": 1, "unit": "bunch", "category": "produce", "notes": "a small sprig" },
-    { "name": "Ginger", "quantity": 1, "unit": "tsp", "category": "produce", "notes": "grated, optional" },
-    { "name": "Pomegranate Seeds", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "optional, for garnish" }
+    { "name": "Ginger", "quantity": 2, "unit": "g", "category": "produce", "notes": "grated, optional" },
+    { "name": "Pomegranate", "quantity": 20, "unit": "g", "category": "produce", "notes": "optional, for garnish" }
   ],
   "steps": [
     "Cook the rice with water until fully soft, slightly overcooked compared to usual — this makes it easier to mash into the curd.",

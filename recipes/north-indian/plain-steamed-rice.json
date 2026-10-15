@@ -10,9 +10,9 @@
   "role": "carb",
   "ingredients": [
     { "name": "Basmati Rice", "quantity": 1.5, "unit": "cup", "category": "grain" },
-    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "other" },
-    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Ghee", "quantity": 1, "unit": "tsp", "category": "dairy", "notes": "optional" }
+    { "name": "Water", "quantity": 2.5, "unit": "cup", "category": "beverages" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Ghee", "quantity": 1, "unit": "tsp", "category": "oil", "notes": "optional" }
   ],
   "steps": [
     "Rinse the basmati rice under cold water until it runs mostly clear, then soak for 15-20 minutes and drain.",

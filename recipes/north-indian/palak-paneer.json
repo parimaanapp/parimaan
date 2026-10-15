@@ -10,17 +10,17 @@
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Spinach", "quantity": 500, "unit": "g", "category": "produce", "notes": "washed, roughly chopped" },
-    { "name": "Paneer (block)", "quantity": 250, "unit": "g", "category": "dairy", "notes": "cubed" },
-    { "name": "Oil", "quantity": 1, "unit": "tbsp", "category": "oil", "notes": "for shallow-frying the paneer" },
-    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "dairy" },
+    { "name": "Paneer", "quantity": 250, "unit": "g", "category": "dairy", "notes": "cubed" },
+    { "name": "Vegetable Oil", "quantity": 1, "unit": "tbsp", "category": "oil", "notes": "for shallow-frying the paneer" },
+    { "name": "Ghee", "quantity": 2, "unit": "tbsp", "category": "oil" },
     { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
-    { "name": "Ginger-Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "produce" },
+    { "name": "Ginger Garlic Paste", "quantity": 1, "unit": "tbsp", "category": "condiment" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
     { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "chopped" },
     { "name": "Garam Masala", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Fresh Cream", "quantity": 2, "unit": "tbsp", "category": "dairy", "notes": "optional, for finishing" }
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Cream (Fresh)", "quantity": 30, "unit": "ml", "category": "dairy", "notes": "optional, for finishing" }
   ],
   "steps": [
     "Blanch the spinach in boiling water for 2 minutes, then transfer immediately to ice water to keep its colour. Drain and blend to a smooth puree.",

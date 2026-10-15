@@ -9,15 +9,15 @@
   "dietaryTags": ["eggetarian", "gluten_free"],
   "role": "breakfast",
   "ingredients": [
-    { "name": "Eggs", "quantity": 4, "unit": "piece", "category": "dairy" },
+    { "name": "Egg", "quantity": 4, "unit": "piece", "category": "eggs" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
     { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Butter", "quantity": 1, "unit": "tbsp", "category": "dairy", "notes": "or oil" }
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Butter (Salted)", "quantity": 1, "unit": "tbsp", "category": "oil", "notes": "or oil" }
   ],
   "steps": [
     "In a bowl, whisk the eggs with the turmeric, red chilli powder and salt.",

@@ -9,17 +9,17 @@
   "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "breakfast",
   "ingredients": [
-    { "name": "Besan (Gram Flour)", "quantity": 1, "unit": "cup", "category": "dry_goods" },
-    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "other", "notes": "approximate, for the batter" },
+    { "name": "Besan", "quantity": 1, "unit": "cup", "category": "dry_goods" },
+    { "name": "Water", "quantity": 0.75, "unit": "cup", "category": "beverages", "notes": "approximate, for the batter" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
     { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Carom Seeds (Ajwain)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
-    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Oil", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
+    { "name": "Carom Seeds", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for cooking" }
   ],
   "steps": [
     "In a bowl, whisk the besan with water gradually to form a smooth, lump-free batter of medium-thin, pourable consistency.",

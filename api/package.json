@@ -9,7 +9,7 @@
     "lint": "eslint . -c ../eslint.config.mjs --max-warnings=0",
     "test": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage",
-    "validate:recipes": "vitest run scripts/validateCuratedRecipes.test.ts",
+    "validate:recipes": "vitest run scripts/validateCuratedRecipes.test.ts scripts/validateCuratedRecipes.catalog.test.ts scripts/recipeCatalog.test.ts",
     "wipe:accounts": "tsx scripts/accountWipe.ts"
   },
   "dependencies": {

@@ -9,9 +9,9 @@
   "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "carb",
   "ingredients": [
-    { "name": "Ragi Flour (Finger Millet Flour)", "quantity": 1.5, "unit": "cup", "category": "grain" },
-    { "name": "Water", "quantity": 3, "unit": "cup", "category": "other" },
-    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true }
+    { "name": "Ragi Flour", "quantity": 1.5, "unit": "cup", "category": "grain" },
+    { "name": "Water", "quantity": 3, "unit": "cup", "category": "beverages" },
+    { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true }
   ],
   "steps": [
     "Bring two-thirds of the water to a boil in a heavy-bottomed pot with the salt.",

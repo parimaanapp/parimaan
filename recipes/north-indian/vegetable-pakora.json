@@ -9,19 +9,19 @@
   "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "snack",
   "ingredients": [
-    { "name": "Besan (Gram Flour)", "quantity": 1.5, "unit": "cup", "category": "dry_goods" },
-    { "name": "Rice Flour", "quantity": 2, "unit": "tbsp", "category": "grain", "notes": "for extra crispness, optional" },
+    { "name": "Besan", "quantity": 1.5, "unit": "cup", "category": "dry_goods" },
+    { "name": "Rice Flour", "quantity": 20, "unit": "g", "category": "grain", "notes": "for extra crispness, optional" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "thinly sliced" },
     { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "thinly sliced" },
-    { "name": "Spinach", "quantity": 1, "unit": "cup", "category": "produce", "notes": "roughly chopped, or substitute another leafy green" },
+    { "name": "Spinach", "quantity": 30, "unit": "g", "category": "produce", "notes": "roughly chopped, or substitute another leafy green" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
-    { "name": "Ginger", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "grated" },
-    { "name": "Carom Seeds (Ajwain)", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Ginger", "quantity": 6, "unit": "g", "category": "produce", "notes": "grated" },
+    { "name": "Carom Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
     { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Turmeric Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "other", "notes": "approximate, added gradually" },
-    { "name": "Oil", "quantity": 3, "unit": "cup", "category": "oil", "notes": "for deep frying" }
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Water", "quantity": 0.5, "unit": "cup", "category": "beverages", "notes": "approximate, added gradually" },
+    { "name": "Vegetable Oil", "quantity": 3, "unit": "cup", "category": "oil", "notes": "for deep frying" }
   ],
   "steps": [
     "In a large bowl, combine the besan, rice flour, carom seeds, red chilli powder, turmeric and salt.",
