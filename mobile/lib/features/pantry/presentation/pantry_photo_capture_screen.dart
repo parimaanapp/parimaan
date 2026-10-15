@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
-import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/frame_brightness.dart';
