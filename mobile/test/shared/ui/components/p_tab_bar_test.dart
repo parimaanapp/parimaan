@@ -91,7 +91,7 @@ void main() {
 
       expect(active.style!.color, AppColors.ink);
       expect(active.style!.fontWeight, FontWeight.w600);
-      expect(inactive.style!.color, AppColors.inkMid);
+      expect(inactive.style!.color, AppColors.inkSoft);
       expect(inactive.style!.fontWeight, FontWeight.w400);
       expect(_glyphIcon(tester, 0).color, AppColors.ink);
       expect(_glyphIcon(tester, 1).color, AppColors.inkMid);

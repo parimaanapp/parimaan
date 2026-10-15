@@ -81,6 +81,9 @@ class PTabBarTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color tint = isSelected ? AppColors.ink : AppColors.inkMid;
+    // Text must clear 4.5:1, so the inactive label is inkSoft; inkMid stays
+    // for the (non-text) glyph.
+    final Color labelColor = isSelected ? AppColors.ink : AppColors.inkSoft;
 
     return Semantics(
       button: true,
@@ -112,7 +115,7 @@ class PTabBarTab extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.label.copyWith(
-                        color: tint,
+                        color: labelColor,
                         // Weight, not just hue, marks the active destination.
                         fontWeight: isSelected
                             ? FontWeight.w600

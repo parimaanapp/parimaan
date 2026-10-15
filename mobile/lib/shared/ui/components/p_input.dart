@@ -122,18 +122,18 @@ class PInput extends StatelessWidget {
       decoration: _decoration(),
     );
 
-    final Widget box = _FocusRing(
-      child: trailing == null
-          ? field
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Expanded(child: field),
-                const SizedBox(width: AppSpacing.s1),
-                trailing!,
-              ],
-            ),
-    );
+    // The ring hugs the text field box only, never the row's trailing slot.
+    final Widget ringed = _FocusRing(isError: _hasError, child: field);
+    final Widget box = trailing == null
+        ? ringed
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Expanded(child: ringed),
+              const SizedBox(width: AppSpacing.s1),
+              trailing!,
+            ],
+          );
 
     final String? message = _hasError ? errorText : helperText;
 
@@ -141,23 +141,40 @@ class PInput extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(
-          label.toUpperCase(),
-          style: AppTypography.mono.copyWith(
-            color: AppColors.inkMid,
-            fontWeight: FontWeight.w600,
-            fontSize: AppTypography.meta.fontSize,
-            letterSpacing: 0.12 * AppTypography.meta.fontSize!,
+        // Visual only: the field node carries the original-case label.
+        ExcludeSemantics(
+          child: Text(
+            label.toUpperCase(),
+            style: AppTypography.mono.copyWith(
+              // inkSoft, not inkMid: text must clear 4.5:1 (inkMid is for
+              // non-text strokes and placeholders).
+              color: AppColors.inkSoft,
+              fontWeight: FontWeight.w600,
+              fontSize: AppTypography.meta.fontSize,
+              letterSpacing: 0.12 * AppTypography.meta.fontSize!,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.s0),
-        box,
+        // One semantics node for the field: original-case label, with the
+        // helper or error message as its hint so it is read with the field.
+        Semantics(
+          label: label,
+          hint: message,
+          child: box,
+        ),
         if (message != null) ...<Widget>[
           const SizedBox(height: AppSpacing.s0),
-          Text(
-            message,
-            style: AppTypography.label.copyWith(
-              color: _hasError ? AppColors.danger : AppColors.inkMid,
+          // The message is already in the field's hint; an error is also a
+          // live region so it is announced the moment it appears.
+          Semantics(
+            liveRegion: _hasError,
+            excludeSemantics: !_hasError,
+            child: Text(
+              message,
+              style: AppTypography.label.copyWith(
+                color: _hasError ? AppColors.danger : AppColors.inkSoft,
+              ),
             ),
           ),
         ],
@@ -211,12 +228,16 @@ class PInput extends StatelessWidget {
       );
 }
 
-/// Draws the wireframe's 3px terracotta@12% ring around its child while a
-/// descendant holds focus.
+/// Draws the wireframe's 3px terracotta@12% (danger@12% in error) ring around
+/// its child while a descendant holds focus. The ring is a paint-only shadow
+/// outside the box, so it needs 3px of room inside any scroll view's padding.
 class _FocusRing extends StatelessWidget {
-  const _FocusRing({required this.child});
+  const _FocusRing({required this.child, required this.isError});
 
   final Widget child;
+
+  /// The ring takes the danger wash while the field is in error.
+  final bool isError;
 
   @override
   Widget build(BuildContext context) => Focus(
@@ -230,9 +251,11 @@ class _FocusRing extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: AppRadius.borderM,
             boxShadow: focused
-                ? const <BoxShadow>[
+                ? <BoxShadow>[
                     BoxShadow(
-                      color: AppColors.terracottaRing,
+                      color: isError
+                          ? AppColors.dangerRing
+                          : AppColors.terracottaRing,
                       spreadRadius: PInput._focusRingSpread,
                     ),
                   ]

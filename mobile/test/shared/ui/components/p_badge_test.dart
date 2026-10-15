@@ -21,7 +21,7 @@ void main() {
     testWidgets('uppercases its label by default (meta style)', (
       WidgetTester tester,
     ) async {
-      await pumpComponent(tester, const PBadge(label: 'AI suggests'));
+      await pumpComponent(tester, const PBadge(label: 'In rotation'));
 
       expect(find.text('AI SUGGESTS'), findsOneWidget);
       final Text text = tester.widget<Text>(find.text('AI SUGGESTS'));
@@ -32,10 +32,10 @@ void main() {
     testWidgets('can keep the caller casing', (WidgetTester tester) async {
       await pumpComponent(
         tester,
-        const PBadge(label: 'AI suggests', uppercase: false),
+        const PBadge(label: 'In rotation', uppercase: false),
       );
 
-      expect(find.text('AI suggests'), findsOneWidget);
+      expect(find.text('In rotation'), findsOneWidget);
     });
 
     testWidgets('is a pill', (WidgetTester tester) async {

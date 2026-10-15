@@ -367,8 +367,6 @@ void main() {
         );
         await tester.tap(find.byKey(PhotoItemEditSheet.unitChipKey('packet')));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.byKey(PhotoItemEditSheet.doneKey));
-        await tester.pump();
         await tester.tap(find.byKey(PhotoItemEditSheet.doneKey));
         await tester.pumpAndSettle();
 
@@ -394,8 +392,6 @@ void main() {
 
       await tester.tap(find.text('Toor Dal'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(PhotoItemEditSheet.removeKey));
-      await tester.pump();
       await tester.tap(find.byKey(PhotoItemEditSheet.removeKey));
       await tester.pumpAndSettle();
 
@@ -417,8 +413,6 @@ void main() {
 
         await tester.tap(find.text('Toor Dal'));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.byKey(PhotoItemEditSheet.removeKey));
-        await tester.pump();
         await tester.tap(find.byKey(PhotoItemEditSheet.removeKey));
         await tester.pumpAndSettle();
 

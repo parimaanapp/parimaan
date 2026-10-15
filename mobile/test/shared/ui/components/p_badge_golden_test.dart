@@ -18,9 +18,9 @@ void main() {
             child: PBadge(label: tone.name, tone: tone),
           ),
         scenario(
-          name: 'ai suggests',
+          name: 'with icon',
           child: const PBadge(
-            label: 'AI suggests',
+            label: 'In rotation',
             tone: PBadgeTone.warning,
             icon: Icons.circle,
           ),

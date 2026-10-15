@@ -51,9 +51,15 @@ class _TabGlyphPainter extends CustomPainter {
   final PTabGlyph glyph;
   final Color color;
 
-  /// Stroke as a fraction of the box, so it scales with [PTabGlyphIcon.size]
-  /// (1.5 of 24, the iconography stroke).
-  static const double _strokeFraction = 1.5 / 24;
+  /// Stroke as a fraction of the box, so it scales with [PTabGlyphIcon.size]:
+  /// `iconography.weight` is a 1.5 px stroke on the 24 px grid.
+  static const double _strokeFraction =
+      AppSizing.iconStrokeAt24 / AppSizing.icon24;
+
+  /// At the 20 px tab size the pure 1.5/24 stroke is 1.25 px, which reads
+  /// thinner than Phosphor Regular next to 13 px label text; 1.2x (1.5 px at
+  /// 20 px) matches the label's stem weight. Deliberate deviation, one place.
+  static const double _legibilityBoost = 1.2;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -61,7 +67,7 @@ class _TabGlyphPainter extends CustomPainter {
     final Paint stroke = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * _strokeFraction * 1.2
+      ..strokeWidth = size.width * _strokeFraction * _legibilityBoost
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     final Paint fill = Paint()

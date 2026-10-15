@@ -27,9 +27,12 @@ enum PChipTone { neutral, veg, warm, accent }
 /// performs the screen's main action is a [PButton] wearing the wrong shape,
 /// and no amount of API design can stop that; it is a review-time check.
 ///
-/// Selection is signalled by an inverted surface (solid ink, paper text) and
-/// exposed to screen readers via `Semantics.selected`; the tick glyph is an
-/// opt-in ([showSelectedGlyph]).
+/// **Deliberate exception to "never rely on colour alone".** Selection is
+/// signalled by an inverted surface — solid ink with paper text against an
+/// outlined, transparent unselected chip, a large luminance difference that
+/// survives greyscale and colour blindness — and exposed to screen readers via
+/// `Semantics.selected`. The tick glyph the system used to add is dropped
+/// (founder sign-off, §32.6) but remains opt-in via [showSelectedGlyph].
 class PChip extends StatelessWidget {
   const PChip({
     super.key,

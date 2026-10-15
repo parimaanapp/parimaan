@@ -3,13 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile/shared/ui/components/p_button.dart';
 
 import '../../../support/golden_harness.dart';
-import '../../../support/tolerant_golden_comparator.dart';
 
 void main() {
-  // Contains drawn icon/spinner paths; CI anti-aliasing differs slightly from
-  // macOS, so tolerate <= 0.5% diff for this file only.
-  useTolerantGoldenComparator();
-
   goldenTest(
     'PButton renders every documented variant, size and state',
     fileName: 'p_button',

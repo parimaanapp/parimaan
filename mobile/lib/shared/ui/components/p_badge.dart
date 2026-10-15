@@ -9,11 +9,11 @@ enum PBadgeTone { neutral, success, warning, danger, info, accent }
 /// A small, non-interactive status or count indicator.
 ///
 /// **Provenance.** The design source has no section called "badge"; the
-/// closest thing it draws is the "AI suggests" pill on the confirm-before-write
-/// modal — a `radius.r-full` pill carrying tracked all-caps `meta` type on a
-/// tinted surface. That pill is the spec this component generalises, which is
-/// why the default is uppercase meta type in a pill rather than, say, a
-/// Material-style numeric dot.
+/// closest thing it draws is a `radius.r-full` pill carrying tracked all-caps
+/// `meta` type on a tinted surface. That pill is the spec this component
+/// generalises, which is why the default is uppercase meta type in a pill
+/// rather than, say, a Material-style numeric dot. The AI proposal marker is
+/// its own fixed-copy component, [PAiBadge], below.
 ///
 /// A badge is **status, never a control**: it takes no callback, and nothing
 /// here is tappable. If it needs to be pressed it is a [PChip] or a

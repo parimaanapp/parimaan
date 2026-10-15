@@ -23,7 +23,7 @@ void main() {
 
       final Text label = tester.widget<Text>(find.text('HOUSEHOLD NAME'));
       expect(label.style!.fontFamily, AppFontFamily.mono);
-      expect(label.style!.color, AppColors.inkMid);
+      expect(label.style!.color, AppColors.inkSoft);
       expect(label.style!.fontWeight, FontWeight.w600);
     });
 

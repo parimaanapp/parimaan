@@ -46,6 +46,26 @@ Finder _field(Key key) =>
     find.descendant(of: find.byKey(key), matching: find.byType(TextField));
 
 void main() {
+  testWidgets('Done and Remove stay on screen at 320x568 with the keyboard up', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 270);
+    addTearDown(tester.view.reset);
+
+    await _open(tester, _p(), () async {
+      final Rect done = tester.getRect(find.byKey(PhotoItemEditSheet.doneKey));
+      final Rect remove = tester.getRect(
+        find.byKey(PhotoItemEditSheet.removeKey),
+      );
+      const double visibleBottom = 568 - 270;
+      expect(done.bottom, lessThanOrEqualTo(visibleBottom));
+      expect(remove.bottom, lessThanOrEqualTo(visibleBottom));
+      expect(done.top, greaterThanOrEqualTo(0));
+    });
+  });
+
   testWidgets(
     'starts from the proposal: name, amount, unit and category are pre-filled',
     (WidgetTester tester) async {
@@ -119,8 +139,6 @@ void main() {
           _field(PhotoItemEditSheet.quantityFieldKey),
           '0',
         );
-        await tester.ensureVisible(find.byKey(PhotoItemEditSheet.doneKey));
-        await tester.pumpAndSettle();
         await tester.tap(find.byKey(PhotoItemEditSheet.doneKey));
       });
 
@@ -136,8 +154,6 @@ void main() {
         _field(PhotoItemEditSheet.nameFieldKey),
         'x' * 200,
       );
-      await tester.ensureVisible(find.byKey(PhotoItemEditSheet.doneKey));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(PhotoItemEditSheet.doneKey));
     });
 

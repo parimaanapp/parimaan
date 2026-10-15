@@ -18,6 +18,9 @@ abstract final class AppSizing {
   /// phone (the wireframe frame is 280 wide), and 44pt-clearing.
   static const double tabBarHeight = 56;
 
+  /// `iconography.weight`: "Regular (1.5px stroke)" on the 24 px icon grid.
+  static const double iconStrokeAt24 = 1.5;
+
   // ---- iconography.sizes (Phosphor Icons, Regular / 1.5px stroke) ------
   /// Inline with text.
   static const double icon16 = 16;

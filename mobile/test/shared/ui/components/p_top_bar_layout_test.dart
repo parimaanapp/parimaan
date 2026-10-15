@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/shared/ui/components/components.dart';
 
-import '../../../support/component_harness.dart';
 
 Widget _icons(int n) => Row(
   mainAxisSize: MainAxisSize.min,
