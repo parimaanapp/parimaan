@@ -26,6 +26,7 @@ import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { Provider } from 'aws-cdk-lib/custom-resources';
 import type { Construct } from 'constructs';
+import { hashFiles } from '../lib/hashFiles';
 import { hashMigrationsDir } from '../lib/hashMigrationsDir';
 
 /**
@@ -527,6 +528,14 @@ export class DataStack extends cdk.Stack {
         // a migration file changes — CFN only re-runs a custom resource
         // when its Properties differ from the last-deployed value.
         MigrationsHash: hashMigrationsDir(migrationsSourceDir),
+        // Same idea for the bundled ingredient catalog: its JSON (and the
+        // key normaliser its alias keys derive from) is inlined into this
+        // Lambda's bundle, so a data-only change must also re-invoke it.
+        CatalogHash: hashFiles([
+          join(__dirname, '../../api/src/catalog/data/ingredients.json'),
+          join(__dirname, '../../api/src/catalog/data/conversions.json'),
+          join(__dirname, '../../api/src/domain/ingredientCatalog.ts'),
+        ]),
       },
     });
 

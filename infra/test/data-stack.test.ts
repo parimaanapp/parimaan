@@ -304,6 +304,16 @@ describe('DataStack', () => {
       expect(resource.Properties.MigrationsHash).toMatch(/^[0-9a-f]{64}$/);
     });
 
+    it('the custom resource carries a CatalogHash property so a catalog data change forces re-invocation (and re-sync) on deploy', () => {
+      const template = synth('dev');
+      const customResources = Object.values(template.findResources('AWS::CloudFormation::CustomResource')) as Array<{
+        Properties: { CatalogHash?: string };
+      }>;
+      const [resource] = customResources;
+      if (!resource) throw new Error('expected exactly one custom resource');
+      expect(resource.Properties.CatalogHash).toMatch(/^[0-9a-f]{64}$/);
+    });
+
     it('waits on the Aurora writer instance, not just the cluster resource, before invoking — the cluster endpoint is not guaranteed resolvable until the instance is also up', () => {
       const template = synth('dev').toJSON() as {
         Resources: Record<string, { Type: string; DependsOn?: string[] }>;

@@ -333,8 +333,9 @@ describe('reversing the menu-config-snapshot migration', () => {
     let columns = await getColumnTypes(client, 'menus');
     expect(columns.meal_config_snapshot).toBe('jsonb');
 
-    // 2: the newer forward-only retag-diet-styles migration (a no-op down) sits after this one.
-    await runMigrations(container.getConnectionUri(), 'down', undefined, [], 2);
+    // 3: the newer forward-only retag-diet-styles migration (a no-op down) and the
+    // ingredient-catalog migration sit after this one.
+    await runMigrations(container.getConnectionUri(), 'down', undefined, [], 3);
     columns = await getColumnTypes(client, 'menus');
     expect(columns.meal_config_snapshot).toBeUndefined();
     // menus itself, and its other columns, are untouched by this migration's down().

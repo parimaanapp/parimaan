@@ -364,9 +364,9 @@ describe('ApiStack', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(/recipe\(id:\s*ID!\)\s*:\s*Recipe!/);
   });
 
-  it('declares exactly 54 Lambda functions: the 53 resolvers (health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek + exportShoppingListImage + getPantryPhotoUploadUrl + analyzePantryPhoto + cookFromPantry + shoppingList) plus staplesNoteFn (W17 S3 — the one Lambda in this stack invoked only by another Lambda, never by AppSync, so it never appears in the resolver/data-source counts below)', () => {
+  it('declares exactly 56 Lambda functions: the 55 resolvers (ingredientCatalog + searchIngredients (B2a) + health + me + createHousehold + userHouseholds + joinHousehold + updateHouseholdSettings + rotateInviteCode + leaveHousehold + deleteHousehold + household + pantry + addPantryItem + updatePantryItem + deletePantryItem + bulkAddPantryItems + onPantryChanged + recipes + recipe + recipeIngredients + createRecipe + updateRecipe + deleteRecipe + favoriteRecipe + setInRotation + onRecipeChanged + parseFreeformRecipe + importRecipeFromUrl + onHouseholdChanged + notificationPreferences + updateNotificationPreferences + menu + createMenu + addMenuItem + removeMenuItem + autoFillPreview + autoFillWeek + generateShoppingList + regenerateShoppingList + haveIt + markMade + onMenuChanged + onMembershipRevoked + markPurchased + onShoppingListChanged + clearMenuDay + clearMenuWeek + copyMenuDay + copyMenuWeek + exportShoppingListImage + getPantryPhotoUploadUrl + analyzePantryPhoto + cookFromPantry + shoppingList) plus staplesNoteFn (W17 S3 — the one Lambda in this stack invoked only by another Lambda, never by AppSync, so it never appears in the resolver/data-source counts below)', () => {
     const template = synth('dev');
-    expect(ourFunctions(template)).toHaveLength(54);
+    expect(ourFunctions(template)).toHaveLength(56);
   });
 
   it('declares the health, parseFreeformRecipe, importRecipeFromUrl, getPantryPhotoUploadUrl (W20 S3), and analyzePantryPhoto (W20 S4) Lambdas outside the VPC, on the Node.js 24 runtime', () => {
@@ -387,10 +387,10 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares 49 VPC-attached Lambdas: the 48 resolvers (me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences, menu, createMenu, addMenuItem, removeMenuItem, autoFillPreview, autoFillWeek, generateShoppingList, regenerateShoppingList, haveIt, markMade, onMenuChanged, onMembershipRevoked, markPurchased, onShoppingListChanged, clearMenuDay, clearMenuWeek, copyMenuDay, copyMenuWeek, exportShoppingListImage, cookFromPantry, shoppingList) plus staplesNoteFn (W17 S3 — VPC-attached via the same factory, in the new private-egress subnet group, D1/D2), all on the Node.js 24 runtime, using the shared Lambda security group', () => {
+  it('declares 51 VPC-attached Lambdas: the 50 resolvers (ingredientCatalog, searchIngredients, me, createHousehold, userHouseholds, joinHousehold, updateHouseholdSettings, rotateInviteCode, leaveHousehold, deleteHousehold, household, pantry, addPantryItem, updatePantryItem, deletePantryItem, bulkAddPantryItems, onPantryChanged, recipes, recipe, recipeIngredients, createRecipe, updateRecipe, deleteRecipe, favoriteRecipe, setInRotation, onRecipeChanged, onHouseholdChanged, notificationPreferences, updateNotificationPreferences, menu, createMenu, addMenuItem, removeMenuItem, autoFillPreview, autoFillWeek, generateShoppingList, regenerateShoppingList, haveIt, markMade, onMenuChanged, onMembershipRevoked, markPurchased, onShoppingListChanged, clearMenuDay, clearMenuWeek, copyMenuDay, copyMenuWeek, exportShoppingListImage, cookFromPantry, shoppingList) plus staplesNoteFn (W17 S3 — VPC-attached via the same factory, in the new private-egress subnet group, D1/D2), all on the Node.js 24 runtime, using the shared Lambda security group', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(49);
+    expect(vpcFunctions).toHaveLength(51);
     for (const [, fn] of vpcFunctions) {
       expect(fn.Properties.Runtime).toBe('nodejs24.x');
       const vpcConfig = fn.Properties.VpcConfig as { SecurityGroupIds: unknown[]; SubnetIds: unknown[] };
@@ -408,7 +408,7 @@ describe('ApiStack', () => {
   it('gives every VPC-attached Lambda (resolvers + staplesNoteFn) enough timeout headroom past Aurora\'s ~30s auto-pause resume to still run the query afterward', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(49);
+    expect(vpcFunctions).toHaveLength(51);
     for (const [, fn] of vpcFunctions) {
       const properties = fn.Properties as unknown as { Timeout: number };
       expect(properties.Timeout).toBeGreaterThan(30);
@@ -418,7 +418,7 @@ describe('ApiStack', () => {
   it('sets APP_ROLE_SECRET_ARN/DB_HOST/DB_PORT/DB_NAME env vars on every VPC-attached Lambda (resolvers + staplesNoteFn) — never the cluster admin secret', () => {
     const template = synth('dev');
     const vpcFunctions = ourFunctions(template).filter(([, r]) => r.Properties.VpcConfig);
-    expect(vpcFunctions).toHaveLength(49);
+    expect(vpcFunctions).toHaveLength(51);
     for (const [, fn] of vpcFunctions) {
       const env = (fn as unknown as { Properties: { Environment: { Variables: Record<string, unknown> } } })
         .Properties.Environment.Variables;
@@ -676,9 +676,9 @@ describe('ApiStack', () => {
     }
   });
 
-  it('declares exactly 53 AppSync Lambda data sources', () => {
+  it('declares exactly 56 AppSync data sources: 55 Lambda-backed plus the one NONE source for CatalogIngredient.aliases', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::DataSource', 53);
+    template.resourceCountIs('AWS::AppSync::DataSource', 56);
   });
 
   it('declares a resolver for Query._health', () => {
@@ -996,9 +996,9 @@ describe('ApiStack', () => {
     });
   });
 
-  it('declares exactly 53 resolvers total', () => {
+  it('declares exactly 56 resolvers total (53 Lambda-backed fields + ingredientCatalog and searchIngredients + the VTL-only CatalogIngredient.aliases)', () => {
     const template = synth('dev');
-    template.resourceCountIs('AWS::AppSync::Resolver', 53);
+    template.resourceCountIs('AWS::AppSync::Resolver', 56);
   });
 
   it('enables X-Ray tracing on the AppSync API', () => {

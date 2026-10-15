@@ -10,7 +10,8 @@
     "test": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage",
     "validate:recipes": "vitest run scripts/validateCuratedRecipes.test.ts scripts/validateCuratedRecipes.catalog.test.ts scripts/recipeCatalog.test.ts",
-    "wipe:accounts": "tsx scripts/accountWipe.ts"
+    "wipe:accounts": "tsx scripts/accountWipe.ts",
+    "catalog:build": "tsx scripts/buildCatalog.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "3.1131.0",

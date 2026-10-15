@@ -1139,6 +1139,47 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
       },
       "Type": "AWS::AppSync::Resolver",
     },
+    "ApiCatalogIngredientAliasesDataSource08E87E2F": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "Name": "CatalogIngredientAliasesDataSource",
+        "Type": "NONE",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiCatalogIngredientAliasesResolver307D4005": {
+      "DependsOn": [
+        "ApiCatalogIngredientAliasesDataSource08E87E2F",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "CatalogIngredientAliasesDataSource",
+        "FieldName": "aliases",
+        "Kind": "UNIT",
+        "RequestMappingTemplate": "{"version": "2018-05-29", "payload": {}}",
+        "ResponseMappingTemplate": "#set($all = $util.defaultIfNull($ctx.source.aliases, []))
+#set($limit = $util.defaultIfNull($ctx.args.limit, 5))
+#if($limit < 0)#set($limit = 0)#end
+#if($limit >= $all.size())
+$util.toJson($all)
+#else
+$util.toJson($all.subList(0, $limit))
+#end",
+        "TypeName": "CatalogIngredient",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
     "ApiClearMenuDayDataSourceC8FA95A3": {
       "Properties": {
         "ApiId": {
@@ -3157,6 +3198,111 @@ exports[`ApiStack > matches the known-good synthesized template snapshot (dev) 1
         "FieldName": "importRecipeFromUrl",
         "Kind": "UNIT",
         "TypeName": "Mutation",
+      },
+      "Type": "AWS::AppSync::Resolver",
+    },
+    "ApiIngredientCatalogDataSource9399B3F1": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "IngredientCatalogFn0255C00B",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "IngredientCatalogDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiIngredientCatalogDataSourceServiceRole2D41647D",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiIngredientCatalogDataSourceServiceRole2D41647D": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiIngredientCatalogDataSourceServiceRoleDefaultPolicy1CBAC3EA": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "IngredientCatalogFn0255C00B",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "IngredientCatalogFn0255C00B",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiIngredientCatalogDataSourceServiceRoleDefaultPolicy1CBAC3EA",
+        "Roles": [
+          {
+            "Ref": "ApiIngredientCatalogDataSourceServiceRole2D41647D",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiIngredientCatalogResolverBB911E91": {
+      "DependsOn": [
+        "ApiIngredientCatalogDataSource9399B3F1",
+        "ApiSchema510EECD7",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "IngredientCatalogDataSource",
+        "FieldName": "ingredientCatalog",
+        "Kind": "UNIT",
+        "TypeName": "Query",
       },
       "Type": "AWS::AppSync::Resolver",
     },
@@ -5541,6 +5687,42 @@ type Query {
   (no existence oracle), matching \`menu\`'s own pattern.
   """
   shoppingList(menuId: ID!): ShoppingList
+
+  """
+  The global ingredient catalog (E2E_MVP_PLAN.md §32.2 B1/B2): canonical
+  English names, category, allowed units, default unit and aliases
+  (arhar/tuvar -> Toor Dal). Reference data shared by every household, so
+  there is no household argument, but the caller must be signed in. With
+  \`category\` (a stored value such as \`dal\` or \`meat_fish\`, case-
+  insensitive) only that category is returned; an unknown category is an
+  empty list, not an error. Sorted by name.
+  """
+  ingredientCatalog(category: String): [CatalogIngredient!]!
+
+  """
+  Ranked search over catalog names and aliases (exact name, exact alias,
+  prefix, word prefix, substring; plural-insensitive). \`query\` is at most
+  100 characters; a blank query returns an empty list. \`limit\` defaults
+  to 20 and is clamped to 1..50. Intended for add-item pickers.
+  """
+  searchIngredients(query: String!, limit: Int = 20): [CatalogIngredient!]!
+}
+
+"""
+One canonical ingredient from the global catalog. \`category\` is the
+stored value (\`dal\`, \`meat_fish\`, ...); \`categoryLabel\` is the approved
+UI copy (E2E_MVP_PLAN.md §32.6). \`allowedUnits\` lists units in preference
+order and always contains \`defaultUnit\`. \`aliases\` are the other names
+that resolve to this ingredient, at most \`limit\` of them (default 5).
+"""
+type CatalogIngredient {
+  id: ID!
+  name: String!
+  category: String!
+  categoryLabel: String!
+  allowedUnits: [String!]!
+  defaultUnit: String!
+  aliases(limit: Int = 5): [String!]!
 }
 
 type Mutation {
@@ -6856,6 +7038,111 @@ input RecipePatchInput {
 ",
       },
       "Type": "AWS::AppSync::GraphQLSchema",
+    },
+    "ApiSearchIngredientsDataSource37A3AB84": {
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "LambdaConfig": {
+          "LambdaFunctionArn": {
+            "Fn::GetAtt": [
+              "SearchIngredientsFnD8037393",
+              "Arn",
+            ],
+          },
+        },
+        "Name": "SearchIngredientsDataSource",
+        "ServiceRoleArn": {
+          "Fn::GetAtt": [
+            "ApiSearchIngredientsDataSourceServiceRoleA1D7DD6F",
+            "Arn",
+          ],
+        },
+        "Type": "AWS_LAMBDA",
+      },
+      "Type": "AWS::AppSync::DataSource",
+    },
+    "ApiSearchIngredientsDataSourceServiceRoleA1D7DD6F": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "appsync.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiSearchIngredientsDataSourceServiceRoleDefaultPolicy42D780A6": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "SearchIngredientsFnD8037393",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "SearchIngredientsFnD8037393",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiSearchIngredientsDataSourceServiceRoleDefaultPolicy42D780A6",
+        "Roles": [
+          {
+            "Ref": "ApiSearchIngredientsDataSourceServiceRoleA1D7DD6F",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiSearchIngredientsResolver50800DC5": {
+      "DependsOn": [
+        "ApiSchema510EECD7",
+        "ApiSearchIngredientsDataSource37A3AB84",
+      ],
+      "Properties": {
+        "ApiId": {
+          "Fn::GetAtt": [
+            "ApiF70053CD",
+            "ApiId",
+          ],
+        },
+        "DataSourceName": "SearchIngredientsDataSource",
+        "FieldName": "searchIngredients",
+        "Kind": "UNIT",
+        "TypeName": "Query",
+      },
+      "Type": "AWS::AppSync::Resolver",
     },
     "ApiSetInRotationDataSource342BDEF4": {
       "Properties": {
@@ -10524,6 +10811,140 @@ input RecipePatchInput {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "IngredientCatalogFn0255C00B": {
+      "DependsOn": [
+        "IngredientCatalogFnServiceRoleDefaultPolicyBACE6DE4",
+        "IngredientCatalogFnServiceRole82E80117",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "IngredientCatalogFnServiceRole82E80117",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "IngredientCatalogFnServiceRole82E80117": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "IngredientCatalogFnServiceRoleDefaultPolicyBACE6DE4": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "IngredientCatalogFnServiceRoleDefaultPolicyBACE6DE4",
+        "Roles": [
+          {
+            "Ref": "IngredientCatalogFnServiceRole82E80117",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
     "JoinHouseholdFn6EF88BE1": {
       "DependsOn": [
         "JoinHouseholdFnServiceRoleDefaultPolicy454D7EC9",
@@ -13477,6 +13898,140 @@ input RecipePatchInput {
         "Roles": [
           {
             "Ref": "RotateInviteCodeFnServiceRole5310A1D0",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "SearchIngredientsFnD8037393": {
+      "DependsOn": [
+        "SearchIngredientsFnServiceRoleDefaultPolicy7A1C3C86",
+        "SearchIngredientsFnServiceRole9DD88501",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<ASSET_HASH>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ROLE_SECRET_ARN": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+            },
+            "DB_HOST": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointAddress064B8907",
+            },
+            "DB_NAME": "parimaan",
+            "DB_PORT": {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttAuroraCluster23D869C0EndpointPortC0E42C07",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Role": {
+          "Fn::GetAtt": [
+            "SearchIngredientsFnServiceRole9DD88501",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs24.x",
+        "Timeout": 45,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB",
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet1SubnetE62B1B9BEE029908",
+            },
+            {
+              "Fn::ImportValue": "Parimaan-dev-FakeNetwork:ExportsOutputRefVpcisolatedSubnet2Subnet392170557C27A199",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "SearchIngredientsFnServiceRole9DD88501": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "SearchIngredientsFnServiceRoleDefaultPolicy7A1C3C86": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "Parimaan-dev-FakeData:ExportsOutputRefAppRoleSecretA2E93149FFF363EE",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "SearchIngredientsFnServiceRoleDefaultPolicy7A1C3C86",
+        "Roles": [
+          {
+            "Ref": "SearchIngredientsFnServiceRole9DD88501",
           },
         ],
       },

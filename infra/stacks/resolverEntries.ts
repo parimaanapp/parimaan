@@ -368,6 +368,19 @@ export const DB_RESOLVERS: readonly DbResolverEntry[] = [
     needsExportsBucket: true,
   },
   {
+    // B2a: global ingredient catalog reads (no household scope; cached per container).
+    id: 'IngredientCatalog',
+    entryFile: 'ingredientCatalog.ts',
+    typeName: 'Query',
+    fieldName: 'ingredientCatalog',
+  },
+  {
+    id: 'SearchIngredients',
+    entryFile: 'searchIngredients.ts',
+    typeName: 'Query',
+    fieldName: 'searchIngredients',
+  },
+  {
     id: 'CookFromPantry',
     entryFile: 'cookFromPantry.ts',
     typeName: 'Mutation',
