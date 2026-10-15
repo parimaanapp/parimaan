@@ -13,12 +13,12 @@
     "wipe:accounts": "tsx scripts/accountWipe.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.933.0",
+    "@aws-sdk/client-cognito-identity-provider": "3.1131.0",
     "@aws-sdk/client-dynamodb": "^3.933.0",
     "@aws-sdk/client-lambda": "^3.1130.0",
     "@aws-sdk/client-s3": "^3.933.0",
     "@aws-sdk/client-secrets-manager": "^3.933.0",
-    "@aws-sdk/client-sts": "^3.933.0",
+    "@aws-sdk/client-sts": "3.1131.0",
     "@aws-sdk/lib-dynamodb": "^3.933.0",
     "@aws-sdk/s3-request-presigner": "^3.933.0",
     "@parimaan/shared": "workspace:*",
