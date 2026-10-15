@@ -4,6 +4,7 @@ import type {
   CognitoUser,
   DbDeleteResult,
   DbListing,
+  IdentityPool,
   ObjectRef,
   TargetInfo,
   WipeDb,
@@ -132,6 +133,28 @@ const createWorld = (options: FakePortsOptions): FakeWorld => ({
   listings: [],
 });
 
+const buildIdentity = (world: FakeWorld): IdentityPool => ({
+    // Case-sensitive on purpose: that is how Cognito's email filter behaves.
+    findByEmail: async (email) => world.cognito.filter((u) => u.email === email),
+    findBySub: async (sub) => world.cognito.filter((u) => u.sub === sub),
+    disableUser: async (username) => {
+      failIfRequested(world, 'cognito:disable');
+      world.events.push('cognito:disable');
+      world.disabled = [...world.disabled, username];
+    },
+    globalSignOut: async (username) => {
+      failIfRequested(world, 'cognito:signout');
+      world.events.push('cognito:signout');
+      world.signedOut = [...world.signedOut, username];
+    },
+    deleteUser: async (username) => {
+      failIfRequested(world, 'cognito:delete');
+      world.events.push('cognito:delete');
+      world.cognito = world.cognito.filter((u) => u.username !== username);
+    },
+  
+});
+
 const buildPorts = (world: FakeWorld, options: FakePortsOptions): WipePorts => ({
   db: new FakeDb(world),
   buckets: { uploads: 'uploads-bucket', exports: 'exports-bucket' },
@@ -159,26 +182,7 @@ const buildPorts = (world: FakeWorld, options: FakePortsOptions): WipePorts => (
       if (!world.retain.cache) world.cache = withoutDeleted(world.cache, keys);
     },
   },
-  identity: {
-    // Case-sensitive on purpose: that is how Cognito's email filter behaves.
-    findByEmail: async (email) => world.cognito.filter((u) => u.email === email),
-    findBySub: async (sub) => world.cognito.filter((u) => u.sub === sub),
-    disableUser: async (username) => {
-      failIfRequested(world, 'cognito:disable');
-      world.events.push('cognito:disable');
-      world.disabled = [...world.disabled, username];
-    },
-    globalSignOut: async (username) => {
-      failIfRequested(world, 'cognito:signout');
-      world.events.push('cognito:signout');
-      world.signedOut = [...world.signedOut, username];
-    },
-    deleteUser: async (username) => {
-      failIfRequested(world, 'cognito:delete');
-      world.events.push('cognito:delete');
-      world.cognito = world.cognito.filter((u) => u.username !== username);
-    },
-  },
+  identity: buildIdentity(world),
   target: {
     verify: async () => {
       if (options.targetError !== undefined) {

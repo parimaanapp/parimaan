@@ -131,6 +131,11 @@ const parseDatabaseUrl = (databaseUrl: string): DatabaseConnectionParts => {
     // Deliberately not echoing the value: it contains credentials.
     throw new Error('WIPE_DATABASE_URL is not a valid connection URL.');
   }
+  assertNoUrlOverrides(url, databaseUrl);
+  return extractParts(url);
+};
+
+const assertNoUrlOverrides = (url: URL, databaseUrl: string): void => {
   if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
     throw new Error('WIPE_DATABASE_URL must be a postgres:// or postgresql:// URL.');
   }
@@ -146,6 +151,9 @@ const parseDatabaseUrl = (databaseUrl: string): DatabaseConnectionParts => {
   if (url.hash.length > 0 || databaseUrl.includes('#')) {
     throw new Error('WIPE_DATABASE_URL must not contain a fragment.');
   }
+};
+
+const extractParts = (url: URL): DatabaseConnectionParts => {
   const name = decodeURIComponent(url.pathname.replace(/^\//, ''));
   if (name.length === 0 || name.includes('/')) {
     throw new Error(
@@ -184,7 +192,7 @@ const assertNoAmbientPgEnv = (env: Record<string, string | undefined>): void => 
  * remain as extra self-assertions only.
  * (The AWS profile itself is picked up by the SDK from `AWS_PROFILE`.)
  */
-export const loadWipeConfig = (env: Record<string, string | undefined>): WipeConfig => {
+const assertEnvIsAcceptable = (env: Record<string, string | undefined>): void => {
   if (env['WIPE_ENV'] !== 'dev') {
     throw new Error('WIPE_ENV must be set to "dev". This tool is dev-only and refuses anything else.');
   }
@@ -193,14 +201,20 @@ export const loadWipeConfig = (env: Record<string, string | undefined>): WipeCon
     throw new Error(`Missing required environment variable(s): ${missing.join(', ')}.`);
   }
   assertNoAmbientPgEnv(env);
-  const get = (name: (typeof REQUIRED)[number]): string => env[name] as string;
-  const names = [get('WIPE_UPLOADS_BUCKET'), get('WIPE_EXPORTS_BUCKET'), get('WIPE_CACHE_TABLE')];
+  const names = ['WIPE_UPLOADS_BUCKET', 'WIPE_EXPORTS_BUCKET', 'WIPE_CACHE_TABLE'].map(
+    (n) => env[n] as string,
+  );
   if (!names.every((n) => n.endsWith('-dev'))) {
     throw new Error('Bucket and table names must be -dev resources (they must end in "-dev").');
   }
-  if (!ACCOUNT_ID_PATTERN.test(get('WIPE_EXPECTED_ACCOUNT_ID'))) {
+  if (!ACCOUNT_ID_PATTERN.test(env['WIPE_EXPECTED_ACCOUNT_ID'] as string)) {
     throw new Error('WIPE_EXPECTED_ACCOUNT_ID must be the 12 digits of the AWS account id.');
   }
+};
+
+export const loadWipeConfig = (env: Record<string, string | undefined>): WipeConfig => {
+  assertEnvIsAcceptable(env);
+  const get = (name: (typeof REQUIRED)[number]): string => env[name] as string;
   const database = parseDatabaseUrl(get('WIPE_DATABASE_URL'));
   const servername = (env['WIPE_DATABASE_SERVERNAME'] ?? '').trim();
   return {

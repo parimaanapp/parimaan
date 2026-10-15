@@ -30,6 +30,16 @@ export interface TargetVerifierOptions {
   readonly expected: ExpectedTarget;
 }
 
+const assertDbName = async (options: TargetVerifierOptions): Promise<string> => {
+  const dbName = await options.dbName();
+  if (dbName !== options.expected.dbName) {
+    throw new Error(
+      `Refusing to run: connected database name "${dbName}" is not the expected name "${options.expected.dbName}".`,
+    );
+  }
+  return dbName;
+};
+
 /**
  * Binds the dev-only guard to the real targets, failing closed. Name suffixes
  * and `WIPE_ENV` are only self-assertions; this checks what the credentials and
@@ -61,12 +71,7 @@ export const createTargetVerifier = (options: TargetVerifierOptions): TargetVeri
       );
     }
 
-    const dbName = await options.dbName();
-    if (dbName !== options.expected.dbName) {
-      throw new Error(
-        `Refusing to run: connected database name "${dbName}" is not the expected name "${options.expected.dbName}".`,
-      );
-    }
+    const dbName = await assertDbName(options);
 
     return {
       accountId,
