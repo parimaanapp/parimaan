@@ -22,6 +22,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "almonds_californian",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "almonds_mamra",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
     "key": "amaranth_seeds",
     "unit": "cup",
     "baseUnit": "g",
@@ -44,6 +58,27 @@
   {
     "scope": "ingredient",
     "key": "apple",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "apple_fuji",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "apple_green",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "apple_kashmiri",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 180
@@ -120,6 +155,27 @@
   },
   {
     "scope": "ingredient",
+    "key": "bael_fruit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
+  },
+  {
+    "scope": "ingredient",
+    "key": "bagel",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "baguette",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
     "key": "bajra",
     "unit": "cup",
     "baseUnit": "g",
@@ -162,6 +218,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "banana_red",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "banana_robusta",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
     "key": "banana_stem",
     "unit": "piece",
     "baseUnit": "g",
@@ -176,6 +246,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "barley_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
     "key": "barnyard_millet",
     "unit": "cup",
     "baseUnit": "g",
@@ -183,7 +260,21 @@
   },
   {
     "scope": "ingredient",
+    "key": "barnyard_millet_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 115
+  },
+  {
+    "scope": "ingredient",
     "key": "basmati_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "basmati_rice_aged",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 185
@@ -211,6 +302,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "bean_sprouts",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "beef_steak",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
     "key": "beetroot",
     "unit": "piece",
     "baseUnit": "g",
@@ -232,6 +337,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "bhindi_baby",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "bilimbi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
     "key": "bitter_gourd",
     "unit": "piece",
     "baseUnit": "g",
@@ -243,6 +362,13 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 2
+  },
+  {
+    "scope": "ingredient",
+    "key": "black_chickpeas_roasted",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
   },
   {
     "scope": "ingredient",
@@ -267,6 +393,27 @@
   },
   {
     "scope": "ingredient",
+    "key": "black_soybean",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "black_turtle_beans",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "blackberry",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
     "key": "boiled_rice_parboiled",
     "unit": "cup",
     "baseUnit": "g",
@@ -285,6 +432,48 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "bread_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 125
+  },
+  {
+    "scope": "ingredient",
+    "key": "bread_garlic",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "bread_milk",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
+    "key": "bread_multigrain",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
+    "key": "bread_sourdough",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 50
+  },
+  {
+    "scope": "ingredient",
+    "key": "bread_whole_wheat",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
   },
   {
     "scope": "ingredient",
@@ -344,6 +533,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "brownie",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "browntop_millet",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
     "key": "brussels_sprouts",
     "unit": "piece",
     "baseUnit": "g",
@@ -358,10 +561,45 @@
   },
   {
     "scope": "ingredient",
+    "key": "bulgur",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "burger_bun_sesame",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
     "key": "cabbage",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 700
+  },
+  {
+    "scope": "ingredient",
+    "key": "cabbage_savoy",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 800
+  },
+  {
+    "scope": "ingredient",
+    "key": "cake_plum",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 70
+  },
+  {
+    "scope": "ingredient",
+    "key": "cake_sponge",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
   },
   {
     "scope": "ingredient",
@@ -383,6 +621,13 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "capsicum_orange",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
   },
   {
     "scope": "ingredient",
@@ -435,6 +680,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "chana_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
     "key": "chana_dal",
     "unit": "cup",
     "baseUnit": "g",
@@ -442,10 +694,38 @@
   },
   {
     "scope": "ingredient",
+    "key": "chana_dal_roasted_split",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "chapati_ready",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 45
+  },
+  {
+    "scope": "ingredient",
+    "key": "chawli_beans",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
     "key": "chayote",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "cherry_sour",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
   },
   {
     "scope": "ingredient",
@@ -463,10 +743,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "chicken_feet",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
     "key": "chicken_legs",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "chicken_neck",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
   },
   {
     "scope": "ingredient",
@@ -498,6 +792,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "chorizo",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "ciabatta",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
     "key": "cinnamon_stick",
     "unit": "piece",
     "baseUnit": "g",
@@ -516,6 +824,13 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 5
+  },
+  {
+    "scope": "ingredient",
+    "key": "coconut_desiccated",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 85
   },
   {
     "scope": "ingredient",
@@ -540,6 +855,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "coconut_oil_virgin",
+    "unit": "cup",
+    "baseUnit": "ml",
+    "amount": 240
+  },
+  {
+    "scope": "ingredient",
     "key": "colocasia_arbi",
     "unit": "piece",
     "baseUnit": "g",
@@ -551,6 +873,13 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "corn_popcorn_kernels",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 190
   },
   {
     "scope": "ingredient",
@@ -568,10 +897,45 @@
   },
   {
     "scope": "ingredient",
+    "key": "country_chicken",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1200
+  },
+  {
+    "scope": "ingredient",
+    "key": "couscous",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
     "key": "cowpea_pods",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "cracked_wheat_fine",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "cracker",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "cream_biscuit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 12
   },
   {
     "scope": "ingredient",
@@ -610,10 +974,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "daikon_radish",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
+  },
+  {
+    "scope": "ingredient",
     "key": "dalia_broken_wheat",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "dalimbi",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "dates_ajwa",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 12
   },
   {
     "scope": "ingredient",
@@ -631,6 +1016,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "dates_medjool",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
     "key": "dates_seedless",
     "unit": "cup",
     "baseUnit": "g",
@@ -638,10 +1030,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "dates_sukkari",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 12
+  },
+  {
+    "scope": "ingredient",
     "key": "dhokla_flour",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 115
+  },
+  {
+    "scope": "ingredient",
+    "key": "dilpasand",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 90
   },
   {
     "scope": "ingredient",
@@ -680,6 +1086,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "dried_turmeric_root",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
     "key": "drumstick",
     "unit": "piece",
     "baseUnit": "g",
@@ -698,6 +1111,20 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "duck_breast",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "edamame",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
   },
   {
     "scope": "ingredient",
@@ -722,10 +1149,38 @@
   },
   {
     "scope": "ingredient",
+    "key": "egg_free_range",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 55
+  },
+  {
+    "scope": "ingredient",
+    "key": "egg_omega_3",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 55
+  },
+  {
+    "scope": "ingredient",
+    "key": "egg_puff",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
     "key": "egg_quail",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 10
+  },
+  {
+    "scope": "ingredient",
+    "key": "egg_yolk",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 18
   },
   {
     "scope": "ingredient",
@@ -743,6 +1198,34 @@
   },
   {
     "scope": "ingredient",
+    "key": "filo_pastry",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "flattened_millet_ragi_poha",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "flattened_rice_brown",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "flattened_rice_red_poha",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
     "key": "flavoured_yogurt",
     "unit": "cup",
     "baseUnit": "g",
@@ -757,6 +1240,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "flaxseed_meal",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "focaccia",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
     "key": "foxtail_millet",
     "unit": "cup",
     "baseUnit": "g",
@@ -764,10 +1261,45 @@
   },
   {
     "scope": "ingredient",
+    "key": "foxtail_millet_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 115
+  },
+  {
+    "scope": "ingredient",
     "key": "french_beans",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "fresh_green_chickpeas",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 160
+  },
+  {
+    "scope": "ingredient",
+    "key": "frozen_dumplings",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "frozen_falafel_balls",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "frozen_fish_fingers",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 28
   },
   {
     "scope": "ingredient",
@@ -810,6 +1342,20 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "gram_flour_coarse",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "grapefruit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
   },
   {
     "scope": "ingredient",
@@ -869,10 +1415,38 @@
   },
   {
     "scope": "ingredient",
+    "key": "gunda",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "ham",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "hand_pounded_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
     "key": "hemp_seeds",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "hog_plum",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
   },
   {
     "scope": "ingredient",
@@ -883,10 +1457,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "hot_dog_sausage",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 45
+  },
+  {
+    "scope": "ingredient",
     "key": "hung_curd",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 245
+  },
+  {
+    "scope": "ingredient",
+    "key": "idiyappam_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "idiyappam_ready",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
   },
   {
     "scope": "ingredient",
@@ -912,6 +1507,13 @@
   {
     "scope": "ingredient",
     "key": "ivy_gourd",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "ivy_gourd_tendli",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 15
@@ -960,10 +1562,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "joha_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
     "key": "jowar",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "jowar_flakes",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
   },
   {
     "scope": "ingredient",
@@ -988,6 +1604,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "kala_chana_dal",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
     "key": "kantola",
     "unit": "piece",
     "baseUnit": "g",
@@ -999,6 +1622,27 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 8
+  },
+  {
+    "scope": "ingredient",
+    "key": "ker_berries",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 2
+  },
+  {
+    "scope": "ingredient",
+    "key": "kerala_parotta",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "khapli_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
   },
   {
     "scope": "ingredient",
@@ -1030,6 +1674,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "kulcha",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
     "key": "kulthi",
     "unit": "cup",
     "baseUnit": "g",
@@ -1058,6 +1709,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "lemon_gondhoraj",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
     "key": "lemon_sweet",
     "unit": "piece",
     "baseUnit": "g",
@@ -1079,6 +1737,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "lime_key",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
     "key": "litchi",
     "unit": "piece",
     "baseUnit": "g",
@@ -1090,6 +1755,13 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 190
+  },
+  {
+    "scope": "ingredient",
+    "key": "little_millet_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 115
   },
   {
     "scope": "ingredient",
@@ -1111,6 +1783,13 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "madras_cucumber",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
   },
   {
     "scope": "ingredient",
@@ -1142,10 +1821,101 @@
   },
   {
     "scope": "ingredient",
+    "key": "mandarin_coorg",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_alphonso",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_banganapalli",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 350
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_chausa",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_dasheri",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_kesar",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 220
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_langra",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_malgoba",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 350
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_pairi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_rajapuri",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
     "key": "mango_ripe",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "mango_totapuri",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 350
+  },
+  {
+    "scope": "ingredient",
+    "key": "marie_biscuit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "ingredient",
+    "key": "maska_bun",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
   },
   {
     "scope": "ingredient",
@@ -1170,6 +1940,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "mirch_banana_pepper",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
     "key": "mixed_dry_fruits",
     "unit": "cup",
     "baseUnit": "g",
@@ -1177,10 +1954,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "mixed_nuts",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
+    "key": "mogri",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "ingredient",
     "key": "moong_dal_flour",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "moong_dal_mogar",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
   },
   {
     "scope": "ingredient",
@@ -1202,6 +2000,27 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "moringa_pods",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "moth_dal",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "muffin",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 80
   },
   {
     "scope": "ingredient",
@@ -1247,10 +2066,38 @@
   },
   {
     "scope": "ingredient",
+    "key": "muskmelon_honeydew",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1500
+  },
+  {
+    "scope": "ingredient",
+    "key": "mustard_oil_kachi_ghani",
+    "unit": "cup",
+    "baseUnit": "ml",
+    "amount": 240
+  },
+  {
+    "scope": "ingredient",
+    "key": "nankhatai",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
     "key": "navratan_dal",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "nectarine",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 140
   },
   {
     "scope": "ingredient",
@@ -1265,6 +2112,13 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "oat_groats",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
   },
   {
     "scope": "ingredient",
@@ -1289,10 +2143,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "olive_oil_extra_virgin",
+    "unit": "cup",
+    "baseUnit": "ml",
+    "amount": 240
+  },
+  {
+    "scope": "ingredient",
     "key": "onion",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "onion_red",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
   },
   {
     "scope": "ingredient",
@@ -1303,10 +2171,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "orange_blood",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
     "key": "orange_kinnow",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "orange_nagpur",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "osmania_biscuit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 10
   },
   {
     "scope": "ingredient",
@@ -1317,10 +2206,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "pani_puri_shells",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 3
+  },
+  {
+    "scope": "ingredient",
+    "key": "papaya_red_lady",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 800
+  },
+  {
+    "scope": "ingredient",
     "key": "papaya_ripe",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 800
+  },
+  {
+    "scope": "ingredient",
+    "key": "papdi_flat_beans",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 6
   },
   {
     "scope": "ingredient",
@@ -1331,10 +2241,45 @@
   },
   {
     "scope": "ingredient",
+    "key": "parval",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 30
+  },
+  {
+    "scope": "ingredient",
+    "key": "passion_fruit",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
     "key": "pasta_dry",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "pav_ladi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "pav_whole_wheat",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 35
+  },
+  {
+    "scope": "ingredient",
+    "key": "pavta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
   },
   {
     "scope": "ingredient",
@@ -1352,6 +2297,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "peanuts_fried_masala",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
     "key": "peanuts_skinless",
     "unit": "cup",
     "baseUnit": "g",
@@ -1366,10 +2318,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "pear_nashpati",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
     "key": "pearl_onions",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 10
+  },
+  {
+    "scope": "ingredient",
+    "key": "peas_in_pod",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
   },
   {
     "scope": "ingredient",
@@ -1380,10 +2346,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "pie_crust",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
+    "key": "pine_seeds_chilgoza",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
     "key": "pineapple",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 1000
+  },
+  {
+    "scope": "ingredient",
+    "key": "pineapple_queen",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 700
   },
   {
     "scope": "ingredient",
@@ -1401,10 +2388,52 @@
   },
   {
     "scope": "ingredient",
+    "key": "pistachios_shelled",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "pita_bread",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "pizza_base_wheat",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "pizza_dough",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
+    "key": "plantain_ripe",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
     "key": "plum",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "poha_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
   },
   {
     "scope": "ingredient",
@@ -1436,6 +2465,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "pomegranate_bhagwa",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 250
+  },
+  {
+    "scope": "ingredient",
     "key": "pomelo",
     "unit": "piece",
     "baseUnit": "g",
@@ -1450,10 +2486,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "potato_starch",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 140
+  },
+  {
+    "scope": "ingredient",
     "key": "powdered_sugar",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "prosciutto",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
   },
   {
     "scope": "ingredient",
@@ -1471,10 +2521,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "puff_pastry_sheet",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "puffed_amaranth",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
     "key": "puffed_millet",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "puffed_wheat",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 20
   },
   {
     "scope": "ingredient",
@@ -1489,6 +2560,27 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "pumpkin_seeds_roasted",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "puri_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "purple_yam",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
   },
   {
     "scope": "ingredient",
@@ -1534,6 +2626,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "raja_mirchi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "ingredient",
     "key": "rajgira_atta",
     "unit": "cup",
     "baseUnit": "g",
@@ -1552,6 +2651,13 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "raspberry",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 125
   },
   {
     "scope": "ingredient",
@@ -1618,6 +2724,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "red_pumpkin",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 1500
+  },
+  {
+    "scope": "ingredient",
     "key": "red_rice",
     "unit": "cup",
     "baseUnit": "g",
@@ -1667,6 +2780,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "ridge_gourd_turai",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
     "key": "roasted_chana",
     "unit": "cup",
     "baseUnit": "g",
@@ -1695,6 +2815,27 @@
   },
   {
     "scope": "ingredient",
+    "key": "rocket_leaves",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "romaine_lettuce",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 300
+  },
+  {
+    "scope": "ingredient",
+    "key": "rose_apple",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
     "key": "sabudana",
     "unit": "cup",
     "baseUnit": "g",
@@ -1709,10 +2850,80 @@
   },
   {
     "scope": "ingredient",
+    "key": "sama_rice",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 180
+  },
+  {
+    "scope": "ingredient",
+    "key": "samosa_patti",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "sangri_beans",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 3
+  },
+  {
+    "scope": "ingredient",
+    "key": "sattu_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 110
+  },
+  {
+    "scope": "ingredient",
+    "key": "seeraga_samba",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 185
+  },
+  {
+    "scope": "ingredient",
+    "key": "self_raising_flour",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "semolina_durum",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "sesame_oil_toasted",
+    "unit": "cup",
+    "baseUnit": "ml",
+    "amount": 240
+  },
+  {
+    "scope": "ingredient",
     "key": "shallots",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "sharbati_atta",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "shortcrust_pastry",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 100
   },
   {
     "scope": "ingredient",
@@ -1730,6 +2941,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "snow_peas",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 3
+  },
+  {
+    "scope": "ingredient",
     "key": "sona_masoori_rice",
     "unit": "cup",
     "baseUnit": "g",
@@ -1738,6 +2956,13 @@
   {
     "scope": "ingredient",
     "key": "sooji",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 170
+  },
+  {
+    "scope": "ingredient",
+    "key": "sooji_coarse",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 170
@@ -1758,10 +2983,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "soya_beans_roasted",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
+  },
+  {
+    "scope": "ingredient",
     "key": "soya_chunks",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "soya_granules",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 80
   },
   {
     "scope": "ingredient",
@@ -1776,6 +3015,20 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 1000
+  },
+  {
+    "scope": "ingredient",
+    "key": "spiny_gourd_kakrol",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "split_peas_green",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 200
   },
   {
     "scope": "ingredient",
@@ -1856,10 +3109,31 @@
   },
   {
     "scope": "ingredient",
+    "key": "sweet_potato_white",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
     "key": "sword_beans",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "tandoori_roti",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "tangerine",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 90
   },
   {
     "scope": "ingredient",
@@ -1874,6 +3148,13 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "taro_tuber_large",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
   },
   {
     "scope": "ingredient",
@@ -1898,6 +3179,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "toast_packaged",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 8
+  },
+  {
+    "scope": "ingredient",
     "key": "tomato",
     "unit": "piece",
     "baseUnit": "g",
@@ -1905,10 +3193,45 @@
   },
   {
     "scope": "ingredient",
+    "key": "tomato_desi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 70
+  },
+  {
+    "scope": "ingredient",
+    "key": "tomato_roma",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
     "key": "toor_dal",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 200
+  },
+  {
+    "scope": "ingredient",
+    "key": "tortilla_corn",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 25
+  },
+  {
+    "scope": "ingredient",
+    "key": "tortilla_wheat",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "turkey_breast",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
   },
   {
     "scope": "ingredient",
@@ -1923,6 +3246,13 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 100
+  },
+  {
+    "scope": "ingredient",
+    "key": "tuvar_lilva",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 150
   },
   {
     "scope": "ingredient",
@@ -1961,6 +3291,20 @@
   },
   {
     "scope": "ingredient",
+    "key": "valor_papdi",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "ingredient",
+    "key": "veg_puff",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 70
+  },
+  {
+    "scope": "ingredient",
     "key": "vermicelli",
     "unit": "cup",
     "baseUnit": "g",
@@ -1982,10 +3326,24 @@
   },
   {
     "scope": "ingredient",
+    "key": "walnuts_kashmiri_kernels",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
+  },
+  {
+    "scope": "ingredient",
     "key": "water_chestnut_fresh",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 15
+  },
+  {
+    "scope": "ingredient",
+    "key": "water_chestnut_singhara",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 20
   },
   {
     "scope": "ingredient",
@@ -2000,6 +3358,41 @@
     "unit": "cup",
     "baseUnit": "g",
     "amount": 130
+  },
+  {
+    "scope": "ingredient",
+    "key": "watermelon_yellow",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 3000
+  },
+  {
+    "scope": "ingredient",
+    "key": "wheat_bran",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "wheat_flakes",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "wheat_flour_pizza_00",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 120
+  },
+  {
+    "scope": "ingredient",
+    "key": "wheat_germ",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 100
   },
   {
     "scope": "ingredient",
@@ -2038,6 +3431,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "wood_apple_kaith",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 200
+  },
+  {
+    "scope": "ingredient",
     "key": "yam_elephant_foot",
     "unit": "piece",
     "baseUnit": "g",
@@ -2056,6 +3456,13 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 1000
+  },
+  {
+    "scope": "ingredient",
+    "key": "yongchak",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 10
   },
   {
     "scope": "ingredient",

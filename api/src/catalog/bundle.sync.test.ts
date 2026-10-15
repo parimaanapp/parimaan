@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildCatalogBundle, serialiseBundleFile } from './buildBundle.js';
 import { CATALOG_SOURCE_FILES, CATALOG_BUNDLE_FILES } from './sourceFiles.js';
 import { catalogBundle, catalogContentHash } from './bundle.js';
-import { buildCatalogIndex, resolveIngredient } from '../domain/ingredientCatalog.js';
+import { buildCatalogIndex, normaliseKey, resolveIngredient } from '../domain/ingredientCatalog.js';
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -54,6 +54,34 @@ describe('committed catalog bundle', () => {
     expect(idFor('lal mirch')).toBe('red_chilli_powder');
     expect(idFor('kashmiri lal mirch powder')).toBe('red_chilli_powder');
     expect(idFor('doodh')).toBe('milk');
+  });
+});
+
+describe('alias collisions in the real data', () => {
+  const owners = new Map<string, Set<string>>();
+  const canonicalKeys = new Set<string>();
+  for (const entry of catalogBundle.ingredients) {
+    const nameKey = normaliseKey(entry.canonicalName, { keepParentheticals: true });
+    canonicalKeys.add(nameKey);
+    for (const alias of entry.aliases) {
+      const key = normaliseKey(alias, { keepParentheticals: true });
+      if (key !== '' && key !== nameKey) {
+        owners.set(key, (owners.get(key) ?? new Set()).add(entry.id));
+      }
+    }
+  }
+  const colliding = [...owners].filter(([key, ids]) => ids.size > 1 && !canonicalKeys.has(key));
+
+  it('reports every colliding alias as ambiguous with all of its owners', () => {
+    const index = buildCatalogIndex(catalogBundle.ingredients);
+    expect(colliding.length).toBeGreaterThanOrEqual(0);
+    for (const [key, ids] of colliding) {
+      const result = resolveIngredient(key, index);
+      expect(result?.status, key).toBe('ambiguous');
+      if (result?.status === 'ambiguous') {
+        expect(result.candidates.map((c) => c.id).sort(), key).toEqual([...ids].sort());
+      }
+    }
   });
 });
 

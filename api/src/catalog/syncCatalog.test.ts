@@ -5,6 +5,7 @@ import type { TestDatabase } from '../testing/postgres.js';
 import { syncCatalog } from './syncCatalog.js';
 import { catalogBundle, catalogContentHash } from './bundle.js';
 import type { CatalogBundle } from './buildBundle.js';
+import { normaliseKey } from '../domain/ingredientCatalog.js';
 import type { CatalogEntry } from '../domain/ingredientCatalog.js';
 
 const entry = (overrides: Partial<CatalogEntry> & Pick<CatalogEntry, 'id' | 'canonicalName'>): CatalogEntry => ({
@@ -176,6 +177,17 @@ describe('syncCatalog (real Postgres)', () => {
     expect(result.status).toBe('synced');
     expect(await count('ingredient_catalog')).toBe(catalogBundle.ingredients.length);
     expect(await count('unit_conversions')).toBe(catalogBundle.conversions.length);
+
+    // No alias dropped: one row per distinct (normalised key, ingredient) pair.
+    const pairs = new Set<string>();
+    for (const item of catalogBundle.ingredients) {
+      const own = normaliseKey(item.canonicalName, { keepParentheticals: true });
+      for (const alias of item.aliases) {
+        const key = normaliseKey(alias, { keepParentheticals: true });
+        if (key !== '' && key !== own) pairs.add(`${key}\u0000${item.id}`);
+      }
+    }
+    expect(await count('ingredient_aliases')).toBe(pairs.size);
 
     const app = new Client({ connectionString: db.appUri });
     await app.connect();
