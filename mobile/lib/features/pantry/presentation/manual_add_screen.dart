@@ -99,20 +99,27 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
 
   void _onFieldChanged() => setState(() {});
 
-  /// Toggles [category]. Picking one pre-fills its default unit when the
-  /// unit is empty or not valid for it — except an existing item's own unit,
-  /// which is never overwritten (nothing may silently change in edit mode).
+  /// Toggles [category]. The new category's default unit is filled in only
+  /// when the unit field is empty or still holds the previous category's
+  /// default (i.e. was never user-set), and never over an existing item's
+  /// own stored unit. A unit the user typed or chose is left alone.
   void _selectCategory(String category) {
     setState(() {
-      _category = _category == category ? null : category;
+      final String? previous = _category;
+      _category = previous == category ? null : category;
       final String? selected = _category;
       if (selected == null) {
         return;
       }
       final String unit = _unit.text.trim();
-      final bool valid = unitsForCategory(selected).contains(unit) ||
-          unit == widget.initialItem?.unit;
-      if (unit.isEmpty || !valid) {
+      final String? previousDefault = defaultUnitForCategory(previous);
+      final bool isStoredUnit = widget.initialItem != null &&
+          unit.toLowerCase() ==
+              widget.initialItem!.unit.trim().toLowerCase();
+      final bool neverUserSet = unit.isEmpty ||
+          (previousDefault != null &&
+              unit.toLowerCase() == previousDefault.toLowerCase());
+      if (neverUserSet && !isStoredUnit) {
         _unit.text = defaultUnitForCategory(selected) ?? unit;
       }
     });
@@ -270,7 +277,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                           PChip(
                             key: ManualAddScreen.unitChipKey(unit),
                             label: unit,
-                            selected: _unit.text.trim() == unit,
+                            selected: _unit.text.trim().toLowerCase() == unit.toLowerCase(),
                             onTap: isBusy ? null : () => _unit.text = unit,
                           ),
                       ],

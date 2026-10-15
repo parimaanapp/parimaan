@@ -144,7 +144,8 @@ class IngredientRowEditor extends StatelessWidget {
                 PChip(
                   key: unitChipKey(index, unit),
                   label: unit,
-                  selected: unitController.text.trim() == unit,
+                  selected:
+                      unitController.text.trim().toLowerCase() == unit.toLowerCase(),
                   onTap: enabled ? () => unitController.text = unit : null,
                 ),
             ],

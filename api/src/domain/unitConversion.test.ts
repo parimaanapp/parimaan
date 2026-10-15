@@ -45,4 +45,15 @@ describe('convertQuantity', () => {
   it('canonicalizes case/whitespace before matching (KG vs kg)', () => {
     expect(convertQuantity(1, 'KG', ' g ')).toBeCloseTo(1000, 6);
   });
+
+  it('converts dozen <-> piece (1 dozen = 12 piece)', () => {
+    expect(convertQuantity(2, 'dozen', 'piece')).toBe(24);
+    expect(convertQuantity(6, 'piece', 'dozen')).toBeCloseTo(0.5, 6);
+    expect(convertQuantity(1, ' Dozen ', 'PIECE')).toBe(12);
+  });
+
+  it('does not convert dozen to a mass or volume unit', () => {
+    expect(convertQuantity(1, 'dozen', 'g')).toBeNull();
+    expect(convertQuantity(1, 'dozen', 'ml')).toBeNull();
+  });
 });

@@ -24,6 +24,11 @@ export const KNOWN_PANTRY_UNITS = [
   // no mass/volume conversion-table entry (unitConversion.ts's own doc).
   'jar',
   'bottle',
+  // A5 catalog units. `pack` in the catalog is the same unit as `packet`.
+  'dozen',
+  'slice',
+  'loaf',
+  'pinch',
 ] as const;
 
 export type KnownPantryUnit = (typeof KNOWN_PANTRY_UNITS)[number];

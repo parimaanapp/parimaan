@@ -26,6 +26,9 @@ List<String> _splitCsvLine(String line) {
   return cols;
 }
 
+/// The catalog's `pack` is the app's `packet`.
+String _catalogUnit(String unit) => unit == 'pack' ? 'packet' : unit;
+
 void main() {
   group('categoryUnits table', () {
     test('has an entry for every known category and nothing else', () {
@@ -78,18 +81,44 @@ void main() {
       expect(unitsWithCurrent('dal', null), <String>['g', 'kg', 'cup']);
     });
 
+    test('unitsWithCurrent compares case-insensitively and never rewrites casing', () {
+      expect(unitsWithCurrent('dal', 'KG'), <String>['g', 'kg', 'cup']);
+      expect(unitsWithCurrent('dal', ' Kg '), <String>['g', 'kg', 'cup']);
+      expect(unitsWithCurrent('dal', 'ML'), <String>['g', 'kg', 'cup', 'ML']);
+    });
+
+    test('every offered unit is a known pantry unit', () {
+      for (final MapEntry<String, CategoryUnits> e in categoryUnits.entries) {
+        for (final String unit in e.value.units) {
+          expect(knownPantryUnits, contains(unit), reason: '${e.key}: $unit');
+        }
+      }
+      for (final String unit in recipeUnits) {
+        expect(knownPantryUnits, contains(unit), reason: 'recipe: $unit');
+      }
+    });
+
+    test('pack is not a separate unit (it is packet)', () {
+      expect(
+        unitsForCategory('bakery'),
+        <String>['piece', 'slice', 'loaf', 'g', 'packet'],
+      );
+    });
+
     test('recipe units are the recipe-relevant union', () {
       expect(recipeUnits, <String>[
         'g', 'kg', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'piece', 'bunch', 'pinch', 'packet',
+        'jar', 'bottle',
       ]);
     });
 
     test('matches docs/catalog/ingredients.csv (union per app_category)', () {
       final File csv = File('../docs/catalog/ingredients.csv');
-      if (!csv.existsSync()) {
-        markTestSkipped('catalog CSV not reachable from this working dir');
-        return;
-      }
+      expect(
+        csv.existsSync(),
+        isTrue,
+        reason: 'docs/catalog/ingredients.csv must be reachable from mobile/',
+      );
       final List<String> lines = csv.readAsLinesSync();
       final List<String> header = lines.first.split(',');
       final int catIdx = header.indexOf('app_category');
@@ -100,8 +129,10 @@ void main() {
       for (final String line in lines.skip(1).where((String l) => l.isNotEmpty)) {
         final List<String> cols = _splitCsvLine(line);
         union.putIfAbsent(cols[catIdx], () => <String>{})
-            .addAll(cols[unitsIdx].split('|'));
-        defaults.putIfAbsent(cols[catIdx], () => <String>{}).add(cols[defIdx]);
+            .addAll(cols[unitsIdx].split('|').map(_catalogUnit));
+        defaults
+            .putIfAbsent(cols[catIdx], () => <String>{})
+            .add(_catalogUnit(cols[defIdx]));
       }
       expect(union.keys.toSet(), categoryUnits.keys.toSet());
       union.forEach((String category, Set<String> units) {

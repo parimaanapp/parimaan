@@ -36,6 +36,16 @@ const VOLUME_ML_PER_UNIT: Partial<Record<string, number>> = {
 };
 
 /**
+ * Count family: eggs bought by the dozen must still match a recipe line in
+ * pieces. Only `piece` and `dozen` inter-convert; `packet`/`bunch` etc. stay
+ * exact-match-only.
+ */
+const COUNT_PIECES_PER_UNIT: Partial<Record<string, number>> = {
+  piece: 1,
+  dozen: 12,
+};
+
+/**
  * Converts `quantity` from `fromUnit` to `toUnit` when both canonicalize
  * into the same family (mass or volume), returning `null` otherwise —
  * cross-family, or either unit outside both tables (D3's "small hardcoded
@@ -61,6 +71,12 @@ export const convertQuantity = (quantity: number, fromUnit: string, toUnit: stri
   const toMl = VOLUME_ML_PER_UNIT[to];
   if (fromMl !== undefined && toMl !== undefined) {
     return (quantity * fromMl) / toMl;
+  }
+
+  const fromPieces = COUNT_PIECES_PER_UNIT[from];
+  const toPieces = COUNT_PIECES_PER_UNIT[to];
+  if (fromPieces !== undefined && toPieces !== undefined) {
+    return (quantity * fromPieces) / toPieces;
   }
 
   return null;

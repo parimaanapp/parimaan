@@ -38,7 +38,7 @@ const Map<String, CategoryUnits> categoryUnits = <String, CategoryUnits>{
   'condiment': CategoryUnits(
     <String>['g', 'ml', 'tbsp', 'tsp', 'bottle', 'jar', 'packet'],
   ),
-  'bakery': CategoryUnits(<String>['piece', 'slice', 'pack', 'loaf', 'g']),
+  'bakery': CategoryUnits(<String>['piece', 'slice', 'loaf', 'g', 'packet']),
   'snacks': CategoryUnits(<String>['packet', 'g', 'piece']),
   'beverages': CategoryUnits(
     <String>['g', 'ml', 'l', 'cup', 'tsp', 'tbsp', 'packet', 'bottle'],
@@ -61,6 +61,8 @@ const List<String> recipeUnits = <String>[
   'bunch',
   'pinch',
   'packet',
+  'jar',
+  'bottle',
 ];
 
 /// Ordered units for [category]; every known unit when the category is
@@ -72,12 +74,18 @@ List<String> unitsForCategory(String? category) =>
 String? defaultUnitForCategory(String? category) =>
     categoryUnits[category]?.units.first;
 
+/// Case-insensitive, trimmed membership test; never rewrites [unit].
+bool unitInList(List<String> units, String? unit) {
+  final String needle = (unit ?? '').trim().toLowerCase();
+  return units.any((String u) => u.toLowerCase() == needle);
+}
+
 /// [unitsForCategory] plus [current] appended when it is non-empty and not
 /// in the list, so an existing item's out-of-list unit never disappears.
 List<String> unitsWithCurrent(String? category, String? current) {
   final List<String> units = unitsForCategory(category);
   final String trimmed = (current ?? '').trim();
-  if (trimmed.isEmpty || units.contains(trimmed)) {
+  if (trimmed.isEmpty || unitInList(units, trimmed)) {
     return units;
   }
   return <String>[...units, trimmed];
