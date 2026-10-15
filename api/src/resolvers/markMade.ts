@@ -21,6 +21,8 @@ import type { GraphQLMenuItem } from '../mappers/menu.js';
 import { markMadeArgsSchema } from '../validation/menu.js';
 import { ConflictError, ForbiddenError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadUnitConverter } from './ingredientCanonicaliser.js';
+import type { UnitConverter } from '../domain/ingredientConversion.js';
 
 /**
  * The membership-check + read-only half of `markMade` (household
@@ -41,6 +43,7 @@ const loadMarkMadeDeduction = async (
   client: PoolClient,
   callerUserId: string,
   menuItemId: string,
+  convert: UnitConverter | undefined,
 ): Promise<{
   householdId: string;
   recipe: RecipeRow;
@@ -70,6 +73,7 @@ const loadMarkMadeDeduction = async (
     { servings: recipe.servings, ingredients },
     found.servingsOverride,
     pantryItemsBeforeDeduction,
+    convert,
   );
 
   return { householdId: found.householdId, recipe, pantryItemsBeforeDeduction, deductionLines };
@@ -81,6 +85,8 @@ export interface MarkMadeResolverDeps {
   applyDeductionLines?: typeof applyDeductionLinesRepo;
   /** Injectable seam matching `setMenuItemMadeAt`'s own signature, for forced-failure atomicity tests. */
   setMenuItemMadeAt?: typeof setMenuItemMadeAtRepo;
+  /** Catalog-aware unit conversion seam (B2b); `undefined` result = physical unit families only. */
+  loadUnitConverter?: (pool: Pool) => Promise<UnitConverter | undefined>;
 }
 
 export const productionDeps: MarkMadeResolverDeps = { getPool };
@@ -139,6 +145,7 @@ export const createMarkMadeHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const convert = await (deps.loadUnitConverter ?? loadUnitConverter)(pool);
 
     return withUserTransaction(
       callerUser.id,
@@ -147,6 +154,7 @@ export const createMarkMadeHandler =
           client,
           callerUser.id,
           menuItemId,
+          convert,
         );
 
         const applyDeductionLines = deps.applyDeductionLines ?? applyDeductionLinesRepo;

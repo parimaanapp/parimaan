@@ -1,5 +1,6 @@
 import { canonicalizePantryUnit } from './pantryUnits.js';
-import { convertQuantity } from './unitConversion.js';
+import { defaultUnitConverter } from './ingredientConversion.js';
+import type { UnitConverter } from './ingredientConversion.js';
 
 /** A single recipe ingredient as `generateShoppingList`'s resolver reads it from `recipe_ingredients` — free text `name`/`unit`/`category` (PRD §9), matching `recipe_ingredients`'s real DDL. */
 export interface RecipeIngredient {
@@ -8,6 +9,8 @@ export interface RecipeIngredient {
   unit: string | null;
   category: string | null;
   isStaple: boolean;
+  /** Catalog id (B2b); `null`/absent = not resolved, matched by name only. */
+  ingredientId?: string | null;
 }
 
 export interface AggregationRecipe {
@@ -33,12 +36,14 @@ export interface AggregatedIngredient {
   unit: string | null;
   category: string | null;
   sourceRecipeId: string;
+  ingredientId?: string | null;
 }
 
 export interface PantryItemForSubtraction {
   name: string;
   quantity: number | null;
   unit: string | null;
+  ingredientId?: string | null;
 }
 
 export interface CategorizedGroup {
@@ -164,14 +169,41 @@ export const normalizeIngredientName = normalize;
  * reason `namesMatch` is: `haveIt`'s pantry upsert-match (W11 S3) reuses
  * this same unit-compatibility rule rather than reimplementing it.
  */
-export const unitsCompatible = (canonicalA: string | null, canonicalB: string | null): boolean => {
+export const unitsCompatible = (
+  canonicalA: string | null,
+  canonicalB: string | null,
+  convert: UnitConverter = defaultUnitConverter,
+  ingredientId: string | null = null,
+): boolean => {
   if (canonicalA === canonicalB) {
     return true;
   }
   if (canonicalA === null || canonicalB === null) {
     return false;
   }
-  return convertQuantity(1, canonicalA, canonicalB) !== null;
+  return convert(ingredientId, 1, canonicalA, canonicalB) !== null;
+};
+
+/** What identifies an ingredient for matching: its normalised name and, when resolved, its catalog id. */
+export interface MatchableIngredient {
+  name: string;
+  ingredientId?: string | null;
+}
+
+/**
+ * B2b: two ingredients with catalog ids are the same ingredient iff the ids
+ * are equal (so "tomato puree" never merges with "tomato paste" on name
+ * similarity, and "pyaz"/"kanda"/"onion" always do). If either side has no
+ * id (unresolved, or a row not yet backfilled) the original normalised-name
+ * fuzzy match decides. Names are normalised here.
+ */
+export const ingredientsMatch = (a: MatchableIngredient, b: MatchableIngredient): boolean => {
+  const idA = a.ingredientId ?? null;
+  const idB = b.ingredientId ?? null;
+  if (idA !== null && idB !== null) {
+    return idA === idB;
+  }
+  return namesMatch(normalize(a.name), normalize(b.name));
 };
 
 interface IngredientGroup {
@@ -181,6 +213,7 @@ interface IngredientGroup {
   unit: string | null;
   category: string | null;
   sourceRecipeId: string;
+  ingredientId: string | null;
 }
 
 /**
@@ -197,6 +230,8 @@ const mergeQuantities = (
   existingUnit: string | null,
   incomingQuantity: number | null,
   incomingUnit: string | null,
+  ingredientId: string | null,
+  convert: UnitConverter,
 ): number | null => {
   if (existingQuantity === null || incomingQuantity === null) {
     return null;
@@ -210,7 +245,7 @@ const mergeQuantities = (
     // stays a defensive `null` rather than an unsafe cast.
     return null;
   }
-  const convertedIncoming = convertQuantity(incomingQuantity, incomingUnit, existingUnit);
+  const convertedIncoming = convert(ingredientId, incomingQuantity, incomingUnit, existingUnit);
   return convertedIncoming === null ? null : existingQuantity + convertedIncoming;
 };
 
@@ -233,14 +268,20 @@ const assignIngredientToGroups = (
   raw: RecipeIngredient,
   recipeId: string,
   scale: number,
+  convert: UnitConverter,
 ): IngredientGroup[] => {
   const normalizedName = normalize(raw.name);
   const canonicalUnit = raw.unit === null ? null : canonicalizePantryUnit(raw.unit);
   const scaledQuantity = raw.quantity === null ? null : raw.quantity * scale;
   const category = raw.category === null ? null : raw.category.trim();
+  const ingredientId = raw.ingredientId ?? null;
 
   const matchIndex = groups.findIndex(
-    (group) => namesMatch(group.normalizedName, normalizedName) && unitsCompatible(group.unit, canonicalUnit),
+    (group) =>
+      ingredientsMatch(
+        { name: group.normalizedName, ingredientId: group.ingredientId },
+        { name: normalizedName, ingredientId },
+      ) && unitsCompatible(group.unit, canonicalUnit, convert, group.ingredientId ?? ingredientId),
   );
 
   if (matchIndex === -1) {
@@ -253,6 +294,7 @@ const assignIngredientToGroups = (
         unit: canonicalUnit,
         category,
         sourceRecipeId: recipeId,
+        ingredientId,
       },
     ];
   }
@@ -260,7 +302,15 @@ const assignIngredientToGroups = (
   const existing = groups[matchIndex]!;
   const merged: IngredientGroup = {
     ...existing,
-    quantity: mergeQuantities(existing.quantity, existing.unit, scaledQuantity, canonicalUnit),
+    ingredientId: existing.ingredientId ?? ingredientId,
+    quantity: mergeQuantities(
+      existing.quantity,
+      existing.unit,
+      scaledQuantity,
+      canonicalUnit,
+      existing.ingredientId ?? ingredientId,
+      convert,
+    ),
   };
   return [...groups.slice(0, matchIndex), merged, ...groups.slice(matchIndex + 1)];
 };
@@ -278,6 +328,7 @@ const assignIngredientToGroups = (
 export const aggregateIngredients = (
   menuItems: readonly AggregationMenuItem[],
   recipesById: RecipesById,
+  convert: UnitConverter = defaultUnitConverter,
 ): AggregatedIngredient[] => {
   const orderedItems = [...menuItems].sort(compareByDayThenMeal);
 
@@ -303,7 +354,7 @@ export const aggregateIngredients = (
 
     for (const raw of recipe.ingredients) {
       if (!isStapleExcluded(raw)) {
-        groups = assignIngredientToGroups(groups, raw, recipe.id, scale);
+        groups = assignIngredientToGroups(groups, raw, recipe.id, scale, convert);
       }
     }
   }
@@ -314,6 +365,7 @@ export const aggregateIngredients = (
     unit: group.unit,
     category: group.category,
     sourceRecipeId: group.sourceRecipeId,
+    ingredientId: group.ingredientId,
   }));
 };
 
@@ -332,16 +384,23 @@ export const aggregateIngredients = (
 const findMatchingPantryItem = (
   item: AggregatedIngredient,
   pantryItems: readonly PantryItemForSubtraction[],
+  convert: UnitConverter,
 ): PantryItemForSubtraction | undefined => {
-  const normalizedItemName = normalize(item.name);
   return pantryItems.find((pantryItem) => {
     const pantryCanonicalUnit = pantryItem.unit === null ? null : canonicalizePantryUnit(pantryItem.unit);
-    return namesMatch(normalize(pantryItem.name), normalizedItemName) && unitsCompatible(item.unit, pantryCanonicalUnit);
+    return (
+      ingredientsMatch(pantryItem, item) &&
+      unitsCompatible(item.unit, pantryCanonicalUnit, convert, item.ingredientId ?? pantryItem.ingredientId ?? null)
+    );
   });
 };
 
 /** `match`'s quantity expressed in `item`'s own unit, or `null` if that conversion is impossible (defensive — `findMatchingPantryItem` already required the two units be compatible). */
-const pantryQuantityInItemUnit = (item: AggregatedIngredient, match: PantryItemForSubtraction): number | null => {
+const pantryQuantityInItemUnit = (
+  item: AggregatedIngredient,
+  match: PantryItemForSubtraction,
+  convert: UnitConverter,
+): number | null => {
   const pantryCanonicalUnit = match.unit === null ? null : canonicalizePantryUnit(match.unit);
   if (item.unit === pantryCanonicalUnit) {
     return match.quantity;
@@ -349,7 +408,7 @@ const pantryQuantityInItemUnit = (item: AggregatedIngredient, match: PantryItemF
   if (item.unit === null || pantryCanonicalUnit === null || match.quantity === null) {
     return null;
   }
-  return convertQuantity(match.quantity, pantryCanonicalUnit, item.unit);
+  return convert(item.ingredientId ?? match.ingredientId ?? null, match.quantity, pantryCanonicalUnit, item.unit);
 };
 
 /**
@@ -367,13 +426,17 @@ const pantryQuantityInItemUnit = (item: AggregatedIngredient, match: PantryItemF
 export const SUBTRACTION_EPSILON = 1e-9;
 
 /** D3's reduction for one aggregated line: the line unchanged (full quantity) if unmatched or unconvertible, `null` if fully covered (dropped, never shown as zero/negative), or the line with its remaining quantity otherwise. */
-const subtractOneLine = (item: AggregatedIngredient, pantryItems: readonly PantryItemForSubtraction[]): AggregatedIngredient | null => {
-  const match = findMatchingPantryItem(item, pantryItems);
+const subtractOneLine = (
+  item: AggregatedIngredient,
+  pantryItems: readonly PantryItemForSubtraction[],
+  convert: UnitConverter,
+): AggregatedIngredient | null => {
+  const match = findMatchingPantryItem(item, pantryItems, convert);
   if (match === undefined || item.quantity === null || match.quantity === null) {
     return item;
   }
 
-  const covered = pantryQuantityInItemUnit(item, match);
+  const covered = pantryQuantityInItemUnit(item, match, convert);
   if (covered === null) {
     return item;
   }
@@ -394,10 +457,11 @@ const subtractOneLine = (item: AggregatedIngredient, pantryItems: readonly Pantr
 export const subtractPantry = (
   aggregated: readonly AggregatedIngredient[],
   pantryItems: readonly PantryItemForSubtraction[],
+  convert: UnitConverter = defaultUnitConverter,
 ): AggregatedIngredient[] => {
   const result: AggregatedIngredient[] = [];
   for (const item of aggregated) {
-    const subtracted = subtractOneLine(item, pantryItems);
+    const subtracted = subtractOneLine(item, pantryItems, convert);
     if (subtracted !== null) {
       result.push(subtracted);
     }
@@ -409,6 +473,7 @@ export const subtractPantry = (
 export interface ItemForPreservedMatch {
   name: string;
   unit: string | null;
+  ingredientId?: string | null;
 }
 
 /**
@@ -434,18 +499,24 @@ export interface ItemForPreservedMatch {
 export const excludeItemsAlreadyPreserved = <T extends ItemForPreservedMatch>(
   freshItems: readonly T[],
   preservedItems: readonly ItemForPreservedMatch[],
+  convert: UnitConverter = defaultUnitConverter,
 ): T[] => {
   const preservedCanonical = preservedItems.map((item) => ({
-    normalizedName: normalize(item.name),
+    item,
     canonicalUnit: item.unit === null ? null : canonicalizePantryUnit(item.unit),
   }));
 
   return freshItems.filter((item) => {
-    const normalizedName = normalize(item.name);
     const canonicalUnit = item.unit === null ? null : canonicalizePantryUnit(item.unit);
     return !preservedCanonical.some(
       (preserved) =>
-        namesMatch(preserved.normalizedName, normalizedName) && unitsCompatible(preserved.canonicalUnit, canonicalUnit),
+        ingredientsMatch(preserved.item, item) &&
+        unitsCompatible(
+          preserved.canonicalUnit,
+          canonicalUnit,
+          convert,
+          item.ingredientId ?? preserved.item.ingredientId ?? null,
+        ),
     );
   });
 };

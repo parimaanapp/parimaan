@@ -1,6 +1,7 @@
 import { canonicalizePantryUnit } from './pantryUnits.js';
-import { convertQuantity } from './unitConversion.js';
-import { SUBTRACTION_EPSILON, isStapleExcluded, namesMatch, normalizeIngredientName, unitsCompatible } from './shoppingListGeneration.js';
+import { defaultUnitConverter } from './ingredientConversion.js';
+import type { UnitConverter } from './ingredientConversion.js';
+import { SUBTRACTION_EPSILON, ingredientsMatch, isStapleExcluded, unitsCompatible } from './shoppingListGeneration.js';
 import type { RecipeIngredient } from './shoppingListGeneration.js';
 
 /**
@@ -30,6 +31,8 @@ export interface PantryItemForDeduction {
   name: string;
   quantity: number | null;
   unit: string | null;
+  /** Catalog id (B2b); matched before the name. */
+  ingredientId?: string | null;
 }
 
 /**
@@ -57,14 +60,22 @@ const NO_OP_LINE: DeductionLine = { pantryItemId: null };
  * over `PantryItemForDeduction` instead of `PantryItemForSubtraction` since
  * a write needs the row's `id`.
  */
+/** The catalog id known for the pair (either side's), used to pick unit factors. */
+const sharedIngredientId = (a: { ingredientId?: string | null }, b: { ingredientId?: string | null }): string | null =>
+  a.ingredientId ?? b.ingredientId ?? null;
+
 const findMatchingPantryItem = (
-  normalizedName: string,
+  ingredient: RecipeIngredient,
   canonicalUnit: string | null,
   pantryItems: readonly PantryItemForDeduction[],
+  convert: UnitConverter,
 ): PantryItemForDeduction | undefined =>
   pantryItems.find((pantryItem) => {
     const pantryCanonicalUnit = pantryItem.unit === null ? null : canonicalizePantryUnit(pantryItem.unit);
-    return namesMatch(normalizeIngredientName(pantryItem.name), normalizedName) && unitsCompatible(canonicalUnit, pantryCanonicalUnit);
+    return (
+      ingredientsMatch(pantryItem, ingredient) &&
+      unitsCompatible(canonicalUnit, pantryCanonicalUnit, convert, sharedIngredientId(ingredient, pantryItem))
+    );
   });
 
 /**
@@ -74,7 +85,13 @@ const findMatchingPantryItem = (
  * converting in the opposite direction (recipe requirement -> pantry unit,
  * rather than pantry stock -> recipe unit).
  */
-const requiredInPantryUnit = (requiredQuantity: number, canonicalUnit: string | null, pantryCanonicalUnit: string | null): number | null => {
+const requiredInPantryUnit = (
+  requiredQuantity: number,
+  canonicalUnit: string | null,
+  pantryCanonicalUnit: string | null,
+  ingredientId: string | null,
+  convert: UnitConverter,
+): number | null => {
   if (canonicalUnit === pantryCanonicalUnit) {
     return requiredQuantity;
   }
@@ -84,7 +101,7 @@ const requiredInPantryUnit = (requiredQuantity: number, canonicalUnit: string | 
     // non-null assertion, mirroring `mergeQuantities`'s own defensive branch.
     return null;
   }
-  return convertQuantity(requiredQuantity, canonicalUnit, pantryCanonicalUnit);
+  return convert(ingredientId, requiredQuantity, canonicalUnit, pantryCanonicalUnit);
 };
 
 /**
@@ -92,20 +109,30 @@ const requiredInPantryUnit = (requiredQuantity: number, canonicalUnit: string | 
  * then convert-and-clamp (O1). A staple-excluded ingredient never reaches
  * the matcher at all — the same order `aggregateIngredients` uses.
  */
-const computeOneLine = (ingredient: RecipeIngredient, scale: number, pantryItems: readonly PantryItemForDeduction[]): DeductionLine => {
+const computeOneLine = (
+  ingredient: RecipeIngredient,
+  scale: number,
+  pantryItems: readonly PantryItemForDeduction[],
+  convert: UnitConverter,
+): DeductionLine => {
   if (isStapleExcluded(ingredient) || ingredient.quantity === null) {
     return NO_OP_LINE;
   }
 
-  const normalizedName = normalizeIngredientName(ingredient.name);
   const canonicalUnit = ingredient.unit === null ? null : canonicalizePantryUnit(ingredient.unit);
-  const match = findMatchingPantryItem(normalizedName, canonicalUnit, pantryItems);
+  const match = findMatchingPantryItem(ingredient, canonicalUnit, pantryItems, convert);
   if (match === undefined || match.quantity === null) {
     return NO_OP_LINE;
   }
 
   const pantryCanonicalUnit = match.unit === null ? null : canonicalizePantryUnit(match.unit);
-  const required = requiredInPantryUnit(ingredient.quantity * scale, canonicalUnit, pantryCanonicalUnit);
+  const required = requiredInPantryUnit(
+    ingredient.quantity * scale,
+    canonicalUnit,
+    pantryCanonicalUnit,
+    sharedIngredientId(ingredient, match),
+    convert,
+  );
   if (required === null) {
     return NO_OP_LINE;
   }
@@ -136,7 +163,8 @@ export const computeDeductionLines = (
   recipe: DeductionRecipe,
   servingsOverride: number | null,
   pantryItems: readonly PantryItemForDeduction[],
+  convert: UnitConverter = defaultUnitConverter,
 ): DeductionLine[] => {
   const scale = servingsOverride !== null && recipe.servings > 0 ? servingsOverride / recipe.servings : 1;
-  return recipe.ingredients.map((ingredient) => computeOneLine(ingredient, scale, pantryItems));
+  return recipe.ingredients.map((ingredient) => computeOneLine(ingredient, scale, pantryItems, convert));
 };

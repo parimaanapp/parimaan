@@ -9,7 +9,7 @@ import {
   insertRecipe,
   insertRecipeIngredient as insertRecipeIngredientRepo,
 } from '../repositories/recipeRepository.js';
-import type { InsertRecipeIngredientInput, InsertRecipeInput } from '../repositories/recipeRepository.js';
+import type { InsertRecipeInput } from '../repositories/recipeRepository.js';
 import { toGraphQLRecipe } from '../mappers/recipe.js';
 import type { GraphQLRecipe } from '../mappers/recipe.js';
 import { createRecipeArgsSchema } from '../validation/createRecipe.js';
@@ -17,6 +17,9 @@ import type { RecipeInput, RecipeSourceAttribution } from '../validation/createR
 import { withInferredStyle } from '../domain/inferDietStyle.js';
 import { ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadIngredientCanonicaliser } from './ingredientCanonicaliser.js';
+import type { CanonicaliserLoader } from './ingredientCanonicaliser.js';
+import { toRecipeIngredientInsert } from './recipeIngredientInput.js';
 
 const DEFAULT_SERVINGS = 4;
 
@@ -68,25 +71,12 @@ const toInsertRecipeInput = (
   createdBy,
 });
 
-const toInsertRecipeIngredientInput = (
-  recipeId: string,
-  ingredient: RecipeInput['ingredients'][number],
-  sortOrder: number,
-): InsertRecipeIngredientInput => ({
-  recipeId,
-  name: ingredient.name,
-  quantity: ingredient.quantity ?? null,
-  unit: ingredient.unit ?? null,
-  category: ingredient.category ?? null,
-  notes: ingredient.notes ?? null,
-  isStaple: ingredient.isStaple ?? false,
-  sortOrder,
-});
-
 export interface CreateRecipeResolverDeps {
   getPool: () => Promise<Pool>;
   /** Injectable seam matching `insertRecipeIngredient`'s own signature, for forced-mid-batch-failure/rollback tests — same shape as `bulkAddPantryItems.ts`'s `insertPantryItem` seam. */
   insertRecipeIngredient?: typeof insertRecipeIngredientRepo;
+  /** Catalog canonicaliser seam (B2b). Defaults to the module-cached catalog; a failure there never fails the save. */
+  loadCanonicaliser?: CanonicaliserLoader;
 }
 
 export const productionDeps: CreateRecipeResolverDeps = { getPool };
@@ -128,6 +118,7 @@ export const createCreateRecipeHandler =
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
     const insertIngredient = deps.insertRecipeIngredient ?? insertRecipeIngredientRepo;
+    const canonicaliser = await (deps.loadCanonicaliser ?? loadIngredientCanonicaliser)(pool);
 
     return withUserTransaction(
       callerUser.id,
@@ -137,7 +128,7 @@ export const createCreateRecipeHandler =
         const recipe = await insertRecipe(client, toInsertRecipeInput(householdId, input, source, callerUser.id));
 
         for (const [index, ingredient] of input.ingredients.entries()) {
-          await insertIngredient(client, toInsertRecipeIngredientInput(recipe.id, ingredient, index));
+          await insertIngredient(client, toRecipeIngredientInsert(recipe.id, ingredient, index, canonicaliser));
         }
 
         return toGraphQLRecipe(recipe);

@@ -575,7 +575,7 @@ exports[`DataStack > matches the known-good synthesized template snapshot (dev) 
       ],
       "Properties": {
         "CatalogHash": "25ba5b9dd683beea9b2f28ccb84607feca5cbf5481e9353e4dcd91535f692632",
-        "MigrationsHash": "b79d83d2d8f55fe5cd9905dc9e58593604a40c93a279e42db9b1f7657277f1c7",
+        "MigrationsHash": "c11e84a21734310a494fb2353a7a95f49cce5882faac60b411c335a2b74d9b23",
         "ServiceToken": {
           "Fn::GetAtt": [
             "MigrationRunnerProviderframeworkonEvent4B2DF953",

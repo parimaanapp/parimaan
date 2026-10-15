@@ -17,7 +17,7 @@ import {
   insertRecipe,
   insertRecipeIngredient as insertRecipeIngredientRepo,
 } from '../repositories/recipeRepository.js';
-import type { InsertRecipeIngredientInput, InsertRecipeInput } from '../repositories/recipeRepository.js';
+import type { InsertRecipeInput } from '../repositories/recipeRepository.js';
 import type { RandomIntFn } from '../domain/inviteCode.js';
 import { attemptWithFreshInviteCode } from '../domain/inviteCodeAttempts.js';
 import { toGraphQLHousehold, toGraphQLMembership } from '../mappers/household.js';
@@ -29,6 +29,10 @@ import type { CuratedRecipeInput, GetCuratedRecipesFn } from '../curatedRecipes.
 import { ValidationError } from '../errors.js';
 import { buildGraphQLHousehold } from './householdView.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadIngredientCanonicaliser } from './ingredientCanonicaliser.js';
+import type { CanonicaliserLoader } from './ingredientCanonicaliser.js';
+import { toRecipeIngredientInsert } from './recipeIngredientInput.js';
+import type { IngredientCanonicaliser } from '../domain/canonicaliseIngredient.js';
 
 /**
  * A repeat `createHousehold` with the same name from the same primary user
@@ -72,6 +76,8 @@ export interface CreateHouseholdResolverDeps {
    * mid-transaction failure.
    */
   getCuratedRecipes?: GetCuratedRecipesFn;
+  /** Catalog canonicaliser seam (B2b): curated ingredients get their `ingredient_id` at seeding. */
+  loadCanonicaliser?: CanonicaliserLoader;
 }
 
 // W16 S5: `getCuratedRecipes` now points at the real corpus reader
@@ -123,21 +129,6 @@ const toInsertCuratedRecipeInput = (
   createdBy,
 });
 
-const toInsertCuratedRecipeIngredientInput = (
-  recipeId: string,
-  ingredient: CuratedRecipeInput['ingredients'][number],
-  sortOrder: number,
-): InsertRecipeIngredientInput => ({
-  recipeId,
-  name: ingredient.name,
-  quantity: ingredient.quantity ?? null,
-  unit: ingredient.unit ?? null,
-  category: ingredient.category ?? null,
-  notes: ingredient.notes ?? null,
-  isStaple: ingredient.isStaple ?? false,
-  sortOrder,
-});
-
 /** Inserts the household and everything seeded with it, in the caller's open transaction. */
 const createFreshHousehold = async (
   txClient: PoolClient,
@@ -145,6 +136,7 @@ const createFreshHousehold = async (
   callerId: string,
   graphQLUser: ReturnType<typeof toGraphQLUser>,
   name: string,
+  canonicaliser: IngredientCanonicaliser,
 ): Promise<GraphQLHousehold> => {
     // Generate-then-insert (not generate-then-UPDATE): `invite_code` is
     // `NOT NULL UNIQUE`, so it cannot be inserted as null and filled in
@@ -185,7 +177,7 @@ const createFreshHousehold = async (
       for (const [index, ingredient] of curatedRecipe.ingredients.entries()) {
         await insertRecipeIngredientRepo(
           txClient,
-          toInsertCuratedRecipeIngredientInput(recipe.id, ingredient, index),
+          toRecipeIngredientInsert(recipe.id, ingredient, index, canonicaliser),
         );
       }
     }
@@ -232,6 +224,7 @@ export const createCreateHouseholdHandler =
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
     const graphQLUser = toGraphQLUser(callerUser);
+    const canonicaliser = await (deps.loadCanonicaliser ?? loadIngredientCanonicaliser)(pool);
 
     return withUserTransaction(
       callerUser.id,
@@ -256,7 +249,7 @@ export const createCreateHouseholdHandler =
           );
         }
 
-        return createFreshHousehold(txClient, deps, callerUser.id, graphQLUser, name);
+        return createFreshHousehold(txClient, deps, callerUser.id, graphQLUser, name, canonicaliser);
       },
       pool,
     );

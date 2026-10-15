@@ -1,10 +1,16 @@
 import type { Pool } from 'pg';
 import { buildCatalogIndex } from '../domain/ingredientCatalog.js';
 import type { CatalogEntry, CatalogIndex } from '../domain/ingredientCatalog.js';
+import { createConversionLookup } from '../domain/ingredientConversion.js';
+import type { ConversionLookup, UnitConversionRow } from '../domain/ingredientConversion.js';
 
 export interface CatalogSnapshot {
   readonly entries: readonly CatalogEntry[];
   readonly index: CatalogIndex;
+  /** `unit_conversions` rows (amounts as numbers). */
+  readonly conversions: readonly UnitConversionRow[];
+  /** Ingredient-then-subcategory factor lookup over `conversions`. */
+  readonly conversionLookup: ConversionLookup;
 }
 
 /**
@@ -27,6 +33,14 @@ interface CatalogRow {
   aliases: string[];
 }
 
+interface ConversionDbRow {
+  scope: 'subcategory' | 'ingredient';
+  key: string;
+  unit: string;
+  base_unit: string;
+  amount: string;
+}
+
 let cached: { snapshot: CatalogSnapshot; loadedAt: number } | undefined;
 let inFlight: Promise<CatalogSnapshot> | undefined;
 
@@ -39,7 +53,8 @@ export const resetCatalogCacheForTesting = (): void => {
 const toNumberOrNull = (value: string | null): number | null => (value === null ? null : Number(value));
 
 const readCatalog = async (pool: Pool): Promise<CatalogSnapshot> => {
-  const result = await pool.query<CatalogRow>(
+  const [result, conversionResult] = await Promise.all([
+    pool.query<CatalogRow>(
     `SELECT c.id, c.canonical_name, c.app_category, c.subcategory, c.allowed_units,
             c.default_unit, c.piece_g, c.cup_g, c.note,
             COALESCE(
@@ -52,7 +67,11 @@ const readCatalog = async (pool: Pool): Promise<CatalogSnapshot> => {
             ) AS aliases
        FROM ingredient_catalog c
       ORDER BY c.id`,
-  );
+    ),
+    pool.query<ConversionDbRow>(
+      `SELECT scope, key, unit, base_unit, amount FROM unit_conversions ORDER BY scope, key, unit`,
+    ),
+  ]);
   const entries: CatalogEntry[] = result.rows.map((row) => ({
     id: row.id,
     canonicalName: row.canonical_name,
@@ -65,7 +84,19 @@ const readCatalog = async (pool: Pool): Promise<CatalogSnapshot> => {
     note: row.note,
     aliases: row.aliases,
   }));
-  return { entries, index: buildCatalogIndex(entries) };
+  const conversions: UnitConversionRow[] = conversionResult.rows.map((row) => ({
+    scope: row.scope,
+    key: row.key,
+    unit: row.unit,
+    baseUnit: row.base_unit,
+    amount: Number(row.amount),
+  }));
+  return {
+    entries,
+    index: buildCatalogIndex(entries),
+    conversions,
+    conversionLookup: createConversionLookup(entries, conversions),
+  };
 };
 
 /**

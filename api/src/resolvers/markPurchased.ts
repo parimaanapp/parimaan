@@ -18,11 +18,15 @@ import type { GraphQLShoppingList } from '../mappers/shoppingList.js';
 import { markPurchasedArgsSchema } from '../validation/markPurchased.js';
 import { ConflictError, ForbiddenError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadCatalogTools } from './ingredientCanonicaliser.js';
+import type { CatalogTools } from './ingredientCanonicaliser.js';
 
 export interface MarkPurchasedResolverDeps {
   getPool: () => Promise<Pool>;
   /** Injectable seam matching `upsertOrIncrementPantryItemForHaveIt`'s own signature, for forced-failure atomicity tests. */
   upsertOrIncrementPantryItemForHaveIt?: typeof upsertOrIncrementPantryItemForHaveItRepo;
+  /** Catalog seam (B2b): canonical pantry name/id and catalog-aware unit conversion. */
+  loadCatalogTools?: (pool: Pool) => Promise<CatalogTools>;
   /** Injectable seam matching `markItemPurchased`'s own signature, for forced-failure atomicity tests. */
   markItemPurchased?: typeof markItemPurchasedRepo;
 }
@@ -87,6 +91,7 @@ export const createMarkPurchasedHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const { canonicaliser, convert } = await (deps.loadCatalogTools ?? loadCatalogTools)(pool);
 
     return withUserTransaction(
       callerUser.id,
@@ -100,15 +105,19 @@ export const createMarkPurchasedHandler =
         const expiryDays =
           found.item.category === null ? null : defaultExpiryDaysForCategory(found.item.category);
 
+        const pantryName = canonicaliser.pantryItem(found.item.name);
         const upsertOrIncrementPantryItemForHaveIt =
           deps.upsertOrIncrementPantryItemForHaveIt ?? upsertOrIncrementPantryItemForHaveItRepo;
         await upsertOrIncrementPantryItemForHaveIt(client, {
           householdId: found.householdId,
-          name: found.item.name,
+          name: pantryName.name,
           quantity: found.item.quantity ?? 0,
           unit: found.item.unit,
           addedBy: callerUser.id,
           expiryDays,
+          ingredientId: pantryName.ingredientId,
+          catalogMatch: pantryName.catalogMatch,
+          ...(convert === undefined ? {} : { convert }),
         });
 
         const markItemPurchased = deps.markItemPurchased ?? markItemPurchasedRepo;

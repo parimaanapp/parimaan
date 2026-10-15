@@ -13,6 +13,8 @@ import { createFreshShoppingList } from './shoppingListGenerationPipeline.js';
 import { generateShoppingListArgsSchema } from '../validation/shoppingList.js';
 import { ConflictError, ForbiddenError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadUnitConverter } from './ingredientCanonicaliser.js';
+import type { UnitConverter } from '../domain/ingredientConversion.js';
 import { invokeStaplesNoteFn } from '../aiInvoke/staplesNoteInvoker.js';
 import type { StaplesNoteInvokePayload } from '../aiInvoke/staplesNoteInvoker.js';
 
@@ -26,6 +28,8 @@ export interface GenerateShoppingListResolverDeps {
    * covers the real implementation's own send/swallow behavior independently.
    */
   invokeStaplesNoteFn?: (payload: StaplesNoteInvokePayload) => Promise<void>;
+  /** Catalog-aware unit conversion seam (B2b); `undefined` result = physical unit families only. */
+  loadUnitConverter?: (pool: Pool) => Promise<UnitConverter | undefined>;
 }
 
 export const productionDeps: GenerateShoppingListResolverDeps = { getPool, invokeStaplesNoteFn };
@@ -66,6 +70,7 @@ export const createGenerateShoppingListHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const convert = await (deps.loadUnitConverter ?? loadUnitConverter)(pool);
 
     const result = await withUserTransaction(
       callerUser.id,
@@ -95,7 +100,7 @@ export const createGenerateShoppingListHandler =
           );
         }
 
-        const { list, items } = await createFreshShoppingList(client, menu);
+        const { list, items } = await createFreshShoppingList(client, menu, convert);
 
         return toGraphQLShoppingList(list, items);
       },
