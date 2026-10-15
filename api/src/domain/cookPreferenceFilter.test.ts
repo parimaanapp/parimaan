@@ -38,10 +38,17 @@ describe('findDietaryViolations — tags AND keywords, because the model\'s self
     expect(findDietaryViolations(withIngredients('chicken'), [])).toEqual([]);
   });
 
-  it('requires the suggestion to carry every household tag', () => {
+  it('requires the suggestion to carry a tag the household style accepts', () => {
     const lauki = { title: 'Lauki Sabzi', ingredients: [{ name: 'lauki' }] };
-    expect(findDietaryViolations(suggestion({ ...lauki, dietaryTags: ['veg'] }), ['veg', 'jain'])).toEqual(['Not tagged jain']);
-    expect(findDietaryViolations(suggestion({ ...lauki, dietaryTags: ['veg', 'jain'] }), ['veg', 'jain'])).toEqual([]);
+    expect(findDietaryViolations(suggestion({ ...lauki, dietaryTags: ['veg'] }), ['jain'])).toEqual(['Not tagged jain']);
+    expect(findDietaryViolations(suggestion({ ...lauki, dietaryTags: ['veg', 'jain'] }), ['jain'])).toEqual([]);
+    expect(findDietaryViolations(suggestion({ ...lauki, dietaryTags: [] }), ['veg'])).toEqual(['Not tagged veg']);
+  });
+
+  it('requires every modifier tag', () => {
+    expect(findDietaryViolations(suggestion({ dietaryTags: ['veg'], ingredients: [{ name: 'rice' }] }), ['veg', 'gluten_free'])).toEqual([
+      'Not tagged gluten_free',
+    ]);
   });
 
   it('honours implications: vegan and jain suggestions are also veg', () => {
@@ -71,14 +78,14 @@ describe('findDietaryViolations — tags AND keywords, because the model\'s self
   });
 
   it.each(['onion', 'garlic', 'potato', 'aloo', 'ginger', 'carrot', 'radish', 'beetroot', 'sweet potato', 'garlic paste'])('drops a Jain household\'s suggestion containing %s', (name) => {
-    expect(findDietaryViolations(suggestion({ dietaryTags: ['jain', 'veg'], ingredients: [{ name }] }), ['jain', 'veg']).length).toBeGreaterThan(0);
+    expect(findDietaryViolations(suggestion({ dietaryTags: ['jain'], ingredients: [{ name }] }), ['jain']).length).toBeGreaterThan(0);
   });
 
   it('does not drop a Jain-compatible suggestion built from lauki, dal and besan', () => {
     expect(
       findDietaryViolations(
-        suggestion({ title: 'Lauki Chana Dal', dietaryTags: ['jain', 'veg'], ingredients: [{ name: 'lauki' }, { name: 'chana dal' }, { name: 'besan' }, { name: 'hing' }] }),
-        ['jain', 'veg'],
+        suggestion({ title: 'Lauki Chana Dal', dietaryTags: ['jain'], ingredients: [{ name: 'lauki' }, { name: 'chana dal' }, { name: 'besan' }, { name: 'hing' }] }),
+        ['jain'],
       ),
     ).toEqual([]);
   });
@@ -98,6 +105,61 @@ describe('findDietaryViolations — tags AND keywords, because the model\'s self
 
   it('an unknown household tag is ignored rather than dropping everything', () => {
     expect(findDietaryViolations(suggestion(), ['keto'])).toEqual([]);
+  });
+});
+
+describe('findDietaryViolations — household styles combine as a union (dietMatch semantics)', () => {
+  const tagged = (dietaryTags: string[], ...names: string[]): FilterableSuggestion =>
+    suggestion({ dietaryTags, ingredients: names.map((name) => ({ name })) });
+
+  it('[veg, non_veg] does not flag chicken; [veg] does', () => {
+    expect(findDietaryViolations(tagged(['non_veg'], 'chicken'), ['veg', 'non_veg'])).toEqual([]);
+    expect(findDietaryViolations(tagged(['non_veg'], 'chicken'), ['veg']).length).toBeGreaterThan(0);
+  });
+
+  it('[non_veg] accepts veg-tagged dishes and eggs, and never flags meat or fish', () => {
+    expect(findDietaryViolations(tagged(['veg'], 'paneer', 'egg'), ['non_veg'])).toEqual([]);
+    expect(findDietaryViolations(tagged(['non_veg'], 'prawns', 'mutton'), ['non_veg'])).toEqual([]);
+  });
+
+  it('[veg, eggetarian] accepts a veg-tagged dish and an egg dish, but not meat', () => {
+    expect(findDietaryViolations(tagged(['veg'], 'potato'), ['veg', 'eggetarian'])).toEqual([]);
+    expect(findDietaryViolations(tagged(['eggetarian'], 'eggs'), ['veg', 'eggetarian'])).toEqual([]);
+    expect(findDietaryViolations(tagged(['non_veg'], 'chicken'), ['veg', 'eggetarian']).length).toBeGreaterThan(0);
+  });
+
+  it('[vegan] flags egg, dairy and meat', () => {
+    for (const name of ['egg', 'paneer', 'chicken']) {
+      expect(findDietaryViolations(tagged(['vegan'], name), ['vegan']).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('[vegan, eggetarian] allows egg and dairy (another selected style permits them) but still flags meat', () => {
+    expect(findDietaryViolations(tagged(['veg'], 'egg', 'paneer'), ['vegan', 'eggetarian'])).toEqual([]);
+    expect(findDietaryViolations(tagged(['veg'], 'chicken'), ['vegan', 'eggetarian']).length).toBeGreaterThan(0);
+  });
+
+  it('[jain, veg] allows onion and potato (veg permits them); [jain] alone does not', () => {
+    expect(findDietaryViolations(tagged(['veg'], 'onion', 'potato'), ['jain', 'veg'])).toEqual([]);
+    expect(findDietaryViolations(tagged(['veg'], 'onion'), ['jain']).length).toBeGreaterThan(0);
+  });
+
+  it('modifiers always apply, whatever the styles', () => {
+    expect(findDietaryViolations(tagged(['non_veg', 'dairy_free'], 'chicken', 'ghee'), ['non_veg', 'dairy_free']).length).toBeGreaterThan(0);
+    expect(findDietaryViolations(tagged(['non_veg', 'gluten_free'], 'chicken', 'atta'), ['non_veg', 'gluten_free']).length).toBeGreaterThan(0);
+    expect(findDietaryViolations(tagged(['non_veg', 'gluten_free'], 'chicken', 'rice'), ['non_veg', 'gluten_free'])).toEqual([]);
+  });
+
+  it('a vegan suggestion satisfies a dairy_free household without carrying the tag', () => {
+    expect(findDietaryViolations(tagged(['vegan'], 'tofu'), ['veg', 'dairy_free'])).toEqual([]);
+  });
+
+  it('a modifier-only household applies no style restriction', () => {
+    expect(findDietaryViolations(tagged(['non_veg', 'gluten_free'], 'chicken'), ['gluten_free'])).toEqual([]);
+  });
+
+  it('reports the violations of the closest style when no style is satisfied', () => {
+    expect(findDietaryViolations(tagged(['veg'], 'egg'), ['veg', 'jain'])).toEqual(['Contains egg (not veg)']);
   });
 });
 
@@ -132,7 +194,7 @@ describe('findDietaryViolations — review findings (meat and fish must never sl
   });
 
   it.each(['yam', 'suran', 'arbi', 'mushrooms', 'spring onion'])('%s breaks a Jain household\'s diet', (name) => {
-    expect(findDietaryViolations(suggestion({ dietaryTags: ['jain', 'veg'], ingredients: [{ name }] }), ['jain', 'veg']).length).toBeGreaterThan(0);
+    expect(findDietaryViolations(suggestion({ dietaryTags: ['jain'], ingredients: [{ name }] }), ['jain']).length).toBeGreaterThan(0);
   });
 
   it.each(['butter beans', 'cream of tartar', 'goat cheese', 'egg-free mayo', 'chicken-free broth', 'eggless cake batter', 'meatless mince'])('does not drop a good suggestion over the harmless %s', (name) => {

@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { eligibleRecipeStyleTags, householdModifiers } from '../domain/dietMatch.js';
 import { toAwsDateString } from '../domain/pgDate.js';
 import type { RecipeRow } from './recipeRepository.js';
 import { findRecipesByIds } from './recipeRepository.js';
@@ -506,37 +507,10 @@ export interface RotationCandidateRow {
   role: string;
   cuisineTier1: string | null;
   cuisineTier2: string | null;
+  /** `true` = in the household's rotation (preferred); `false` = fallback-only. */
+  inRotation: boolean;
 }
 
-/**
- * `autoFillWeek`/`autoFillPreview`'s candidate pool — in-rotation recipes
- * for `householdId`, hard-excluding any recipe with a skip-listed
- * ingredient (W10 §16.2.4 D7: the picker only ever MARKS a skip-listed
- * recipe, but the automated auto-fill path hard-filters it out, since
- * there's no human in the loop to see a warning). `ILIKE ANY` against an
- * empty `skipIngredients` array matches nothing, so `NOT EXISTS` is always
- * true and no recipe is excluded when the household has no skip list
- * configured — the common case. Uses `idx_recipes_role (household_id,
- * role) WHERE in_rotation = TRUE` (`1787808112003_recipes.ts`) — closes
- * §12.2.14's "deliberately unused until W10" note.
- *
- * Same hard-filter treatment for `dietaryTags` (W10 S7 real-AWS
- * verification finding: this candidate query previously never consulted
- * `household_settings.dietary_tags` at all, so a vegetarian-only household
- * could get a non-vegetarian recipe auto-filled). A candidate satisfies the
- * household's requirement when its OWN `dietary_tags` is a superset of the
- * household's required set — jsonb `@>` containment, which is vacuously
- * true against an empty `dietaryTags` requirement (`x @> '[]'` is always
- * true), so a household with no dietary requirement configured excludes
- * nothing on this basis, matching the skip-ingredients "empty list filters
- * nothing" precedent above. No index on `recipes.dietary_tags` yet —
- * deliberately deferred, not an oversight: this predicate only ever runs
- * against a single household's already `household_id`-scoped, `in_rotation`
- * rows (≤ ~300 at the documented per-household recipe scale), where a
- * sequential jsonb containment check is sub-millisecond and a GIN index
- * would only add write overhead. Revisit if per-household recipe counts
- * grow well past that.
- */
 /**
  * Escapes `\`, `%`, and `_` (Postgres's default `LIKE`/`ILIKE` escape
  * character and its two wildcards) before a household-supplied
@@ -545,37 +519,59 @@ export interface RotationCandidateRow {
  * pattern rather than matched literally (e.g. a skip term of `_` would
  * match any single-character ingredient name). Not a security concern
  * (this can only ever over/under-match within the querying household's own
- * data, never reach another household's — `database-reviewer`'s own
- * finding), but a correctness one worth closing since it's a one-line fix.
+ * data), but a correctness one worth closing since it's a one-line fix.
  */
 const escapeLikePattern = (value: string): string => value.replace(/[\\%_]/g, (char) => `\\${char}`);
 
-export const findInRotationRecipesForAutoFill = async (
+/**
+ * `autoFillWeek`/`autoFillPreview`'s candidate pool — EVERY recipe of
+ * `householdId` that matches the household's diet and skip list, each row
+ * carrying its `in_rotation` flag so the caller can prefer in-rotation
+ * recipes and fall back to the rest (E2E_MVP_PLAN.md §32.1 "Auto-fill":
+ * never fail for lack of rotation).
+ *
+ * Skip list (W10 §16.2.4 D7): a recipe with a skip-listed ingredient is
+ * hard-excluded (`ILIKE ANY` against an empty array matches nothing, so no
+ * skip list excludes nothing).
+ *
+ * Diet (§32.3, `domain/dietMatch.ts` is the single source of truth): the
+ * recipe must carry at least one of the style tags the household's styles
+ * expand to (`?|`; skipped entirely when the household has no styles) and
+ * every household modifier (`@>`; vacuous when there are none). No index on
+ * `recipes.dietary_tags`: the predicate only ever runs against one
+ * household's already `household_id`-scoped rows (≤ ~300 at the documented
+ * scale).
+ */
+export const findAutoFillCandidates = async (
   client: PoolClient,
   householdId: string,
   skipIngredients: readonly string[],
   dietaryTags: readonly string[],
 ): Promise<RotationCandidateRow[]> => {
+  const styleTags = eligibleRecipeStyleTags(dietaryTags);
   const result = await client.query<{
     id: string;
     role: string;
     cuisine_tier1: string | null;
     cuisine_tier2: string | null;
+    in_rotation: boolean;
   }>(
-    `SELECT r.id, r.role, r.cuisine_tier1, r.cuisine_tier2
+    `SELECT r.id, r.role, r.cuisine_tier1, r.cuisine_tier2, r.in_rotation
      FROM recipes r
      WHERE r.household_id = $1
-       AND r.in_rotation = TRUE
        AND NOT EXISTS (
          SELECT 1 FROM recipe_ingredients ri
          WHERE ri.recipe_id = r.id AND ri.name ILIKE ANY($2::text[])
        )
-       AND r.dietary_tags @> $3::jsonb
+       AND ($3::boolean OR r.dietary_tags ?| $4::text[])
+       AND r.dietary_tags @> $5::jsonb
      `,
     [
       householdId,
       skipIngredients.map((ingredient) => `%${escapeLikePattern(ingredient)}%`),
-      JSON.stringify(dietaryTags),
+      styleTags.length === 0,
+      styleTags,
+      JSON.stringify(householdModifiers(dietaryTags)),
     ],
   );
   return result.rows.map((row) => ({
@@ -583,6 +579,7 @@ export const findInRotationRecipesForAutoFill = async (
     role: row.role,
     cuisineTier1: row.cuisine_tier1,
     cuisineTier2: row.cuisine_tier2,
+    inRotation: row.in_rotation,
   }));
 };
 

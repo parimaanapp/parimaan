@@ -35,22 +35,6 @@ export interface RotationHouseholdSettings {
   dietaryTags: readonly string[];
 }
 
-/**
- * §16.2.4 D8 — a recipe is a valid auto-fill candidate only if it carries
- * EVERY dietary tag the household has configured (a `veg` household never
- * gets a non-`veg` recipe auto-filled); a household with no `dietaryTags`
- * configured excludes nothing. The server's own hard filter
- * (`findInRotationRecipesForAutoFill`'s `dietary_tags @> ...` clause) is
- * the authoritative check at candidate-generation time — this is the same
- * rule, re-applied at `autoFillWeek`'s commit time against a submitted
- * item's own recipe, mirroring how `tryCommitItem` re-checks `inRotation`
- * rather than trusting the proposal.
- */
-export const recipeMatchesDietaryTags = (
-  recipeDietaryTags: readonly string[],
-  householdDietaryTags: readonly string[],
-): boolean => householdDietaryTags.every((tag) => recipeDietaryTags.includes(tag));
-
 export interface ExistingMenuItemSlot {
   dayOfWeek: number;
   mealSlot: string;
@@ -224,7 +208,14 @@ export const defaultRng: Rng = () => Math.random();
 /**
  * Picks one recipe per empty slot from its role's weighted candidate pool,
  * skipping (never throwing on) a slot whose role has no candidates left —
- * §16's D6, best-effort partial fill is the whole point. Enforces one hard
+ * §16's D6, best-effort partial fill is the whole point.
+ *
+ * `fallbackByRole` (§32.1 "Auto-fill"): recipes outside the rotation that
+ * still match the household's diet. A slot draws from `candidatesByRole`
+ * (in-rotation) first and only falls back when that pool is empty for the
+ * slot, so a small rotation never leaves slots unfilled while a matching
+ * recipe exists. Repeats across days are allowed; weights stay a
+ * preference, not a constraint. Enforces one hard
  * rule beyond the weighting: the same recipe is never placed twice within
  * one meal instance (`dayOfWeek` + `mealSlot`) — already-chosen recipes for
  * that meal are excluded from the pool for every subsequent slot in it,
@@ -235,6 +226,7 @@ export const pickForSlots = (
   slots: readonly EmptySlot[],
   candidatesByRole: ReadonlyMap<string, readonly WeightedCandidate[]>,
   rng: Rng,
+  fallbackByRole: ReadonlyMap<string, readonly WeightedCandidate[]> = new Map(),
 ): ProposedPick[] => {
   const picks: ProposedPick[] = [];
   const usedInMeal = new Map<string, Set<string>>();
@@ -243,9 +235,10 @@ export const pickForSlots = (
     const mealKey = `${slot.dayOfWeek}:${slot.mealSlot}`;
     const excluded = usedInMeal.get(mealKey) ?? new Set<string>();
 
-    const pool = (candidatesByRole.get(slot.slotRole) ?? []).filter(
-      (candidate) => !excluded.has(candidate.recipeId),
-    );
+    const available = (byRole: ReadonlyMap<string, readonly WeightedCandidate[]>): readonly WeightedCandidate[] =>
+      (byRole.get(slot.slotRole) ?? []).filter((candidate) => !excluded.has(candidate.recipeId));
+    const preferred = available(candidatesByRole);
+    const pool = preferred.length > 0 ? preferred : available(fallbackByRole);
     if (pool.length === 0) {
       continue;
     }

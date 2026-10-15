@@ -6,7 +6,7 @@ import { getPool } from '../db/pool.js';
 import { withUserTransaction } from '../db/withUserTransaction.js';
 import { resolveCallerUser } from '../repositories/callerUser.js';
 import {
-  findInRotationRecipesForAutoFill,
+  findAutoFillCandidates,
   findMenuById,
   findMenuItems,
   findRecentRecipeUsage,
@@ -92,6 +92,12 @@ const hydratePicks = async (
   });
 };
 
+/** Diet-eligible candidates by role: the household's rotation first, everything else as fallback (§32.1). */
+interface ScoredCandidatePools {
+  inRotation: Map<string, WeightedCandidate[]>;
+  fallback: Map<string, WeightedCandidate[]>;
+}
+
 /**
  * Loads every candidate recipe for `householdId` and scores it (recency +
  * cuisine bias) against `targetWeekStartDate`, grouped by role and ready
@@ -106,13 +112,18 @@ const loadScoredCandidatesByRole = async (
   dietaryTags: readonly string[],
   cuisineTier1: readonly string[],
   cuisineTier2Weights: Record<string, unknown>,
-): Promise<Map<string, WeightedCandidate[]>> => {
+): Promise<ScoredCandidatePools> => {
   const [candidateRows, recentUsage] = await Promise.all([
-    findInRotationRecipesForAutoFill(client, householdId, skipIngredients, dietaryTags),
+    findAutoFillCandidates(client, householdId, skipIngredients, dietaryTags),
     findRecentRecipeUsage(client, householdId, targetWeekStartDate, RECENCY_WINDOW_WEEKS),
   ]);
   const recentUsageByRecipeId = new Map(recentUsage.map((usage) => [usage.recipeId, usage.weeksAgo]));
-  return buildCandidatesByRole(candidateRows, cuisineTier1, cuisineTier2Weights, recentUsageByRecipeId);
+  const build = (rows: readonly RotationCandidateRow[]): Map<string, WeightedCandidate[]> =>
+    buildCandidatesByRole(rows, cuisineTier1, cuisineTier2Weights, recentUsageByRecipeId);
+  return {
+    inRotation: build(candidateRows.filter((row) => row.inRotation)),
+    fallback: build(candidateRows.filter((row) => !row.inRotation)),
+  };
 };
 
 /**
@@ -175,7 +186,7 @@ export const createAutoFillPreviewHandler =
           existingItems,
         );
 
-        const candidatesByRole = await loadScoredCandidatesByRole(
+        const pools = await loadScoredCandidatesByRole(
           client,
           menu.householdId,
           menu.weekStartDate,
@@ -185,7 +196,7 @@ export const createAutoFillPreviewHandler =
           settings.cuisineTier2Weights,
         );
 
-        const picks = pickForSlots(emptySlots, candidatesByRole, defaultRng);
+        const picks = pickForSlots(emptySlots, pools.inRotation, defaultRng, pools.fallback);
         const unfilledSlots = computeUnfilledSlots(emptySlots, picks);
         const items = await hydratePicks(client, picks);
 

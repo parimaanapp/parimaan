@@ -318,7 +318,7 @@ describe('autoFillWeek resolver (Mutation.autoFillWeek)', () => {
     expect(result.menu.items[0]?.recipe.title).toBe('Legit');
   });
 
-  it('never commits a recipe that is not in rotation, even if submitted', async () => {
+  it('commits an out-of-rotation recipe: the preview may propose it as a fallback (§32.1)', async () => {
     const owner = await createUser('sub-afw-rotation');
     const householdId = await createHouseholdWithOwner(owner, 'AWR234');
     const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
@@ -333,8 +333,52 @@ describe('autoFillWeek resolver (Mutation.autoFillWeek)', () => {
       buildEvent(menuId, false, [item(recipeId, 0, 'lunch', 'carb')], 'sub-afw-rotation'),
     );
 
+    expect(result.filledCount).toBe(1);
+  });
+
+  it('commits a veg-tagged recipe for a [veg, eggetarian] household (beta #10 regression)', async () => {
+    const owner = await createUser('sub-afw-vegegg');
+    const householdId = await createHouseholdWithOwner(owner, 'AWE234');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    const recipeId = await withUserTransaction(
+      owner.id,
+      async (client) => {
+        const id = await addRecipe(client, householdId, owner.id, { dietaryTags: ['veg'] });
+        await client.query(
+          `UPDATE household_settings SET dietary_tags = '["veg","eggetarian"]'::jsonb WHERE household_id = $1`,
+          [householdId],
+        );
+        return id;
+      },
+      pool,
+    );
+
+    const handler = createAutoFillWeekHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, false, [item(recipeId, 0, 'lunch', 'carb')], 'sub-afw-vegegg'));
+
+    expect(result.filledCount).toBe(1);
+  });
+
+  it('never commits a non_veg recipe for a veg household, even if submitted', async () => {
+    const owner = await createUser('sub-afw-nonveg');
+    const householdId = await createHouseholdWithOwner(owner, 'AWN234');
+    const menuId = await createMenuFor(owner, householdId, '2026-09-07T00:00:00.000Z');
+    const recipeId = await withUserTransaction(
+      owner.id,
+      async (client) => {
+        const id = await addRecipe(client, householdId, owner.id, { dietaryTags: ['non_veg'] });
+        await client.query(`UPDATE household_settings SET dietary_tags = '["veg"]'::jsonb WHERE household_id = $1`, [
+          householdId,
+        ]);
+        return id;
+      },
+      pool,
+    );
+
+    const handler = createAutoFillWeekHandler(baseDeps);
+    const result = await handler(buildEvent(menuId, false, [item(recipeId, 0, 'lunch', 'carb')], 'sub-afw-nonveg'));
+
     expect(result.filledCount).toBe(0);
-    expect(result.unfilledSlots).toEqual([{ dayOfWeek: 0, mealSlot: 'lunch', slotRole: 'carb' }]);
   });
 
   it('never commits a recipe missing one of the household dietary tags, even if submitted (§16.2.4 D8)', async () => {

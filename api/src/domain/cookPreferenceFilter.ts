@@ -1,4 +1,5 @@
-import { DIETARY_TAG_VALUES } from './dietaryTags.js';
+import { expandStyle, householdModifiers, householdStyles } from './dietMatch.js';
+import type { DietStyle } from './dietMatch.js';
 
 /**
  * W21 D4 — the household's rules, applied to what the model proposed. The
@@ -103,16 +104,11 @@ export const DIETARY_VIOLATION_KEYWORDS: Readonly<Record<string, readonly string
   vegan: [...MEAT_AND_FISH, ...EGG, ...DAIRY, 'honey'],
   jain: [...MEAT_AND_FISH, ...EGG, ...ROOT_VEG_FOR_JAIN],
   eggetarian: MEAT_AND_FISH,
+  non_veg: [],
   dairy_free: DAIRY,
   gluten_free: GLUTEN,
 };
 
-/** A suggestion tagged with the key also satisfies the tags it implies (a vegan dish is a vegetarian and a dairy-free one). */
-const IMPLIED_TAGS: Readonly<Record<string, readonly string[]>> = {
-  vegan: ['veg', 'eggetarian', 'dairy_free'],
-  jain: ['veg', 'eggetarian'],
-  veg: ['eggetarian'],
-};
 
 const DAIRY_WORDS: ReadonlySet<string> = new Set(DAIRY);
 const GRAIN_DEPENDENT_WORDS: ReadonlySet<string> = new Set(GLUTEN_DEPENDS_ON_GRAIN);
@@ -127,17 +123,58 @@ const mentions = (text: string, word: string): boolean => {
 
 const normalizeTag = (tag: string): string => tag.trim().toLowerCase();
 
-export const findDietaryViolations = (suggestion: FilterableSuggestion, householdTags: readonly string[]): string[] => {
-  const required = [...new Set(householdTags.map(normalizeTag))].filter((tag) => (DIETARY_TAG_VALUES as readonly string[]).includes(tag));
+/**
+ * The tags a suggestion claims. A vegan dish is also dairy free; every other
+ * implication is handled on the household side by `dietMatch.expandStyle`.
+ */
+const claimedTags = (suggestion: FilterableSuggestion): ReadonlySet<string> => {
   const claimed = new Set(suggestion.dietaryTags.map(normalizeTag));
-  for (const tag of [...claimed]) {
-    (IMPLIED_TAGS[tag] ?? []).forEach((implied) => claimed.add(implied));
+  if (claimed.has('vegan')) {
+    claimed.add('dairy_free');
   }
+  return claimed;
+};
+
+/** Everything wrong with `suggestion` for ONE tag: not claimed, plus each keyword that breaks it. */
+const problemsFor = (
+  tag: string,
+  acceptedClaims: readonly string[],
+  claimed: ReadonlySet<string>,
+  clean: readonly string[],
+): string[] => [
+  ...(acceptedClaims.some((accepted) => claimed.has(accepted)) ? [] : [`Not tagged ${tag}`]),
+  ...(DIETARY_VIOLATION_KEYWORDS[tag] ?? [])
+    .filter((word) => clean.some((text) => mentions(text, word)))
+    .map((word) => `Contains ${word} (not ${tag})`),
+];
+
+/** Styles are a union: satisfied by any one style; otherwise the closest style's problems are reported. */
+const styleProblems = (
+  styles: readonly DietStyle[],
+  claimed: ReadonlySet<string>,
+  clean: readonly string[],
+): string[] => {
+  const perStyle = styles.map((style) => problemsFor(style, expandStyle(style), claimed, clean));
+  if (perStyle.length === 0 || perStyle.some((problems) => problems.length === 0)) {
+    return [];
+  }
+  return perStyle.reduce((best, current) => (current.length < best.length ? current : best));
+};
+
+/**
+ * Same semantics as `dietMatch.isRecipeEligible` (the single source of
+ * truth), plus the ingredient keywords because the model's own tags are not
+ * trusted: the suggestion must satisfy at least ONE of the household's styles
+ * and EVERY modifier.
+ */
+export const findDietaryViolations = (suggestion: FilterableSuggestion, householdTags: readonly string[]): string[] => {
+  const tags = householdTags.map(normalizeTag);
+  const claimed = claimedTags(suggestion);
   const clean = texts(suggestion).map(neutralise);
-  return required.flatMap((tag) => [
-    ...(claimed.has(tag) ? [] : [`Not tagged ${tag}`]),
-    ...(DIETARY_VIOLATION_KEYWORDS[tag] ?? []).filter((word) => clean.some((text) => mentions(text, word))).map((word) => `Contains ${word} (not ${tag})`),
-  ]);
+  return [
+    ...styleProblems(householdStyles(tags), claimed, clean),
+    ...householdModifiers(tags).flatMap((modifier) => problemsFor(modifier, [modifier], claimed, clean)),
+  ];
 };
 
 const TREE_NUTS = ['almond', 'cashew', 'walnut', 'pistachio', 'hazelnut', 'pecan', 'macadamia', 'brazil nut', 'pine nut'];

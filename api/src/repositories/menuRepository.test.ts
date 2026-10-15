@@ -16,7 +16,7 @@ import { DEFAULT_MEALS_ENABLED, DEFAULT_MEAL_STRUCTURE } from '../domain/househo
 import {
   createMenu,
   deleteUnmadeMenuItems,
-  findInRotationRecipesForAutoFill,
+  findAutoFillCandidates,
   findMenuByWeek,
   findMenuItemForMarkMade,
   findMenuItems,
@@ -381,22 +381,89 @@ describe('menuRepository', () => {
     });
   });
 
-  describe('findInRotationRecipesForAutoFill', () => {
-    it('returns only in-rotation recipes for the household, with role/cuisine columns', async () => {
+  describe('findAutoFillCandidates', () => {
+    it('returns in-rotation and out-of-rotation recipes with role/cuisine columns and the rotation flag, for this household only', async () => {
       const owner = await createUser();
       const householdId = await createHouseholdWithMember(owner);
 
       const inRotation = await asUser(owner.id, (client) =>
         insertRecipe(client, householdId, owner.id, { title: 'In Rotation', role: 'carb', cuisineTier1: 'north_indian', cuisineTier2: 'punjabi' }),
       );
-      await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id, { title: 'Out', inRotation: false }));
+      const out = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Out', role: 'carb', inRotation: false }),
+      );
+      const otherOwner = await createUser();
+      const otherHousehold = await createHouseholdWithMember(otherOwner);
+      await asUser(otherOwner.id, (client) => insertRecipe(client, otherHousehold, otherOwner.id, { title: 'Other house' }));
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, [], []),
+        findAutoFillCandidates(client, householdId, [], []),
       );
-      expect(candidates).toEqual([
-        { id: inRotation.id, role: 'carb', cuisineTier1: 'north_indian', cuisineTier2: 'punjabi' },
-      ]);
+      const byId = (a: { id: string }, b: { id: string }): number => a.id.localeCompare(b.id);
+      expect([...candidates].sort(byId)).toEqual(
+        [
+          { id: inRotation.id, role: 'carb', cuisineTier1: 'north_indian', cuisineTier2: 'punjabi', inRotation: true },
+          { id: out.id, role: 'carb', cuisineTier1: null, cuisineTier2: null, inRotation: false },
+        ].sort(byId),
+      );
+    });
+
+    it('regression: household [veg, eggetarian] matches a recipe tagged only veg', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const veg = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'Veg only', dietaryTags: ['veg'] }),
+      );
+
+      const candidates = await asUser(owner.id, (client) =>
+        findAutoFillCandidates(client, householdId, [], ['veg', 'eggetarian']),
+      );
+      expect(candidates.map((c) => c.id)).toEqual([veg.id]);
+    });
+
+    it('applies the expansion rules per household style', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      for (const tag of ['veg', 'vegan', 'jain', 'eggetarian', 'non_veg']) {
+        await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id, { title: tag, dietaryTags: [tag] }));
+      }
+      const count = async (tags: string[]): Promise<number> =>
+        (await asUser(owner.id, (client) => findAutoFillCandidates(client, householdId, [], tags))).length;
+
+      expect(await count(['non_veg'])).toBe(5);
+      expect(await count(['eggetarian'])).toBe(4);
+      expect(await count(['veg'])).toBe(3);
+      expect(await count(['vegan'])).toBe(1);
+      expect(await count(['jain'])).toBe(1);
+      expect(await count(['vegan', 'jain'])).toBe(2);
+    });
+
+    it('modifiers must all be present on the recipe, on top of any style', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const both = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'GF DF', dietaryTags: ['vegan', 'gluten_free', 'dairy_free'] }),
+      );
+      await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'GF only', dietaryTags: ['vegan', 'gluten_free'] }),
+      );
+      const candidates = await asUser(owner.id, (client) =>
+        findAutoFillCandidates(client, householdId, [], ['veg', 'gluten_free', 'dairy_free']),
+      );
+      expect(candidates.map((c) => c.id)).toEqual([both.id]);
+    });
+
+    it('a modifier-only household applies the modifier and no style restriction', async () => {
+      const owner = await createUser();
+      const householdId = await createHouseholdWithMember(owner);
+      const gf = await asUser(owner.id, (client) =>
+        insertRecipe(client, householdId, owner.id, { title: 'GF', dietaryTags: ['non_veg', 'gluten_free'] }),
+      );
+      await asUser(owner.id, (client) => insertRecipe(client, householdId, owner.id, { title: 'Plain', dietaryTags: ['non_veg'] }));
+      const candidates = await asUser(owner.id, (client) =>
+        findAutoFillCandidates(client, householdId, [], ['gluten_free']),
+      );
+      expect(candidates.map((c) => c.id)).toEqual([gf.id]);
     });
 
     it('excludes a recipe containing a skip-listed ingredient (substring, case-insensitive)', async () => {
@@ -410,7 +477,7 @@ describe('menuRepository', () => {
       });
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, ['peanut'], []),
+        findAutoFillCandidates(client, householdId, ['peanut'], []),
       );
       expect(candidates.map((c) => c.id)).toEqual([safe.id]);
     });
@@ -433,7 +500,7 @@ describe('menuRepository', () => {
       });
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, ['sun_dried'], []),
+        findAutoFillCandidates(client, householdId, ['sun_dried'], []),
       );
 
       // Correct (escaped) behavior: only the recipe with a LITERAL
@@ -453,7 +520,7 @@ describe('menuRepository', () => {
       });
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, [], []),
+        findAutoFillCandidates(client, householdId, [], []),
       );
       expect(candidates).toHaveLength(1);
     });
@@ -470,7 +537,7 @@ describe('menuRepository', () => {
       );
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, [], ['veg']),
+        findAutoFillCandidates(client, householdId, [], ['veg']),
       );
       expect(candidates.map((c) => c.id)).toEqual([veg.id]);
     });
@@ -490,7 +557,7 @@ describe('menuRepository', () => {
       );
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, [], ['veg', 'gluten_free']),
+        findAutoFillCandidates(client, householdId, [], ['veg', 'gluten_free']),
       );
       expect(candidates.map((c) => c.id)).toEqual([vegGlutenFree.id]);
     });
@@ -506,7 +573,7 @@ describe('menuRepository', () => {
       );
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, [], []),
+        findAutoFillCandidates(client, householdId, [], []),
       );
       expect(candidates).toHaveLength(2);
     });
@@ -532,7 +599,7 @@ describe('menuRepository', () => {
       });
 
       const candidates = await asUser(owner.id, (client) =>
-        findInRotationRecipesForAutoFill(client, householdId, ['peanut'], ['veg']),
+        findAutoFillCandidates(client, householdId, ['peanut'], ['veg']),
       );
       expect(candidates.map((c) => c.id)).toEqual([passesBoth.id]);
     });
