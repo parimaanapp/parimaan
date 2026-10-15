@@ -119,6 +119,8 @@ void main() {
           _field(PhotoItemEditSheet.quantityFieldKey),
           '0',
         );
+        await tester.ensureVisible(find.byKey(PhotoItemEditSheet.doneKey));
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(PhotoItemEditSheet.doneKey));
       });
 
@@ -134,6 +136,8 @@ void main() {
         _field(PhotoItemEditSheet.nameFieldKey),
         'x' * 200,
       );
+      await tester.ensureVisible(find.byKey(PhotoItemEditSheet.doneKey));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(PhotoItemEditSheet.doneKey));
     });
 

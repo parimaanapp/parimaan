@@ -5,14 +5,15 @@ import 'p_back_chevron.dart';
 
 /// The screen header from the design source's *Mobile app shell*.
 ///
-/// Anatomy, top to bottom: a control row (optional back affordance on the
-/// left, optional [trailing] action on the right), then the screen title in
-/// Instrument Serif at `display-m`, then an optional meta [subtitle].
+/// Anatomy: one row with the optional back affordance at the left edge, the
+/// screen title **centred** in Instrument Serif at `display-m` (the wireframe's
+/// centred title, scaled), and an optional [trailing] action at the right
+/// edge; then an optional centred meta [subtitle] beneath.
 ///
-/// **Note on the title's alignment.** The title is left-aligned, not centred:
-/// that is what the design source draws (a large serif title sitting under the
-/// control row, not a centred iOS-style navigation title). Anything centred
-/// here would fight the 28pt type at narrow widths.
+/// The title is centred on the bar, not on the space left between the slots.
+/// It is inset by [_sideInset] on each side — the width of one 44pt control
+/// plus a gap — so a single back or trailing control never touches it. A very
+/// long title wraps within that inset.
 ///
 /// This is a plain widget, not a [PreferredSizeWidget] — its height depends on
 /// whether a subtitle is present and on the user's text scale, so it is meant
@@ -55,7 +56,8 @@ class PTopBar extends StatelessWidget {
   /// Optional trailing action, usually a [PIconButton].
   final Widget? trailing;
 
-  bool get _hasControlRow => onBack != null || trailing != null;
+  /// Space reserved either side of the title for one 44pt control and a gap.
+  static const double _sideInset = AppSizing.minTouchTargetWidth + AppSpacing.s1;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -66,34 +68,55 @@ class PTopBar extends StatelessWidget {
       AppSpacing.s3,
     ),
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        if (_hasControlRow)
-          Row(
-            children: <Widget>[
-              if (onBack != null)
-                PTopBarBackButton(
-                  glyph: backGlyph,
-                  semanticLabel: backSemanticLabel!,
-                  onPressed: onBack,
-                ),
-              const Spacer(),
-              ?trailing,
-            ],
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSizing.minTouchTargetHeight,
           ),
-        const SizedBox(height: AppSpacing.s1),
-        Semantics(
-          header: true,
-          child: Text(
-            title,
-            style: AppTypography.displayM.copyWith(color: AppColors.ink),
+          child: Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _sideInset),
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.displayM.copyWith(
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              ),
+              if (onBack != null)
+                Positioned.fill(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: PTopBarBackButton(
+                      glyph: backGlyph,
+                      semanticLabel: backSemanticLabel!,
+                      onPressed: onBack,
+                    ),
+                  ),
+                ),
+              if (trailing != null)
+                Positioned.fill(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: trailing,
+                  ),
+                ),
+            ],
           ),
         ),
         if (subtitle != null) ...<Widget>[
           const SizedBox(height: AppSpacing.s0),
           Text(
             subtitle!,
+            textAlign: TextAlign.center,
             style: AppTypography.label.copyWith(color: AppColors.inkMid),
           ),
         ],
