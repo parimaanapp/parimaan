@@ -1,0 +1,28 @@
+{
+  "title": "Sprouts Chaat",
+  "description": "A light, high protein chaat of lightly steamed moong sprouts with onion, tomato, cucumber and lemon.",
+  "servings": 2,
+  "prepMin": 10,
+  "cookMin": 5,
+  "cuisineTier1": "pan_india",
+  "cuisineTier2": "pan_regional",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Moong Sprouts", "quantity": 200, "unit": "g", "category": "produce" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Cucumber", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Chaat Masala", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Salt", "quantity": 0.25, "unit": "tsp", "category": "dry_goods", "isStaple": true }
+  ],
+  "steps": [
+    "Steam the moong sprouts for 4 to 5 minutes until just tender but still with a little bite, then cool for a few minutes.",
+    "Put the sprouts in a bowl with the onion, tomato, cucumber and green chilli.",
+    "Sprinkle over the chaat masala and salt and squeeze in the lemon juice.",
+    "Toss well, top with coriander leaves and serve fresh."
+  ]
+}

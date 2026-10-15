@@ -1,0 +1,32 @@
+{
+  "title": "Mirchi Vada",
+  "description": "Jodhpur-style large green chillies stuffed with a spiced potato filling, dipped in besan batter and deep fried.",
+  "servings": 4,
+  "prepMin": 25,
+  "cookMin": 20,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "rajasthani",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Bhavnagri Chilli", "quantity": 6, "unit": "piece", "category": "produce", "notes": "slit and deseeded" },
+    { "name": "Potato", "quantity": 2, "unit": "piece", "category": "produce", "notes": "boiled and mashed" },
+    { "name": "Besan", "quantity": 100, "unit": "g", "category": "dry_goods" },
+    { "name": "Water", "quantity": 100, "unit": "ml", "category": "beverages", "notes": "approximate" },
+    { "name": "Dry Mango Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Fennel Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Carom Seeds", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Baking Soda", "quantity": 0.25, "unit": "tsp", "category": "other" },
+    { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "notes": "split between filling and batter", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 300, "unit": "ml", "category": "oil", "notes": "for deep frying" }
+  ],
+  "steps": [
+    "Mix the mashed potato with the dry mango powder, red chilli powder, fennel seeds and half the salt.",
+    "Stuff each slit chilli with the potato mixture, pressing it in firmly.",
+    "Whisk the besan with the water, carom seeds, baking soda and the remaining salt into a smooth, thick batter.",
+    "Heat the oil in a kadai on medium heat.",
+    "Dip each stuffed chilli in the batter to coat well and slide it gently into the oil.",
+    "Fry for 4 to 5 minutes, turning once, until golden and crisp; drain and serve hot with chutney."
+  ]
+}

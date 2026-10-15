@@ -1,0 +1,32 @@
+{
+  "title": "Bhel Puri",
+  "description": "Mumbai beach-style puffed rice chaat tossed with onion, tomato, potato, peanuts, sev and tangy sweet chutneys, assembled just before eating.",
+  "servings": 3,
+  "prepMin": 15,
+  "cookMin": 0,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "maharashtrian",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Murmura", "quantity": 60, "unit": "g", "category": "dry_goods" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "boiled and finely diced" },
+    { "name": "Roasted Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Sev", "quantity": 30, "unit": "g", "category": "snacks" },
+    { "name": "Coriander Chutney", "quantity": 2, "unit": "tbsp", "category": "condiment" },
+    { "name": "Jaggery Tamarind Chutney", "quantity": 2, "unit": "tbsp", "category": "condiment" },
+    { "name": "Chaat Masala", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Lemon", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "juiced" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Salt", "quantity": 0.25, "unit": "tsp", "category": "dry_goods", "isStaple": true }
+  ],
+  "steps": [
+    "Combine the onion, tomato and boiled potato in a large bowl and season with the salt and chaat masala.",
+    "Add the coriander chutney, jaggery tamarind chutney and lemon juice and mix well.",
+    "Add the murmura and roasted peanuts and toss quickly so the puffed rice stays crisp.",
+    "Top with the sev and coriander leaves.",
+    "Serve immediately in paper cones or bowls before the murmura softens."
+  ]
+}

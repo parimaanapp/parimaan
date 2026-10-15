@@ -1,0 +1,30 @@
+{
+  "title": "Punugulu",
+  "description": "Andhra deep fried fritters made from leftover dosa batter with onion, green chilli and ginger, crisp outside and fluffy inside.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 15,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "andhra",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Dosa Batter", "quantity": 300, "unit": "g", "category": "frozen", "notes": "thick, fermented" },
+    { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Ginger", "quantity": 10, "unit": "g", "category": "produce", "notes": "grated" },
+    { "name": "Cumin Seeds", "quantity": 1, "unit": "tsp", "category": "spice", "isStaple": true },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce", "notes": "chopped" },
+    { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
+    { "name": "Rice Flour", "quantity": 30, "unit": "g", "category": "grain", "notes": "if the batter is thin" },
+    { "name": "Salt", "quantity": 0.25, "unit": "tsp", "category": "dry_goods", "isStaple": true },
+    { "name": "Vegetable Oil", "quantity": 300, "unit": "ml", "category": "oil", "notes": "for deep frying" }
+  ],
+  "steps": [
+    "Mix the dosa batter with the onion, green chilli, ginger, cumin seeds, curry leaves, coriander leaves and salt.",
+    "If the batter is loose, add the rice flour so it falls from the spoon in thick ribbons.",
+    "Heat the oil in a kadai on medium heat until a drop of batter rises immediately.",
+    "Drop small spoonfuls of batter into the oil and fry in batches, turning, for 4 to 5 minutes until deep golden.",
+    "Drain on paper and serve hot with coconut or ginger chutney."
+  ]
+}

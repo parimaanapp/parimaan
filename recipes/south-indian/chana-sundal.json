@@ -1,0 +1,29 @@
+{
+  "title": "Chana Sundal",
+  "description": "A Tamil temple-style chickpea stir fry tempered with mustard seeds, curry leaves, red chilli and fresh coconut.",
+  "servings": 3,
+  "prepMin": 10,
+  "cookMin": 20,
+  "cuisineTier1": "south_indian",
+  "cuisineTier2": "tamil",
+  "dietaryTags": ["veg", "vegan", "gluten_free", "dairy_free"],
+  "role": "snack",
+  "ingredients": [
+    { "name": "Kabuli Chana", "quantity": 150, "unit": "g", "category": "dal", "notes": "soaked overnight" },
+    { "name": "Coconut (Grated)", "quantity": 30, "unit": "g", "category": "produce" },
+    { "name": "Coconut Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
+    { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
+    { "name": "Urad Dal (Split, White)", "quantity": 10, "unit": "g", "category": "dal" },
+    { "name": "Dried Red Chilli", "quantity": 2, "unit": "piece", "category": "spice" },
+    { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce" },
+    { "name": "Asafoetida (Hing)", "quantity": 0.25, "unit": "tsp", "category": "spice" },
+    { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "dry_goods", "isStaple": true }
+  ],
+  "steps": [
+    "Pressure cook the soaked chickpeas with the salt and enough water for 4 to 5 whistles until soft; drain well.",
+    "Heat the coconut oil in a pan and crackle the mustard seeds.",
+    "Add the urad dal and fry until golden, followed by the dried red chilli, curry leaves and hing.",
+    "Add the drained chickpeas and toss on medium heat for 2 minutes.",
+    "Stir in the grated coconut, mix well and serve warm."
+  ]
+}
