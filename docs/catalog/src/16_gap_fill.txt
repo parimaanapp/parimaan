@@ -1,0 +1,150 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## vegetable
+Bamboo Shoot (Fermented) | soibum; fermented bamboo shoot; mesu; khorisa; bastenga; hendua |  | 
+Axone | akhuni; fermented soybean; tungrymbai; kinema; hawaijar; bekang |  | 
+Raja Mirchi | king chilli; naga chilli; raja mircha; bhut jolokia fresh; ghost pepper; u morok | 5 | 
+Squash (Chayote Shoots) | chowchow shoots; chayote tendrils; squash tendrils; sechium shoots; dragon beard |  | 
+Yongchak | stink bean; petai; parkia; tree bean; sator beans; sataw | 10 | 
+Bhindi (Baby) | baby okra; small bhindi; tender okra; chhoti bhindi; lady finger small | 8 | 
+Mirch (Banana Pepper) | bajji mirchi; bhajji mulaga; milagai bajji | 40 | 
+Cabbage (Savoy) | savoy cabbage; curly cabbage; crinkled cabbage | 800 | 
+Peas in Pod | matar phali; peas pod; green peas pods; matar in shell; pea pods; pattani | 200 | 
+Capsicum (Orange) | orange capsicum; orange bell pepper; orange shimla mirch | 150 | 
+Sweet Potato (White) | white sweet potato; safed shakarkand; white shakarkand; sakkaravalli white | 200 | 
+Tomato (Desi) | desi tomato; country tomato; naati tomato; nattu thakkali; sour tomato; gavran tomato | 70 | 
+Tomato (Roma) | roma tomato; plum tomato; paste tomato; italian tomato | 60 | 
+Onion (Red) | lal pyaz; lal kanda; salad onion; purple onion; erra ullipaya | 100 | 
+## leafy_herb
+Wild Garlic Leaves | ramps; ramson; bear garlic; jangli lehsun patta; wild garlic |  | 
+Water Cress | watercress; water cress leaves; brahmi watercress; jal kumbhi cress |  | 
+Parsley (Flat Leaf) | flat leaf parsley; italian parsley; continental parsley |  | 
+Parsley (Curly) | curly parsley; garnish parsley; curly leaf parsley |  | 
+Celery Leaves | celery greens; celery stalk leaves; ajmoda patta |  | 
+Rose Petals (Fresh) | fresh rose petals; gulab petals; gulab ki pankhuri; edible rose petals; gulab ke phool |  | 
+Jasmine Flowers | jasmine; mogra; mogra flowers; chameli; malli; mallige |  | 
+Marigold Petals | genda phool; edible marigold; zendu petals; chendu petals |  | 
+## fruit
+Orange (Blood) | blood orange; moro orange; red orange | 180 | 
+Mandarin (Coorg) | coorg orange; coorg mandarin; kodagu orange; santra coorg | 80 | 
+Tangerine | clementine; satsuma; easy peel orange | 90 | 
+Lime (Key) | key lime; mexican lime; small lime; kaffir lime fruit | 30 | 
+Plantain (Ripe) | ripe plantain; ripe nendran; nendra pazham; plantain ripe | 250 | 
+Apple (Fuji) | fuji apple; fuji seb; fuji | 180 | 
+Mango (Chausa) | chausa; chaunsa; chausa aam; sawari; chausa mango | 250 | 
+Mango (Rajapuri) | rajapuri; raspuri; ras puri; rajapuri aam | 300 | 
+Mango (Malgoba) | malgova; malgoa; malgoba mango | 350 | 
+Mango (Pairi) | pairi; paayri; pairi mango; pyri; pyari | 200 | 
+Papaya (Red Lady) | red lady papaya; taiwan papaya; hybrid papaya; papita red | 800 | 
+Pineapple (Queen) | queen pineapple; small pineapple; mauritius pineapple | 700 | 
+Cherry (Sour) | sour cherry; tart cherry; morello cherry; amarena | 5 | 
+Pomegranate (Bhagwa) | bhagwa pomegranate; bhagwa anar; red anar; bhagwa dalimb | 250 | 
+Wood Apple (Kaith) | kavath; kapitha; velaga pandu; elephant apple wood | 200 | 
+## dal_pulse
+Black Chickpeas (Roasted) | roasted kala chana; bhuna kala chana; black chana roasted |  | 180
+Soya Beans (Roasted) | roasted soya beans; roasted soybean; soya nuts; soy nuts |  | 150
+## whole_grain
+Cracked Wheat (Fine) | fine dalia; dalia fine; fafda dalia; broken wheat fine; gehu dalia fine |  | 150
+Puffed Wheat | wheat puffs; gehun ke lai; gehu murmura; wheat pops |  | 20
+Puffed Amaranth | puffed rajgira; rajgira lahi; rajgira puffs; ramdana lahi; amaranth puffs |  | 20
+Flattened Rice (Red Poha) | red poha; kerala aval; red aval; chuvanna aval; unpolished poha |  | 120
+Flattened Rice (Brown) | brown poha; brown aval; rice flakes brown; wholegrain poha; healthy poha |  | 120
+Flattened Millet (Ragi Poha) | ragi poha; ragi flakes; ragi aval; ragi avalakki; finger millet flakes |  | 120
+Jowar Flakes | jowar poha; sorghum flakes; jonna aval; jowar aval |  | 120
+Oat Groats | whole oats; hulled oats; oat kernels |  | 180
+Wheat Flakes | whole wheat flakes; wheat cereal; wheat flake cereal |  | 40
+## flour
+Chana Atta | chickpea atta; kala chana atta; chana flour whole; bengal gram atta |  | 110
+Puri Atta | poori atta; poori flour; fine atta; sifted atta; maida atta |  | 120
+Poha Flour | flattened rice flour; aval maavu; atukula pindi; avalakki hittu; rice flake flour |  | 110
+Foxtail Millet Flour | thinai maavu; navane hittu; kangni flour; korralu flour; kangni atta |  | 115
+Little Millet Flour | samai maavu; saame hittu; kutki flour; samalu flour; kutki atta |  | 115
+Barnyard Millet Flour | kuthiraivali maavu; oodalu flour; sanwa flour; jhangora flour; udalu flour |  | 115
+## spice_whole
+Dried Bay Leaf (Indian) | cassia leaf; tejpat; malabathrum |  | 
+Dried Chilli (Bird's Eye) | bird eye chilli dried; thai chilli dried; dried thai chilli; kanthari dried; dry bird's eye |  | 
+Ancho Chilli | ancho; dried poblano; ancho pepper |  | 
+Guajillo Chilli | guajillo; guajillo pepper |  | 
+Dried Morel Mushrooms | morel; guchhi; gucchi; morels dried; dried morels; kashmiri guchhi |  | 
+Dried Mushrooms (Shiitake) | dried shiitake; shiitake dried; dried mushroom chinese; black mushroom dried |  | 
+Dried Porcini | porcini; porcini mushrooms; cep |  | 
+Wood Ear Mushroom | wood ear; black fungus; cloud ear; kikurage |  | 
+## masala_blend
+Poha Masala | kanda poha masala; batata poha masala; poha spice |  | 
+Tadka Masala | dal tadka masala; dal fry masala; tadka powder |  | 
+Huli Pudi | udupi sambar powder; karnataka huli powder |  | 
+Saaru Pudi | saru pudi; rasam pudi karnataka; saaru powder; kannada rasam powder |  | 
+Mughlai Masala | mughlai gravy masala; mughlai spice; mughlai curry masala |  | 
+Hyderabadi Masala | hyderabadi curry masala; dakhni masala; deccani masala |  | 
+## masala_blend
+## salt_sugar
+Chikki Jaggery | chikki gud; chikki gul; chikki bellam; chikki vellam |  | 
+## dairy_solid
+Cheese (Mozzarella Block) | mozzarella block; low moisture mozzarella; block mozzarella; pizza mozzarella block |  | 
+Kalakand | kalakand sweet; milk cake; alwar ka mawa; alwari mawa; kalakand mithai |  | 
+## dairy_liquid
+## curd
+Yogurt (Vegan) | vegan yogurt; plant based yogurt; soy yogurt; almond yogurt; coconut yogurt; dairy free curd |  | 
+## ghee_butter
+Butter (Spreadable) | spreadable butter; soft butter; butter spread; tub butter; table butter spread |  | 
+## paste
+Pomegranate Molasses | anar molasses; dibs rumman; pomegranate syrup thick; narsharab; anar ras thick |  | 
+Preserved Lemon | salted lemon; moroccan preserved lemon; lemon pickle moroccan; salt cured lemon |  | 
+Mole Paste | mole poblano; mole sauce paste; mexican mole; mole negro |  | 
+Adobo Paste | adobo marinade; adobo seasoning paste; filipino adobo paste |  | 
+## condiment_sauce
+Pico de Gallo | salsa fresca; fresh tomato salsa; salsa picante |  | 
+Refried Beans | frijoles refritos; canned refried beans; mexican beans paste |  | 
+Salsa Verde | green salsa; tomatillo salsa; green taco sauce |  | 
+Zhug | schug; skhug; yemenite hot sauce; middle eastern green chilli sauce |  | 
+Muhammara | roasted pepper dip; red pepper walnut dip; aleppo pepper dip |  | 
+Orange Blossom Water | neroli water; mazahar; orange flower water; zhaar |  | 
+Chimichurri | argentine green sauce; chimichurri sauce; parsley garlic sauce |  | 
+Bulgogi Sauce | korean bbq sauce; korean barbecue sauce; bulgogi marinade |  | 
+Katsu Sauce | tonkatsu sauce; japanese bbq sauce; bulldog sauce |  | 
+Japanese Mayo | japanese mayonnaise |  | 
+Sandwich Spread | veg sandwich spread; bread spread; mayo spread; mayonnaise spread |  | 
+## pickle_chutney
+Lemon Pickle (Sweet) | meetha nimbu ka achar; nimbu chhunda; sweet nimbu pickle |  | 
+Apple Chutney | seb ki chutney; seb chutney; kashmiri apple chutney; aapal chutney |  | 
+Walnut Chutney | akhrot chutney; kashmiri walnut chutney; doon chetin; doon chutney; akhrot ki chutney |  | 
+Plum Chutney | aloo bukhara chutney; alubukhara chutney; plum sauce indian; aloo bukhare ki chutney |  | 
+Radish Chutney | mooli chutney; mooli ki chutney; mullangi chutney; kashmiri muj chetin; muj chetin |  | 
+## snack
+Aloo Papad | potato papad; batata papad; potato papadam; batata papad fried |  | 
+Dry Bhel Mix | bhel mix; bhel puri mix dry; bhel mix namkeen; bhel namkeen; chaat bhel mix |  | 
+Bakarwadi | bakar wadi; bakarvadi; bakarwadi pune; bakharwadi |  | 
+Karanji | kanole; gujiya; gujia; ghughra; neureo; kajjikayalu |  | 
+Anarsa | anarase; arisa; ariselu; adhirasam; athirasam; arisalu |  | 
+Chiroti | chirote; chiroti sweet; chirotte; khaja chiroti |  | 
+Karasev | kara sev; karasev snack; kara boondi; kara boondhi |  | 
+Boondi (Plain) | boondi; bundi; boondi plain; salted boondi; khara boondi; boondi namkeen |  | 
+Garlic Sev | lasun sev; lehsun sev; lahsun sev; garlic bhujia; lasooni sev |  | 
+Plantain Chips | kela chips; banana wafers; raw banana chips; plantain wafers; kaccha kela chips |  | 
+Chana Chur | chanachur; chanachur mix; bombay mix bengali; bhaja moshla mix |  | 
+Muri | moori; bengali puffed rice; muri puffed rice; murmura bengali; pori puffed rice; mandakki |  | 
+Khoi | khoi puffed paddy; laja; lawa; dhani lawa; paddy puffs; pori paddy puffs |  | 
+Chira | chire; chiwra; chura; chivra; flattened rice bengali; chuda |  | 
+## beverage
+Cold Coffee Mix | iced coffee mix; cafe frappe mix; frappe mix; cold coffee premix |  | 
+Chaas Masala | buttermilk masala; chhaas masala; masala chaas powder; majjige masala; mor masala |  | 
+Barley Water | jau ka pani; jau paani; barley drink; barley paani; barley kanji; barley water mix |  | 
+Ragi Malt | ragi java; ragi ambali; ragi malt powder; ragi koozh; ragi koozhu; finger millet malt |  | 
+Kadha Mix | ayurvedic kadha; kadha powder; kashayam; kashayam powder; immunity kadha; kadha masala |  | 
+Dry Ginger Coffee | sukku kaapi; sukku malli coffee; chukku kaapi; sonth coffee; sukku coffee powder |  | 
+## baking_misc
+Vanilla Paste | vanilla bean paste; vanilla seeds paste; vanilla caviar |  | 
+Cream of Wheat | wheat cream; farina; semolina cereal; wheat farina; sooji cereal |  | 
+## egg
+## bakery
+Idiyappam (Ready) | idiyappam ready; string hoppers ready; sevai ready; nool puttu ready; ready idiyappam; shavige ready | 30 | 
+Chapati (Ready) | ready chapati; packaged chapati; chapati packet; ready roti pack; roti packet | 45 | 
+Pizza Base (Wheat) | whole wheat pizza base; atta pizza base; wheat pizza base; multigrain pizza base | 120 | 
+Burger Bun (Sesame) | sesame burger bun; sesame bun; sesame seed bun; burger bun seeds | 60 | 
+Pav (Whole Wheat) | whole wheat pav; wheat pav; brown pav; atta pav; multigrain pav | 35 | 
+Cake (Plum) | plum cake; christmas cake; fruit cake; rum cake; dry fruit cake; kerala plum cake | 70 | 
+Cake (Sponge) | sponge cake; vanilla sponge; plain sponge cake; cake base; sponge base | 60 | 
+Veg Puff | vegetable puff; puff patty; patties; bakery puff; patty | 70 | 
+Egg Puff | egg patty; bakery egg puff; egg puffs | 80 | 
+Dilpasand | dil pasand; dilkhush; dil khush; coconut bun; tutti frutti bun; dilkush | 90 | 
+## frozen
+Frozen Falafel Balls | falafel frozen; falafel balls; falafel ready; frozen falafel; chickpea balls; falafel patties | 25 | 

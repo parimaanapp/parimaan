@@ -1,0 +1,78 @@
+# format: Name | alias; alias | piece_g | cup_g      (## subcategory)
+## meat
+Chicken Neck | chicken gardan; murgi ki gardan; chicken necks; neck pieces chicken | 40 | 
+Chicken Feet | chicken paws; murgi ke paon; chicken legs paws; chicken claws; chicken trotters | 40 | 
+Country Chicken | desi chicken; desi murgi; naatu kozhi; naati koli; gavran chicken; village chicken | 1200 | 
+Turkey Breast | turkey breast fillet; turkey meat; turkey boneless | 400 | 
+Duck Breast | magret; duck fillet; breast of duck; batakh breast | 200 | 
+Mutton (Shoulder) | mutton shoulder; shoulder meat; kandha gosht; mutton dasti; dasti; dasti gosht |  | 
+Mutton (Leg) | mutton leg; raan; mutton raan; leg of mutton; lamb leg raan; raan gosht |  | 
+Mutton (Ribs) | mutton chaap ribs; lamb ribs; ribs mutton; mutton chops ribs; pasli; mutton pasli |  | 
+Mutton (Shank) | mutton shank; nalli; nalli gosht; nihari shank; lamb shank; mutton nalli |  | 
+Mutton Bone Marrow | bone marrow; goat bone marrow; nalli marrow; mutton marrow; bheja marrow; maghaz bones |  | 
+Mutton Tripe | paya tripe; ojhdi; ojri; mutton ojri; goat tripe; mutton stomach |  | 
+Mutton Boti | boti; boti kebab meat; mutton boti pieces; mutton boti kabab; boti meat; mutton cubes |  | 
+Lamb (Mince) | ground lamb; minced lamb; lamb keema; lamb ground meat; lamb kheema |  | 
+Beef (Steak) | beef steak; steak; ribeye; sirloin; tenderloin steak; beef sirloin | 250 | 
+Beef (Mince) | beef mince; ground beef; minced beef; beef keema; beef kheema; buff keema |  | 
+Beef (Boneless Cubes) | boneless beef; beef cubes; beef boneless; beef chunks; buff boneless; beef boti |  | 
+Beef (With Bone) | beef bone in; bone in beef; beef with bone; beef curry cut bone; beef bones; beef on bone |  | 
+Beef Liver | beef kaleji; ox liver; buff liver; buff kaleji; liver beef; veal liver |  | 
+Buffalo Meat | buff; carabeef; buffalo beef; kerala buff; buff meat; pottu eracchi |  | 
+Veal | calf meat; baby beef; veal meat; veal cutlet; veal escalope; young beef |  | 
+Pork (Belly) | pork bacon belly; belly pork; pork streaky; pork belly slab; pork pieces fat; pork belly strips |  | 
+Pork (Ribs) | pork ribs; spare ribs; baby back ribs; pork spare ribs; bbq ribs; pork rib rack |  | 
+Pork (Chops) | pork chops; pork chop; loin chops; pork loin chop; bone in pork chops; pork cutlet |  | 
+Pork (Mince) | pork mince; ground pork; minced pork; pork keema; pork kheema; pork ground meat |  | 
+Pork (Shoulder) | pork shoulder; pork butt; boston butt; pulled pork cut; pork collar; pork shoulder roast |  | 
+Pork Trotters | pork feet; pig feet; pork legs; pig trotters; pig's feet; pork paya |  | 
+Pork Sausage (Goan) | goan sausage; goa sausage; goan chorizo; chourico; choris; goan chourico |  | 
+Ham | ham slices; sliced ham; cooked ham; pork ham; honey ham; smoked ham | 20 | 
+Prosciutto | parma ham; prosciutto crudo; dry cured ham; serrano ham; jamon; jamón | 15 | 
+Hot Dog Sausage | frankfurters; frankfurter; wiener; wieners; hot dog frankfurter; hot dog | 45 | 
+Chorizo | spanish chorizo; spanish sausage; chouriço; chourico spanish; paprika sausage; chorizo sausage | 60 | 
+## fish
+Kingfish (Seer) | seerfish; vanjiram; anjal; surmai kingfish; vanjaram fish; neimeen |  | 
+Halwa Fish | black pomfret halwa; halwa pomfret; kala halwa; indian halwa fish; paplet halwa; blackish pomfret |  | 
+Ghol | ghol fish; blackspotted croaker; koth; ghol croaker; bhola fish; ghol machhi |  | 
+Paplet | papdi fish; papdi paplet; paplet fish; indian pomfret; pappalet |  | 
+Kanava | squid kerala; kanava meen; kanava fish; kanava calamari; kanava squid; kanava kerala |  | 
+Sole | sole fish; lemon sole; dover sole; sole fillet; lady fish; sole kerala |  | 
+Barramundi | bhetki; bhekti; bekti; asian sea bass; sea bass; seabass |  | 
+Pangas | pangas fish; pangasius fillet; pangas fillet; river cobbler; pangasius fish; pangash |  | 
+Pabda | pabda fish; pabda mach; pabda machh; butter catfish; ompok; pabdo |  | 
+Magur | magur fish; magur mach; magur machh; walking catfish; magur catfish; clarias |  | 
+Koi Fish | koi; koi mach; koi machh; climbing perch; koi bengali; kai |  | 
+Tangra | tangra fish; tangra mach; tangra machh; tengra; tengra fish; mystus |  | 
+Parshe | parshe fish; parshe mach; parshey; grey mullet; parse; parsey |  | 
+Chitol | chital; chitol fish; chitol mach; featherback; chitol machh; chital fish |  | 
+Ilish (Padma) | ilish mach; padma ilish; ilish padma; hilsa padma; ilisha; ilish mas |  | 
+Mourala | mourola; mourala mach; mourala machh; mola; mola mach; mola machh |  | 
+Puti | puti mach; puti machh; punti; punti fish; swamp barb; puntius |  | 
+Topse | topse mach; topse machh; tapsee; mango fish; tapsi; tapsi mach |  | 
+Pomfret (Silver) | silver pomfret; silver paplet; chandi paplet; chandi pomfret; pomfret silver; white pomfret silver |  | 
+Ribbon Fish | ribbonfish; bala; bale; vala; vaala; baala |  | 
+Whitebait | white bait; whitebait fish; small fry; baby fish; small fish fry; whitebait kerala |  | 
+Herring | herring fish; kippers; smoked herring; pickled herring; herring fillet; herring roe |  | 
+Cod | cod fish; cod fillet; atlantic cod; cod loin; codfish; bacalao |  | 
+Trout | trout fish; rainbow trout; brown trout; trout fillet; river trout; mountain trout |  | 
+Swordfish | sword fish; swordfish steak; swordfish loin; sword; kadal vaalai; broadbill |  | 
+Mahi Mahi | dorado; dolphin fish; mahimahi; common dolphinfish; dolphinfish; mahi |  | 
+Grouper | hamour; hammour; kalava; kalawa; kalava fish; kalawa meen |  | 
+Murrel | murrel fish; snakehead; snake head fish; sol; shol mach; shol machh |  | 
+Freshwater Prawns | golda chingri; golda; golda prawns; scampi; giant river prawn; freshwater prawn |  | 
+Small Prawns | jawla; jawla prawns; sukat; kolambi small; chhote jhinga; small shrimp |  | 
+Dried Prawns | sukat kolambi; sukke jhinga; dried shrimp; dry prawns; sukhe jhinga; dry shrimp |  | 
+Dried Anchovies | dry anchovies; nethili karuvadu; netholi unakka; nethili dry; kozhuva unakku; ikan bilis |  | 
+Fish Roe | roe; fish eggs; fish egg; machher dim; machli ke ande; meen muttai |  | 
+Fish Head | fish mudo; macher mudo; mudo; machher matha; fish heads; meen thala |  | 
+Surimi | crab stick; crab sticks; imitation crab; kani; kanikama; crab meat imitation |  | 
+Crab Meat | crabmeat; lump crab meat; crab meat tinned; crab claw meat; crab flesh; nandu meat |  | 
+Crab (Mud) | mud crab; mud crabs; mangrove crab; mud crab live; kekda mud; nandu mud |  | 
+Crab (Blue Swimming) | blue crab; blue swimmer crab; blue swimming crab; neelnandu; neel kekda; blue crab swimming |  | 
+Lobster (Rock) | rock lobster; spiny lobster; sea lobster; lobster tail; lobster tails; langouste |  | 
+Scallops | scallop; bay scallops; sea scallops; scallop meat; coquille; hotate |  | 
+Cuttlefish | cuttle fish; cuttlefish fresh; kanava cuttlefish; cuttle; sepia; mandeli |  | 
+Green Mussels | green mussel; kallummakkaya; kallumakkaya; kadukka; kadukka green; kadukkai |  | 
+Canned Sardines | sardines in oil; sardine tin; tinned sardines; sardines can; sardines tin; oil sardines |  | 
+Smoked Salmon | lox; salmon smoked; smoked salmon slices; gravlax; cold smoked salmon; salmon lox |  | 
