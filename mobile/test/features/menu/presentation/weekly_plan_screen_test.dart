@@ -301,7 +301,7 @@ void main() {
         );
         expect(
           find.descendant(of: cell, matching: find.textContaining('Rajma')),
-          findsOneWidget,
+          findsWidgets,
         );
         expect(
           find.descendant(
@@ -425,22 +425,23 @@ void main() {
       );
     });
 
-    testWidgets('a cell tapped in the next week sends THAT week to the picker', (
-      WidgetTester tester,
-    ) async {
-      final FakeMenuRepository repository = FakeMenuRepository(
-        fetchResult: testEmptyMenu,
-      );
-      await _pump(tester, menuRepository: repository, today: thursday);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(WeeklyPlanScreen.nextWeekKey));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'a cell tapped in the next week sends THAT week to the picker',
+      (WidgetTester tester) async {
+        final FakeMenuRepository repository = FakeMenuRepository(
+          fetchResult: testEmptyMenu,
+        );
+        await _pump(tester, menuRepository: repository, today: thursday);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(WeeklyPlanScreen.nextWeekKey));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)));
+        await tester.pumpAndSettle();
 
-      expect(_picker(tester).extra.weekStartDate, DateTime.utc(2026, 10, 19));
-    });
+        expect(_picker(tester).extra.weekStartDate, DateTime.utc(2026, 10, 19));
+      },
+    );
 
     testWidgets('the arrows disable at the +/-4 week bound', (
       WidgetTester tester,

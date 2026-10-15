@@ -152,6 +152,7 @@ void main() {
           tester,
           recipeRepository: FakeRecipeRepository(
             result: <Recipe>[_recipe('recipe-1', 'Dal')],
+            detailResult: _recipe('recipe-1', 'Dal'),
           ),
           menuRepository: menuRepository,
           extra: (

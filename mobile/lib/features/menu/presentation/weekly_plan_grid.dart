@@ -52,6 +52,8 @@ class WeeklyPlanGrid extends StatelessWidget {
   static const Key columnLayoutKey = Key('weekly-plan-layout-columns');
   static const Key plusKey = Key('weekly-plan-cell-plus');
   static const Key cellSurfaceKey = Key('weekly-plan-cell-surface');
+  static const Key overflowCountKey = Key('weekly-plan-cell-more');
+  static const Key remainingKey = Key('weekly-plan-cell-remaining');
 
   static Key cellKey(int dayOfWeek, MealType mealType) =>
       Key('plan-cell-$dayOfWeek-${mealType.wireValue}');
@@ -65,8 +67,13 @@ class WeeklyPlanGrid extends StatelessWidget {
       Key('day-section-overflow-$dayOfWeek');
 
   /// Width of the day-label column; shared with the column header row so
-  /// the headers line up with the cells beneath.
-  static const double _labelWidth = 40;
+  /// the headers line up with the cells beneath. At least a 44 pt tap
+  /// target, growing with the text scale (capped so cells keep room).
+  static double _labelWidthOf(BuildContext context) =>
+      MediaQuery.textScalerOf(context)
+          .scale(AppSizing.minTouchTargetWidth)
+          .clamp(44.0, 66.0);
+
   static const double _borderWidth = 1.5;
   static const double _gap = AppSpacing.s0;
 
@@ -91,10 +98,11 @@ class WeeklyPlanGrid extends StatelessWidget {
       key: block ? blockLayoutKey : columnLayoutKey,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (!block) _ColumnHeaders(meals: view.meals),
+        if (!block)
+          _ColumnHeaders(meals: view.meals, labelWidth: _labelWidthOf(context)),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(
+            padding: const EdgeInsetsDirectional.fromSTEB(
               AppSpacing.s1,
               AppSpacing.s1,
               AppSpacing.s1,
@@ -107,6 +115,7 @@ class WeeklyPlanGrid extends StatelessWidget {
                 dayOfWeek: day,
                 dateOfMonth: menu.weekStartDate.add(Duration(days: day)).day,
                 isToday: day == todayDayOfWeek,
+                labelWidth: _labelWidthOf(context),
                 block: block,
                 meals: view.meals,
                 groups: view.groupsForDay(day),
@@ -148,8 +157,8 @@ class _PlanView {
 
 Color _fillFor(MealType meal) => switch (meal) {
   MealType.breakfast => AppColors.haldi,
-  MealType.lunch => AppColors.terracotta,
-  MealType.snacks => AppColors.inkMid,
+  MealType.lunch => AppColors.terracottaDeep,
+  MealType.snacks => AppColors.inkSoft,
   MealType.dinner => AppColors.cardamom,
 };
 
@@ -157,21 +166,25 @@ Color _onFillFor(MealType meal) =>
     meal == MealType.breakfast ? AppColors.ink : AppColors.paper;
 
 class _ColumnHeaders extends StatelessWidget {
-  const _ColumnHeaders({required this.meals});
+  const _ColumnHeaders({required this.meals, required this.labelWidth});
 
   final List<MealType> meals;
+  final double labelWidth;
 
   @override
   Widget build(BuildContext context) {
     const double inset =
         AppSpacing.s1 + AppSpacing.s1 + WeeklyPlanGrid._borderWidth;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(inset, AppSpacing.s1, inset, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        inset,
+        AppSpacing.s1,
+        inset,
+        0,
+      ),
       child: Row(
         children: <Widget>[
-          const SizedBox(
-            width: WeeklyPlanGrid._labelWidth + WeeklyPlanGrid._gap,
-          ),
+          SizedBox(width: labelWidth + WeeklyPlanGrid._gap),
           for (int i = 0; i < meals.length; i++) ...<Widget>[
             if (i > 0) const SizedBox(width: WeeklyPlanGrid._gap),
             Expanded(
@@ -180,7 +193,7 @@ class _ColumnHeaders extends StatelessWidget {
                 key: WeeklyPlanGrid.columnHeaderKey(meals[i]),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: _monoLabel.copyWith(color: AppColors.inkMid),
+                style: _monoLabel.copyWith(color: AppColors.inkSoft),
               ),
             ),
           ],
@@ -191,9 +204,9 @@ class _ColumnHeaders extends StatelessWidget {
 }
 
 final TextStyle _monoLabel = AppTypography.mono.copyWith(
-  fontSize: 9,
-  height: 12 / 9,
-  letterSpacing: 1,
+  fontSize: 11,
+  height: 14 / 11,
+  letterSpacing: 0.6,
   fontWeight: FontWeight.w600,
 );
 
@@ -202,6 +215,7 @@ class _DayCard extends StatelessWidget {
     required this.dayOfWeek,
     required this.dateOfMonth,
     required this.isToday,
+    required this.labelWidth,
     required this.block,
     required this.meals,
     required this.groups,
@@ -212,6 +226,7 @@ class _DayCard extends StatelessWidget {
   final int dayOfWeek;
   final int dateOfMonth;
   final bool isToday;
+  final double labelWidth;
   final bool block;
   final List<MealType> meals;
   final Map<MealType, List<PlannedSlot>> groups;
@@ -222,6 +237,7 @@ class _DayCard extends StatelessWidget {
     dayOfWeek: dayOfWeek,
     meal: meal,
     slots: groups[meal] ?? const <PlannedSlot>[],
+    isToday: isToday,
     showMealLabel: block,
     onAddToSlot: onAddToSlot,
   );
@@ -269,10 +285,11 @@ class _DayCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             SizedBox(
-              width: WeeklyPlanGrid._labelWidth,
+              width: labelWidth,
               child: _DayLabel(
                 dayOfWeek: dayOfWeek,
                 dateOfMonth: dateOfMonth,
+                isToday: isToday,
                 onTap: () => onDayMenu(dayOfWeek),
               ),
             ),
@@ -289,11 +306,13 @@ class _DayLabel extends StatelessWidget {
   const _DayLabel({
     required this.dayOfWeek,
     required this.dateOfMonth,
+    required this.isToday,
     required this.onTap,
   });
 
   final int dayOfWeek;
   final int dateOfMonth;
+  final bool isToday;
   final VoidCallback onTap;
 
   @override
@@ -301,7 +320,7 @@ class _DayLabel extends StatelessWidget {
     final String name = weekdayNames[dayOfWeek];
     return Semantics(
       button: true,
-      label: 'More $name actions',
+      label: 'More $name actions${isToday ? ', today' : ''}',
       excludeSemantics: true,
       onTap: onTap,
       child: InkWell(
@@ -313,24 +332,26 @@ class _DayLabel extends StatelessWidget {
             minHeight: AppSizing.minTouchTargetHeight,
           ),
           child: Align(
-            alignment: Alignment.topLeft,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.topLeft,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(name.substring(0, 3), style: AppTypography.bodyStrong),
-                  Text(
-                    '$dateOfMonth',
-                    style: AppTypography.mono.copyWith(
-                      fontSize: 11,
-                      color: AppColors.inkMid,
-                    ),
+            alignment: AlignmentDirectional.topStart,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  name.substring(0, 3),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodyStrong,
+                ),
+                Text(
+                  '$dateOfMonth',
+                  maxLines: 1,
+                  style: AppTypography.mono.copyWith(
+                    fontSize: 11,
+                    color: AppColors.inkSoft,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -344,6 +365,7 @@ class _MealCell extends StatelessWidget {
     required this.dayOfWeek,
     required this.meal,
     required this.slots,
+    required this.isToday,
     required this.showMealLabel,
     required this.onAddToSlot,
   });
@@ -351,21 +373,16 @@ class _MealCell extends StatelessWidget {
   final int dayOfWeek;
   final MealType meal;
   final List<PlannedSlot> slots;
+  final bool isToday;
   final bool showMealLabel;
   final void Function(int, PlannedSlot) onAddToSlot;
 
-  static const int _maxLines = 3;
+  static const int _maxTitles = 3;
 
   List<String> get _titles => slots
       .where((PlannedSlot s) => s.isFilled)
       .map((PlannedSlot s) => s.item!.recipe.title)
       .toList(growable: false);
-
-  /// Up to three stacked names; four or more become two names then "+N"
-  /// so the cell never exceeds three lines.
-  String _display(List<String> titles) => titles.length <= _maxLines
-      ? titles.join('\n')
-      : '${titles.take(_maxLines - 1).join('\n')}\n+${titles.length - (_maxLines - 1)}';
 
   PlannedSlot? get _nextEmpty {
     for (final PlannedSlot s in slots) {
@@ -379,15 +396,32 @@ class _MealCell extends StatelessWidget {
     final List<String> titles = _titles;
     final bool isEmpty = titles.isEmpty;
     final PlannedSlot? target = _nextEmpty;
+    final int remaining = slots.length - titles.length;
+    final bool partial = !isEmpty && remaining > 0;
     final VoidCallback? onTap = target == null
         ? null
         : () => onAddToSlot(dayOfWeek, target);
+    final String status = isEmpty
+        ? 'empty, add a recipe'
+        : '${titles.join(', ')}'
+              '${partial ? '; ${titles.length} of ${slots.length} filled, '
+                        'next: ${target!.slotRole.displayLabel}' : ''}';
     final String label =
-        '${weekdayNames[dayOfWeek]} ${meal.displayLabel.toLowerCase()}: '
-        '${isEmpty ? 'empty, add a recipe' : titles.join(', ')}';
+        '${isToday ? 'Today, ' : ''}${weekdayNames[dayOfWeek]} '
+        '${meal.displayLabel.toLowerCase()}: $status';
 
     final Color onFill = _onFillFor(meal);
     final String mealLabel = meal.displayLabel.toUpperCase();
+    final bool collapse = titles.length > _maxTitles;
+    final List<String> shown = collapse
+        ? titles.take(_maxTitles - 1).toList(growable: false)
+        : titles;
+    final TextStyle titleStyle = AppTypography.body.copyWith(
+      fontSize: 12,
+      height: 15 / 12,
+      fontWeight: FontWeight.w600,
+      color: onFill,
+    );
 
     final Widget content = isEmpty
         ? Column(
@@ -406,36 +440,51 @@ class _MealCell extends StatelessWidget {
                   mealLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: _monoLabel.copyWith(color: AppColors.inkMid),
+                  style: _monoLabel.copyWith(color: AppColors.inkSoft),
                 ),
             ],
           )
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text(
-                _display(titles),
-                maxLines: _maxLines,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.body.copyWith(
-                  fontSize: 11,
-                  height: 14 / 11,
-                  fontWeight: FontWeight.w600,
-                  color: onFill,
-                ),
-              ),
-              if (showMealLabel) ...<Widget>[
-                const SizedBox(height: AppSpacing.s0),
+              for (final String title in shown)
                 Text(
-                  mealLabel,
+                  title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: _monoLabel.copyWith(
-                    color: onFill.withValues(alpha: 0.85),
-                  ),
+                  style: titleStyle,
                 ),
-              ],
+              if (collapse)
+                Text(
+                  '+${titles.length - shown.length}',
+                  key: WeeklyPlanGrid.overflowCountKey,
+                  maxLines: 1,
+                  style: titleStyle,
+                ),
+              const Spacer(),
+              if (showMealLabel || partial)
+                Row(
+                  children: <Widget>[
+                    if (showMealLabel)
+                      Flexible(
+                        child: Text(
+                          mealLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _monoLabel.copyWith(color: onFill),
+                        ),
+                      ),
+                    if (showMealLabel && partial)
+                      const SizedBox(width: AppSpacing.s0),
+                    if (partial)
+                      Text(
+                        '＋$remaining',
+                        key: WeeklyPlanGrid.remainingKey,
+                        maxLines: 1,
+                        style: _monoLabel.copyWith(color: onFill),
+                      ),
+                  ],
+                ),
             ],
           );
 
@@ -461,9 +510,7 @@ class _MealCell extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: AppRadius.borderS,
               color: isEmpty ? null : _fillFor(meal),
-              border: isEmpty
-                  ? Border.all(color: AppColors.inkMid.withValues(alpha: 0.4))
-                  : null,
+              border: isEmpty ? Border.all(color: AppColors.inkMid) : null,
             ),
             child: content,
           ),

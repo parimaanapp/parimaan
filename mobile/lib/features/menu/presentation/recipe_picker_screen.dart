@@ -12,7 +12,6 @@ import '../../recipes/data/recipe_repository.dart';
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/domain/recipe_ingredient.dart';
 import '../../recipes/presentation/recipe_card.dart';
-import '../domain/current_week.dart';
 import '../domain/ingredient_warning.dart';
 import '../domain/menu.dart';
 import '../state/current_menu_controller.dart';
@@ -121,7 +120,7 @@ class _PickerForHouseholdState extends ConsumerState<_PickerForHousehold> {
       if (!context.mounted) return;
       final MenuKey menuKey = menuKeyFor(
         widget.household.id,
-        currentWeekStartDate(),
+        widget.extra.weekStartDate,
       );
       try {
         await ref

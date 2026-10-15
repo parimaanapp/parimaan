@@ -163,8 +163,10 @@ class _WeeklyPlanForHouseholdState
         ),
         _WeekHeader(
           weekStartDate: weekStartDate,
-          onPrevious: () => _shiftWeek(-1),
-          onNext: () => _shiftWeek(1),
+          onPrevious: _weekOffset <= -_maxWeekOffset
+              ? null
+              : () => _shiftWeek(-1),
+          onNext: _weekOffset >= _maxWeekOffset ? null : () => _shiftWeek(1),
           onAutoFill: () =>
               context.push(AppRoutes.autoFillPreview, extra: menuKey),
         ),
@@ -182,6 +184,7 @@ class _WeeklyPlanForHouseholdState
                   dayOfWeek: dayOfWeek,
                   mealSlot: slot.mealType.wireValue,
                   slotRole: slot.slotRole,
+                  weekStartDate: weekStartDate,
                 ),
               ),
               onDayMenu: (int dayOfWeek) => showModalBottomSheet<void>(
@@ -244,8 +247,8 @@ class _WeekHeader extends StatelessWidget {
   });
 
   final DateTime weekStartDate;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
   final VoidCallback onAutoFill;
 
   @override

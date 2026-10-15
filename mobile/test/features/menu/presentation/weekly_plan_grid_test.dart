@@ -216,12 +216,15 @@ void main() {
       WidgetTester tester,
     ) async {
       const String long = 'Extraordinarily long vegetable biryani with saffron';
-      final Menu menu = _menu(<String>['lunch'], <MenuItem>[
-        _item('a', long, role: RecipeRole.carb),
-        _item('b', long),
-        _item('c', long),
-        _item('d', long, role: RecipeRole.accompaniment),
-      ]);
+      final Menu menu = _menu(
+        <String>['lunch'],
+        <MenuItem>[
+          _item('a', long, role: RecipeRole.carb),
+          _item('b', long),
+          _item('c', long),
+          _item('d', long, role: RecipeRole.accompaniment),
+        ],
+      );
       await _pump(tester, menu, width: 320, textScale: 2.0);
       final Finder count = find.byKey(WeeklyPlanGrid.overflowCountKey);
       final Rect cell = tester.getRect(
@@ -235,9 +238,10 @@ void main() {
     testWidgets('a partly filled meal shows how many slots remain', (
       WidgetTester tester,
     ) async {
-      final Menu menu = _menu(<String>['lunch'], <MenuItem>[
-        _item('a', 'Rice', role: RecipeRole.carb),
-      ]);
+      final Menu menu = _menu(
+        <String>['lunch'],
+        <MenuItem>[_item('a', 'Rice', role: RecipeRole.carb)],
+      );
       await _pump(tester, menu);
       final Finder remaining = find.descendant(
         of: find.byKey(WeeklyPlanGrid.cellKey(0, MealType.lunch)),
@@ -250,10 +254,13 @@ void main() {
     testWidgets('a complete meal shows no remaining marker', (
       WidgetTester tester,
     ) async {
-      final Menu menu = _menu(<String>['dinner'], <MenuItem>[
-        _item('a', 'Roti', meal: 'dinner', role: RecipeRole.carb),
-        _item('b', 'Bhindi', meal: 'dinner'),
-      ]);
+      final Menu menu = _menu(
+        <String>['dinner'],
+        <MenuItem>[
+          _item('a', 'Roti', meal: 'dinner', role: RecipeRole.carb),
+          _item('b', 'Bhindi', meal: 'dinner'),
+        ],
+      );
       await _pump(tester, menu);
       expect(find.byKey(WeeklyPlanGrid.remainingKey), findsNothing);
     });
@@ -322,8 +329,8 @@ void main() {
       }
 
       expect(fill(MealType.breakfast), AppColors.haldi);
-      expect(fill(MealType.lunch), AppColors.terracotta);
-      expect(fill(MealType.snacks), AppColors.inkMid);
+      expect(fill(MealType.lunch), AppColors.terracottaDeep);
+      expect(fill(MealType.snacks), AppColors.inkSoft);
       expect(fill(MealType.dinner), AppColors.cardamom);
     });
   });
