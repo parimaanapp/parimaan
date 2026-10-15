@@ -1,0 +1,124 @@
+{
+  "title": "Chicken Korma",
+  "description": "A mild, creamy North Indian curry of chicken braised in yogurt, fried onion and cashew paste with whole spices and kewra.",
+  "servings": 4,
+  "prepMin": 20,
+  "cookMin": 45,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "mughlai",
+  "dietaryTags": [
+    "non_veg",
+    "gluten_free"
+  ],
+  "role": "sabzi_dal",
+  "ingredients": [
+    {
+      "name": "Chicken (Curry Cut)",
+      "quantity": 700,
+      "unit": "g",
+      "category": "meat_fish"
+    },
+    {
+      "name": "Curd",
+      "quantity": 150,
+      "unit": "g",
+      "category": "dairy",
+      "notes": "whisked"
+    },
+    {
+      "name": "Onion",
+      "quantity": 3,
+      "unit": "piece",
+      "category": "produce",
+      "notes": "thinly sliced"
+    },
+    {
+      "name": "Cashew Paste",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Ginger Garlic Paste",
+      "quantity": 1,
+      "unit": "tbsp",
+      "category": "condiment"
+    },
+    {
+      "name": "Ghee",
+      "quantity": 3,
+      "unit": "tbsp",
+      "category": "oil"
+    },
+    {
+      "name": "Green Cardamom",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cloves",
+      "quantity": 4,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Cinnamon Stick",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Bay Leaf",
+      "quantity": 1,
+      "unit": "piece",
+      "category": "spice"
+    },
+    {
+      "name": "Coriander Powder",
+      "quantity": 2,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Red Chilli Powder",
+      "quantity": 1,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Garam Masala",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "spice"
+    },
+    {
+      "name": "Kewra Water",
+      "quantity": 0.5,
+      "unit": "tsp",
+      "category": "other"
+    },
+    {
+      "name": "Milk",
+      "quantity": 100,
+      "unit": "ml",
+      "category": "dairy"
+    },
+    {
+      "name": "Salt",
+      "quantity": 1.5,
+      "unit": "tsp",
+      "category": "dry_goods",
+      "isStaple": true
+    }
+  ],
+  "steps": [
+    "Fry the sliced onions in 1 tbsp of the ghee until golden brown, cool and grind to a smooth paste with a little water.",
+    "Marinate the chicken with the curd, ginger garlic paste, coriander powder, chilli powder and salt for 30 minutes.",
+    "Heat the remaining ghee, add the cardamom, cloves, cinnamon and bay leaf, and let them sizzle for 20 seconds.",
+    "Add the marinated chicken and cook on medium heat for 10 minutes until the moisture reduces.",
+    "Stir in the onion paste and cashew paste and cook 5 minutes, then add the milk.",
+    "Cover and simmer on low heat for 20 minutes until the chicken is tender and the gravy is creamy.",
+    "Finish with the garam masala and kewra water and rest for 5 minutes before serving."
+  ]
+}

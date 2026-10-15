@@ -1,0 +1,50 @@
+{
+  "title": "Mishti Doi",
+  "description": "Bengal's sweet set yogurt, made with caramelised sugar and slow-set overnight into a creamy, pale-brown dessert.",
+  "servings": 4,
+  "prepMin": 10,
+  "cookMin": 40,
+  "cuisineTier1": "north_indian",
+  "cuisineTier2": "bengali",
+  "dietaryTags": [
+    "veg",
+    "gluten_free"
+  ],
+  "role": "sweet",
+  "ingredients": [
+    {
+      "name": "Milk",
+      "quantity": 1,
+      "unit": "l",
+      "category": "dairy"
+    },
+    {
+      "name": "Sugar",
+      "quantity": 120,
+      "unit": "g",
+      "category": "dry_goods",
+      "notes": "30 g for the caramel and the rest for the milk"
+    },
+    {
+      "name": "Curd",
+      "quantity": 2,
+      "unit": "tbsp",
+      "category": "dairy",
+      "notes": "fresh and mildly sour, as starter"
+    },
+    {
+      "name": "Water",
+      "quantity": 30,
+      "unit": "ml",
+      "category": "beverages"
+    }
+  ],
+  "steps": [
+    "Boil the milk on medium heat, stirring often, until reduced by about a third, about 30 minutes.",
+    "In a small pan melt 30 g of the sugar with the water until it becomes a golden-brown caramel.",
+    "Carefully pour the caramel into the hot milk and stir until it dissolves, then add the remaining sugar.",
+    "Cool the milk until just lukewarm, about 40 degrees, and whisk in the curd.",
+    "Pour into a clay pot or heatproof bowl, cover and keep in a warm place for 8 to 10 hours until set.",
+    "Chill for 2 hours before serving."
+  ]
+}
