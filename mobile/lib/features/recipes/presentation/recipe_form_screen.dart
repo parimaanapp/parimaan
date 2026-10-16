@@ -135,13 +135,18 @@ class _IngredientRow {
     this.isStaple = false,
     this.category,
     this.notes,
-  }) : nameController = TextEditingController(text: name),
+  }) : originalQuantity = quantity,
+       nameController = TextEditingController(text: name),
        quantityController = TextEditingController(
          text: quantity == null ? '' : _formatNumber(quantity),
        ),
        unitController = TextEditingController(text: unit ?? '');
 
   final int id;
+
+  /// Full-precision quantity the row was loaded with; the field shows it
+  /// rounded, so an untouched field must write this back, not the display.
+  final double? originalQuantity;
   final TextEditingController nameController;
   final TextEditingController quantityController;
   final TextEditingController unitController;
@@ -176,7 +181,10 @@ class _StepRow {
 /// At most two decimals, no trailing `.0` — see [formatQuantity].
 String _formatNumber(double value) => formatQuantity(value);
 
-double? _parseNumber(String text) {
+double? _parseNumber(String text, [double? original]) {
+  if (isUntouchedQuantity(text, original)) {
+    return original;
+  }
   final String trimmed = text.trim();
   if (trimmed.isEmpty) {
     return null;
@@ -516,7 +524,7 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
       .map(
         (_IngredientRow row) => RecipeIngredientDraft(
           name: row.nameController.text.trim(),
-          quantity: _parseNumber(row.quantityController.text),
+          quantity: _parseNumber(row.quantityController.text, row.originalQuantity),
           unit: row.unitController.text.trim().isEmpty
               ? null
               : row.unitController.text.trim(),
@@ -584,7 +592,7 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
       // unparseable string becomes `double.nan`, which
       // `validateRecipeIngredientQuantity`'s own `isNaN` check below
       // already rejects. No separate `== null` branch is reachable here.
-      final double? quantity = _parseNumber(row.quantityController.text);
+      final double? quantity = _parseNumber(row.quantityController.text, row.originalQuantity);
       if (validateRecipeIngredientQuantity(quantity) != null) {
         return false;
       }

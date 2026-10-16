@@ -8,7 +8,7 @@ import { resolveHouseholdId } from '@/household/resolveHouseholdId';
 import { assertOwnHousehold } from '@/recipes/buildRecipesQueryVariables';
 import { DeleteRecipeButton } from '@/recipes/DeleteRecipeButton';
 import { RECIPE_QUERY, type RecipeQueryResult } from '@/recipes/recipeQueries';
-import { formatQuantity } from '@/domain/formatQuantity';
+import { ingredientLabel } from '@/domain/formatQuantity';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,13 +59,7 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
       <ul>
         {recipe.ingredients.map((ingredient) => (
           <li key={ingredient.id}>
-            {[
-              ingredient.quantity === null ? null : formatQuantity(ingredient.quantity),
-              ingredient.unit,
-              ingredient.name,
-            ]
-              .filter(Boolean)
-              .join(' ')}
+            {ingredientLabel(ingredient)}
           </li>
         ))}
       </ul>

@@ -97,6 +97,9 @@ class _HaveItQuantitySheetState extends State<HaveItQuantitySheet> {
   }
 
   double? get _parsedQuantity {
+    if (isUntouchedQuantity(_quantity.text, widget.item.quantity)) {
+      return widget.item.quantity;
+    }
     final String trimmed = _quantity.text.trim();
     if (trimmed.isEmpty) return null;
     return double.tryParse(trimmed);

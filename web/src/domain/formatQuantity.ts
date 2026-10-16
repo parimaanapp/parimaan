@@ -9,3 +9,18 @@ export function formatQuantity(quantity: number): string {
   // `-0` and tiny values both read as a plain `0`.
   return rounded === 0 ? '0' : String(rounded);
 }
+
+/** "2 cup Toor dal"-style line; missing quantity/unit are skipped. */
+export function ingredientLabel(ingredient: {
+  quantity: number | null;
+  unit: string | null;
+  name: string;
+}): string {
+  return [
+    ingredient.quantity === null ? null : formatQuantity(ingredient.quantity),
+    ingredient.unit,
+    ingredient.name,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}

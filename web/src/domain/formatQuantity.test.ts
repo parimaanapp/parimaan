@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatQuantity } from '@/domain/formatQuantity';
+import { formatQuantity, ingredientLabel } from '@/domain/formatQuantity';
 
 describe('formatQuantity', () => {
   it('drops trailing zeros', () => {
@@ -17,5 +17,12 @@ describe('formatQuantity', () => {
   it('shows tiny and negative-zero values as a plain 0', () => {
     expect(formatQuantity(0.001)).toBe('0');
     expect(formatQuantity(-0.001)).toBe('0');
+  });
+});
+
+describe('ingredientLabel', () => {
+  it('formats quantity and skips missing parts', () => {
+    expect(ingredientLabel({ quantity: 2, unit: 'cup', name: 'Dal' })).toBe('2 cup Dal');
+    expect(ingredientLabel({ quantity: null, unit: null, name: 'Salt' })).toBe('Salt');
   });
 });

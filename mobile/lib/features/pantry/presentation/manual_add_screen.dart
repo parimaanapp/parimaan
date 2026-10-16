@@ -133,7 +133,10 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   /// field a user is about to edit further.
   static String _formatNumber(double value) => formatQuantity(value);
 
-  double? _parseNumber(String text) {
+  double? _parseNumber(String text, [double? original]) {
+    if (isUntouchedQuantity(text, original)) {
+      return original;
+    }
     final String trimmed = text.trim();
     if (trimmed.isEmpty) {
       return null;
@@ -142,7 +145,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   }
 
   bool get _isValid {
-    final double? quantity = _parseNumber(_quantity.text);
+    final double? quantity = _parseNumber(_quantity.text, widget.initialItem?.quantity);
     return validatePantryItemName(_name.text) == null &&
         quantity != null &&
         validatePantryItemQuantity(quantity) == null &&
@@ -160,7 +163,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     final String? expiry = _expiry.text.trim().isEmpty
         ? null
         : _expiry.text.trim();
-    final double? lowThreshold = _parseNumber(_lowThreshold.text);
+    final double? lowThreshold = _parseNumber(_lowThreshold.text, widget.initialItem?.lowThreshold);
     final String? category = _category;
 
     final PantryItem? existing = widget.initialItem;
@@ -170,7 +173,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
         widget.householdId,
         PantryItemDraft(
           name: _name.text.trim(),
-          quantity: _parseNumber(_quantity.text)!,
+          quantity: _parseNumber(_quantity.text, widget.initialItem?.quantity)!,
           unit: _unit.text.trim(),
           category: category,
           isStaple: _isStaple,
@@ -181,8 +184,8 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     } else {
       final Map<String, Object?> changed = <String, Object?>{
         if (_name.text.trim() != existing.name) 'name': _name.text.trim(),
-        if (_parseNumber(_quantity.text) != existing.quantity)
-          'quantity': _parseNumber(_quantity.text),
+        if (_parseNumber(_quantity.text, widget.initialItem?.quantity) != existing.quantity)
+          'quantity': _parseNumber(_quantity.text, widget.initialItem?.quantity),
         if (_unit.text.trim() != existing.unit) 'unit': _unit.text.trim(),
         if (category != existing.category) 'category': category,
         if (_isStaple != existing.isStaple) 'isStaple': _isStaple,
