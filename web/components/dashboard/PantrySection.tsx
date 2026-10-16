@@ -1,5 +1,6 @@
 import { groupPantryItemsByCategory, pantryCategoryLabel } from '@/domain/pantryGrouping';
 import type { PantryQueryResult } from '@/graphql/queries';
+import { formatQuantity } from '@/domain/formatQuantity';
 
 interface PantrySectionProps {
   items: PantryQueryResult['pantry'];
@@ -34,7 +35,7 @@ export function PantrySection({ items }: PantrySectionProps) {
           <ul>
             {group.items.map((item) => (
               <li key={item.id}>
-                {item.name} — {item.quantity} {item.unit}
+                {item.name} — {formatQuantity(item.quantity)} {item.unit}
               </li>
             ))}
           </ul>

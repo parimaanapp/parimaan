@@ -15,14 +15,16 @@ import 'wizard_step_scaffold.dart';
 import 'wizard_step_plan.dart';
 import 'wizard_step_submit.dart';
 
-/// Wireframe screen 2.2 — "Which meals?", step 1/4 in the create wizard; also
+/// Wireframe screen 2.2 — "Which meals?", always the first step of the create
+/// wizard. The total is dynamic (see `WizardStepPlan`): 3 to 5 steps depending
+/// on whether lunch/dinner are enabled and whether dinner shares lunch's
+/// structure, so the indicator reads "1/n" for the plan's current `n`. Also
 /// the Settings "Meals to plan" row (`W13 S3`), reached through
-/// `HouseholdEditEntry` in [WizardFlow.edit].
+/// `HouseholdEditEntry` in [WizardFlow.edit], where there is no counter.
 ///
-/// The create wizard renders [wizardMealTypes] — three toggleable cards,
-/// Snacks deliberately not offered (see that constant's doc for why). The
-/// Settings edit flow renders [editMealTypes] — all four `MealType.values`,
-/// including Snacks — because [flow] is what this screen already receives to
+/// Both flows render all four meals — breakfast, lunch, snacks and dinner —
+/// as toggleable cards ([wizardMealTypes] for create, [editMealTypes] for
+/// edit); snacks starts off. [flow] is what this screen already receives to
 /// tell the two contexts apart, so no second screen is needed.
 class WhichMealsScreen extends ConsumerWidget {
   const WhichMealsScreen({

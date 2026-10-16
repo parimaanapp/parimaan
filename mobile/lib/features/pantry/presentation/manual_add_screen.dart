@@ -13,6 +13,7 @@ import '../domain/pantry_item_patch.dart';
 import '../domain/pantry_item_validation.dart';
 import '../state/pantry_form_controller.dart';
 import 'pantry_error_copy.dart';
+import '../../../shared/format/quantity_format.dart';
 
 /// Wireframe screen 9.3 — Manual add, reused in edit mode.
 ///
@@ -72,7 +73,9 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     _unit = TextEditingController(text: item?.unit ?? '');
     _expiry = TextEditingController(text: item?.expiryDate ?? '');
     _lowThreshold = TextEditingController(
-      text: item?.lowThreshold == null ? '' : _formatNumber(item!.lowThreshold!),
+      text: item?.lowThreshold == null
+          ? ''
+          : _formatNumber(item!.lowThreshold!),
     );
     _category = item?.category;
     _isStaple = item?.isStaple ?? false;
@@ -113,10 +116,11 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
       }
       final String unit = _unit.text.trim();
       final String? previousDefault = defaultUnitForCategory(previous);
-      final bool isStoredUnit = widget.initialItem != null &&
-          unit.toLowerCase() ==
-              widget.initialItem!.unit.trim().toLowerCase();
-      final bool neverUserSet = unit.isEmpty ||
+      final bool isStoredUnit =
+          widget.initialItem != null &&
+          unit.toLowerCase() == widget.initialItem!.unit.trim().toLowerCase();
+      final bool neverUserSet =
+          unit.isEmpty ||
           (previousDefault != null &&
               unit.toLowerCase() == previousDefault.toLowerCase());
       if (neverUserSet && !isStoredUnit) {
@@ -125,12 +129,14 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     });
   }
 
-  /// Drops a trailing `.0` — `2.0` reads oddly in a quantity field a user is
-  /// about to edit further.
-  static String _formatNumber(double value) =>
-      value == value.roundToDouble() ? value.toInt().toString() : value.toString();
+  /// At most two decimals, no trailing `.0` — `2.0` reads oddly in a quantity
+  /// field a user is about to edit further.
+  static String _formatNumber(double value) => formatQuantity(value);
 
-  double? _parseNumber(String text) {
+  double? _parseNumber(String text, [double? original]) {
+    if (isUntouchedQuantity(text, original)) {
+      return original;
+    }
     final String trimmed = text.trim();
     if (trimmed.isEmpty) {
       return null;
@@ -139,7 +145,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   }
 
   bool get _isValid {
-    final double? quantity = _parseNumber(_quantity.text);
+    final double? quantity = _parseNumber(_quantity.text, widget.initialItem?.quantity);
     return validatePantryItemName(_name.text) == null &&
         quantity != null &&
         validatePantryItemQuantity(quantity) == null &&
@@ -154,8 +160,10 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     final PantryFormController controller = ref.read(
       pantryFormControllerProvider.notifier,
     );
-    final String? expiry = _expiry.text.trim().isEmpty ? null : _expiry.text.trim();
-    final double? lowThreshold = _parseNumber(_lowThreshold.text);
+    final String? expiry = _expiry.text.trim().isEmpty
+        ? null
+        : _expiry.text.trim();
+    final double? lowThreshold = _parseNumber(_lowThreshold.text, widget.initialItem?.lowThreshold);
     final String? category = _category;
 
     final PantryItem? existing = widget.initialItem;
@@ -165,7 +173,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
         widget.householdId,
         PantryItemDraft(
           name: _name.text.trim(),
-          quantity: _parseNumber(_quantity.text)!,
+          quantity: _parseNumber(_quantity.text, widget.initialItem?.quantity)!,
           unit: _unit.text.trim(),
           category: category,
           isStaple: _isStaple,
@@ -176,8 +184,8 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     } else {
       final Map<String, Object?> changed = <String, Object?>{
         if (_name.text.trim() != existing.name) 'name': _name.text.trim(),
-        if (_parseNumber(_quantity.text) != existing.quantity)
-          'quantity': _parseNumber(_quantity.text),
+        if (_parseNumber(_quantity.text, widget.initialItem?.quantity) != existing.quantity)
+          'quantity': _parseNumber(_quantity.text, widget.initialItem?.quantity),
         if (_unit.text.trim() != existing.unit) 'unit': _unit.text.trim(),
         if (category != existing.category) 'category': category,
         if (_isStaple != existing.isStaple) 'isStaple': _isStaple,
@@ -277,7 +285,9 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                           PChip(
                             key: ManualAddScreen.unitChipKey(unit),
                             label: unit,
-                            selected: _unit.text.trim().toLowerCase() == unit.toLowerCase(),
+                            selected:
+                                _unit.text.trim().toLowerCase() ==
+                                unit.toLowerCase(),
                             onTap: isBusy ? null : () => _unit.text = unit,
                           ),
                       ],
@@ -285,7 +295,9 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                     const SizedBox(height: AppSpacing.s2),
                     Text(
                       'CATEGORY',
-                      style: AppTypography.meta.copyWith(color: AppColors.inkMid),
+                      style: AppTypography.meta.copyWith(
+                        color: AppColors.inkMid,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.s1),
                     Wrap(
