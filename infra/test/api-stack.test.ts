@@ -264,7 +264,7 @@ describe('ApiStack', () => {
 
   it('the real schema file still declares the recipes query and the Recipe SDL package (W6 S2)', () => {
     expect(REAL_SCHEMA_CONTENTS).toMatch(
-      /recipes\(householdId:\s*ID!,\s*role:\s*RecipeRole,\s*isFavorite:\s*Boolean,\s*inRotation:\s*Boolean\)\s*:\s*\[Recipe!\]!/,
+      /recipes\(householdId:\s*ID!,\s*role:\s*RecipeRole,\s*isFavorite:\s*Boolean,\s*inRotation:\s*Boolean(?:,\s*limit:\s*Int,\s*offset:\s*Int)?\)\s*:\s*\[Recipe!\]!/,
     );
     expect(REAL_SCHEMA_CONTENTS).toMatch(/type Recipe \{/);
     expect(REAL_SCHEMA_CONTENTS).toMatch(/type RecipeIngredient \{/);
