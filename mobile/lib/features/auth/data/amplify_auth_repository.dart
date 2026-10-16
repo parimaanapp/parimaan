@@ -60,8 +60,16 @@ class AmplifyAuthRepository implements AuthRepository {
   @override
   Future<AuthSession> signInWithGoogle() => _guard(() async {
     await _ensureConfigured();
+    // A private (ephemeral) browser session: iOS/Android otherwise reuse the
+    // browser's remembered Google login and skip the account chooser, so a
+    // tester with several Google accounts could only ever sign in as one.
     final SignInResult result = await _amplify.Auth.signInWithWebUI(
       provider: AuthProvider.google,
+      options: const SignInWithWebUIOptions(
+        pluginOptions: CognitoSignInWithWebUIPluginOptions(
+          isPreferPrivateSession: true,
+        ),
+      ),
     );
     if (!result.isSignedIn) {
       // Cognito's hosted UI is a single step for a social IdP — there is no
