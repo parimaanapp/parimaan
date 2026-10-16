@@ -5536,14 +5536,14 @@ Founder decision 2026-10-13: scope product analytics *during* the beta rather th
 
 ## 32. Beta feedback round 1 — triage and build plan (2026-10-14)
 
-Source: founder's first on-device TestFlight/simulator pass (16 items + screenshots). Every decision below was answered by the founder on 2026-10-14; nothing here is built yet. Wireframes consulted: `docs/wireframes/Parimaan Wireframes v2 (standalone).html` (6.1 Weekly plan, 6.2 picker, 10.1 Shopping list).
+Source: founder's first on-device TestFlight/simulator pass (16 items + screenshots). Every decision below was answered by the founder on 2026-10-14. Status note (later sync): Builds A, B and C are largely merged, see §33.2; where the shipped behaviour differs from the original decision it is annotated below. Wireframes consulted: `docs/wireframes/Parimaan Wireframes v2 (standalone).html` (6.1 Weekly plan, 6.2 picker, 10.1 Shopping list).
 
 ### 32.1 Decisions (founder answers)
 | Topic | Decision |
 |---|---|
-| Data wipe | Delete everything tied to `amoghjkulkarni@gmail.com`, `parimaanapp@gmail.com`, `drishti.goel@gmail.com`, `drishti.goel.1993@gmail.com` (DB rows **and** Cognito users). **Fix the cause of the stray household first, then wipe.** |
-| Diet model | Two groups. *Eating style* (multi-select, **union**): Vegetarian, Non-vegetarian, Vegan, Egg friendly, Jain. *Must also be* (always applied): Gluten free, Dairy free. Household-wide only. Copy: "Gluten free", "Dairy free", "Egg friendly", "Non-vegetarian". |
-| Recipe tagging | Every recipe carries **one or more** diet tags (a recipe may be veg + vegan + dairy free). Matching uses the tags — no hierarchy logic ("veg includes vegan") at query time. |
+| Data wipe | **Cancelled by the founder (§33.5); the tool was merged but never run.** Original decision: delete everything tied to `amoghjkulkarni@gmail.com`, `parimaanapp@gmail.com`, `drishti.goel@gmail.com`, `drishti.goel.1993@gmail.com` (DB rows **and** Cognito users). **Fix the cause of the stray household first, then wipe.** |
+| Diet model | Two groups. *Eating style* (multi-select, **union**): Vegetarian, Non-vegetarian, Vegan, Egg friendly, Jain. *Must also be* (always applied): Gluten free, Dairy free. Household-wide only. Copy: "Gluten free", "Dairy free", "Egg friendly", "Non-vegetarian". The Egg friendly style's wire value is `eggetarian`. |
+| Recipe tagging | Every recipe carries **one or more** diet tags (a recipe may be veg + vegan + dairy free). Original decision: matching uses the tags with no hierarchy logic. **Superseded in A1 (#228): matching now expands styles through a hierarchy, see §32.3.** |
 | Dinner | Setup step "Dinner: same structure as lunch" — default **on**; on → skip; off → one extra page, identical to the lunch structure page, for dinner. |
 | Snacks | One snack slot per day (Setup "Which meals?" gains Snacks). Sweet and Drink recipes are **not** snacks. |
 | Setup title | "Setup your Household" on all setup steps. |
@@ -5585,13 +5585,25 @@ Source: founder's first on-device TestFlight/simulator pass (16 items + screensh
 - **C3 Cook from Pantry** entry point.
 
 ### 32.3 Dietary matching spec
-- Recipe side: `dietary_tags` is a set ⊆ {veg, non_veg, vegan, egg, jain, gluten_free, dairy_free}; at least one *style* tag required (validated on write and by the curation lint).
-- Household side: `styles` (≥1) and `modifiers` (0..2).
-- A recipe is eligible iff (`recipe.styles ∩ household.styles ≠ ∅`) **and** (`household.modifiers ⊆ recipe.tags`).
-- Tagging is explicit per recipe (a vegan recipe is tagged veg + vegan), so the matcher stays a plain set test; no "veg includes vegan" rules in code.
-- Existing recipes are re-tagged by migration using their current tag + AI classification, then spot-checked.
+Implemented in `api/src/domain/dietMatch.ts` (single source of truth; mirrored in the SQL candidate query, `cookPreferenceFilter` and the Dart port `diet_match.dart`, pinned by `shared/fixtures/dietMatch-cases.json`). This refines the original spec, which said "no hierarchy logic in code".
+- Tags: styles `veg`, `non_veg`, `vegan`, `eggetarian`, `jain`; modifiers `gluten_free`, `dairy_free`. The UI label for `eggetarian` is **Egg friendly**.
+- Household side: `styles` (≥1) and `modifiers` (0..2), combined as a union of styles.
+- `STYLE_EXPANSION` hierarchy — recipe style tags a household style accepts:
+
+  | Household style | Accepts recipes tagged |
+  |---|---|
+  | `veg` | veg, vegan, jain |
+  | `vegan` | vegan |
+  | `jain` | jain |
+  | `eggetarian` (Egg friendly) | eggetarian, veg, vegan, jain |
+  | `non_veg` | non_veg, eggetarian, veg, vegan, jain |
+- A recipe is eligible iff (household has no styles, or the recipe's tags intersect the union of `expandStyle(style)` over the household's styles) **and** every household modifier is among the recipe's effective tags.
+- **Vegan implies dairy free:** a recipe tagged `vegan` is treated as also carrying `dairy_free` (`effectiveRecipeTags`) without needing the tag.
+- `non_veg` cannot be combined with `veg`, `vegan` or `jain` on one recipe (validated on write).
+- Recipes may still carry several tags explicitly, and at least one style tag is required (validated on write and by the curation lint).
 
 ### 32.4 Draft: allowed units by ingredient category (for founder approval)
+Note: the shipped interim map in `mobile/lib/features/pantry/domain/category_units.dart` (A5, #224) differs from this draft. For example Spice also allows `packet` and `piece`, and Dairy also allows `tbsp` (plus `kg`, `packet`, `piece`). It stays interim until the catalog's per-ingredient units replace it. The table below is the original draft, unchanged.
 | Category | Units | Notes for review |
 |---|---|---|
 | Dal / pulses / grains / flour | g, kg, cup | no ml/l/piece |
@@ -5613,7 +5625,7 @@ Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf
 
 ### 32.5 Build slotting, sequencing and risks
 - **Build A (first)**: #1, 2, 3, 4, 5, 6, 7, 8, 9 (UX + diagnosis), 10, 12 (interim), 14-lite, 13 (empty state/perf), 16 (verify). Includes schema/enum migration for `non_veg`, diet matcher, rotation fallback, setup wizard changes. TestFlight update + refreshed Android APK.
-- **Wipe procedure (before Build A ships to testers)**: (1) read-only dry run that lists every household, membership, menu, pantry/shopping/recipe row and Cognito user tied to the four emails; (2) founder approves the list; (3) execute in one transaction + `AdminDeleteUser` per Cognito user; (4) re-seed curated recipes; (5) verify counts = 0. Dev AWS only; prod does not exist yet. Testers sign in fresh afterwards (Google test-user list unchanged).
+- **Wipe procedure — CANCELLED by the founder (§33.5); the tool is merged but unused.** Original plan, kept for the record: (1) read-only dry run that lists every household, membership, menu, pantry/shopping/recipe row and Cognito user tied to the four emails; (2) founder approves the list; (3) execute in one transaction + `AdminDeleteUser` per Cognito user; (4) re-seed curated recipes; (5) verify counts = 0. Dev AWS only; prod does not exist yet. Testers sign in fresh afterwards (Google test-user list unchanged).
 - **Build B**: B1–B4; needs founder review of the unit table (§32.4) and a 50-recipe sample; AI generation cost estimated and approved before the run.
 - **Build C**: C1–C3 against the wireframes; founder reviews the plan screen on a device before TestFlight.
 - **Risks**: recipe generation quality and cost (B3); Aurora cold-resume masking real timeouts (#1); catalog alias collisions (Kashmiri vs plain lal mirch) — intended product semantics need founder calls case by case; plan layout density on small phones (C1) — verify on the smallest supported iPhone.
@@ -5646,33 +5658,58 @@ Anomalies to confirm when B1 is drafted: eggs (count only), bread (slice vs loaf
 | Feedback | Round 1 triaged (§32) into Builds A, B, C; catalog and wireframe decisions signed off (§32.6). |
 | Blocked on founder | Firebase project (W22), PostHog account (§31.4), keystore backup, GCP consent-screen branding, Sign in with Apple decision, GoDaddy https forward. |
 
-### 33.2 Build A (bugs and copy) — in flight
+### 33.2 Build status (merged work)
+**Build A (bugs and copy) — merged**
 | Slice | PR | Contents |
 |---|---|---|
-| A1 diet matcher + rotation fallback | in progress (`feat/a1-diet-matcher`) | `non_veg`, union-style matcher with modifiers, sentence-case labels, auto-fill never fails for lack of rotation |
+| A1 diet matcher + rotation fallback | #228 | `non_veg`, union-style matcher with modifiers (§32.3), sentence-case labels, auto-fill never fails for lack of rotation |
 | A2 household create | #222 | idempotent `createHousehold`, error reset on re-entry, household name on Today |
-| A3 back button | in progress (`fix/a3-back-button`) | bold 24 px chevron, 44×44 target, one component app-wide |
-| A4 import normalisation | #223 | shared unit/entity/to-taste/duplicate-merge step for URL and text import, `isStaple` on drafts |
+| A3 back button | #227 | bold chevron, 44×44 target, one component app-wide |
+| A4 import normalisation | #223, #239 | shared unit/entity/to-taste/duplicate-merge step for URL and text import, `isStaple` on drafts; #239 makes salt and pepper always staples and the review form read `isStaple` |
 | A5 category units | #224 | per-category units, new categories and approved labels |
-| A6 wipe tool | #225 | dry-run-first account wipe CLI (not yet run; needs the founder's approval of its listing) |
-| A7 setup wizard | not started | dinner-structure toggle and page, Snacks, "Setup your Household", grouped diet chips (depends on A1) |
-| A8 empty states and entry points | not started | recipes filtered-empty copy and load time, Cook-from-Pantry entry point, `hintText: 'cup'` placeholder fix (found by A4) |
-After Build A: deploy backend to dev, run the wipe dry run for founder approval, execute, cut TestFlight and APK builds.
+| A6 wipe tool | #225, #231 | dry-run-first account wipe CLI, hardened in #231. **Merged but unused** (wipe cancelled, §33.5) |
+| A7 setup wizard | #229 | "Setup your Household", dinner-structure toggle and page, Snacks, grouped diet chips |
+| A8 empty states and entry points | #230 | filter-aware recipes empty states, neutral unit hint, Cook-from-Pantry entry points |
+| A9 household session isolation | #242 | session isolation, `me`/households refresh, create-household cap |
 
-### 33.3 Order of work from here
-1. Build A (above) → dev deploy → founder-approved wipe → TestFlight + APK.
-2. Build B: ingredient catalog (848 drafted → ~1,500), conversions, ~500 recipes with diet tags, full import canonicalisation.
-3. Build C: weekly plan (B/C layouts), shopping list, shared components aligned to the wireframes (`docs/wireframes/README.md`).
-4. §31.4 instrumentation slice (PostHog), then W22 push (needs the Firebase project), then §31.1–31.3 website and store readiness, W24/W25.
+**Build B (catalog and recipes)**
+| Slice | PR | Contents |
+|---|---|---|
+| B1a catalog expansion | #234 | ingredient catalog 841 → 1,468 |
+| B2a catalog as backend dataset | #237 | catalog served from the backend |
+| B2b canonicalise on write | #246 | ingredients canonicalised on write and matched by catalog id |
+| B2c catalog-backed picker, paged recipes list | #245 | **open, not merged** at the time of this sync |
+| B3-0 strict catalog lint | #238 | strict lint for curated recipes; seeds canonicalised |
+| R1 / R2 / R3 recipe batches | #243 / #240 / #241 | 50 breakfast, snack and drink; 50 sabzi_dal and accompaniment; 50 carbs, sweets, non-veg and egg mains. With the earlier seeds and role variants the corpus is **202 recipe seeds** (§33.5) |
+
+**Build C (plan and shopping redesign)**
+| Slice | PR | Contents |
+|---|---|---|
+| C1 weekly plan | #232 | option B/C day cards |
+| C2 shopping list | #233 | aligned to wireframes 6.4/6.5/10.x |
+| C3 shared components | #235 | drawn tab glyphs, "Today" label, centred top bar, chips, AI badge, buttons, inputs |
+| Top-bar overflow fix | #244 | `PTopBar` stacks a wide trailing control under the title (shopping list overflow) |
+
+### 33.3 What remains before the new TestFlight and APK
+Per the founder decision in §33.5, the new builds are cut once Builds A, B and C are all done. Remaining, in order:
+1. Merge B2c (#245) if it is to ship in this version.
+2. Deploy the backend to dev.
+3. Catalog backfill: dry run first, then execute.
+4. Run the top-up script.
+5. Device review of the plan screen (§32.5 Build C gate).
+6. Build the ipa and the apk.
+7. Founder uploads the ipa via Transporter.
+
+After that, per §33.5: §31.4 instrumentation slice (PostHog), then W22 push (needs the Firebase project), then §31.1–31.3 website and store readiness, W24/W25.
 
 ### 33.4 Wireframe status
-Original v2 bundle remains the component reference; deliberate deviations and the approved weekly-plan layouts are recorded in `docs/wireframes/README.md`. The setup-flow screens (2.x), weekly plan (6.1), bottom nav, chips, AI badge and back control change in Builds A and C as listed there; no new screens are added.
+Original v2 bundle remains the component reference; deliberate deviations and the approved weekly-plan layouts are recorded in `docs/wireframes/README.md`. The setup-flow screens (2.x), weekly plan (6.1), bottom nav, chips, AI badge and back control were changed in Builds A and C as listed there; no new screens were added.
 
 ### 33.5 Founder decisions during Builds B and C (recorded)
 | Topic | Decision |
 |---|---|
-| Recipe library size | Author **150** original recipes for beta (cuisine batches, canonical ingredients, explicit diet tags, founder samples ~50); **500 recipes total is a post-beta goal**, scaled in batches. |
-| Account wipe | **Not doing any wipe.** The wipe tool stays merged but unused. Requirement instead: a user must never be silently added to another household (audit and tests, §33.6). |
+| Recipe library size | Author **150** original recipes for beta (cuisine batches, canonical ingredients, explicit diet tags, founder samples ~50); **500 recipes total is a post-beta goal**, scaled in batches. **Shipped: 202 seeds** — 150 requested plus role variants (e.g. Appam, Idli, Dosa and Neer Dosa each exist as a main and a carb-role file) and the earlier North/South Indian seeds. Folders: `north-indian`, `south-indian`, `pan-india`, `indo-chinese`. |
+| Account wipe | **Cancelled by the founder; not doing any wipe.** The wipe tool (#225, #231) stays merged but unused. Requirement instead: a user must never be silently added to another household (audit and tests, §33.6). |
 | Salt and pepper | **Always staples**, whether or not the source says "to taste". |
 | New app version | Cut the TestFlight and Android builds **after Builds A, B and C are all done** (the Build A builds already produced are not to be distributed). |
 | Other beta work | PostHog, Firebase/W22, store readiness and website items wait until after the Build A–C app version. |
