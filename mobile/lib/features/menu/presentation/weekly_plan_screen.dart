@@ -11,6 +11,7 @@ import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../../household/domain/household.dart';
+import '../../household/presentation/household_resolving_view.dart';
 import '../../household/state/current_household_controller.dart';
 import '../domain/current_week.dart';
 import '../domain/meal_slot_plan.dart';
@@ -71,10 +72,7 @@ class WeeklyPlanScreen extends ConsumerWidget {
       backgroundColor: AppColors.paper,
       body: SafeArea(
         child: household == null
-            ? const Center(
-                key: WeeklyPlanScreen.loadingKey,
-                child: CircularProgressIndicator(),
-              )
+            ? const HouseholdResolvingView(loadingKey: WeeklyPlanScreen.loadingKey)
             : _WeeklyPlanForHousehold(householdId: household.id, today: today),
       ),
     );

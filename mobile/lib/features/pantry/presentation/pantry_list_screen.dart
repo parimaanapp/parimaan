@@ -8,6 +8,7 @@ import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../household/domain/household.dart';
+import '../../household/presentation/household_resolving_view.dart';
 import '../../household/state/current_household_controller.dart';
 import '../domain/pantry_category.dart';
 import '../domain/pantry_item.dart';
@@ -41,7 +42,7 @@ class PantryListScreen extends ConsumerWidget {
       backgroundColor: AppColors.paper,
       body: SafeArea(
         child: household == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const HouseholdResolvingView()
             : _PantryForHousehold(householdId: household.id),
       ),
     );

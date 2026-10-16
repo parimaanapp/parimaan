@@ -9,6 +9,7 @@ import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../../household/domain/household.dart';
+import '../../household/presentation/household_resolving_view.dart';
 import '../../household/state/current_household_controller.dart';
 import '../domain/current_week.dart';
 import '../domain/menu.dart';
@@ -64,7 +65,7 @@ class TodayScreen extends ConsumerWidget {
       backgroundColor: AppColors.paper,
       body: SafeArea(
         child: household == null
-            ? const Center(key: loadingKey, child: CircularProgressIndicator())
+            ? const HouseholdResolvingView(loadingKey: loadingKey)
             : _TodayForHousehold(household: household),
       ),
     );

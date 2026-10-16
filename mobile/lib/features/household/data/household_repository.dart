@@ -309,7 +309,13 @@ class FerryHouseholdRepository
 
   @override
   Future<List<Household>> fetchMyHouseholds() async {
-    final GMeReq request = GMeReq();
+    // NoCache is load-bearing: ferry defaults to CacheFirst, so a `Me` read
+    // cached before `createHousehold`/`joinHousehold` (empty list) would be
+    // served again on the post-create refetch and the new household would
+    // never appear until an app restart.
+    final GMeReq request = GMeReq(
+      (GMeReqBuilder b) => b..fetchPolicy = FetchPolicy.NoCache,
+    );
     final GMeData data = await execute(request);
     return data.me.households
         .map((GMeData_me_households m) => meHouseholdFromGraphQL(m.household))
@@ -318,7 +324,9 @@ class FerryHouseholdRepository
 
   @override
   Future<String> fetchMyUserId() async {
-    final GMeReq request = GMeReq();
+    final GMeReq request = GMeReq(
+      (GMeReqBuilder b) => b..fetchPolicy = FetchPolicy.NoCache,
+    );
     final GMeData data = await execute(request);
     return data.me.id;
   }
