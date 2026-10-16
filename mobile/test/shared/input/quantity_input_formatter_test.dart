@@ -39,6 +39,16 @@ void main() {
     expect(apply('', '1.23456'), '1.23');
   });
 
+  test('allows backspace on a seeded value with more than two decimals', () {
+    expect(apply('0.333', '0.33'), '0.33');
+    expect(apply('1.2345', '1.234'), '1.234');
+    expect(apply('1.2345', '1.245'), '1.245');
+  });
+
+  test('a paste over a selection with a long fraction is clamped, not dropped', () {
+    expect(apply('1.23', '4.567'), '4.56');
+  });
+
   test('roundQuantity rounds to two decimals', () {
     expect(roundQuantity(0.333333), 0.33);
     expect(roundQuantity(2), 2.0);

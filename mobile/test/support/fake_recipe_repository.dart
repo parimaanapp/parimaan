@@ -33,6 +33,11 @@ class FakeRecipeRepository implements RecipeRepository {
   });
 
   List<Recipe>? result;
+
+  /// Per-role overrides for [fetchRecipes]: a different latency and/or result
+  /// for a given role filter, to reproduce out-of-order responses.
+  Duration Function(RecipeRole? role)? delayForRole;
+  List<Recipe> Function(RecipeRole? role)? resultForRole;
   Object? error;
 
   /// Artificial latency applied to every call, for asserting the loading
@@ -75,7 +80,7 @@ class FakeRecipeRepository implements RecipeRepository {
     if (neverCompletes) {
       await Completer<List<Recipe>>().future;
     }
-    final Duration? delay = this.delay;
+    final Duration? delay = delayForRole?.call(role) ?? this.delay;
     if (delay != null) {
       await Future<void>.delayed(delay);
     }
@@ -83,7 +88,7 @@ class FakeRecipeRepository implements RecipeRepository {
     if (error != null) {
       throw error;
     }
-    final List<Recipe>? result = this.result;
+    final List<Recipe>? result = resultForRole?.call(role) ?? this.result;
     if (result == null) {
       throw StateError('FakeRecipeRepository needs a `result` or an error.');
     }

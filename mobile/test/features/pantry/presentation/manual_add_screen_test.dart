@@ -115,6 +115,58 @@ void main() {
       );
     });
 
+    testWidgets('retyping a picked name restores the previous category', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await typeName(tester, 'tamatar');
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureTomato.id)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<PChip>(find.widgetWithText(PChip, 'Produce')).selected,
+        isTrue,
+      );
+
+      await tester.enterText(
+        find.byKey(ManualAddScreen.nameFieldKey),
+        'Tomato puree',
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<PChip>(find.widgetWithText(PChip, 'Produce')).selected,
+        isFalse,
+      );
+    });
+
+    testWidgets('a category the user tapped after the pick is kept', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await typeName(tester, 'tamatar');
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureTomato.id)),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Dairy'));
+      await tester.tap(find.widgetWithText(PChip, 'Dairy'));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(ManualAddScreen.nameFieldKey),
+        'Tomato puree',
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<PChip>(find.widgetWithText(PChip, 'Dairy')).selected,
+        isTrue,
+      );
+    });
+
     testWidgets('"Add as new ingredient" keeps free-text unit entry', (
       WidgetTester tester,
     ) async {

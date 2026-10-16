@@ -69,6 +69,12 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   /// Honoured only while the name text still equals its canonical name.
   CatalogIngredient? _catalog;
 
+  /// The category before a catalog pick overwrote it, and whether the
+  /// current category still came from that pick (not tapped by the user).
+  /// Lets a revert to free text restore it instead of submitting a stale one.
+  String? _categoryBeforePick;
+  bool _categoryFromCatalog = false;
+
   @override
   void initState() {
     super.initState();
@@ -105,7 +111,21 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     super.dispose();
   }
 
-  void _onFieldChanged() => setState(() {});
+  void _onFieldChanged() => setState(() {
+    if (_catalog != null && selectionFor(_catalog, _name.text) == null) {
+      _revertCatalog();
+    }
+  });
+
+  /// Back to free text: drop the pick and, if the category still came from
+  /// it, restore the one the user had before.
+  void _revertCatalog() {
+    _catalog = null;
+    if (_categoryFromCatalog) {
+      _category = _categoryBeforePick;
+      _categoryFromCatalog = false;
+    }
+  }
 
   /// Toggles [category]. The new category's default unit is filled in only
   /// when the unit field is empty or still holds the previous category's
@@ -113,6 +133,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   /// own stored unit. A unit the user typed or chose is left alone.
   void _selectCategory(String category) {
     setState(() {
+      _categoryFromCatalog = false;
       final String? previous = _category;
       _category = previous == category ? null : category;
       final String? selected = _category;
@@ -138,9 +159,13 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   /// one of them.
   void _selectCatalog(CatalogIngredient ingredient) {
     setState(() {
+      if (!_categoryFromCatalog) {
+        _categoryBeforePick = _category;
+      }
       _catalog = ingredient;
       if (knownPantryCategories.contains(ingredient.category)) {
         _category = ingredient.category;
+        _categoryFromCatalog = true;
       }
       _unit.text = unitAfterSelection(ingredient, _unit.text);
     });
@@ -267,7 +292,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                       enabled: !isBusy,
                       autofocus: !widget.isEditMode,
                       onSelected: _selectCatalog,
-                      onAddAsNew: (_) => setState(() => _catalog = null),
+                      onAddAsNew: (_) => setState(_revertCatalog),
                     ),
                     const SizedBox(height: AppSpacing.s2),
                     PInput(

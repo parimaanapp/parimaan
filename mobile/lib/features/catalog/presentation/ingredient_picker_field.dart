@@ -124,10 +124,15 @@ class _IngredientPickerFieldState extends ConsumerState<IngredientPickerField> {
     _lastText = text;
     final String trimmed = text.trim();
     if (trimmed == _committedText) {
+      // Back to the committed text while a search was pending: cancel it so
+      // "Searching…" cannot stick.
       _debouncer.dispose();
+      _searchToken++;
+      if (_searching) {
+        setState(() => _searching = false);
+      }
       return;
     }
-    _committedText = null;
     if (!widget.enabled || trimmed.isEmpty) {
       _debouncer.dispose();
       _searchToken++;

@@ -21,20 +21,45 @@ class QuantityInputFormatter extends TextInputFormatter {
     if (!_quantityPattern.hasMatch(text)) {
       return oldValue;
     }
-    final int dot = text.indexOf('.');
-    if (dot < 0 || text.length - dot - 1 <= quantityMaxDecimals) {
+    final int decimals = _decimals(text);
+    if (decimals <= quantityMaxDecimals) {
       return newValue;
     }
-    // Typing a third decimal keeps the old value; a paste is clamped.
-    final bool isPaste = text.length - oldValue.text.length > 1;
-    if (!isPaste) {
+    // Deletions and edits of an already-long seeded value are always fine:
+    // only text that adds a decimal beyond two is restricted.
+    final int oldDecimals = _decimals(oldValue.text);
+    if (decimals <= oldDecimals) {
+      return newValue;
+    }
+    // A single typed third decimal is ignored; anything bigger (a paste,
+    // also over a selection) is clamped rather than dropped.
+    if (_isSingleInsertion(oldValue.text, text) &&
+        oldDecimals <= quantityMaxDecimals) {
       return oldValue;
     }
+    final int dot = text.indexOf('.');
     final String clamped = text.substring(0, dot + 1 + quantityMaxDecimals);
     return TextEditingValue(
       text: clamped,
       selection: TextSelection.collapsed(offset: clamped.length),
     );
+  }
+
+  static bool _isSingleInsertion(String before, String after) {
+    if (after.length != before.length + 1) {
+      return false;
+    }
+    for (int i = 0; i < after.length; i++) {
+      if (after.substring(0, i) + after.substring(i + 1) == before) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static int _decimals(String text) {
+    final int dot = text.indexOf('.');
+    return dot < 0 ? 0 : text.length - dot - 1;
   }
 }
 

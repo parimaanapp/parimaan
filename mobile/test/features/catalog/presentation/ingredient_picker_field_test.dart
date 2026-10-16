@@ -217,6 +217,27 @@ void main() {
       expect(find.byKey(IngredientPickerField.searchErrorKey), findsOneWidget);
     });
 
+    testWidgets('returning to the committed text cancels a pending search', (
+      WidgetTester tester,
+    ) async {
+      final _Harness h = await _pump(tester);
+      await _type(tester, 'arh');
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureToorDal.id)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'Toor Dal x');
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byKey(IngredientPickerField.searchingKey), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'Toor Dal');
+      await tester.pump(_debounce);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(IngredientPickerField.searchingKey), findsNothing);
+      expect(h.repository.queries, <String>['arh']);
+    });
+
     testWidgets('does not search while disabled', (WidgetTester tester) async {
       final _Harness h = await _pump(tester, enabled: false);
 

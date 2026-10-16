@@ -34,6 +34,7 @@ class RecipesLibraryScreen extends ConsumerWidget {
   static const Key filteredAddButtonKey = Key('recipes-library-filtered-add');
   static const Key staleBannerKey = Key('recipes-library-stale-banner');
   static const Key loadingMoreKey = Key('recipes-library-loading-more');
+  static const Key loadMoreRetryKey = Key('recipes-library-load-more-retry');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -277,7 +278,9 @@ class _RecipeList extends ConsumerWidget {
     final RecipeLibraryController controller = ref.read(
       recipeLibraryControllerProvider(householdId).notifier,
     );
-    final bool showFooter = controller.hasMore || controller.isLoadingMore;
+    // Footer only while a page is actually loading, or to retry a failed one.
+    final bool loading = controller.isLoadingMore;
+    final bool showFooter = loading || controller.loadMoreFailed;
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
@@ -292,6 +295,17 @@ class _RecipeList extends ConsumerWidget {
         itemCount: items.length + (showFooter ? 1 : 0),
         itemBuilder: (BuildContext context, int index) {
           if (index >= items.length) {
+            if (!loading) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                child: PButton(
+                  key: RecipesLibraryScreen.loadMoreRetryKey,
+                  label: 'Try again',
+                  variant: PButtonVariant.secondary,
+                  onPressed: () => controller.loadMore(retry: true),
+                ),
+              );
+            }
             return Padding(
               key: RecipesLibraryScreen.loadingMoreKey,
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),

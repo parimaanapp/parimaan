@@ -480,6 +480,35 @@ void main() {
       );
     });
 
+    testWidgets('a failed page shows a Retry row that loads it', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: many(230),
+      );
+      await _pump(tester, recipeRepository: repository);
+      await tester.pumpAndSettle();
+
+      repository.error = const InternalError('network down');
+      for (int i = 0; i < 12; i++) {
+        await tester.drag(find.byType(ListView).last, const Offset(0, -2000));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(RecipesLibraryScreen.loadMoreRetryKey), findsOneWidget);
+      expect(find.byKey(RecipesLibraryScreen.loadingMoreKey), findsNothing);
+      final int attempts = repository.pageCalls.length;
+
+      repository.error = null;
+      await tester.ensureVisible(find.byKey(RecipesLibraryScreen.loadMoreRetryKey));
+      await tester.tap(find.byKey(RecipesLibraryScreen.loadMoreRetryKey));
+      await tester.pumpAndSettle();
+
+      expect(repository.pageCalls.length, attempts + 1);
+      expect(repository.pageCalls.last.offset, 50);
+    });
+
     testWidgets('does not ask for more when the library fits one page', (
       WidgetTester tester,
     ) async {

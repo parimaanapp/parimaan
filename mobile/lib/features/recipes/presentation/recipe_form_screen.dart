@@ -153,7 +153,7 @@ class _IngredientRow {
   /// edit that touches the ingredient list at all (even reordering) would
   /// silently null out `category`/`notes` on every ingredient in the
   /// recipe, not just the row the user actually touched.
-  String? category;
+  final String? category;
   final String? notes;
 
   /// The catalog row this ingredient was picked as (B2c), or `null` for free
@@ -464,7 +464,6 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
     setState(() {
       final _IngredientRow row = _ingredients[index];
       row.catalog = ingredient;
-      row.category = ingredient.category;
       row.unitController.text = unitAfterSelection(
         ingredient,
         row.unitController.text,
@@ -546,7 +545,11 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
               ? null
               : row.unitController.text.trim(),
           isStaple: row.isStaple,
-          category: row.category,
+          // A catalog pick supplies the category only while the name still
+          // is that ingredient; otherwise the row's original one stands.
+          category:
+              selectionFor(row.catalog, row.nameController.text)?.category ??
+              row.category,
           notes: row.notes,
         ),
       )
