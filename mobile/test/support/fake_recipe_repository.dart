@@ -33,6 +33,11 @@ class FakeRecipeRepository implements RecipeRepository {
   });
 
   List<Recipe>? result;
+
+  /// Per-role overrides for [fetchRecipes]: a different latency and/or result
+  /// for a given role filter, to reproduce out-of-order responses.
+  Duration Function(RecipeRole? role)? delayForRole;
+  List<Recipe> Function(RecipeRole? role)? resultForRole;
   Object? error;
 
   /// Artificial latency applied to every call, for asserting the loading
@@ -51,13 +56,21 @@ class FakeRecipeRepository implements RecipeRepository {
   final List<({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>
   calls = <({String householdId, RecipeRole? role, bool? isFavorite, bool? inRotation})>[];
 
+  /// The `(limit, offset)` of every [fetchRecipes] call, parallel to
+  /// [calls] — kept separate so the long-standing four-field [calls]
+  /// assertions stay valid.
+  final List<({int? limit, int? offset})> pageCalls = <({int? limit, int? offset})>[];
+
   @override
   Future<List<Recipe>> fetchRecipes(
     String householdId, {
     RecipeRole? role,
     bool? isFavorite,
     bool? inRotation,
+    int? limit,
+    int? offset,
   }) async {
+    pageCalls.add((limit: limit, offset: offset));
     calls.add((
       householdId: householdId,
       role: role,
@@ -67,7 +80,7 @@ class FakeRecipeRepository implements RecipeRepository {
     if (neverCompletes) {
       await Completer<List<Recipe>>().future;
     }
-    final Duration? delay = this.delay;
+    final Duration? delay = delayForRole?.call(role) ?? this.delay;
     if (delay != null) {
       await Future<void>.delayed(delay);
     }
@@ -75,11 +88,14 @@ class FakeRecipeRepository implements RecipeRepository {
     if (error != null) {
       throw error;
     }
-    final List<Recipe>? result = this.result;
+    final List<Recipe>? result = resultForRole?.call(role) ?? this.result;
     if (result == null) {
       throw StateError('FakeRecipeRepository needs a `result` or an error.');
     }
-    return result;
+    if (limit == null) {
+      return result;
+    }
+    return result.skip(offset ?? 0).take(limit).toList(growable: false);
   }
 
   // ── watchRecipeChanges ─────────────────────────────────────────────────

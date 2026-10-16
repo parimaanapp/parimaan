@@ -19,8 +19,9 @@ const buildEvent = (
   isFavorite: unknown,
   cognitoSub: string | null,
   inRotation: unknown = undefined,
+  page: { limit?: unknown; offset?: unknown } = {},
 ): AppSyncResolverEvent<{ householdId: unknown; role: unknown; isFavorite: unknown; inRotation: unknown }> => ({
-  arguments: { householdId, role, isFavorite, inRotation },
+  arguments: { householdId, role, isFavorite, inRotation, ...page },
   identity:
     cognitoSub === null
       ? null
@@ -242,5 +243,69 @@ describe('recipes resolver (Query.recipes)', () => {
     );
 
     expect(result.map((r) => r.title)).toEqual(['In Rotation']);
+  });
+
+  describe('pagination (limit / offset)', () => {
+    const seedTitles = async (sub: string, code: string, titles: string[]): Promise<string> => {
+      const owner = await createUser(sub);
+      const householdId = await createHouseholdWithMember(owner, code);
+      for (const title of titles) {
+        await insertRecipe(householdId, owner.id, { title });
+      }
+      return householdId;
+    };
+
+    it('returns the whole list when limit and offset are absent or explicit null', async () => {
+      const householdId = await seedTitles('sub-page-none', 'PGN234', ['A', 'B', 'C']);
+      const handler = createRecipesHandler({ getPool: async () => pool });
+
+      const absent = await handler(buildEvent(householdId, null, null, 'sub-page-none', null));
+      const nulls = await handler(
+        buildEvent(householdId, null, null, 'sub-page-none', null, { limit: null, offset: null }),
+      );
+
+      expect(absent).toHaveLength(3);
+      expect(nulls).toHaveLength(3);
+    });
+
+    it('returns consecutive, non-overlapping pages in the same order as the unpaged list', async () => {
+      const householdId = await seedTitles('sub-page-walk', 'PGW234', ['E', 'D', 'C', 'B', 'A']);
+      const handler = createRecipesHandler({ getPool: async () => pool });
+
+      const first = await handler(buildEvent(householdId, null, null, 'sub-page-walk', null, { limit: 2, offset: 0 }));
+      const second = await handler(buildEvent(householdId, null, null, 'sub-page-walk', null, { limit: 2, offset: 2 }));
+      const third = await handler(buildEvent(householdId, null, null, 'sub-page-walk', null, { limit: 2, offset: 4 }));
+
+      expect(first.map((r) => r.title)).toEqual(['A', 'B']);
+      expect(second.map((r) => r.title)).toEqual(['C', 'D']);
+      expect(third.map((r) => r.title)).toEqual(['E']);
+    });
+
+    it('applies filters before paging', async () => {
+      const owner = await createUser('sub-page-filter');
+      const householdId = await createHouseholdWithMember(owner, 'PGF234');
+      await insertRecipe(householdId, owner.id, { title: 'Poha', role: 'breakfast' });
+      await insertRecipe(householdId, owner.id, { title: 'Upma', role: 'breakfast' });
+      await insertRecipe(householdId, owner.id, { title: 'Rajma', role: 'sabzi_dal' });
+
+      const handler = createRecipesHandler({ getPool: async () => pool });
+      const result = await handler(
+        buildEvent(householdId, 'breakfast', null, 'sub-page-filter', null, { limit: 1, offset: 1 }),
+      );
+
+      expect(result.map((r) => r.title)).toEqual(['Upma']);
+    });
+
+    it.each([
+      ['a zero limit', { limit: 0 }],
+      ['a limit above the cap', { limit: 201 }],
+      ['a negative offset', { limit: 10, offset: -1 }],
+      ['a fractional limit', { limit: 1.5 }],
+    ])('rejects %s with ValidationError', async (_label, page) => {
+      const handler = createRecipesHandler({ getPool: async () => pool });
+      await expect(
+        handler(buildEvent(randomUUID(), null, null, 'sub-page-invalid', null, page)),
+      ).rejects.toThrow(ValidationError);
+    });
   });
 });

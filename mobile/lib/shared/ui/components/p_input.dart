@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../tokens.dart';
 
@@ -48,6 +49,7 @@ class PInput extends StatelessWidget {
     this.useMonoFont = false,
     this.minLines = 1,
     this.maxLines = 1,
+    this.inputFormatters,
   }) : assert(maxLines >= minLines, 'maxLines must not be below minLines');
 
   /// Field label, rendered above the box. Supplied by the caller.
@@ -89,6 +91,10 @@ class PInput extends StatelessWidget {
   final int minLines;
   final int maxLines;
 
+  /// Optional input filters — a quantity field's two-decimal limit, for
+  /// instance.
+  final List<TextInputFormatter>? inputFormatters;
+
   /// Key of the focus-ring [DecoratedBox] around the field box.
   static const Key focusRingKey = Key('p-input-focus-ring');
 
@@ -108,6 +114,7 @@ class PInput extends StatelessWidget {
       onChanged: onChanged,
       onSubmitted: onSubmitted,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       textInputAction: textInputAction,
       textAlign: textAlign,
       enabled: enabled,

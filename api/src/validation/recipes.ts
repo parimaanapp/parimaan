@@ -29,6 +29,9 @@ const normalizeThenEnum = <T extends readonly [string, ...string[]]>(values: T) 
     z.enum(values),
   );
 
+/** Upper bound on one page of `Query.recipes`. */
+export const RECIPES_MAX_LIMIT = 200;
+
 const recipeRoleSchema = normalizeThenEnum(RECIPE_ROLE_VALUES);
 
 /**
@@ -46,6 +49,14 @@ export const recipesArgsSchema = z.object({
   isFavorite: z.boolean().nullish(),
   /** W10 §16.2.5 — lets the recipe picker offer a "rotation only" view without over-fetching and filtering client-side. */
   inRotation: z.boolean().nullish(),
+  /** B2c: optional paging. Both absent/null = the whole list (unchanged behaviour). */
+  limit: z
+    .number()
+    .int()
+    .min(1, 'limit must be at least 1')
+    .max(RECIPES_MAX_LIMIT, `limit must be at most ${String(RECIPES_MAX_LIMIT)}`)
+    .nullish(),
+  offset: z.number().int().min(0, 'offset must not be negative').nullish(),
 });
 
 export type RecipesArgs = z.infer<typeof recipesArgsSchema>;

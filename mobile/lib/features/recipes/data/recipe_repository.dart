@@ -56,6 +56,9 @@ abstract interface class RecipeRepository {
   /// filtering an already-fetched list. Never populates
   /// [Recipe.ingredients] — see the `Recipes` query's own doc.
   ///
+  /// [limit]/[offset] (B2c) page the server-ordered list; both `null` is the
+  /// whole list. The server caps [limit] at 200.
+  ///
   /// Requires the caller to already be a member of [householdId]; a
   /// non-member gets [ForbiddenError], identically to a nonexistent id.
   Future<List<Recipe>> fetchRecipes(
@@ -63,6 +66,8 @@ abstract interface class RecipeRepository {
     RecipeRole? role,
     bool? isFavorite,
     bool? inRotation,
+    int? limit,
+    int? offset,
   });
 
   /// Emits once every time another device creates, updates, deletes,
@@ -160,6 +165,8 @@ class FerryRecipeRepository with FerryExecuteMixin implements RecipeRepository {
     RecipeRole? role,
     bool? isFavorite,
     bool? inRotation,
+    int? limit,
+    int? offset,
   }) async {
     final GRecipesReq request = GRecipesReq(
       (GRecipesReqBuilder b) => b
@@ -167,7 +174,9 @@ class FerryRecipeRepository with FerryExecuteMixin implements RecipeRepository {
           ..householdId = householdId
           ..role = role == null ? null : recipeRoleToGraphQL(role)
           ..isFavorite = isFavorite
-          ..inRotation = inRotation)
+          ..inRotation = inRotation
+          ..limit = limit
+          ..offset = offset)
         // Same `FetchPolicy.NoCache` reasoning as `PantryRepository.fetchPantry`:
         // no subscription in this slice (that's S11), so a cached answer to a
         // role/favorite filter change would be a stale one.

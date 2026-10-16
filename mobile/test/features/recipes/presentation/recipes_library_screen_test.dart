@@ -426,4 +426,102 @@ void main() {
       });
     });
   });
+
+  group('RecipesLibraryScreen — pagination (B2c)', () {
+    List<Recipe> many(int count) => <Recipe>[
+      for (int i = 0; i < count; i++)
+        Recipe(
+          id: 'recipe-$i',
+          householdId: 'household-1',
+          sourceType: RecipeSource.user,
+          title: 'Recipe $i',
+          servings: 4,
+          dietaryTags: const <String>[],
+          role: RecipeRole.sabziDal,
+          inRotation: false,
+          isFavorite: false,
+          steps: const <String>[],
+          createdAt: DateTime.utc(2026, 8, 25),
+          updatedAt: DateTime.utc(2026, 8, 25),
+        ),
+    ];
+
+    testWidgets('loads only the first page up front', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: many(230),
+      );
+      await _pump(tester, recipeRepository: repository);
+      await tester.pumpAndSettle();
+
+      expect(repository.pageCalls, hasLength(1));
+      expect(repository.pageCalls.single.limit, 50);
+    });
+
+    testWidgets('scrolling to the end requests the next page', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: many(230),
+      );
+      await _pump(tester, recipeRepository: repository);
+      await tester.pumpAndSettle();
+
+      for (int i = 0; i < 12; i++) {
+        await tester.drag(find.byType(ListView).last, const Offset(0, -2000));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+
+      expect(
+        repository.pageCalls.map((p) => p.offset),
+        containsAllInOrder(<int?>[0, 50]),
+      );
+    });
+
+    testWidgets('a failed page shows a Retry row that loads it', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: many(230),
+      );
+      await _pump(tester, recipeRepository: repository);
+      await tester.pumpAndSettle();
+
+      repository.error = const InternalError('network down');
+      for (int i = 0; i < 12; i++) {
+        await tester.drag(find.byType(ListView).last, const Offset(0, -2000));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(RecipesLibraryScreen.loadMoreRetryKey), findsOneWidget);
+      expect(find.byKey(RecipesLibraryScreen.loadingMoreKey), findsNothing);
+      final int attempts = repository.pageCalls.length;
+
+      repository.error = null;
+      await tester.ensureVisible(find.byKey(RecipesLibraryScreen.loadMoreRetryKey));
+      await tester.tap(find.byKey(RecipesLibraryScreen.loadMoreRetryKey));
+      await tester.pumpAndSettle();
+
+      expect(repository.pageCalls.length, attempts + 1);
+      expect(repository.pageCalls.last.offset, 50);
+    });
+
+    testWidgets('does not ask for more when the library fits one page', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: many(5),
+      );
+      await _pump(tester, recipeRepository: repository);
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(ListView).last, const Offset(0, -2000));
+      await tester.pumpAndSettle();
+
+      expect(repository.pageCalls, hasLength(1));
+    });
+  });
 }

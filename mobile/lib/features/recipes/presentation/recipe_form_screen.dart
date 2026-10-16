@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/tokens.dart';
+import '../../catalog/domain/catalog_ingredient.dart';
 import '../domain/ai_recipe_draft.dart';
 import '../domain/ai_recipe_draft_ingredient.dart';
 import '../domain/proposed_field.dart';
@@ -160,6 +161,11 @@ class _IngredientRow {
   /// recipe, not just the row the user actually touched.
   final String? category;
   final String? notes;
+
+  /// The catalog row this ingredient was picked as (B2c), or `null` for free
+  /// text / an existing row the user has not re-picked. Drives the unit
+  /// chips; never sent to the server (the name and category are).
+  CatalogIngredient? catalog;
 
   void dispose() {
     nameController.dispose();
@@ -458,6 +464,23 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
     }
   }
 
+  /// A catalog match was picked for row [index]: remember it (drives the
+  /// unit chips), default the unit to one the ingredient allows, and take its
+  /// category so the shopping list groups the line correctly.
+  void _selectCatalog(int index, CatalogIngredient ingredient) {
+    setState(() {
+      final _IngredientRow row = _ingredients[index];
+      row.catalog = ingredient;
+      row.unitController.text = unitAfterSelection(
+        ingredient,
+        row.unitController.text,
+      );
+    });
+    // The category is part of the whole-list-replace payload, so a pick that
+    // changes only it (same name text) must still count as an edit.
+    _markIngredientsEdited();
+  }
+
   void _addIngredient() {
     final _IngredientRow row = _IngredientRow(id: _nextRowId++, name: '');
     row.nameController.addListener(_onFieldChanged);
@@ -529,7 +552,11 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
               ? null
               : row.unitController.text.trim(),
           isStaple: row.isStaple,
-          category: row.category,
+          // A catalog pick supplies the category only while the name still
+          // is that ingredient; otherwise the row's original one stands.
+          category:
+              selectionFor(row.catalog, row.nameController.text)?.category ??
+              row.category,
           notes: row.notes,
         ),
       )
@@ -998,6 +1025,13 @@ class _RecipeFormScreenState extends ConsumerState<RecipeFormScreen> {
                                     enabled: !isBusy,
                                     nameErrorText: validateRecipeIngredientName(
                                       _ingredients[i].nameController.text,
+                                    ),
+                                    catalogIngredient: _ingredients[i].catalog,
+                                    onCatalogSelected:
+                                        (CatalogIngredient ingredient) =>
+                                            _selectCatalog(i, ingredient),
+                                    onAddAsNew: (_) => setState(
+                                      () => _ingredients[i].catalog = null,
                                     ),
                                   ),
                                 ),

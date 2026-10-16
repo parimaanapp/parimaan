@@ -32,8 +32,30 @@ ProviderContainer _container(FakeRecipeRepository repository) {
   return container;
 }
 
+List<Recipe> _recipes(int count) => <Recipe>[
+  for (int i = 0; i < count; i++)
+    Recipe(
+      id: 'recipe-$i',
+      householdId: 'household-1',
+      sourceType: RecipeSource.user,
+      title: 'Recipe $i',
+      servings: 4,
+      dietaryTags: const <String>[],
+      role: RecipeRole.sabziDal,
+      inRotation: false,
+      isFavorite: false,
+      steps: const <String>[],
+      createdAt: DateTime.utc(2026, 8, 25),
+      updatedAt: DateTime.utc(2026, 8, 25),
+    ),
+];
+
+/// Longer than the controller's live-update coalescing window.
+const Duration _settle = Duration(milliseconds: 650);
+
 void main() {
   _controllerCacheTests();
+  _paginationTests();
   group('RecipeLibraryController — build', () {
     test('fetches the household it is keyed on, unfiltered', () async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
@@ -193,7 +215,7 @@ void main() {
       expect(repository.calls, hasLength(1));
 
       repository.watchControllers['household-1']!.add(null);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(_settle);
 
       expect(repository.calls, hasLength(2));
     });
@@ -310,6 +332,274 @@ void _controllerCacheTests() {
       expect(repository.calls.length, before + 1);
       expect(repository.calls.last.role, isNull);
       expect(repository.calls.last.isFavorite, isNull);
+    });
+  });
+}
+
+void _paginationTests() {
+  const int page = RecipeLibraryController.pageSize;
+
+  group('RecipeLibraryController — pagination (B2c)', () {
+    test('the first fetch asks for one page from offset 0', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page * 2 + 5),
+      );
+      final ProviderContainer container = _container(repository);
+
+      final List<Recipe> first = await container.read(
+        recipeLibraryControllerProvider('h').future,
+      );
+
+      expect(first, hasLength(page));
+      expect(repository.pageCalls.single, (limit: page, offset: 0));
+      expect(
+        container.read(recipeLibraryControllerProvider('h').notifier).hasMore,
+        isTrue,
+      );
+    });
+
+    test('a short first page means there is nothing more to load', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(3),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+      expect(controller.hasMore, isFalse);
+
+      await controller.loadMore();
+      expect(repository.pageCalls, hasLength(1));
+    });
+
+    test('loadMore appends the next page and stops at a short page', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page + 7),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+
+      await controller.loadMore();
+
+      final List<Recipe>? all = container
+          .read(recipeLibraryControllerProvider('h'))
+          .valueOrNull;
+      expect(all, hasLength(page + 7));
+      expect(all!.map((Recipe r) => r.id).toSet(), hasLength(page + 7));
+      expect(repository.pageCalls.last, (limit: page, offset: page));
+      expect(controller.hasMore, isFalse);
+    });
+
+    test('concurrent loadMore calls fetch the page once', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page * 3),
+        delay: const Duration(milliseconds: 5),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+
+      await Future.wait(<Future<void>>[
+        controller.loadMore(),
+        controller.loadMore(),
+      ]);
+
+      expect(repository.pageCalls, hasLength(2));
+    });
+
+    test('a failed loadMore keeps the loaded list and can be retried', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page * 2),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+
+      repository.error = const ForbiddenError('nope');
+      await controller.loadMore();
+      final AsyncValue<List<Recipe>> failed = container.read(
+        recipeLibraryControllerProvider('h'),
+      );
+      expect(failed.hasError, isTrue);
+      expect(failed.valueOrNull, hasLength(page));
+      expect(controller.hasMore, isTrue);
+
+      expect(controller.loadMoreFailed, isTrue);
+      // A scroll-driven call does not hammer a failing server...
+      repository.error = null;
+      await controller.loadMore();
+      expect(repository.pageCalls, hasLength(2));
+      // ...only an explicit retry does.
+      await controller.loadMore(retry: true);
+      expect(controller.loadMoreFailed, isFalse);
+      expect(
+        container.read(recipeLibraryControllerProvider('h')).valueOrNull,
+        hasLength(page * 2),
+      );
+    });
+
+    test('a filter change starts again from the first page', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page * 3),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+      await controller.loadMore();
+
+      await controller.setRoleFilter(RecipeRole.carb);
+
+      expect(repository.pageCalls.last, (limit: page, offset: 0));
+      expect(
+        container.read(recipeLibraryControllerProvider('h')).valueOrNull,
+        hasLength(page),
+      );
+    });
+
+    test('a live update refetches every page already loaded', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page * 3),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      await container
+          .read(recipeLibraryControllerProvider('h').notifier)
+          .loadMore();
+
+      repository.watchControllers['h']!.add(null);
+      await Future<void>.delayed(_settle);
+
+      expect(repository.pageCalls.last, (limit: page * 2, offset: 0));
+      expect(
+        container.read(recipeLibraryControllerProvider('h')).valueOrNull,
+        hasLength(page * 2),
+      );
+    });
+
+    test('a stale loadMore cannot overwrite a newer filter result', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page * 3),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+
+      repository.delayForRole = (RecipeRole? r) =>
+          r == null ? const Duration(milliseconds: 60) : Duration.zero;
+      final Future<void> slow = controller.loadMore();
+      final Future<void> fast = controller.setRoleFilter(RecipeRole.carb);
+      await Future.wait(<Future<void>>[slow, fast]);
+
+      expect(
+        container.read(recipeLibraryControllerProvider('h')).valueOrNull,
+        hasLength(page),
+      );
+      expect(controller.isLoadingMore, isFalse);
+    });
+
+    test('rapid filter taps end on the last tapped, not the last finished', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(10),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+      repository.resultForRole = (RecipeRole? r) =>
+          r == RecipeRole.carb ? _recipes(3) : _recipes(7);
+      repository.delayForRole = (RecipeRole? r) => r == RecipeRole.carb
+          ? const Duration(milliseconds: 60)
+          : Duration.zero;
+
+      final Future<void> first = controller.setRoleFilter(RecipeRole.carb);
+      final Future<void> second = controller.setRoleFilter(RecipeRole.snack);
+      await Future.wait(<Future<void>>[first, second]);
+
+      expect(
+        container.read(recipeLibraryControllerProvider('h')).valueOrNull,
+        hasLength(7),
+      );
+    });
+
+    test('an invalidation rebuild keeps the loaded row count', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(page * 3),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      await container
+          .read(recipeLibraryControllerProvider('h').notifier)
+          .loadMore();
+
+      container.invalidate(recipeLibraryControllerProvider('h'));
+      final List<Recipe> rebuilt = await container.read(
+        recipeLibraryControllerProvider('h').future,
+      );
+
+      expect(rebuilt, hasLength(page * 2));
+      expect(repository.pageCalls.last, (limit: page * 2, offset: 0));
+    });
+
+    test('refetching more than 200 rows pages in chunks of at most 200', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(400),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      final RecipeLibraryController controller = container.read(
+        recipeLibraryControllerProvider('h').notifier,
+      );
+      for (int i = 0; i < 4; i++) {
+        await controller.loadMore();
+      }
+      expect(
+        container.read(recipeLibraryControllerProvider('h')).valueOrNull,
+        hasLength(250),
+      );
+      repository.pageCalls.clear();
+
+      repository.watchControllers['h']!.add(null);
+      await Future<void>.delayed(_settle);
+
+      expect(repository.pageCalls, <({int? limit, int? offset})>[
+        (limit: 200, offset: 0),
+        (limit: 50, offset: 200),
+      ]);
+      expect(
+        container.read(recipeLibraryControllerProvider('h')).valueOrNull,
+        hasLength(250),
+      );
+    });
+
+    test('a burst of live updates coalesces into one refetch', () async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        result: _recipes(10),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(recipeLibraryControllerProvider('h').future);
+      repository.pageCalls.clear();
+
+      for (int i = 0; i < 3; i++) {
+        repository.watchControllers['h']!.add(null);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      await Future<void>.delayed(_settle);
+
+      expect(repository.pageCalls, hasLength(1));
     });
   });
 }

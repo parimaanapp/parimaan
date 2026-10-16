@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/input/quantity_input_formatter.dart';
+import '../../catalog/domain/catalog_ingredient.dart';
+import '../../catalog/presentation/ingredient_picker_field.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
@@ -62,6 +66,16 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   String? _category;
   bool _isStaple = false;
 
+  /// The catalog row the name was picked as (B2c); `null` for free text.
+  /// Honoured only while the name text still equals its canonical name.
+  CatalogIngredient? _catalog;
+
+  /// The category before a catalog pick overwrote it, and whether the
+  /// current category still came from that pick (not tapped by the user).
+  /// Lets a revert to free text restore it instead of submitting a stale one.
+  String? _categoryBeforePick;
+  bool _categoryFromCatalog = false;
+
   @override
   void initState() {
     super.initState();
@@ -100,7 +114,21 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     super.dispose();
   }
 
-  void _onFieldChanged() => setState(() {});
+  void _onFieldChanged() => setState(() {
+    if (_catalog != null && selectionFor(_catalog, _name.text) == null) {
+      _revertCatalog();
+    }
+  });
+
+  /// Back to free text: drop the pick and, if the category still came from
+  /// it, restore the one the user had before.
+  void _revertCatalog() {
+    _catalog = null;
+    if (_categoryFromCatalog) {
+      _category = _categoryBeforePick;
+      _categoryFromCatalog = false;
+    }
+  }
 
   /// Toggles [category]. The new category's default unit is filled in only
   /// when the unit field is empty or still holds the previous category's
@@ -108,6 +136,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
   /// own stored unit. A unit the user typed or chose is left alone.
   void _selectCategory(String category) {
     setState(() {
+      _categoryFromCatalog = false;
       final String? previous = _category;
       _category = previous == category ? null : category;
       final String? selected = _category;
@@ -126,6 +155,23 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
       if (neverUserSet && !isStoredUnit) {
         _unit.text = defaultUnitForCategory(selected) ?? unit;
       }
+    });
+  }
+
+  /// A catalog match was picked: adopt its category (when the pantry knows
+  /// it) and a unit it allows, keeping the current unit when it already is
+  /// one of them.
+  void _selectCatalog(CatalogIngredient ingredient) {
+    setState(() {
+      if (!_categoryFromCatalog) {
+        _categoryBeforePick = _category;
+      }
+      _catalog = ingredient;
+      if (knownPantryCategories.contains(ingredient.category)) {
+        _category = ingredient.category;
+        _categoryFromCatalog = true;
+      }
+      _unit.text = unitAfterSelection(ingredient, _unit.text);
     });
   }
 
@@ -227,6 +273,7 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
     final AsyncValue<void> formState = ref.watch(pantryFormControllerProvider);
     final bool isBusy = formState.isLoading;
     final String? errorMessage = pantryErrorMessage(formState.error);
+    final CatalogIngredient? catalog = selectionFor(_catalog, _name.text);
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -245,13 +292,15 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    PInput(
-                      key: ManualAddScreen.nameFieldKey,
+                    IngredientPickerField(
+                      fieldKey: ManualAddScreen.nameFieldKey,
                       label: 'Name',
                       hintText: 'Toor dal',
                       controller: _name,
                       enabled: !isBusy,
                       autofocus: !widget.isEditMode,
+                      onSelected: _selectCatalog,
+                      onAddAsNew: (_) => setState(_revertCatalog),
                     ),
                     const SizedBox(height: AppSpacing.s2),
                     PInput(
@@ -263,24 +312,36 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: <TextInputFormatter>[
+                        QuantityInputFormatter(),
+                      ],
                       useMonoFont: true,
                     ),
                     const SizedBox(height: AppSpacing.s2),
-                    PInput(
-                      key: ManualAddScreen.unitFieldKey,
-                      label: 'Unit',
-                      hintText: 'kg',
-                      controller: _unit,
-                      enabled: !isBusy,
-                    ),
-                    const SizedBox(height: AppSpacing.s1),
+                    // The catalog bounds the unit choice, so a picked
+                    // ingredient shows only its chips; free text keeps the
+                    // typed unit field.
+                    if (catalog == null) ...<Widget>[
+                      PInput(
+                        key: ManualAddScreen.unitFieldKey,
+                        label: 'Unit',
+                        hintText: 'kg',
+                        controller: _unit,
+                        enabled: !isBusy,
+                      ),
+                      const SizedBox(height: AppSpacing.s1),
+                    ],
                     Wrap(
                       spacing: AppSpacing.s1,
                       runSpacing: AppSpacing.s1,
                       children: <Widget>[
-                        for (final String unit in unitsWithCurrent(
-                          _category,
-                          widget.initialItem?.unit,
+                        for (final String unit in unitsForIngredient(
+                          catalog,
+                          fallback: unitsWithCurrent(
+                            _category,
+                            widget.initialItem?.unit,
+                          ),
+                          current: catalog == null ? null : _unit.text,
                         ))
                           PChip(
                             key: ManualAddScreen.unitChipKey(unit),
@@ -342,6 +403,9 @@ class _ManualAddScreenState extends ConsumerState<ManualAddScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: <TextInputFormatter>[
+                        QuantityInputFormatter(),
+                      ],
                       useMonoFont: true,
                     ),
                   ],

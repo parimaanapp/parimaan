@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/catalog/data/catalog_repository.dart';
+import 'package:mobile/features/catalog/presentation/ingredient_picker_field.dart';
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
 import 'package:mobile/features/pantry/domain/category_units.dart';
 import 'package:mobile/features/pantry/domain/pantry_item.dart';
@@ -9,6 +11,7 @@ import 'package:mobile/shared/ui/components/components.dart';
 import 'package:mobile/shared/errors/app_error.dart';
 import 'package:mobile/shared/ui/theme.dart';
 
+import '../../../support/fake_catalog_repository.dart';
 import '../../../support/fake_pantry_repository.dart';
 
 final PantryItem _existingItem = PantryItem(
@@ -36,7 +39,10 @@ Future<ProviderContainer> _pumpPushed(
   PantryItem? initialItem,
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[pantryRepositoryProvider.overrideWithValue(repository)],
+    overrides: <Override>[
+      pantryRepositoryProvider.overrideWithValue(repository),
+      catalogRepositoryProvider.overrideWithValue(FakeCatalogRepository()),
+    ],
   );
   addTearDown(container.dispose);
 
@@ -71,6 +77,126 @@ Future<ProviderContainer> _pumpPushed(
 }
 
 void main() {
+  group('ManualAddScreen — catalog picker (B2c)', () {
+    Future<void> typeName(WidgetTester tester, String text) async {
+      await tester.enterText(find.byKey(ManualAddScreen.nameFieldKey), text);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('picking a match sets category, default unit and only its '
+        'allowed unit chips', (WidgetTester tester) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await typeName(tester, 'tamatar');
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureTomato.id)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<PInput>(find.byKey(ManualAddScreen.nameFieldKey))
+            .controller
+            ?.text,
+        'Tomato',
+      );
+      for (final String unit in fixtureTomato.allowedUnits) {
+        expect(find.byKey(ManualAddScreen.unitChipKey(unit)), findsOneWidget);
+      }
+      expect(find.byKey(ManualAddScreen.unitChipKey('cup')), findsNothing);
+      expect(find.byKey(ManualAddScreen.unitFieldKey), findsNothing);
+      expect(
+        tester.widget<PChip>(find.byKey(ManualAddScreen.unitChipKey('g'))).selected,
+        isTrue,
+      );
+      expect(
+        tester.widget<PChip>(find.widgetWithText(PChip, 'Produce')).selected,
+        isTrue,
+      );
+    });
+
+    testWidgets('retyping a picked name restores the previous category', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await typeName(tester, 'tamatar');
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureTomato.id)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<PChip>(find.widgetWithText(PChip, 'Produce')).selected,
+        isTrue,
+      );
+
+      await tester.enterText(
+        find.byKey(ManualAddScreen.nameFieldKey),
+        'Tomato puree',
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<PChip>(find.widgetWithText(PChip, 'Produce')).selected,
+        isFalse,
+      );
+    });
+
+    testWidgets('a category the user tapped after the pick is kept', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await typeName(tester, 'tamatar');
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureTomato.id)),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(PChip, 'Dairy'));
+      await tester.tap(find.widgetWithText(PChip, 'Dairy'));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(ManualAddScreen.nameFieldKey),
+        'Tomato puree',
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<PChip>(find.widgetWithText(PChip, 'Dairy')).selected,
+        isTrue,
+      );
+    });
+
+    testWidgets('"Add as new ingredient" keeps free-text unit entry', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await typeName(tester, 'dragonfruit');
+      await tester.tap(find.byKey(IngredientPickerField.addAsNewKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ManualAddScreen.unitFieldKey), findsOneWidget);
+    });
+
+    testWidgets('quantity stops at two decimals', (WidgetTester tester) async {
+      await _pumpPushed(tester, repository: FakePantryRepository());
+
+      await tester.enterText(
+        find.byKey(ManualAddScreen.quantityFieldKey),
+        '1.239',
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<PInput>(find.byKey(ManualAddScreen.quantityFieldKey))
+            .controller
+            ?.text,
+        '1.23',
+      );
+    });
+  });
+
   group('ManualAddScreen — create mode', () {
     testWidgets('choosing Dal offers only g, kg, cup and defaults to g', (
       WidgetTester tester,

@@ -7,16 +7,19 @@
 # never pays for hydrating every recipe's full ingredient list
 # (E2E_MVP_PLAN.md §12.2.7).
 #
+# Slim and paged (Build B, B2c): the card-scale selection drops `steps`,
+# `description` and `sourceUrl` (the heaviest columns, only the Detail screen
+# needs them), and `limit`/`offset` page the server-ordered list so 200+
+# recipes load page by page instead of in one payload.
+#
 # Any member may read. A non-member and a nonexistent `householdId` deny
 # identically (see `Query.household`'s doc for the same convention).
-query Recipes($householdId: ID!, $role: RecipeRole, $isFavorite: Boolean, $inRotation: Boolean) {
-  recipes(householdId: $householdId, role: $role, isFavorite: $isFavorite, inRotation: $inRotation) {
+query Recipes($householdId: ID!, $role: RecipeRole, $isFavorite: Boolean, $inRotation: Boolean, $limit: Int, $offset: Int) {
+  recipes(householdId: $householdId, role: $role, isFavorite: $isFavorite, inRotation: $inRotation, limit: $limit, offset: $offset) {
     id
     householdId
     sourceType
-    sourceUrl
     title
-    description
     servings
     prepMin
     cookMin
@@ -26,7 +29,6 @@ query Recipes($householdId: ID!, $role: RecipeRole, $isFavorite: Boolean, $inRot
     role
     inRotation
     isFavorite
-    steps
     createdAt
     updatedAt
   }
