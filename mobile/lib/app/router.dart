@@ -23,6 +23,7 @@ import '../features/household/presentation/join/confirm_join_screen.dart';
 import '../features/household/presentation/join/enter_code_screen.dart';
 import '../features/household/presentation/join/household_full_screen.dart';
 import '../features/household/presentation/settings/household_edit_entry.dart';
+import '../features/household/presentation/settings/household_list_screen.dart';
 import '../features/household/presentation/settings/members_list_screen.dart';
 import '../features/household/presentation/settings/notification_preferences_screen.dart';
 import '../features/household/presentation/settings/settings_hub_screen.dart';
@@ -163,6 +164,10 @@ abstract final class AppRoutes {
 
   /// The path pattern go_router matches. [settingsHub] builds a concrete one.
   static const String settingsHubPattern = '/household/:householdId/settings';
+
+  /// The household switcher — lists every household the user belongs to.
+  /// Not household-scoped (it spans households), so no id in the path.
+  static const String households = '/households';
   static const String membersPattern = '/household/:householdId/members';
   static const String settingsNotificationsPattern =
       '/household/:householdId/settings/notifications';
@@ -665,6 +670,11 @@ final Provider<GoRouter> goRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.createHouseholdInvite,
         builder: (BuildContext context, GoRouterState state) =>
             const InviteCodeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.households,
+        builder: (BuildContext context, GoRouterState state) =>
+            const HouseholdListScreen(),
       ),
       GoRoute(
         path: AppRoutes.settingsHubPattern,
@@ -1264,6 +1274,16 @@ String? _redirect(Ref ref, GoRouterState state) {
         ref.read(pendingJoinCodeControllerProvider) != null;
     if (hasPendingCode && location != AppRoutes.joinHousehold) {
       return AppRoutes.joinHousehold;
+    }
+
+    // Welcome is a holding screen, not a destination: once the household has
+    // any real activity (the first pantry item / recipe / planned meal), move
+    // on to /home without needing a restart. The refreshListenable above
+    // re-runs this guard when `householdHasActivityProvider` flips.
+    if (location == AppRoutes.welcome) {
+      return ref.read(householdHasActivityProvider).valueOrNull == true
+          ? AppRoutes.home
+          : null;
     }
 
     // Every other signed-in location is left alone, so navigation *within* the

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/household/state/active_household_store.dart';
 import 'package:mobile/features/menu/data/menu_repository.dart';
 import 'package:mobile/features/menu/domain/menu.dart';
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
@@ -8,6 +9,7 @@ import 'package:mobile/features/recipes/domain/recipe.dart';
 import 'package:mobile/features/recipes/domain/recipe_role.dart';
 import 'package:mobile/features/recipes/domain/recipe_source.dart';
 
+import 'fake_active_household_store.dart';
 import 'fake_menu_repository.dart';
 import 'fake_pantry_repository.dart';
 import 'fake_recipe_repository.dart';
@@ -110,6 +112,7 @@ Menu _emptyActivityMenu(String householdId) => Menu(
 List<Override> defaultHouseholdActivityOverrides({
   String householdId = 'household-1',
 }) => <Override>[
+  activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
   recipeRepositoryProvider.overrideWithValue(
     FakeRecipeRepository(result: <Recipe>[_activityRecipe(householdId)]),
   ),
@@ -130,6 +133,7 @@ List<Override> defaultHouseholdActivityOverrides({
 List<Override> emptyHouseholdActivityOverrides({
   String householdId = 'household-1',
 }) => <Override>[
+  activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
   recipeRepositoryProvider.overrideWithValue(
     FakeRecipeRepository(result: const <Recipe>[]),
   ),
@@ -149,6 +153,7 @@ List<Override> emptyHouseholdActivityOverrides({
 /// asserted separately, never inferred from one another").
 List<Override> recipeOnlyActivityOverrides({String householdId = 'household-1'}) =>
     <Override>[
+  activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
       recipeRepositoryProvider.overrideWithValue(
         FakeRecipeRepository(result: <Recipe>[_activityRecipe(householdId)]),
       ),
@@ -166,6 +171,7 @@ List<Override> recipeOnlyActivityOverrides({String householdId = 'household-1'})
 /// Exactly one pantry item, nothing else — the second arm.
 List<Override> pantryOnlyActivityOverrides({String householdId = 'household-1'}) =>
     <Override>[
+  activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
       recipeRepositoryProvider.overrideWithValue(
         FakeRecipeRepository(result: const <Recipe>[]),
       ),
@@ -183,6 +189,7 @@ List<Override> pantryOnlyActivityOverrides({String householdId = 'household-1'})
 /// Exactly one planned menu item, nothing else — the third arm.
 List<Override> menuOnlyActivityOverrides({String householdId = 'household-1'}) =>
     <Override>[
+  activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
       recipeRepositoryProvider.overrideWithValue(
         FakeRecipeRepository(result: const <Recipe>[]),
       ),
@@ -203,6 +210,7 @@ List<Override> menuOnlyActivityOverrides({String householdId = 'household-1'}) =
 /// on.
 List<Override> resolvingActivityOverrides({String householdId = 'household-1'}) =>
     <Override>[
+  activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
       recipeRepositoryProvider.overrideWithValue(
         FakeRecipeRepository(
           result: <Recipe>[_activityRecipe(householdId)],
@@ -225,6 +233,7 @@ List<Override> resolvingActivityOverrides({String householdId = 'household-1'}) 
 /// as empty."
 List<Override> erroredActivityOverrides({String householdId = 'household-1'}) =>
     <Override>[
+  activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
       recipeRepositoryProvider.overrideWithValue(
         FakeRecipeRepository(result: const <Recipe>[]),
       ),

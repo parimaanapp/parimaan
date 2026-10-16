@@ -8,13 +8,15 @@ import '../../pantry/state/pantry_controller.dart';
 import '../../recipes/domain/recipe.dart';
 import '../../recipes/state/recipe_library_controller.dart';
 import '../domain/household.dart';
+import 'active_household_selection_controller.dart';
+import 'current_household_controller.dart';
 import 'me_households_controller.dart';
 
 /// Q20's "has this household done anything real yet?" predicate
 /// (E2E_MVP_PLAN.md §19.2.2 D2, W13 S6): **≥1 recipe OR ≥1 pantry item OR
-/// ≥1 planned menu item**, for the first household `meHouseholdsControllerProvider`
-/// resolved — same "first" convention `activeHouseholdProvider`'s own doc
-/// uses, since a real household switcher doesn't exist yet either.
+/// ≥1 planned menu item**, for the household `activeHouseholdProvider` resolves (the user's
+/// switcher choice, else the first one `meHouseholdsControllerProvider`
+/// returned).
 ///
 /// ## Placement judgment call (W13 S6, §19.2.2)
 ///
@@ -76,7 +78,13 @@ final Provider<AsyncValue<bool>> householdHasActivityProvider =
         // elsewhere fails closed rather than holding forever.
         return const AsyncValue<bool>.data(false);
       }
-      final String householdId = list.first.id;
+      // The stored household choice must be known before judging activity,
+      // or the router would evaluate (and route on) the wrong household.
+      if (ref.watch(activeHouseholdSelectionControllerProvider).isLoading) {
+        return const AsyncValue<bool>.loading();
+      }
+      final String householdId =
+          ref.watch(activeHouseholdProvider)?.id ?? list.first.id;
 
       final AsyncValue<List<Recipe>> recipes = ref.watch(
         recipeLibraryControllerProvider(householdId),

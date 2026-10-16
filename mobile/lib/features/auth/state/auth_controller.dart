@@ -3,11 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/storage/app_database.dart';
-import '../../household/state/current_household_controller.dart';
+import '../../household/state/active_household_store.dart';
+import '../../household/state/household_scope_invalidation.dart';
 import '../../household/state/current_user_id_controller.dart';
-import '../../household/state/create_household_controller.dart';
-import '../../household/state/household_wizard_controller.dart';
-import '../../household/state/join_household_controller.dart';
 import '../../household/state/me_households_controller.dart';
 import '../../household/state/pending_join_code_controller.dart';
 import '../../household/state/notification_preferences_controller.dart';
@@ -128,6 +126,11 @@ class AuthController extends AsyncNotifier<AuthSession> {
     } on Object {
       // Best-effort — see the method doc above.
     }
+    try {
+      await ref.read(activeHouseholdStoreProvider).clear();
+    } on Object {
+      // Best-effort — the stored choice is also keyed by user id.
+    }
     _invalidateSessionScopedState();
     return const AuthSession.signedOut();
   });
@@ -135,18 +138,7 @@ class AuthController extends AsyncNotifier<AuthSession> {
   void _invalidateSessionScopedState() {
     ref.invalidate(meHouseholdsControllerProvider);
     ref.invalidate(currentUserIdControllerProvider);
-    ref.invalidate(currentHouseholdControllerProvider);
-    ref.invalidate(notificationPreferencesControllerProvider);
-    ref.invalidate(pantryControllerProvider);
-    ref.invalidate(recipeLibraryControllerProvider);
-    ref.invalidate(recipeDetailControllerProvider);
-    ref.invalidate(currentMenuControllerProvider);
-    ref.invalidate(recipePickerControllerProvider);
-    ref.invalidate(currentShoppingListControllerProvider);
-    // A9: session-scoped household state, so user B never sees A's household.
-    ref.invalidate(joinHouseholdControllerProvider);
-    ref.invalidate(householdWizardControllerProvider);
-    ref.invalidate(createHouseholdControllerProvider);
+    invalidateHouseholdScopedState(ref);
     ref.invalidate(pendingJoinCodeControllerProvider);
   }
 

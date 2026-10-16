@@ -16,6 +16,7 @@ import 'package:mobile/features/menu/presentation/today_screen.dart';
 import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
 import 'package:mobile/features/pantry/data/pantry_photo_repository.dart';
 import 'package:mobile/features/pantry/data/pantry_repository.dart';
+import 'package:mobile/features/pantry/state/pantry_controller.dart';
 import 'package:mobile/features/pantry/domain/pantry_photo_analysis.dart';
 import 'package:mobile/features/pantry/state/photo_review_session_controller.dart';
 import 'package:mobile/features/cook/data/cook_repository.dart';
@@ -1533,6 +1534,37 @@ void main() {
   });
 
   group('router — welcome screen + activity threshold (W13 S6, Q20/D2)', () {
+    testWidgets(
+      'on /welcome, adding the first item moves on to /home without a restart',
+      (WidgetTester tester) async {
+        final FakePantryRepository pantry = FakePantryRepository(
+          result: const <PantryItem>[],
+        );
+        final GoRouter router = await _pumpRouter(
+          tester,
+          session: testSignedInSession,
+          households: <Household>[testHousehold],
+          activityOverrides: emptyHouseholdActivityOverrides(
+            householdId: testHousehold.id,
+          ),
+          extraOverrides: <Override>[
+            pantryRepositoryProvider.overrideWithValue(pantry),
+          ],
+        );
+        expect(_location(router), AppRoutes.welcome);
+
+        // The first pantry item lands server-side; the controller refetches.
+        pantry.result = <PantryItem>[cookablePantryItem('Toor Dal')];
+        final ProviderContainer container = ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+        container.invalidate(pantryControllerProvider);
+        await tester.pumpAndSettle();
+
+        expect(_location(router), AppRoutes.home);
+      },
+    );
+
     testWidgets(
       'a household with zero recipes, pantry items, and menu items lands on /welcome',
       (WidgetTester tester) async {

@@ -9,6 +9,7 @@ import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../../household/domain/household.dart';
 import '../../household/state/current_household_controller.dart';
+import '../../household/state/household_activity_provider.dart';
 
 /// The fifth Flow 1 screen (E2E_MVP_PLAN.md §19.2.1 D1, W13 S6) — where a
 /// signed-in user who already has a household, but hasn't done anything
@@ -31,27 +32,99 @@ import '../../household/state/current_household_controller.dart';
 /// real location to send people to, and a dialog cannot be a redirect
 /// target (D1).
 ///
-/// ## The forward-reference this screen's own copy carries (D1)
+/// ## Recipe copy is true with or without seeded recipes
 ///
-/// Tapping "Add New Recipe" here lands on the recipe method chooser against
-/// a library that is empty for every household — the 50 curated recipes
-/// only seed on `createHousehold` once W16's seeder Lambda exists (Q8's
-/// copy-per-household decision, W15/W16's content weeks). This screen's
-/// body copy therefore asks the user to add *their* first recipe rather
-/// than promising a catalog. Once W16 ships, a newly created household will
-/// already have 50 recipes, and this CTA's target state changes from
-/// "empty library, add one" to "50 recipes, add your own" — without this
-/// screen itself changing. Naming that here is the point: a reader who
-/// finds this screen after W16 should not conclude the CTA was
-/// mis-targeted.
-class WelcomeChoosePathScreen extends ConsumerWidget {
+/// A new household may or may not start with curated recipes, so the recipe
+/// card's copy asks the user to add a recipe their household cooks rather than
+/// claiming the library is empty.
+///
+/// ## Leaving Welcome
+///
+/// The first pantry item / recipe / planned meal is added from a screen pushed
+/// on top of this one. `_redirect` only re-evaluates the top route, so this
+/// screen listens to `householdHasActivityProvider` itself and moves to home
+/// once it is visible again (see `_advance`).
+class WelcomeChoosePathScreen extends ConsumerStatefulWidget {
   const WelcomeChoosePathScreen({super.key});
 
   static const Key pantryButtonKey = Key('welcome-add-to-pantry');
   static const Key recipeButtonKey = Key('welcome-add-recipe');
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WelcomeChoosePathScreen> createState() =>
+      _WelcomeChoosePathScreenState();
+}
+
+class _WelcomeChoosePathScreenState
+    extends ConsumerState<WelcomeChoosePathScreen> {
+  /// A deferred advance is already waiting for the covering route to go away.
+  bool _waiting = false;
+  ModalRoute<Object?>? _waitingRoute;
+  AnimationStatusListener? _statusListener;
+
+  @override
+  void initState() {
+    super.initState();
+    // Already past the threshold when first built (e.g. data arrived between
+    // the router's decision and this build): move on straight away.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          ref.read(householdHasActivityProvider).valueOrNull == true) {
+        _advance();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _stopWaiting();
+    super.dispose();
+  }
+
+  void _stopWaiting() {
+    final AnimationStatusListener? listener = _statusListener;
+    if (listener != null) {
+      _waitingRoute?.secondaryAnimation?.removeStatusListener(listener);
+    }
+    _statusListener = null;
+    _waitingRoute = null;
+    _waiting = false;
+  }
+
+  /// Leaves Welcome for home — but only once Welcome is the visible route
+  /// again. The first item is added from a screen pushed *on top of* Welcome;
+  /// yanking the user to home mid-flow would cut that screen off, so the move
+  /// waits until it has been popped.
+  void _advance() {
+    if (!mounted || _waiting) return;
+    final ModalRoute<Object?>? route = ModalRoute.of(context);
+    final Animation<double>? covered = route?.secondaryAnimation;
+    if (route != null && !route.isCurrent && covered != null) {
+      _waiting = true;
+      _waitingRoute = route;
+      _statusListener = (AnimationStatus status) {
+        if (status == AnimationStatus.dismissed) {
+          _stopWaiting();
+          _advance();
+        }
+      };
+      covered.addStatusListener(_statusListener!);
+      return;
+    }
+    context.go(AppRoutes.home);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // The first pantry item / recipe / planned meal flips this to true; the
+    // router only re-evaluates the *top* route, so Welcome must react itself.
+    ref.listen<AsyncValue<bool>>(householdHasActivityProvider, (
+      AsyncValue<bool>? _,
+      AsyncValue<bool> next,
+    ) {
+      if (next.valueOrNull == true) _advance();
+    });
+
     // By construction, `_redirect` only ever sends a signed-in user here
     // once `meHouseholdsControllerProvider` has already resolved to a
     // non-empty list (see that function's own doc) — so `activeHousehold`
@@ -83,24 +156,23 @@ class WelcomeChoosePathScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.s5),
               _PathCard(
-                buttonKey: pantryButtonKey,
+                buttonKey: WelcomeChoosePathScreen.pantryButtonKey,
                 title: 'Add to Pantry',
                 body:
                     'Log what you already have on hand, so the app knows '
                     "what's available when it plans your meals.",
                 actionLabel: 'Add to Pantry',
                 variant: PButtonVariant.primary,
-                onPressed: () => context.push(
-                  AppRoutes.pantryAddChooseMethod(householdId),
-                ),
+                onPressed: () =>
+                    context.push(AppRoutes.pantryAddChooseMethod(householdId)),
               ),
               const SizedBox(height: AppSpacing.s5),
               _PathCard(
-                buttonKey: recipeButtonKey,
+                buttonKey: WelcomeChoosePathScreen.recipeButtonKey,
                 title: 'Add New Recipe',
                 body:
-                    'Your recipe library starts empty — add the first one '
-                    'your household actually cooks.',
+                    'Add a recipe your household cooks, so the app can '
+                    'plan around it.',
                 actionLabel: 'Add New Recipe',
                 variant: PButtonVariant.secondary,
                 onPressed: () =>

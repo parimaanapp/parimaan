@@ -193,16 +193,16 @@ class _HubBody extends ConsumerWidget {
           key: SettingsHubScreen.householdRowKey,
           label: 'Household',
           value: household.name,
-          // The household's own name is edited on wizard screen 2.1, which
-          // creates rather than renames — there is no rename mutation in the
-          // schema, so this row shows the name and does not pretend to edit it.
-          onTap: null,
+          // There is no rename mutation in the schema, so this row never edits
+          // the name; it opens the household list, where the active household
+          // can be switched.
+          onTap: () => context.go(AppRoutes.households),
         ),
         if (householdCount > 1)
           SettingsRow(
             key: SettingsHubScreen.householdCountRowKey,
             label: 'You belong to $householdCount households',
-            onTap: null,
+            onTap: () => context.go(AppRoutes.households),
           ),
         SettingsRow(
           key: SettingsHubScreen.membersRowKey,

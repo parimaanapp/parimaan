@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/household/state/active_household_store.dart';
+import '../../../support/fake_active_household_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/auth_failure.dart';
@@ -29,6 +31,7 @@ ProviderContainer _containerWith(MockAuthRepository repository) {
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
       authRepositoryProvider.overrideWithValue(repository),
+      activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
       appDatabaseProvider.overrideWithValue(db),
     ],
   );
@@ -192,6 +195,7 @@ void main() {
       final ProviderContainer container = ProviderContainer(
         overrides: <Override>[
           authRepositoryProvider.overrideWithValue(repository),
+      activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
           appDatabaseProvider.overrideWithValue(db),
         ],
       );
@@ -216,6 +220,7 @@ void main() {
         final ProviderContainer container = ProviderContainer(
           overrides: <Override>[
             authRepositoryProvider.overrideWithValue(repository),
+      activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
             appDatabaseProvider.overrideWithValue(
               AppDatabase(NativeDatabase.memory()),
             ),
@@ -255,6 +260,7 @@ void main() {
         final ProviderContainer container = ProviderContainer(
           overrides: <Override>[
             authRepositoryProvider.overrideWithValue(repository),
+      activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
             appDatabaseProvider.overrideWithValue(
               AppDatabase(NativeDatabase.memory()),
             ),
@@ -317,6 +323,7 @@ void main() {
         final ProviderContainer container = ProviderContainer(
           overrides: <Override>[
             authRepositoryProvider.overrideWithValue(repository),
+      activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
             appDatabaseProvider.overrideWithValue(db),
           ],
         );
