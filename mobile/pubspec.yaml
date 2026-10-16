@@ -100,6 +100,7 @@ dependencies:
   # present transitively (pulled in by `camera` and others); made a direct
   # dependency since this slice's own code calls it, not just inherits it.
   image: ^4.10.1
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:

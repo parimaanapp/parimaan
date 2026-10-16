@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/household/state/active_household_selection_controller.dart';
+import 'package:mobile/features/household/state/active_household_store.dart';
+import '../../../support/fake_active_household_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
@@ -84,6 +87,7 @@ ProviderContainer _container({
 }) {
   final ProviderContainer container = ProviderContainer(
     overrides: <Override>[
+      activeHouseholdStoreProvider.overrideWithValue(InMemoryActiveHouseholdStore()),
       householdRepositoryProvider.overrideWithValue(
         FakeHouseholdRepository(myHouseholdsResult: households),
       ),
@@ -110,6 +114,8 @@ Future<void> _awaitActivitySources(
   ProviderContainer container,
   String householdId,
 ) async {
+  // The stored household choice resolves first; activity holds until it does.
+  await container.read(activeHouseholdSelectionControllerProvider.future);
   await container.read(recipeLibraryControllerProvider(householdId).future);
   await container.read(pantryControllerProvider(householdId).future);
   await container.read(

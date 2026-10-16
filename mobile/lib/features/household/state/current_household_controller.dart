@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/household_repository.dart';
 import '../domain/household.dart';
+import 'active_household_selection_controller.dart';
 import 'household_wizard_controller.dart';
 import 'join_household_controller.dart';
 import 'me_households_controller.dart';
@@ -106,10 +107,9 @@ currentHouseholdControllerProvider =
 /// be pure latency.
 ///
 /// [MeHouseholdsController.build] fetches every household this user belongs
-/// to; this provider takes the first. Multiple households per user is real in
-/// the schema but not yet a chosen-household concept anywhere in the product,
-/// so "first" is the only order-independent answer available until a real
-/// household switcher exists.
+/// to. When the user picked one in the household switcher
+/// ([ActiveHouseholdSelectionController]) and the server's list still contains
+/// it, that household wins; otherwise this provider takes the first.
 final Provider<Household?> activeHouseholdProvider = Provider<Household?>((
   Ref ref,
 ) {
@@ -144,6 +144,21 @@ final Provider<Household?> activeHouseholdProvider = Provider<Household?>((
       : wizardState.valueOrNull?.household;
   if (created != null && trusted(created)) {
     return created;
+  }
+
+  // The user's explicit choice (household switcher), honoured only when the
+  // server's list for the current user confirms membership. While the stored
+  // choice is still loading it cannot be known, so it is skipped.
+  final AsyncValue<String?> selection = ref.watch(
+    activeHouseholdSelectionControllerProvider,
+  );
+  final String? chosenId = selection.isLoading ? null : selection.valueOrNull;
+  if (chosenId != null && households != null) {
+    for (final Household candidate in households) {
+      if (candidate.id == chosenId) {
+        return candidate;
+      }
+    }
   }
 
   return households == null || households.isEmpty ? null : households.first;
