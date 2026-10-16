@@ -7,6 +7,7 @@ import '../../../shared/errors/app_error.dart';
 import '../../../shared/ui/colors.dart';
 import '../../../shared/ui/components/components.dart';
 import '../../household/domain/household.dart';
+import '../../household/presentation/household_resolving_view.dart';
 import '../../household/state/current_household_controller.dart';
 import '../../recipes/data/recipe_repository.dart';
 import '../../recipes/domain/recipe.dart';
@@ -42,10 +43,7 @@ class RecipePickerScreen extends ConsumerWidget {
       backgroundColor: AppColors.paper,
       body: SafeArea(
         child: household == null
-            ? const Center(
-                key: RecipePickerScreen.loadingKey,
-                child: CircularProgressIndicator(),
-              )
+            ? const HouseholdResolvingView(loadingKey: RecipePickerScreen.loadingKey)
             : _PickerForHousehold(household: household, extra: extra),
       ),
     );

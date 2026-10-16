@@ -314,6 +314,40 @@ void main() {
       );
     });
 
+    test("refetches from the network instead of serving ferry's cached "
+        'answer - a list cached before createHousehold must not hide the '
+        'new household', () async {
+      bool created = false;
+      final subject = _subject(
+        (Request _) => <String, dynamic>{
+          'data': created
+              ? meWireData(
+                  households: <Map<String, dynamic>>[
+                    meHouseholdMembershipWireNode(),
+                  ],
+                )
+              : meWireData(),
+        },
+      );
+
+      expect(await subject.repository.fetchMyHouseholds(), isEmpty);
+      created = true;
+      final List<Household> after = await subject.repository
+          .fetchMyHouseholds();
+
+      expect(after, hasLength(1));
+      expect(subject.link.requests, hasLength(2));
+    });
+
+    test('fetchMyUserId also bypasses the cache', () async {
+      final subject = _subject(
+        (Request _) => <String, dynamic>{'data': meWireData()},
+      );
+      await subject.repository.fetchMyUserId();
+      await subject.repository.fetchMyUserId();
+      expect(subject.link.requests, hasLength(2));
+    });
+
     test('an empty households list maps to an empty list, not an error', () async {
       final subject = _subject(
         (Request _) => <String, dynamic>{'data': meWireData()},

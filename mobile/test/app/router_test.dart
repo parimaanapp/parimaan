@@ -11,6 +11,7 @@ import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
 import 'package:mobile/features/household/data/household_repository.dart';
 import 'package:mobile/features/household/domain/household.dart';
+import 'package:mobile/features/household/presentation/household_resolving_view.dart';
 import 'package:mobile/features/menu/presentation/today_screen.dart';
 import 'package:mobile/features/menu/presentation/weekly_plan_screen.dart';
 import 'package:mobile/features/pantry/data/pantry_photo_repository.dart';
@@ -503,7 +504,7 @@ void main() {
       // loading state rather than the former `HomeScreen`'s static "Signed
       // in" text (W9 S6: `TodayScreen` replaced `HomeScreen` as the Home
       // tab's real content).
-      expect(find.byKey(TodayScreen.loadingKey), findsOneWidget);
+      expect(find.byKey(HouseholdResolvingView.retryStateKey), findsOneWidget);
     });
 
     testWidgets('/home renders a four-item PTabBar', (
@@ -1413,7 +1414,13 @@ void main() {
       // the *unpainted* branch — the default `find.text` would only prove
       // the opposite.
       expect(
-        find.byKey(TodayScreen.loadingKey, skipOffstage: false),
+        find.descendant(
+          of: find.byType(TodayScreen, skipOffstage: false),
+          matching: find.byKey(
+            HouseholdResolvingView.retryStateKey,
+            skipOffstage: false,
+          ),
+        ),
         findsOneWidget,
       );
 
@@ -1449,7 +1456,13 @@ void main() {
       // Same IndexedStack-keeps-every-branch-alive assertion as the
       // Pantry-tab test above.
       expect(
-        find.byKey(TodayScreen.loadingKey, skipOffstage: false),
+        find.descendant(
+          of: find.byType(TodayScreen, skipOffstage: false),
+          matching: find.byKey(
+            HouseholdResolvingView.retryStateKey,
+            skipOffstage: false,
+          ),
+        ),
         findsOneWidget,
       );
 
@@ -1486,7 +1499,13 @@ void main() {
       expect(_location(router), AppRoutes.recipes);
 
       expect(
-        find.byKey(TodayScreen.loadingKey, skipOffstage: false),
+        find.descendant(
+          of: find.byType(TodayScreen, skipOffstage: false),
+          matching: find.byKey(
+            HouseholdResolvingView.retryStateKey,
+            skipOffstage: false,
+          ),
+        ),
         findsOneWidget,
       );
 

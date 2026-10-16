@@ -8,6 +8,7 @@ import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../../household/domain/household.dart';
+import '../../household/presentation/household_resolving_view.dart';
 import '../../household/state/current_household_controller.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_ingredient.dart';
@@ -40,7 +41,7 @@ class RecipeDetailScreen extends ConsumerWidget {
       backgroundColor: AppColors.paper,
       body: SafeArea(
         child: household == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const HouseholdResolvingView()
             : _RecipeDetailForHousehold(
                 arg: (householdId: household.id, id: recipeId),
               ),
