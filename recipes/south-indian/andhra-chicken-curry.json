@@ -53,10 +53,11 @@
       "notes": "slit"
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 40,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Poppy Seeds",

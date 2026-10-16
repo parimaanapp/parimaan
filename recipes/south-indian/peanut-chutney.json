@@ -14,10 +14,11 @@
   "role": "accompaniment",
   "ingredients": [
     {
-      "name": "Roasted Peanuts",
+      "name": "Peanuts",
       "quantity": 60,
       "unit": "g",
-      "category": "dry_goods"
+      "category": "dry_goods",
+      "notes": "roasted"
     },
     {
       "name": "Dried Red Chilli",
@@ -26,7 +27,7 @@
       "category": "spice"
     },
     {
-      "name": "Garlic (Clove)",
+      "name": "Garlic",
       "quantity": 2,
       "unit": "piece",
       "category": "produce"

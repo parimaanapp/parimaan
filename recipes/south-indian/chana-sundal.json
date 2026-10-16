@@ -10,7 +10,7 @@
   "role": "snack",
   "ingredients": [
     { "name": "Kabuli Chana", "quantity": 150, "unit": "g", "category": "dal", "notes": "soaked overnight" },
-    { "name": "Coconut (Grated)", "quantity": 30, "unit": "g", "category": "produce" },
+    { "name": "Coconut (Fresh)", "quantity": 30, "unit": "g", "category": "produce", "notes": "grated" },
     { "name": "Coconut Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
     { "name": "Mustard Seeds", "quantity": 1, "unit": "tsp", "category": "spice" },
     { "name": "Urad Dal (Split, White)", "quantity": 10, "unit": "g", "category": "dal" },

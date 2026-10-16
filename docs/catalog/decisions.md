@@ -36,3 +36,54 @@ Applied to `src/*.txt`, rebuilt into `ingredients.csv` / `ingredients.md` / `con
 ## Recipes
 - **Methi Thepla** is tagged veg, vegan, dairy free. The sample recipe previously kneaded with curd, which contradicted that, so it now kneads with water.
 - The remaining eleven samples are approved as drafted. Chilli powder lines now use **Red Chilli Powder**; milk lines use **Milk**.
+
+## Shopping-list dedupe (catalog and recipe cleanup)
+
+Found reviewing a list generated from the seeded corpus: "Garlic (Clove) 28 piece" and "Garlic 15 piece" appeared as separate lines because the catalog held both and the recipes used both. Rule applied: **the same real-world item in different forms is one ingredient** (generic canonical name kept, the removed name and its aliases become aliases, units and conversions are the union). A form that is a different product stays separate. All 202 seed recipes were audited; nothing in `recipes/` references a removed name any more (the original wording is kept in the line's `notes` where it carried meaning, for example `roasted`).
+
+### Merged (removed name -> kept ingredient)
+| Removed | Kept | Why |
+|---|---|---|
+| Garlic (Clove) | **Garlic** | Same item. In every recipe a garlic "piece" is a clove (3 to 8 per dish), so `piece_g` for Garlic is now **4 g** (a clove), not 40 g (a bulb). The alias "garlic bulb" is dropped so a bulb is never read as a clove |
+| Coconut (Grated) | **Coconut (Fresh)** | Grated coconut is fresh coconut grated at home. The 90 g/cup conversion is kept; alias "grated coconut" kept. The recipe lines say `grated` in notes |
+| Jaggery Powder | **Jaggery** | Same product, different form (160 g/cup for both) |
+| Roasted Peanuts | **Peanuts** | Roasting is a cooking step; the shopper buys peanuts. Peanuts (Skinless) and Peanuts (Fried Masala) stay separate |
+| Prawns (Large) | **Prawns** | Size is a note, not a different item |
+| Yellow Pumpkin | **Pumpkin** | Same vegetable, same size. Red Pumpkin stays separate (different use and weight) |
+| Kasuri Methi Powder | **Dried Fenugreek Leaves** | Kasuri methi is dried fenugreek leaves, crushed |
+| Roasted Cumin Powder | **Cumin Powder** | The catalog already listed "roasted cumin powder" as a Cumin Powder alias; the second ingredient made it ambiguous |
+| Dry Ginger Powder | **Ginger Powder** | Both carried the alias "adrak powder" |
+| Mirch (Banana Pepper) | **Bhavnagri Chilli** | Same chilli (banana pepper, bajji chilli) |
+| Onion (Red) | **Onion** | Onion already carried "red onion" as an alias |
+| Tomato (Desi) | **Tomato** | Desi / country tomato is the ordinary Indian tomato |
+| Mint Sprigs | **Mint Leaves** | Same herb, same units |
+| Lemon (Sweet) | **Sweet Lime** | Mosambi |
+| Cashew Pieces | **Cashew Nuts** | Whole vs broken is a price grade, not a different item |
+| Black Mustard Seeds, Brown Mustard Seeds | **Mustard Seeds** | "rai" is black or brown mustard; Mustard Seeds already carried "black mustard" |
+
+### Kept separate (deliberately)
+| Pair | Reason |
+|---|---|
+| Garlic / Garlic Paste / Garlic Powder / Green Garlic, same for Ginger and Ginger Garlic Paste | Different products bought separately |
+| Mustard Seeds / Yellow Mustard Seeds | Yellow mustard is a different seed (Bengali shorshe, pickles) |
+| Onion / White Onion / Spring Onion / Shallots / Pearl Onions | Different vegetables in recipes |
+| Tomato / Tomato (Roma) / Cherry Tomato / Tomato Paste | Different uses |
+| Potato / Baby Potato / Sweet Potato | Different dishes |
+| Lemon / Lime (Key) / Lemon (Gondhoraj) / Sweet Lime | Different fruit. There is no "Lemon Juice" ingredient (recipes use `1 piece Lemon`, `juiced`), so lemon cannot split |
+| Brinjal (Round / Long / Small / Bharta) | Shapes are not interchangeable in a dish |
+| Coriander Leaves / Fresh Coriander Roots / Coriander Paste / Coriander Powder / Coriander Seeds | Different products. Coriander Leaves already holds bunch, g and tbsp with conversions, so those lines merge |
+| Curry Leaves / Curry Leaf Powder | Powder is a pantry product. Curry Leaves holds bunch and g and merges (see rounding below) |
+| Green Chilli / Bhavnagri Chilli / Dried Red Chilli | Different heat and use |
+| Poha (Thick) / Poha (Thin), Raw Rice (Ponni) / Sona Masoori / Basmati / Idli Rice | Named varieties stay (B1a decision) |
+| Fenugreek Leaves / Dried Fenugreek Leaves / Fenugreek Seeds / Fenugreek Powder | Fresh leaf, dried leaf, seed and seed powder |
+| Black Pepper (Whole) / Black Pepper Powder, Cardamom Powder / Green Cardamom | Whole spice vs ground, bought separately |
+| Coconut (Fresh) / Coconut (Desiccated) / Dry Coconut (Copra) / Dry Coconut (Grated) | Fresh, desiccated and copra are separate products |
+
+### Existing households after the merge
+The deploy sync deletes the removed ids; `recipe_ingredients.ingredient_id` and `pantry_items.ingredient_id` are `ON DELETE SET NULL`, so affected rows keep their old text and `catalog_match = 'resolved'` but lose the id until the backfill runs. `planRecipeIngredientBackfill` / `planPantryBackfill` compare the whole row state, so such rows are replanned (recipe lines are renamed to the surviving canonical name; pantry rows record the surviving id and keep a typed qualifier like "(Clove)"); covered by `ingredientBackfill.test.ts`. Run `pnpm --filter ./api catalog:backfill` (dry run, then `--execute`) after the deploy, per environment. Until it runs, those rows are matched by name only (the unresolved-id path), which already worked. Two behaviour notes: pantry quantities of "Garlic" in `piece` were bulbs before and are cloves now, and rows the backfill renames (for example "Roasted Cumin Powder") do not gain the `roasted` / `crushed` note the seed recipes carry.
+
+### Shopping quantities
+Aggregated amounts are rounded once after merging (`api/src/domain/shoppingQuantityRounding.ts`): bunch, piece, dozen, slice, pack, packet, loaf, bottle and jar round **up** to the next 0.5 (7.28 bunch becomes 7.5, never less than the need); every other unit keeps at most 2 decimals. The remainder after pantry subtraction is rounded the same way.
+
+### Recipes removed
+`Anda Bhurji` and `Egg Bhurji` were removed as duplicates of **Anda Bhurji Masala** (the same Punjabi scrambled eggs with onion, tomato and green chilli; the kept one has the richest method and spice set). Idli, Dosa, Appam and Neer Dosa stay split by role (same title, different role). Rava Kesari / Sooji Halwa, Sprouts Chaat / Sprouted Moong Salad and Kala Chana Curry / Kadala Curry were reviewed and kept: different regional dishes or different roles.

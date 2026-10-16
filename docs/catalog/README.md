@@ -39,7 +39,7 @@ Migration `1788800000000_canonical-ingredient-ids.ts` adds two nullable columns 
 
 | Column | Meaning |
 |---|---|
-| `ingredient_id` | FK to `ingredient_catalog(id)`, `ON DELETE SET NULL` (the deploy sync deletes ingredients that leave the bundle; the next backfill re-resolves). `NULL` = not resolved |
+| `ingredient_id` | FK to `ingredient_catalog(id)`, `ON DELETE SET NULL` (the deploy sync deletes ingredients that leave the bundle; the next backfill re-resolves, including rows that still read `catalog_match = 'resolved'`: the planner compares whole row state, see `decisions.md`). `NULL` = not resolved |
 | `catalog_match` | `resolved`, `ambiguous`, `unresolved`, or `NULL` = not evaluated (rows from before B2b, or a save while the catalog was unavailable) |
 
 ### Write paths
@@ -65,6 +65,7 @@ Rules:
 
 - `ingredientsMatch`: when both sides have an `ingredient_id` the ids alone decide (so "tomato puree" never merges with "tomato paste" on name similarity); if either side has none, the previous normalised-name fuzzy match applies.
 - Units merge through `createUnitConverter` (`domain/ingredientConversion.ts`): the physical families first (g/kg, ml/l/tsp/tbsp/cup, piece/dozen), then catalog factors through the ingredient's base unit (1 cup plus 190 g of basmati rice becomes 2 cup). Where the catalog defines nothing the lines stay separate; nothing is guessed. Catalog conversions are density and size estimates, the same trade-off a hand-converted list makes.
+- Aggregated quantities are rounded once after merging (`domain/shoppingQuantityRounding.ts`): count-like units (piece, bunch, dozen, slice, pack, packet, loaf, bottle, jar) round up to the next 0.5, everything else keeps at most 2 decimals.
 - Staple exclusion is unchanged (`isStaple`, staple unit, staple category).
 - Used by shopping-list generation and regeneration, pantry subtraction, `markMade` deduction and the have-it / purchased pantry upsert.
 

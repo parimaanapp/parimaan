@@ -21,11 +21,11 @@
       "notes": "peeled and finely chopped"
     },
     {
-      "name": "Roasted Peanuts",
+      "name": "Peanuts",
       "quantity": 30,
       "unit": "g",
       "category": "dry_goods",
-      "notes": "coarsely crushed"
+      "notes": "coarsely crushed; roasted"
     },
     {
       "name": "Green Chilli",
@@ -63,10 +63,11 @@
       "notes": "chopped"
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 20,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     }
   ],
   "steps": [

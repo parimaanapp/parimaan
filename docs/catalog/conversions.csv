@@ -191,7 +191,6 @@ ingredient,Almonds (Mamra),cup,g,150
 ingredient,Black Raisins,cup,g,150
 ingredient,Cantaloupe Seeds,cup,g,130
 ingredient,Cashew Nuts,cup,g,140
-ingredient,Cashew Pieces,cup,g,140
 ingredient,Chia Seeds,cup,g,160
 ingredient,Coconut (Desiccated),cup,g,85
 ingredient,Dates (Ajwa),piece,g,12
@@ -220,7 +219,6 @@ ingredient,Pumpkin Seeds (Roasted),cup,g,130
 ingredient,Raisins,cup,g,150
 ingredient,Roasted Chana,cup,g,160
 ingredient,Roasted Chana Dal,cup,g,160
-ingredient,Roasted Peanuts,cup,g,150
 ingredient,Sunflower Seeds,cup,g,140
 ingredient,Walnut Halves,cup,g,100
 ingredient,Walnuts,cup,g,100
@@ -228,7 +226,6 @@ ingredient,Walnuts (Kashmiri Kernels),cup,g,100
 ingredient,Watermelon Seeds,cup,g,130
 ingredient,Brown Sugar,cup,g,200
 ingredient,Jaggery,cup,g,160
-ingredient,Jaggery Powder,cup,g,160
 ingredient,Powdered Sugar,cup,g,130
 ingredient,Sugar,cup,g,200
 ingredient,Murmura,cup,g,25
@@ -389,7 +386,6 @@ ingredient,Jamun,piece,g,10
 ingredient,Karonda,piece,g,8
 ingredient,Kiwi,piece,g,80
 ingredient,Lemon (Gondhoraj),piece,g,100
-ingredient,Lemon (Sweet),piece,g,100
 ingredient,Lime (Key),piece,g,30
 ingredient,Litchi,piece,g,15
 ingredient,Mandarin,piece,g,80
@@ -474,8 +470,8 @@ ingredient,Chawli Beans,piece,g,8
 ingredient,Chayote,piece,g,250
 ingredient,Cherry Tomato,piece,g,15
 ingredient,Cluster Beans,piece,g,5
+ingredient,Coconut (Fresh),cup,g,90
 ingredient,Coconut (Fresh),piece,g,400
-ingredient,Coconut (Grated),cup,g,90
 ingredient,Colocasia (Arbi),piece,g,40
 ingredient,Corn (Sweet),piece,g,250
 ingredient,Cowpea Pods,piece,g,15
@@ -489,9 +485,8 @@ ingredient,Edamame,cup,g,150
 ingredient,Fennel Bulb,piece,g,200
 ingredient,French Beans,piece,g,8
 ingredient,Fresh Green Chickpeas,cup,g,160
-ingredient,Garlic,piece,g,40
+ingredient,Garlic,piece,g,4
 ingredient,Garlic (Baby/Single Clove),piece,g,15
-ingredient,Garlic (Clove),piece,g,4
 ingredient,Gilki,piece,g,80
 ingredient,Ginger,piece,g,20
 ingredient,Green Chilli,piece,g,5
@@ -510,7 +505,6 @@ ingredient,Lemon,piece,g,40
 ingredient,Lettuce,piece,g,300
 ingredient,Lotus Stem,piece,g,150
 ingredient,Madras Cucumber,piece,g,400
-ingredient,Mirch (Banana Pepper),piece,g,40
 ingredient,Mogri,piece,g,5
 ingredient,Moringa Pods,piece,g,40
 ingredient,Mushroom (Button),piece,g,15
@@ -518,7 +512,6 @@ ingredient,Mushroom (Oyster),piece,g,20
 ingredient,Mushroom (Shiitake),piece,g,15
 ingredient,Okra,piece,g,10
 ingredient,Onion,piece,g,110
-ingredient,Onion (Red),piece,g,100
 ingredient,Papdi (Flat Beans),piece,g,6
 ingredient,Parsnip,piece,g,150
 ingredient,Parval,piece,g,30
@@ -559,7 +552,6 @@ ingredient,Taro Tuber (Large),piece,g,40
 ingredient,Tender Coconut,piece,g,400
 ingredient,Tinda,piece,g,60
 ingredient,Tomato,piece,g,100
-ingredient,Tomato (Desi),piece,g,70
 ingredient,Tomato (Roma),piece,g,60
 ingredient,Turmeric (Raw),piece,g,15
 ingredient,Turnip,piece,g,100
@@ -570,7 +562,6 @@ ingredient,Water Chestnut (Singhara),piece,g,20
 ingredient,White Onion,piece,g,120
 ingredient,Yam (Elephant Foot),piece,g,500
 ingredient,Yam (Purple),piece,g,300
-ingredient,Yellow Pumpkin,piece,g,1000
 ingredient,Yongchak,piece,g,10
 ingredient,Zucchini,piece,g,200
 ingredient,Bay Leaf,piece,g,0.5

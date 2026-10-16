@@ -659,13 +659,6 @@
   },
   {
     "scope": "ingredient",
-    "key": "cashew_pieces",
-    "unit": "cup",
-    "baseUnit": "g",
-    "amount": 140
-  },
-  {
-    "scope": "ingredient",
     "key": "cauliflower",
     "unit": "piece",
     "baseUnit": "g",
@@ -842,16 +835,16 @@
   {
     "scope": "ingredient",
     "key": "coconut_fresh",
-    "unit": "piece",
-    "baseUnit": "g",
-    "amount": 400
-  },
-  {
-    "scope": "ingredient",
-    "key": "coconut_grated",
     "unit": "cup",
     "baseUnit": "g",
     "amount": 90
+  },
+  {
+    "scope": "ingredient",
+    "key": "coconut_fresh",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 400
   },
   {
     "scope": "ingredient",
@@ -1306,7 +1299,7 @@
     "key": "garlic",
     "unit": "piece",
     "baseUnit": "g",
-    "amount": 40
+    "amount": 4
   },
   {
     "scope": "ingredient",
@@ -1314,13 +1307,6 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 15
-  },
-  {
-    "scope": "ingredient",
-    "key": "garlic_clove",
-    "unit": "piece",
-    "baseUnit": "g",
-    "amount": 4
   },
   {
     "scope": "ingredient",
@@ -1534,13 +1520,6 @@
   },
   {
     "scope": "ingredient",
-    "key": "jaggery_powder",
-    "unit": "cup",
-    "baseUnit": "g",
-    "amount": 160
-  },
-  {
-    "scope": "ingredient",
     "key": "jalapeno",
     "unit": "piece",
     "baseUnit": "g",
@@ -1710,13 +1689,6 @@
   {
     "scope": "ingredient",
     "key": "lemon_gondhoraj",
-    "unit": "piece",
-    "baseUnit": "g",
-    "amount": 100
-  },
-  {
-    "scope": "ingredient",
-    "key": "lemon_sweet",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 100
@@ -1940,13 +1912,6 @@
   },
   {
     "scope": "ingredient",
-    "key": "mirch_banana_pepper",
-    "unit": "piece",
-    "baseUnit": "g",
-    "amount": 40
-  },
-  {
-    "scope": "ingredient",
     "key": "mixed_dry_fruits",
     "unit": "cup",
     "baseUnit": "g",
@@ -2154,13 +2119,6 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 110
-  },
-  {
-    "scope": "ingredient",
-    "key": "onion_red",
-    "unit": "piece",
-    "baseUnit": "g",
-    "amount": 100
   },
   {
     "scope": "ingredient",
@@ -2801,13 +2759,6 @@
   },
   {
     "scope": "ingredient",
-    "key": "roasted_peanuts",
-    "unit": "cup",
-    "baseUnit": "g",
-    "amount": 150
-  },
-  {
-    "scope": "ingredient",
     "key": "roasted_vermicelli",
     "unit": "cup",
     "baseUnit": "g",
@@ -3193,13 +3144,6 @@
   },
   {
     "scope": "ingredient",
-    "key": "tomato_desi",
-    "unit": "piece",
-    "baseUnit": "g",
-    "amount": 70
-  },
-  {
-    "scope": "ingredient",
     "key": "tomato_roma",
     "unit": "piece",
     "baseUnit": "g",
@@ -3449,13 +3393,6 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 300
-  },
-  {
-    "scope": "ingredient",
-    "key": "yellow_pumpkin",
-    "unit": "piece",
-    "baseUnit": "g",
-    "amount": 1000
   },
   {
     "scope": "ingredient",

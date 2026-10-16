@@ -13,7 +13,7 @@
     { "name": "Ghee", "quantity": 1, "unit": "tbsp", "category": "oil" },
     { "name": "Milk", "quantity": 500, "unit": "ml", "category": "dairy" },
     { "name": "Water", "quantity": 100, "unit": "ml", "category": "beverages" },
-    { "name": "Jaggery Powder", "quantity": 3, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Jaggery", "quantity": 3, "unit": "tbsp", "category": "dry_goods", "notes": "powdered" },
     { "name": "Green Cardamom", "quantity": 2, "unit": "piece", "category": "spice", "notes": "crushed" },
     { "name": "Almonds", "quantity": 10, "unit": "g", "category": "dry_goods", "notes": "chopped" },
     { "name": "Raisins", "quantity": 1, "unit": "tbsp", "category": "dry_goods" }

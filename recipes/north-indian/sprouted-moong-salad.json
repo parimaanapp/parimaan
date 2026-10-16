@@ -55,10 +55,11 @@
       "category": "spice"
     },
     {
-      "name": "Roasted Cumin Powder",
+      "name": "Cumin Powder",
       "quantity": 0.5,
       "unit": "tsp",
-      "category": "spice"
+      "category": "spice",
+      "notes": "roasted"
     },
     {
       "name": "Salt",

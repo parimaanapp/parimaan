@@ -1,6 +1,7 @@
 import { canonicalizePantryUnit } from './pantryUnits.js';
 import { defaultUnitConverter } from './ingredientConversion.js';
 import type { UnitConverter } from './ingredientConversion.js';
+import { roundShoppingQuantity } from './shoppingQuantityRounding.js';
 
 /** A single recipe ingredient as `generateShoppingList`'s resolver reads it from `recipe_ingredients` — free text `name`/`unit`/`category` (PRD §9), matching `recipe_ingredients`'s real DDL. */
 export interface RecipeIngredient {
@@ -361,7 +362,8 @@ export const aggregateIngredients = (
 
   return groups.map((group) => ({
     name: group.representativeName,
-    quantity: group.quantity,
+    // Rounded once, after every merge, so unit-conversion decimals (7.28 bunch) never reach the list.
+    quantity: roundShoppingQuantity(group.quantity, group.unit),
     unit: group.unit,
     category: group.category,
     sourceRecipeId: group.sourceRecipeId,
@@ -442,7 +444,11 @@ const subtractOneLine = (
   }
 
   const remaining = item.quantity - covered;
-  return remaining > SUBTRACTION_EPSILON ? { ...item, quantity: remaining } : null;
+  if (remaining <= SUBTRACTION_EPSILON) {
+    return null;
+  }
+  const rounded = roundShoppingQuantity(remaining, item.unit);
+  return rounded !== null && rounded > 0 ? { ...item, quantity: rounded } : null;
 };
 
 /**

@@ -12,7 +12,7 @@
     { "name": "Ragi Flour", "quantity": 30, "unit": "g", "category": "grain" },
     { "name": "Water", "quantity": 400, "unit": "ml", "category": "beverages" },
     { "name": "Milk", "quantity": 100, "unit": "ml", "category": "dairy" },
-    { "name": "Jaggery Powder", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Jaggery", "quantity": 2, "unit": "tbsp", "category": "dry_goods", "notes": "powdered" },
     { "name": "Cardamom Powder", "quantity": 0.25, "unit": "tsp", "category": "spice" }
   ],
   "steps": [

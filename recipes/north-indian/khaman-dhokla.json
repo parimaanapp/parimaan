@@ -22,7 +22,7 @@
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "slit lengthwise" },
     { "name": "Curry Leaves", "quantity": 1, "unit": "g", "category": "produce" },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
-    { "name": "Coconut (Grated)", "quantity": 20, "unit": "g", "category": "produce" }
+    { "name": "Coconut (Fresh)", "quantity": 20, "unit": "g", "category": "produce", "notes": "grated" }
   ],
   "steps": [
     "Whisk 150 g of besan with the water, sugar, lemon juice, salt, turmeric powder and 1 tbsp of the oil into a smooth, lump-free batter and rest it for 5 minutes.",

@@ -10,7 +10,7 @@
   "role": "breakfast",
   "ingredients": [
     { "name": "Poha (Thin)", "quantity": 150, "unit": "g", "category": "dry_goods" },
-    { "name": "Coconut (Grated)", "quantity": 40, "unit": "g", "category": "produce" },
+    { "name": "Coconut (Fresh)", "quantity": 40, "unit": "g", "category": "produce", "notes": "grated" },
     { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped" },

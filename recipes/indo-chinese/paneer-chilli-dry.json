@@ -13,7 +13,7 @@
     { "name": "Cornflour", "quantity": 30, "unit": "g", "category": "grain" },
     { "name": "Capsicum (Green)", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into squares" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "cut into squares" },
-    { "name": "Garlic (Clove)", "quantity": 4, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Garlic", "quantity": 4, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Ginger", "quantity": 10, "unit": "g", "category": "produce", "notes": "finely chopped" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "slit" },
     { "name": "Soy Sauce", "quantity": 1, "unit": "tbsp", "category": "condiment" },

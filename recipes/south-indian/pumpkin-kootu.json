@@ -14,11 +14,11 @@
   "role": "sabzi_dal",
   "ingredients": [
     {
-      "name": "Yellow Pumpkin",
+      "name": "Pumpkin",
       "quantity": 300,
       "unit": "g",
       "category": "produce",
-      "notes": "cubed"
+      "notes": "cubed; yellow"
     },
     {
       "name": "Moong Dal (Split, Yellow)",
@@ -41,10 +41,11 @@
       "isStaple": true
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 50,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Green Chilli",

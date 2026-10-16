@@ -14,7 +14,7 @@
     { "name": "Salt", "quantity": 1, "unit": "tsp", "category": "dry_goods", "notes": "split between dough and filling", "isStaple": true },
     { "name": "Sattu", "quantity": 100, "unit": "g", "category": "beverages" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
-    { "name": "Garlic (Clove)", "quantity": 3, "unit": "piece", "category": "produce", "notes": "finely chopped" },
+    { "name": "Garlic", "quantity": 3, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Carom Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
     { "name": "Mustard Oil", "quantity": 1, "unit": "tbsp", "category": "oil", "notes": "for the filling" },

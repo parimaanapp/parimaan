@@ -10,7 +10,7 @@
   "role": "breakfast",
   "ingredients": [
     { "name": "Raw Rice (Ponni)", "quantity": 1, "unit": "cup", "category": "grain", "notes": "soaked for 3 hours" },
-    { "name": "Coconut (Grated)", "quantity": 30, "unit": "g", "category": "produce" },
+    { "name": "Coconut (Fresh)", "quantity": 30, "unit": "g", "category": "produce", "notes": "grated" },
     { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Water", "quantity": 350, "unit": "ml", "category": "beverages", "notes": "approximate" },
     { "name": "Coconut Oil", "quantity": 2, "unit": "tbsp", "category": "oil", "notes": "for greasing" }

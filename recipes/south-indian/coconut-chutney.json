@@ -9,7 +9,7 @@
   "dietaryTags": ["veg", "vegan", "gluten_free"],
   "role": "accompaniment",
   "ingredients": [
-    { "name": "Coconut (Grated)", "quantity": 90, "unit": "g", "category": "produce", "notes": "grated" },
+    { "name": "Coconut (Fresh)", "quantity": 90, "unit": "g", "category": "produce", "notes": "grated" },
     { "name": "Roasted Chana Dal", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
     { "name": "Ginger", "quantity": 1, "unit": "g", "category": "produce", "notes": "chopped" },

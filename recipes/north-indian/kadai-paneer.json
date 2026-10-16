@@ -79,10 +79,11 @@
       "isStaple": true
     },
     {
-      "name": "Kasuri Methi Powder",
+      "name": "Dried Fenugreek Leaves",
       "quantity": 1,
       "unit": "tsp",
-      "category": "spice"
+      "category": "spice",
+      "notes": "crushed"
     },
     {
       "name": "Garam Masala",

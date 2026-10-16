@@ -2498,7 +2498,11 @@
       "mild chilli",
       "bajji chilli",
       "banana pepper",
-      "mirchi bajji chilli"
+      "mirchi bajji chilli",
+      "bajji mirchi",
+      "bhajji mulaga",
+      "milagai bajji",
+      "mirch (banana pepper)"
     ],
     "allowedUnits": [
       "g",
@@ -2773,26 +2777,6 @@
       "kala jeera",
       "caraway (indian)",
       "shah jeera"
-    ],
-    "allowedUnits": [
-      "g",
-      "tsp",
-      "tbsp",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "black_mustard_seeds",
-    "canonicalName": "Black Mustard Seeds",
-    "appCategory": "spice",
-    "subcategory": "spice_whole",
-    "aliases": [
-      "kali sarson",
-      "rai kali"
     ],
     "allowedUnits": [
       "g",
@@ -3477,27 +3461,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": 300,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "brown_mustard_seeds",
-    "canonicalName": "Brown Mustard Seeds",
-    "appCategory": "spice",
-    "subcategory": "spice_whole",
-    "aliases": [
-      "brown mustard",
-      "indian mustard seeds",
-      "rai brown"
-    ],
-    "allowedUnits": [
-      "g",
-      "tsp",
-      "tbsp",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
     "cupG": null,
     "note": ""
   },
@@ -4535,7 +4498,11 @@
       "jeedipappu",
       "cashews",
       "cashewnuts",
-      "kaju whole"
+      "kaju whole",
+      "kaju tukda",
+      "broken cashews",
+      "kaju pieces",
+      "cashew pieces"
     ],
     "allowedUnits": [
       "g",
@@ -4565,27 +4532,6 @@
     "defaultUnit": "g",
     "pieceG": null,
     "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "cashew_pieces",
-    "canonicalName": "Cashew Pieces",
-    "appCategory": "dry_goods",
-    "subcategory": "nut_seed",
-    "aliases": [
-      "kaju tukda",
-      "broken cashews",
-      "kaju pieces"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "cup",
-      "tbsp"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": 140,
     "note": ""
   },
   {
@@ -6888,7 +6834,12 @@
       "khobra",
       "kobbari",
       "tenginakayi",
-      "fresh coconut"
+      "fresh coconut",
+      "nariyal grated",
+      "kasu thengai",
+      "grated coconut",
+      "coconut grated",
+      "coconut (grated)"
     ],
     "allowedUnits": [
       "g",
@@ -6897,27 +6848,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": 400,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "coconut_grated",
-    "canonicalName": "Coconut (Grated)",
-    "appCategory": "produce",
-    "subcategory": "vegetable",
-    "aliases": [
-      "nariyal grated",
-      "kasu thengai",
-      "grated coconut",
-      "coconut grated"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
     "cupG": 90,
     "note": ""
   },
@@ -8180,7 +8110,8 @@
       "jeera powder",
       "zeera powder",
       "roasted cumin powder",
-      "bhuna jeera powder"
+      "bhuna jeera powder",
+      "bhuna jeera"
     ],
     "allowedUnits": [
       "g",
@@ -9089,7 +9020,8 @@
       "kasuri methi",
       "dried methi",
       "kasoori methi",
-      "kasturi methi"
+      "kasturi methi",
+      "kasuri methi powder"
     ],
     "allowedUnits": [
       "g",
@@ -9649,27 +9581,6 @@
       "tbsp",
       "packet",
       "bottle"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "dry_ginger_powder",
-    "canonicalName": "Dry Ginger Powder",
-    "appCategory": "spice",
-    "subcategory": "spice_ground",
-    "aliases": [
-      "sonth",
-      "saunth",
-      "sukku podi",
-      "adrak powder"
-    ],
-    "allowedUnits": [
-      "g",
-      "tsp",
-      "tbsp"
     ],
     "defaultUnit": "g",
     "pieceG": null,
@@ -11390,7 +11301,9 @@
       "poondu",
       "bellulli",
       "vellulli",
-      "garlic bulb"
+      "garlic clove",
+      "lehsun kali",
+      "garlic (clove)"
     ],
     "allowedUnits": [
       "g",
@@ -11398,7 +11311,7 @@
       "piece"
     ],
     "defaultUnit": "g",
-    "pieceG": 40,
+    "pieceG": 4,
     "cupG": null,
     "note": ""
   },
@@ -11442,25 +11355,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "garlic_clove",
-    "canonicalName": "Garlic (Clove)",
-    "appCategory": "produce",
-    "subcategory": "vegetable",
-    "aliases": [
-      "garlic clove",
-      "lehsun kali"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": 4,
     "cupG": null,
     "note": ""
   },
@@ -11893,7 +11787,11 @@
     "appCategory": "spice",
     "subcategory": "spice_ground",
     "aliases": [
-      "adrak powder"
+      "adrak powder",
+      "sonth",
+      "saunth",
+      "sukku podi",
+      "dry ginger powder"
     ],
     "allowedUnits": [
       "g",
@@ -13902,7 +13800,10 @@
       "bellam",
       "vellam",
       "bella",
-      "jaggery block"
+      "jaggery block",
+      "gur powder",
+      "shakkar powder",
+      "jaggery powder"
     ],
     "allowedUnits": [
       "g",
@@ -13987,27 +13888,6 @@
     "defaultUnit": "g",
     "pieceG": null,
     "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "jaggery_powder",
-    "canonicalName": "Jaggery Powder",
-    "appCategory": "dry_goods",
-    "subcategory": "salt_sugar",
-    "aliases": [
-      "gur powder",
-      "shakkar powder"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "tsp",
-      "tbsp",
-      "cup"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": 160,
     "note": ""
   },
   {
@@ -14925,22 +14805,6 @@
       "tsp",
       "jar",
       "bottle"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "kasuri_methi_powder",
-    "canonicalName": "Kasuri Methi Powder",
-    "appCategory": "spice",
-    "subcategory": "spice_ground",
-    "aliases": [],
-    "allowedUnits": [
-      "g",
-      "tsp",
-      "tbsp"
     ],
     "defaultUnit": "g",
     "pieceG": null,
@@ -15975,23 +15839,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "lemon_sweet",
-    "canonicalName": "Lemon (Sweet)",
-    "appCategory": "produce",
-    "subcategory": "fruit",
-    "aliases": [],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece",
-      "dozen"
-    ],
-    "defaultUnit": "g",
-    "pieceG": 100,
     "cupG": null,
     "note": ""
   },
@@ -17620,7 +17467,8 @@
       "pudina patta",
       "pudhina",
       "pudina leaves",
-      "mint"
+      "mint",
+      "mint sprigs"
     ],
     "allowedUnits": [
       "bunch",
@@ -17650,42 +17498,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "mint_sprigs",
-    "canonicalName": "Mint Sprigs",
-    "appCategory": "produce",
-    "subcategory": "leafy_herb",
-    "aliases": [],
-    "allowedUnits": [
-      "bunch",
-      "g",
-      "tbsp"
-    ],
-    "defaultUnit": "bunch",
-    "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "mirch_banana_pepper",
-    "canonicalName": "Mirch (Banana Pepper)",
-    "appCategory": "produce",
-    "subcategory": "vegetable",
-    "aliases": [
-      "bajji mirchi",
-      "bhajji mulaga",
-      "milagai bajji"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": 40,
     "cupG": null,
     "note": ""
   },
@@ -18876,7 +18688,14 @@
       "black mustard",
       "kadugu",
       "sasive",
-      "raee"
+      "raee",
+      "kali sarson",
+      "rai kali",
+      "black mustard seeds",
+      "brown mustard",
+      "indian mustard seeds",
+      "rai brown",
+      "brown mustard seeds"
     ],
     "allowedUnits": [
       "g",
@@ -19844,7 +19663,13 @@
       "eerulli",
       "ullipaya",
       "red onion",
-      "pyaaz"
+      "pyaaz",
+      "lal pyaz",
+      "lal kanda",
+      "salad onion",
+      "purple onion",
+      "erra ullipaya",
+      "onion (red)"
     ],
     "allowedUnits": [
       "g",
@@ -19939,28 +19764,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "onion_red",
-    "canonicalName": "Onion (Red)",
-    "appCategory": "produce",
-    "subcategory": "vegetable",
-    "aliases": [
-      "lal pyaz",
-      "lal kanda",
-      "salad onion",
-      "purple onion",
-      "erra ullipaya"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": 100,
     "cupG": null,
     "note": ""
   },
@@ -21324,7 +21127,12 @@
       "verkadalai",
       "kadalekai",
       "groundnuts",
-      "peanut"
+      "peanut",
+      "bhuna moongfali",
+      "roasted groundnuts",
+      "fried peanuts",
+      "shengdana roasted",
+      "roasted peanuts"
     ],
     "allowedUnits": [
       "g",
@@ -22796,27 +22604,11 @@
       "konju",
       "yerra",
       "kolambi",
-      "kolim"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "prawns_large",
-    "canonicalName": "Prawns (Large)",
-    "appCategory": "meat_fish",
-    "subcategory": "fish",
-    "aliases": [
+      "kolim",
       "tiger prawns",
       "king prawns",
-      "jumbo prawns"
+      "jumbo prawns",
+      "prawns (large)"
     ],
     "allowedUnits": [
       "g",
@@ -23177,7 +22969,10 @@
       "sitaphal",
       "kumro",
       "parangikai",
-      "kumbalakayi"
+      "kumbalakayi",
+      "peela kaddu",
+      "kaddu yellow",
+      "yellow pumpkin"
     ],
     "allowedUnits": [
       "g",
@@ -24703,24 +24498,6 @@
     "note": ""
   },
   {
-    "id": "roasted_cumin_powder",
-    "canonicalName": "Roasted Cumin Powder",
-    "appCategory": "spice",
-    "subcategory": "spice_ground",
-    "aliases": [
-      "bhuna jeera"
-    ],
-    "allowedUnits": [
-      "g",
-      "tsp",
-      "tbsp"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
     "id": "roasted_makhana",
     "canonicalName": "Roasted Makhana",
     "appCategory": "snacks",
@@ -24734,28 +24511,6 @@
     "defaultUnit": "packet",
     "pieceG": null,
     "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "roasted_peanuts",
-    "canonicalName": "Roasted Peanuts",
-    "appCategory": "dry_goods",
-    "subcategory": "nut_seed",
-    "aliases": [
-      "bhuna moongfali",
-      "roasted groundnuts",
-      "fried peanuts",
-      "shengdana roasted"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "cup",
-      "tbsp"
-    ],
-    "defaultUnit": "g",
-    "pieceG": null,
-    "cupG": 150,
     "note": ""
   },
   {
@@ -27793,7 +27548,8 @@
       "mosambi",
       "sathukudi",
       "battayi",
-      "sweet lime juice fruit"
+      "sweet lime juice fruit",
+      "lemon (sweet)"
     ],
     "allowedUnits": [
       "g",
@@ -29058,7 +28814,14 @@
       "tamatar",
       "thakkali",
       "tamate",
-      "tomatoes"
+      "tomatoes",
+      "desi tomato",
+      "country tomato",
+      "naati tomato",
+      "nattu thakkali",
+      "sour tomato",
+      "gavran tomato",
+      "tomato (desi)"
     ],
     "allowedUnits": [
       "g",
@@ -29091,29 +28854,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "tomato_desi",
-    "canonicalName": "Tomato (Desi)",
-    "appCategory": "produce",
-    "subcategory": "vegetable",
-    "aliases": [
-      "desi tomato",
-      "country tomato",
-      "naati tomato",
-      "nattu thakkali",
-      "sour tomato",
-      "gavran tomato"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": 70,
     "cupG": null,
     "note": ""
   },
@@ -31088,25 +30828,6 @@
     ],
     "defaultUnit": "g",
     "pieceG": null,
-    "cupG": null,
-    "note": ""
-  },
-  {
-    "id": "yellow_pumpkin",
-    "canonicalName": "Yellow Pumpkin",
-    "appCategory": "produce",
-    "subcategory": "vegetable",
-    "aliases": [
-      "peela kaddu",
-      "kaddu yellow"
-    ],
-    "allowedUnits": [
-      "g",
-      "kg",
-      "piece"
-    ],
-    "defaultUnit": "g",
-    "pieceG": 1000,
     "cupG": null,
     "note": ""
   },

@@ -34,10 +34,11 @@
       "isStaple": true
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 80,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Cumin Seeds",
@@ -53,7 +54,7 @@
       "category": "produce"
     },
     {
-      "name": "Garlic (Clove)",
+      "name": "Garlic",
       "quantity": 2,
       "unit": "piece",
       "category": "produce"

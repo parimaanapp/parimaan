@@ -4,7 +4,7 @@ Banana (Elaichi) | yelakki banana; elaichi kela; poovan | 60 |
 Apple | seb; sebu; apple (red) | 180 | 
 Mango (Ripe) | aam; mamidi; maambazham; mavinahannu; mango; alphonso; dasheri | 250 | 
 Orange | santra; narangi; kamala; orange (indian) | 150 | 
-Sweet Lime | mosambi; mosambi; sathukudi; battayi; sweet lime juice fruit | 150 | 
+Sweet Lime | mosambi; mosambi; sathukudi; battayi; sweet lime juice fruit; lemon (sweet) | 150 | 
 Pomegranate | anar; dalimbe; madhulai; danimma; dadam | 250 | 
 Grapes (Green) | angoor; draksh; thirakshai; dhrakshi; seedless grapes | | 
 Grapes (Black) | kale angoor; black grapes | | 
@@ -42,19 +42,16 @@ Karonda | karonda; karwanda; kalakkai | 8 |
 Phalsa | falsa; phalsa berry | 4 | 
 Orange (Kinnow) | kinnow; kinnow mandarin | 120 | 
 Mandarin | | 80 | 
-Lemon (Sweet) | | 100 | 
 Cherry | | | 
 Peach (Canned) | | | 
 Raisin (Fresh Grapes Dried) | | | 
 ## nut_seed
-Cashew Nuts | kaju; mundiri; godambi; jeedipappu; cashews; cashewnuts; kaju whole | | 140
-Cashew Pieces | kaju tukda; broken cashews; kaju pieces | | 140
+Cashew Nuts | kaju; mundiri; godambi; jeedipappu; cashews; cashewnuts; kaju whole; kaju tukda; broken cashews; kaju pieces; cashew pieces |  | 140
 Almonds | badam; badham; almond; california almonds; mamra almonds (premium) | | 140
 Almonds (Blanched) | peeled badam; blanched almond | | 140
 Pistachios | pista; pistachio; pista kernels | | 125
 Walnuts | akhrot; akhrot kernels; walnut halves | | 100
-Peanuts | moongfali; mungfali; shengdana; verkadalai; kadalekai; groundnuts; verkadalai; peanut | | 150
-Roasted Peanuts | bhuna moongfali; roasted groundnuts; fried peanuts; shengdana roasted | | 150
+Peanuts | moongfali; mungfali; shengdana; verkadalai; kadalekai; groundnuts; verkadalai; peanut; bhuna moongfali; roasted groundnuts; fried peanuts; shengdana roasted; roasted peanuts |  | 150
 Peanuts (Skinless) | blanched peanuts; peeled peanuts | | 150
 Raisins | kishmish; kishmish; dried grapes; kismis; drakshi; ular thiratchai; sultanas | | 150
 Black Raisins | kali kishmish; munakka; dried black grapes | | 150
@@ -134,8 +131,7 @@ Ravas | indian salmon; rawas; kala | |
 Bangda | | | 
 Mrigal | mrigal carp; mrigala | | 
 Singhara Fish | singhi; catfish; magur (catfish) | | 
-Prawns | shrimp; jhinga; chemmeen; konju; yerra; kolambi; kolim | | 
-Prawns (Large) | tiger prawns; king prawns; jumbo prawns | | 
+Prawns | shrimp; jhinga; chemmeen; konju; yerra; kolambi; kolim; tiger prawns; king prawns; jumbo prawns; prawns (large) |  | 
 Crab | kekda; njandu; nandu | | 
 Squid | calamari; kadamba | | 
 Fish Fillet (Boneless) | boneless fish; fillet; fish fillets | | 

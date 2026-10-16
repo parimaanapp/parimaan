@@ -320,3 +320,42 @@ describe('categorize', () => {
     expect(grouped[0]!.category).toBe('other');
   });
 });
+
+describe('quantity rounding on aggregation', () => {
+  const run = (ingredients: RecipeIngredient[]) =>
+    aggregateIngredients([menuItem({ recipeId: 'r1' })], new Map([['r1', recipe('r1', ingredients)]]));
+
+  it('rounds a converted bunch amount up to the next half bunch', () => {
+    const result = run([
+      ingredient({ name: 'Curry Leaves', quantity: 7.283, unit: 'bunch', ingredientId: 'curry_leaves' }),
+    ]);
+    expect(result[0]!.quantity).toBe(7.5);
+  });
+
+  it('sums first and rounds once, so two odd amounts never over-round', () => {
+    const result = aggregateIngredients(
+      [menuItem({ recipeId: 'r1' }), menuItem({ recipeId: 'r2', dayOfWeek: 1 })],
+      new Map([
+        ['r1', recipe('r1', [ingredient({ name: 'Mint Leaves', quantity: 1.1, unit: 'bunch' })])],
+        ['r2', recipe('r2', [ingredient({ name: 'Mint Leaves', quantity: 1.2, unit: 'bunch' })])],
+      ]),
+    );
+    expect(result[0]!.quantity).toBe(2.5);
+  });
+
+  it('keeps grams to at most 2 decimals', () => {
+    const result = run([ingredient({ name: 'Paneer', quantity: 123.4567, unit: 'g' })]);
+    expect(result[0]!.quantity).toBe(123.46);
+  });
+
+  it('leaves an unknown quantity unknown', () => {
+    const result = run([ingredient({ name: 'Paneer', quantity: null, unit: 'g' })]);
+    expect(result[0]!.quantity).toBeNull();
+  });
+
+  it('rounds the remainder after pantry subtraction too', () => {
+    const aggregated = run([ingredient({ name: 'Garlic', quantity: 10, unit: 'piece' })]);
+    const result = subtractPantry(aggregated, [{ name: 'Garlic', quantity: 2.3333, unit: 'piece' }]);
+    expect(result[0]!.quantity).toBe(8);
+  });
+});

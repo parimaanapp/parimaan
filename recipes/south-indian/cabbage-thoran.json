@@ -21,10 +21,11 @@
       "notes": "finely shredded"
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 50,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Green Chilli",
@@ -34,7 +35,7 @@
       "notes": "chopped"
     },
     {
-      "name": "Garlic (Clove)",
+      "name": "Garlic",
       "quantity": 2,
       "unit": "piece",
       "category": "produce"

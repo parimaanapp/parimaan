@@ -1,7 +1,7 @@
 ## spice_whole
 Cumin Seeds | jeera; zeera; whole cumin; jira; seeragam; jeerige | | 
 Black Cumin Seeds | shahi jeera; kala jeera; caraway (indian); shah jeera | | 
-Mustard Seeds | rai; sarson; black mustard; kadugu; sasive; raee | | 
+Mustard Seeds | rai; sarson; black mustard; kadugu; sasive; raee; kali sarson; rai kali; black mustard seeds; brown mustard; indian mustard seeds; rai brown; brown mustard seeds |  | 
 Yellow Mustard Seeds | peeli sarson; yellow mustard | | 
 Fenugreek Seeds | methi dana; methi seeds; uluva; menthulu; venthayam | | 
 Coriander Seeds | dhania; sabut dhania; whole coriander; kothamalli vidhai | | 
@@ -31,7 +31,7 @@ Stone Flower | dagad phool; kalpasi; patthar ke phool; lichen | |
 Marathi Moggu | kapok buds; moggu | | 
 Long Pepper | pippali; pipli; thippili | | 
 Dried Ginger (Whole) | sonth whole; sukku; dry ginger whole | | 
-Dried Fenugreek Leaves | kasuri methi; dried methi; kasoori methi; kasturi methi | | 
+Dried Fenugreek Leaves | kasuri methi; dried methi; kasoori methi; kasturi methi; kasuri methi powder |  | 
 Dried Curry Leaves | dried kadi patta | | 
 Dried Mint | sukha pudina; dried pudina | | 
 Dried Oregano | oregano | | 
@@ -51,14 +51,13 @@ Sichuan Peppercorns | szechuan pepper; sichuan pepper | |
 Turmeric Powder | haldi; haldi powder; manjal; arishina; pasupu; turmeric | | 
 Red Chilli Powder | kashmiri chilli powder; kashmiri lal mirch; kashmiri lal mirch powder; kashmiri mirch powder; kashmiri red chilli powder; deggi mirch; lal mirch; laal mirch; lal mirch powder; laal mirch powder; red chili powder; mirchi powder; chilli powder; mulagai podi (chilli) | | 
 Coriander Powder | dhania powder; dhaniya powder; malli podi; kothimbir powder | | 
-Cumin Powder | jeera powder; zeera powder; roasted cumin powder; bhuna jeera powder | | 
+Cumin Powder | jeera powder; zeera powder; roasted cumin powder; bhuna jeera powder; bhuna jeera |  | 
 Black Pepper Powder | kali mirch powder; pepper powder; milagu podi | | 
 White Pepper Powder | safed mirch powder | | 
 Dry Mango Powder | amchur; amchoor; aamchur; mango powder; amchur powder | | 
-Dry Ginger Powder | sonth; saunth; sukku podi; adrak powder | | 
 Garlic Powder | lehsun powder | | 
 Onion Powder | pyaz powder | | 
-Ginger Powder | adrak powder | | 
+Ginger Powder | adrak powder; sonth; saunth; sukku podi; dry ginger powder |  | 
 Cinnamon Powder | dalchini powder | | 
 Clove Powder | laung powder | | 
 Cardamom Powder | elaichi powder; elaichi pudi | | 
@@ -72,10 +71,8 @@ Turmeric (Black) Powder | kali haldi powder | |
 Black Salt | kala namak; sanchal; kala noon; sanchar | | 
 Citric Acid | nimbu ka satva; lemon salt; sour salt | | 
 Amla Powder | amla churna; indian gooseberry powder | | 
-Kasuri Methi Powder | | | 
 Pudina Powder | mint powder | | 
 Curry Leaf Powder | karuvepilai podi (plain); kadi patta powder | | 
-Roasted Cumin Powder | bhuna jeera | | 
 Hing Powder | asafoetida powder; compounded hing | | 
 ## masala_blend
 Garam Masala | garam masala powder; kitchen garam masala | | 

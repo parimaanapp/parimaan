@@ -13,7 +13,7 @@
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Tomato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Potato", "quantity": 1, "unit": "piece", "category": "produce", "notes": "boiled and finely diced" },
-    { "name": "Roasted Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods", "notes": "roasted" },
     { "name": "Sev", "quantity": 30, "unit": "g", "category": "snacks" },
     { "name": "Coriander Chutney", "quantity": 2, "unit": "tbsp", "category": "condiment" },
     { "name": "Jaggery Tamarind Chutney", "quantity": 2, "unit": "tbsp", "category": "condiment" },
