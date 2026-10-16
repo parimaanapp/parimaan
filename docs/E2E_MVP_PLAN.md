@@ -5721,3 +5721,20 @@ Original v2 bundle remains the component reference; deliberate deviations and th
 ### 33.6 Household membership guarantee
 Audit all paths that create or change `household_memberships` / the primary household and prove with tests that no sign-in, email match, invite code or retry can add a user to a household they did not create or explicitly join; the app shows the active household name on the first screen (done in A2).
 
+**Audit result (done).** Only two code paths insert into `household_memberships`:
+
+| Path | Row it can add |
+|---|---|
+| `createHousehold` (`insertMembership`) | the caller, `primary`, in the household created in that same transaction |
+| `joinHousehold` (`insertMembershipWithinCap`) | the caller, `member`, in the household whose invite code was presented (the code is looked up inside the transaction, capped at 5 members) |
+
+Nothing else writes memberships: sign-in and the first-user upsert (`resolveCallerUser` / `upsertUserByCognitoSub`) touch `users` only; `rotateInviteCode` updates `households.invite_code`; `leaveHousehold` and `deleteHousehold` only remove rows; the account-wipe tool (unused, section 33.5) only promotes an existing member to `primary`. An email that matches an existing user under a different Cognito sub is rejected with `ConflictError` rather than relinked, so a new identity can never inherit someone else's households.
+
+**Evidence:** `api/src/resolvers/householdMembershipGuarantee.test.ts` runs the real resolvers against Postgres (and DynamoDB for the rate limiter), reads the whole membership table as superuser before and after, and asserts the exact difference:
+
+- first and repeated sign-ins add nothing; same email under a different sub is a `ConflictError` that also blocks `createHousehold` and `joinHousehold` for that identity;
+- `createHousehold` adds only (new household, caller, primary); a retry returns the same household and adds nothing; an invite-code collision retries into the new household and never touches the colliding one; a mid-transaction failure or exhausted retries add nothing;
+- `joinHousehold` with a valid code adds only (that household, caller, member); a repeat join, unknown or malformed code, full household or an insert failure add nothing;
+- `rotateInviteCode` (including same-code and collision retries) adds nothing, the old code stops working, and a non-member cannot rotate.
+
+
