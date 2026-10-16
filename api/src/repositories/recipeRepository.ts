@@ -1,5 +1,8 @@
 import type { PoolClient } from 'pg';
 
+import type { CatalogMatch } from '../domain/canonicaliseIngredient.js';
+import { withIngredientFkFallback } from './ingredientFkFallback.js';
+
 export type RecipeSourceType = 'user' | 'url' | 'curated' | 'ai' | 'freeform_ai';
 
 export interface RecipeRow {
@@ -156,6 +159,10 @@ export interface RecipeIngredientRow {
   notes: string | null;
   isStaple: boolean;
   sortOrder: number;
+  /** Catalog id (B2b); `null` when unresolved or not yet backfilled. */
+  ingredientId: string | null;
+  /** How `name` was classified against the catalog; `null` = not evaluated yet. */
+  catalogMatch: CatalogMatch | null;
 }
 
 interface RawRecipeIngredientRow {
@@ -170,6 +177,8 @@ interface RawRecipeIngredientRow {
   notes: string | null;
   is_staple: boolean;
   sort_order: number;
+  ingredient_id: string | null;
+  catalog_match: CatalogMatch | null;
 }
 
 const mapRecipeIngredientRow = (row: RawRecipeIngredientRow): RecipeIngredientRow => ({
@@ -182,6 +191,8 @@ const mapRecipeIngredientRow = (row: RawRecipeIngredientRow): RecipeIngredientRo
   notes: row.notes,
   isStaple: row.is_staple,
   sortOrder: row.sort_order,
+  ingredientId: row.ingredient_id,
+  catalogMatch: row.catalog_match,
 });
 
 /**
@@ -298,15 +309,27 @@ export interface InsertRecipeIngredientInput {
   notes: string | null;
   isStaple: boolean;
   sortOrder: number;
+  /** B2b: set by the write path after catalog resolution; omitted = not evaluated. */
+  ingredientId?: string | null;
+  catalogMatch?: CatalogMatch | null;
 }
 
-export const insertRecipeIngredient = async (
+export const insertRecipeIngredient = (
+  client: PoolClient,
+  input: InsertRecipeIngredientInput,
+): Promise<RecipeIngredientRow> =>
+  withIngredientFkFallback(client, (input.ingredientId ?? null) !== null, (drop) =>
+    insertRecipeIngredientRow(client, drop ? { ...input, ingredientId: null, catalogMatch: null } : input),
+  );
+
+const insertRecipeIngredientRow = async (
   client: PoolClient,
   input: InsertRecipeIngredientInput,
 ): Promise<RecipeIngredientRow> => {
   const result = await client.query<RawRecipeIngredientRow>(
-    `INSERT INTO recipe_ingredients (recipe_id, name, quantity, unit, category, notes, is_staple, sort_order)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO recipe_ingredients
+       (recipe_id, name, quantity, unit, category, notes, is_staple, sort_order, ingredient_id, catalog_match)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       input.recipeId,
@@ -317,6 +340,8 @@ export const insertRecipeIngredient = async (
       input.notes,
       input.isStaple,
       input.sortOrder,
+      input.ingredientId ?? null,
+      input.catalogMatch ?? null,
     ],
   );
   const row = result.rows[0];

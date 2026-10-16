@@ -9,7 +9,7 @@ import type { CatalogSnapshot } from '../repositories/catalogRepository.js';
 import { withErrorHandling } from './withErrorHandling.js';
 
 export interface CatalogResolverDeps {
-  getCatalog: () => Promise<CatalogSnapshot>;
+  getCatalog: () => Promise<Pick<CatalogSnapshot, 'entries' | 'index'>>;
 }
 
 export const productionDeps: CatalogResolverDeps = {

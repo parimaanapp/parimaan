@@ -14,6 +14,9 @@ import { updatePantryItemArgsSchema } from '../validation/updatePantryItem.js';
 import type { PantryItemPatchInput } from '../validation/updatePantryItem.js';
 import { NotFoundError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadIngredientCanonicaliser } from './ingredientCanonicaliser.js';
+import type { CanonicaliserLoader } from './ingredientCanonicaliser.js';
+import type { IngredientCanonicaliser } from '../domain/canonicaliseIngredient.js';
 
 /**
  * Zod's optional fields type as `T | undefined`, but `PantryItemPatch`
@@ -23,20 +26,28 @@ import { withErrorHandling } from './withErrorHandling.js';
  * the strip), matching `addPantryItem.ts`'s ordering: after Zod validation
  * has already bounded shape/length, before the repository call.
  */
-const toPantryItemPatch = (input: PantryItemPatchInput): PantryItemPatch => {
+const toPantryItemPatch = (input: PantryItemPatchInput, canonicaliser: IngredientCanonicaliser): PantryItemPatch => {
+  // A rename is re-resolved against the catalog (B2b); an update that leaves the name alone keeps its id.
+  const resolvedName = input.name === undefined ? undefined : canonicaliser.pantryItem(input.name);
   const withCanonicalized: PantryItemPatchInput = {
     ...input,
+    ...(resolvedName === undefined ? {} : { name: resolvedName.name }),
     ...(input.unit !== undefined ? { unit: canonicalizePantryUnit(input.unit) } : {}),
     ...(input.category !== undefined ? { category: canonicalizePantryCategory(input.category) } : {}),
   };
   const entries = Object.entries(withCanonicalized).filter(([, value]) => value !== undefined);
-  return Object.fromEntries(entries) as PantryItemPatch;
+  const base = Object.fromEntries(entries) as PantryItemPatch;
+  return resolvedName === undefined
+    ? base
+    : { ...base, ingredientId: resolvedName.ingredientId, catalogMatch: resolvedName.catalogMatch };
 };
 
 export interface UpdatePantryItemResolverDeps {
   getPool: () => Promise<Pool>;
   /** Injectable seam matching `updatePantryItemPartial`'s own signature, for forced-failure tests. */
   updatePantryItemPartial?: typeof updatePantryItemPartialRepo;
+  /** Catalog canonicaliser seam (B2b). */
+  loadCanonicaliser?: CanonicaliserLoader;
 }
 
 export const productionDeps: UpdatePantryItemResolverDeps = { getPool };
@@ -66,12 +77,13 @@ export const createUpdatePantryItemHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const canonicaliser = await (deps.loadCanonicaliser ?? loadIngredientCanonicaliser)(pool);
 
     return withUserTransaction(
       callerUser.id,
       async (client) => {
         const updatePantryItemPartial = deps.updatePantryItemPartial ?? updatePantryItemPartialRepo;
-        const patch = toPantryItemPatch(input);
+        const patch = toPantryItemPatch(input, canonicaliser);
         const row = await updatePantryItemPartial(client, id, patch);
         if (row === null) {
           throw new NotFoundError('Pantry item not found.');

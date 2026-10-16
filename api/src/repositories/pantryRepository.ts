@@ -1,9 +1,12 @@
 import type { PoolClient } from 'pg';
 import { toAwsDateString } from '../domain/pgDate.js';
 import { canonicalizePantryUnit } from '../domain/pantryUnits.js';
-import { convertQuantity } from '../domain/unitConversion.js';
-import { namesMatch, normalizeIngredientName, unitsCompatible } from '../domain/shoppingListGeneration.js';
+import { defaultUnitConverter } from '../domain/ingredientConversion.js';
+import type { UnitConverter } from '../domain/ingredientConversion.js';
+import { ingredientsMatch, unitsCompatible } from '../domain/shoppingListGeneration.js';
 import type { DeductionLine } from '../domain/pantryDeduction.js';
+import type { CatalogMatch } from '../domain/canonicaliseIngredient.js';
+import { withIngredientFkFallback } from './ingredientFkFallback.js';
 
 export interface PantryItemRow {
   id: string;
@@ -16,6 +19,10 @@ export interface PantryItemRow {
   /** `YYYY-MM-DD`, or `null` — see `shared/schema.graphql`'s `PantryItem.expiryDate` doc. */
   expiryDate: string | null;
   lowThreshold: number | null;
+  /** Catalog id (B2b); `null` when unresolved or not yet backfilled. */
+  ingredientId: string | null;
+  /** How `name` was classified against the catalog; `null` = not evaluated yet. */
+  catalogMatch: CatalogMatch | null;
   addedBy: string;
   addedAt: Date;
   updatedAt: Date;
@@ -34,6 +41,8 @@ interface RawPantryItemRow {
   is_staple: boolean;
   expiry_date: Date | null;
   low_threshold: string | null;
+  ingredient_id: string | null;
+  catalog_match: CatalogMatch | null;
   added_by: string;
   added_at: Date;
   updated_at: Date;
@@ -49,6 +58,8 @@ const mapPantryItemRow = (row: RawPantryItemRow): PantryItemRow => ({
   isStaple: row.is_staple,
   expiryDate: row.expiry_date === null ? null : toAwsDateString(row.expiry_date),
   lowThreshold: row.low_threshold === null ? null : Number(row.low_threshold),
+  ingredientId: row.ingredient_id,
+  catalogMatch: row.catalog_match,
   addedBy: row.added_by,
   addedAt: row.added_at,
   updatedAt: row.updated_at,
@@ -64,16 +75,22 @@ export interface InsertPantryItemInput {
   expiryDate: string | null;
   lowThreshold: number | null;
   addedBy: string;
+  /** B2b: set by the write path after catalog resolution; omitted = not evaluated. */
+  ingredientId?: string | null;
+  catalogMatch?: CatalogMatch | null;
 }
 
-export const insertPantryItem = async (
-  client: PoolClient,
-  input: InsertPantryItemInput,
-): Promise<PantryItemRow> => {
+export const insertPantryItem = (client: PoolClient, input: InsertPantryItemInput): Promise<PantryItemRow> =>
+  withIngredientFkFallback(client, (input.ingredientId ?? null) !== null, (drop) =>
+    insertPantryItemRow(client, drop ? { ...input, ingredientId: null, catalogMatch: null } : input),
+  );
+
+const insertPantryItemRow = async (client: PoolClient, input: InsertPantryItemInput): Promise<PantryItemRow> => {
   const result = await client.query<RawPantryItemRow>(
     `INSERT INTO pantry_items
-       (household_id, name, quantity, unit, category, is_staple, expiry_date, low_threshold, added_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (household_id, name, quantity, unit, category, is_staple, expiry_date, low_threshold, added_by,
+        ingredient_id, catalog_match)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
     [
       input.householdId,
@@ -85,6 +102,8 @@ export const insertPantryItem = async (
       input.expiryDate,
       input.lowThreshold,
       input.addedBy,
+      input.ingredientId ?? null,
+      input.catalogMatch ?? null,
     ],
   );
   const row = result.rows[0];
@@ -185,6 +204,16 @@ export interface HaveItPantryUpsertInput {
    * value without this function needing another internal branch.
    */
   expiryDays?: number | null;
+  /**
+   * B2b: the catalog id of `name` (already resolved by the caller). When both
+   * this and an existing row's `ingredientId` are set they alone decide
+   * whether the rows are the same ingredient; otherwise the fuzzy name match
+   * applies as before. Also stored on a freshly inserted row.
+   */
+  ingredientId?: string | null;
+  catalogMatch?: CatalogMatch | null;
+  /** B2b: catalog-aware unit conversion; omitted = physical families only. */
+  convert?: UnitConverter;
 }
 
 /**
@@ -228,6 +257,8 @@ const insertFreshPantryItemForHaveIt = (
     expiryDate: expiryDateFromDays(input.expiryDays),
     lowThreshold: null,
     addedBy: input.addedBy,
+    ingredientId: input.ingredientId ?? null,
+    catalogMatch: input.catalogMatch ?? null,
   });
 
 /**
@@ -292,6 +323,30 @@ export const lockPantryForHousehold = async (client: PoolClient, householdId: st
 const canonicalizeExistingPantryUnit = (unit: string): string | null =>
   unit === '' ? null : canonicalizePantryUnit(unit);
 
+/**
+ * The existing pantry row that is the same ingredient as the incoming one:
+ * catalog ids decide when both sides have one, otherwise the fuzzy name match
+ * (B2b); either way the units must be convertible.
+ */
+const findHaveItMatch = (
+  existingItems: readonly PantryItemRow[],
+  input: HaveItPantryUpsertInput,
+  canonicalIncomingUnit: string | null,
+  convert: UnitConverter,
+): PantryItemRow | undefined => {
+  const incomingId = input.ingredientId ?? null;
+  return existingItems.find(
+    (item) =>
+      ingredientsMatch(item, { name: input.name, ingredientId: incomingId }) &&
+      unitsCompatible(
+        canonicalizeExistingPantryUnit(item.unit),
+        canonicalIncomingUnit,
+        convert,
+        incomingId ?? item.ingredientId,
+      ),
+  );
+};
+
 export const upsertOrIncrementPantryItemForHaveIt = async (
   client: PoolClient,
   input: HaveItPantryUpsertInput,
@@ -300,16 +355,10 @@ export const upsertOrIncrementPantryItemForHaveIt = async (
   // own doc for the exact race this closes.
   await lockPantryForHousehold(client, input.householdId);
   const existingItems = await findPantryItems(client, input.householdId);
-  const normalizedIncomingName = normalizeIngredientName(input.name);
+  const convert = input.convert ?? defaultUnitConverter;
   const canonicalIncomingUnit = input.unit === null ? null : canonicalizePantryUnit(input.unit);
 
-  const match = existingItems.find((item) => {
-    const canonicalExistingUnit = canonicalizeExistingPantryUnit(item.unit);
-    return (
-      namesMatch(normalizeIngredientName(item.name), normalizedIncomingName) &&
-      unitsCompatible(canonicalExistingUnit, canonicalIncomingUnit)
-    );
-  });
+  const match = findHaveItMatch(existingItems, input, canonicalIncomingUnit, convert);
 
   if (match === undefined) {
     return insertFreshPantryItemForHaveIt(client, input);
@@ -327,7 +376,12 @@ export const upsertOrIncrementPantryItemForHaveIt = async (
   const convertedIncoming =
     canonicalExistingUnit === canonicalIncomingUnit
       ? input.quantity
-      : convertQuantity(input.quantity, canonicalIncomingUnit ?? '', canonicalExistingUnit ?? '');
+      : convert(
+          input.ingredientId ?? match.ingredientId,
+          input.quantity,
+          canonicalIncomingUnit ?? '',
+          canonicalExistingUnit ?? '',
+        );
 
   // Defensive only — `unitsCompatible` already guaranteed convertibility
   // to reach this branch, so `convertedIncoming` should never be `null`
@@ -430,6 +484,13 @@ export interface PantryItemPatch {
   /** `YYYY-MM-DD`. */
   expiryDate?: string;
   lowThreshold?: number;
+  /**
+   * B2b: re-classification after a rename. When `catalogMatch` is present
+   * (even `null`) BOTH it and `ingredientId` overwrite the stored values, so
+   * renaming to an unresolved name clears a previously resolved id.
+   */
+  ingredientId?: string | null;
+  catalogMatch?: CatalogMatch | null;
 }
 
 /**
@@ -442,7 +503,31 @@ export interface PantryItemPatch {
  * isn't a member of; see `findPantryItemById`'s doc for why those two cases
  * are indistinguishable by design here.
  */
-export const updatePantryItemPartial = async (
+/** Bind values for `updatePantryItemPartial`: an absent field binds SQL null (COALESCE keeps the column). */
+const patchParameters = (id: string, patch: PantryItemPatch): unknown[] => [
+  id,
+  patch.name ?? null,
+  patch.quantity ?? null,
+  patch.unit ?? null,
+  patch.category ?? null,
+  patch.isStaple ?? null,
+  patch.expiryDate ?? null,
+  patch.lowThreshold ?? null,
+  patch.catalogMatch !== undefined,
+  patch.ingredientId ?? null,
+  patch.catalogMatch ?? null,
+];
+
+export const updatePantryItemPartial = (
+  client: PoolClient,
+  id: string,
+  patch: PantryItemPatch,
+): Promise<PantryItemRow | null> =>
+  withIngredientFkFallback(client, (patch.ingredientId ?? null) !== null, (drop) =>
+    updatePantryItemPartialRow(client, id, drop ? { ...patch, ingredientId: null, catalogMatch: null } : patch),
+  );
+
+const updatePantryItemPartialRow = async (
   client: PoolClient,
   id: string,
   patch: PantryItemPatch,
@@ -456,19 +541,12 @@ export const updatePantryItemPartial = async (
        is_staple = COALESCE($6::boolean, is_staple),
        expiry_date = COALESCE($7::date, expiry_date),
        low_threshold = COALESCE($8::numeric, low_threshold),
+       ingredient_id = CASE WHEN $9::boolean THEN $10::text ELSE ingredient_id END,
+       catalog_match = CASE WHEN $9::boolean THEN $11::text ELSE catalog_match END,
        updated_at = NOW()
      WHERE id = $1
      RETURNING *`,
-    [
-      id,
-      patch.name ?? null,
-      patch.quantity ?? null,
-      patch.unit ?? null,
-      patch.category ?? null,
-      patch.isStaple ?? null,
-      patch.expiryDate ?? null,
-      patch.lowThreshold ?? null,
-    ],
+    patchParameters(id, patch),
   );
   const row = result.rows[0];
   return row === undefined ? null : mapPantryItemRow(row);

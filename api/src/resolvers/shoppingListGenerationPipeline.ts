@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import type { UnitConverter } from '../domain/ingredientConversion.js';
 import { aggregateIngredients, categorize, subtractPantry } from '../domain/shoppingListGeneration.js';
 import type { AggregationMenuItem, AggregationRecipe, PantryItemForSubtraction } from '../domain/shoppingListGeneration.js';
 import { findMenuItems } from '../repositories/menuRepository.js';
@@ -32,6 +33,7 @@ const buildRecipesById = async (
       unit: ingredient.unit,
       category: ingredient.category,
       isStaple: ingredient.isStaple,
+      ingredientId: ingredient.ingredientId,
     });
     ingredientsByRecipe.set(ingredient.recipeId, existing);
   }
@@ -67,6 +69,7 @@ const buildRecipesById = async (
 export const computeFreshShoppingListItems = async (
   client: PoolClient,
   menu: MenuRow,
+  convert?: UnitConverter,
 ): Promise<NewShoppingListItemInput[]> => {
   const menuItems = await findMenuItems(client, menu.id);
   const recipesById = await buildRecipesById(client, menuItems);
@@ -83,10 +86,11 @@ export const computeFreshShoppingListItems = async (
     name: row.name,
     quantity: row.quantity,
     unit: row.unit,
+    ingredientId: row.ingredientId,
   }));
 
-  const aggregated = aggregateIngredients(aggregationMenuItems, recipesById);
-  const subtracted = subtractPantry(aggregated, pantryItems);
+  const aggregated = aggregateIngredients(aggregationMenuItems, recipesById, convert);
+  const subtracted = subtractPantry(aggregated, pantryItems, convert);
   const grouped = categorize(subtracted);
 
   return grouped.flatMap((group) =>
@@ -112,8 +116,9 @@ export const computeFreshShoppingListItems = async (
 export const createFreshShoppingList = async (
   client: PoolClient,
   menu: MenuRow,
+  convert?: UnitConverter,
 ): Promise<{ list: ShoppingListRow; items: ShoppingListItemRow[] }> => {
-  const freshItems = await computeFreshShoppingListItems(client, menu);
+  const freshItems = await computeFreshShoppingListItems(client, menu, convert);
   const list = await insertShoppingList(client, {
     householdId: menu.householdId,
     generatedFromMenuId: menu.id,

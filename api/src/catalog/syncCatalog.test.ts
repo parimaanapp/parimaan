@@ -56,7 +56,7 @@ describe('syncCatalog (real Postgres)', () => {
 
   beforeEach(async () => {
     await admin.query(
-      'TRUNCATE TABLE unit_conversions, ingredient_aliases, ingredient_catalog, catalog_sync_state',
+      'TRUNCATE TABLE unit_conversions, ingredient_aliases, ingredient_catalog, catalog_sync_state CASCADE',
     );
   });
 

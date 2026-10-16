@@ -13,9 +13,13 @@ import type { GraphQLPantryItem } from '../mappers/pantryItem.js';
 import { addPantryItemArgsSchema } from '../validation/addPantryItem.js';
 import { ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadIngredientCanonicaliser } from './ingredientCanonicaliser.js';
+import type { CanonicaliserLoader } from './ingredientCanonicaliser.js';
 
 export interface AddPantryItemResolverDeps {
   getPool: () => Promise<Pool>;
+  /** Catalog canonicaliser seam (B2b). */
+  loadCanonicaliser?: CanonicaliserLoader;
 }
 
 export const productionDeps: AddPantryItemResolverDeps = { getPool };
@@ -50,6 +54,8 @@ export const createAddPantryItemHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const canonicaliser = await (deps.loadCanonicaliser ?? loadIngredientCanonicaliser)(pool);
+    const resolved = canonicaliser.pantryItem(input.name);
 
     return withUserTransaction(
       callerUser.id,
@@ -58,7 +64,9 @@ export const createAddPantryItemHandler =
 
         const row = await insertPantryItem(client, {
           householdId,
-          name: input.name,
+          name: resolved.name,
+          ingredientId: resolved.ingredientId,
+          catalogMatch: resolved.catalogMatch,
           quantity: input.quantity,
           unit: canonicalizePantryUnit(input.unit),
           category: input.category == null ? null : canonicalizePantryCategory(input.category),
