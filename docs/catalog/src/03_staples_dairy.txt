@@ -38,7 +38,7 @@ Cooking Spray | oil spray | |
 ## ghee_butter
 Ghee | clarified butter; desi ghee; cow ghee; nei; tup; tuppa | | 
 Buffalo Ghee | bhains ka ghee | | 
-Butter (Salted) | salted butter; makhan salted; amul butter | | 
+Butter (Salted) | salted butter; makhan salted; amul butter; butter | | 
 Butter (Unsalted) | unsalted butter; white butter | | 
 White Butter (Homemade) | makhan; loni; benne; venna; homemade butter | | 
 Vanaspati | dalda; vegetable ghee; hydrogenated fat | | 
@@ -53,7 +53,7 @@ Soy Milk | soya milk | |
 Oat Milk | | | 
 Coconut Milk | nariyal doodh; thengai paal; thengai pal; coconut milk canned | | 
 Coconut Cream | | | 
-Cream (Fresh) | malai; fresh cream; heavy cream; amul cream; double cream; whipping cream | | 
+Cream (Fresh) | malai; fresh cream; heavy cream; amul cream; double cream; whipping cream; cream | | 
 Cream (Whipping) | whipped cream; whipping cream | | 
 Condensed Milk | milkmaid; sweetened condensed milk | | 
 Evaporated Milk | | | 

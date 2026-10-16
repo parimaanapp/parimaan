@@ -1653,6 +1653,13 @@
   },
   {
     "scope": "ingredient",
+    "key": "kudampuli_gambooge",
+    "unit": "piece",
+    "baseUnit": "g",
+    "amount": 5
+  },
+  {
+    "scope": "ingredient",
     "key": "kulcha",
     "unit": "piece",
     "baseUnit": "g",
@@ -1682,9 +1689,30 @@
   {
     "scope": "ingredient",
     "key": "lemon",
+    "unit": "ml",
+    "baseUnit": "g",
+    "amount": 1.3333
+  },
+  {
+    "scope": "ingredient",
+    "key": "lemon",
     "unit": "piece",
     "baseUnit": "g",
     "amount": 40
+  },
+  {
+    "scope": "ingredient",
+    "key": "lemon",
+    "unit": "tbsp",
+    "baseUnit": "g",
+    "amount": 20
+  },
+  {
+    "scope": "ingredient",
+    "key": "lemon",
+    "unit": "tsp",
+    "baseUnit": "g",
+    "amount": 6.6667
   },
   {
     "scope": "ingredient",
@@ -2385,6 +2413,13 @@
     "unit": "piece",
     "baseUnit": "g",
     "amount": 60
+  },
+  {
+    "scope": "ingredient",
+    "key": "poha",
+    "unit": "cup",
+    "baseUnit": "g",
+    "amount": 85
   },
   {
     "scope": "ingredient",

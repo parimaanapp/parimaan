@@ -48,6 +48,8 @@ sc('bakery','slice','piece',1); sc('leafy_herb','tbsp','g',4); sc('beverage','cu
 SOLID_PIECE_DEFAULT = {}  # piece weights are per ingredient (column piece_g)
 DRY_GOODS_OVERRIDE = re.compile(r'^(Poha|Sooji|Idli Rava|Besan|Vermicelli|Sabudana|Murmura|Roasted Vermicelli|Rice Noodles|Pasta|Noodles|Bread Crumbs|Puffed Millet)')
 BUNCH_G={'Curry Leaves':25}
+# Juice measures for ingredients bought whole: 1 lemon (40 g) yields about 30 ml, so 1 ml is 4/3 g of lemon.
+JUICE_G={'Lemon':{'ml':1.3333,'tsp':6.6667,'tbsp':20}}
 NOTES={'Curry Leaves':'1 bunch is about 100-120 leaves (about 25 g)'}
 LABELS={'dal':'Dal','grain':'Grain','spice':'Spice','dairy':'Dairy','eggs':'Eggs','produce':'Produce','dry_goods':'Dry Goods','oil':'Oil','meat_fish':'Meat & Fish','condiment':'Condiment','bakery':'Bakery','snacks':'Snacks','beverages':'Beverages','frozen':'Frozen','other':'Other'}
 PIECE_OVERRIDES={'Cloves':0.1,'Green Cardamom':0.5,'Black Cardamom':2,'Cinnamon Stick':3,'Dried Red Chilli':2,'Bay Leaf':0.5,'Star Anise':1,'Black Pepper (Whole)':0.05}
@@ -83,6 +85,7 @@ with open(os.path.join(HERE,'conversions.csv'),'w',newline='',encoding='utf8') a
         if r['cup']: w.writerow(['ingredient',r['name'],'cup','g' if r['sub'] not in ('oil','dairy_liquid','condiment_sauce') else 'ml',r['cup']])
         if r['name'] in BUNCH_G: w.writerow(['ingredient',r['name'],'bunch','g',BUNCH_G[r['name']]])
         if r['piece']: w.writerow(['ingredient',r['name'],'piece','g',r['piece']])
+        for u,g in JUICE_G.get(r['name'],{}).items(): w.writerow(['ingredient',r['name'],u,'g',g])
 # human-readable
 by=collections.OrderedDict()
 for r in rows: by.setdefault(r['app'],collections.OrderedDict()).setdefault(r['sub'],[]).append(r)

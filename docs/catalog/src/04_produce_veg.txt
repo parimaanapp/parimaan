@@ -47,7 +47,7 @@ Raw Mango | kachha aam; kairi; maavinakayi; mamidikaya; maangai | 200 |
 Capsicum (Green) | shimla mirch; bell pepper; green capsicum; dhaba mirch | 120 | 
 Capsicum (Red) | red bell pepper | 150 | 
 Capsicum (Yellow) | yellow bell pepper | 150 | 
-Green Chilli | hari mirch; pachi mirchi; pachai milagai; hasi menasinakayi; mirapakaya; chillies | 5 | 
+Green Chilli | hari mirch; pachi mirchi; pachai milagai; hasi menasinakayi; mirapakaya; chillies; green chili; green chilly; green chillies; green chilies | 5 | 
 Bhavnagri Chilli | bhavnagri mirch; mild chilli; bajji chilli; banana pepper; mirchi bajji chilli; bajji mirchi; bhajji mulaga; milagai bajji; mirch (banana pepper) | 25 | 
 Jalapeno | jalapeño | 15 | 
 Cucumber | kheera; kakdi; vellarikai; southekayi; dosakaya; kakri | 250 | 
@@ -93,7 +93,7 @@ Coconut (Fresh) | nariyal; thengai; khobra; kobbari; tenginakayi; fresh coconut;
 Dry Coconut (Copra) | kopra; khopra; sookha nariyal; copra; dry coconut; kobbari | 100 | 
 Dry Coconut (Grated) | desiccated coconut; dry coconut powder; coconut powder | | 90
 Pearl Onions | | 10 | 
-Lemon | nimbu; limbu; elumichai; nimmakaya; nimbehannu; lime; sweet lime (nimbu) | 40 | 
+Lemon | nimbu; limbu; elumichai; nimmakaya; nimbehannu; lime; sweet lime (nimbu); lemon juice | 40 | 
 Kaffir Lime Leaves | | | 
 Amla | indian gooseberry; amla fresh; nellikai; usirikaya; avla; nelli | 20 | 
 Raw Tamarind | kachchi imli; pachi chintakaya | | 
