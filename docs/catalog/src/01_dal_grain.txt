@@ -12,7 +12,7 @@ Masoor Dal (Red) | red lentils; lal masoor dal; masoor dal; malka masoor | | 200
 Masoor (Whole) | sabut masoor; brown lentils; whole masoor; kali masoor; black masoor | | 200
 Kabuli Chana | chole; chickpeas; white chickpeas; chhole; safed chana; garbanzo | | 200
 Kala Chana | black chickpeas; kale chane; bengal gram whole; desi chana; brown chickpeas | | 200
-Rajma (Red) | kidney beans; red rajma; red kidney beans; rajmah | | 200
+Rajma (Red) | kidney beans; red rajma; red kidney beans; rajmah; rajma; rajma (kidney beans) | | 200
 Rajma (Chitra) | chitra rajma; pinto beans; jammu rajma; rajma chitra | | 200
 Lobiya (White) | white lobia; black eyed peas; white cowpea; safed lobia; chawli | | 200
 Lobiya (Black) | black lobia; kala lobia; red chori; cowpea red | | 200
@@ -47,6 +47,7 @@ Barley | jau; pearl barley | | 200
 Amaranth Seeds | rajgira; ramdana; chaulai seeds | | 180
 Buckwheat | kuttu; kuttu groats | | 170
 Sabudana | sago; tapioca pearls; javvarisi; sabbakki | | 160
+Poha | flattened rice; poha (flattened rice); beaten rice; rice flakes; aval; avalakki; atukulu | | 85
 Poha (Thick) | thick poha; jada poha; flattened rice thick; avalakki thick | | 90
 Poha (Thin) | thin poha; patla poha; flattened rice thin; nylon poha | | 80
 Murmura | puffed rice; kurmura; mamra; borugulu; pori | | 25
@@ -73,7 +74,7 @@ Gobindobhog Rice | gobindo bhog | | 185
 Rice (Broken) | broken rice; kanki; tukda chawal | | 185
 Sticky Rice | glutinous rice; sweet rice | | 195
 ## flour
-Atta (Whole Wheat Flour) | wheat flour; gehun ka atta; chakki atta; aata; whole wheat atta | | 120
+Atta (Whole Wheat Flour) | wheat flour; gehun ka atta; chakki atta; aata; whole wheat atta; whole wheat flour; whole wheat flour (aata) | | 120
 Maida | refined flour; all purpose flour; plain flour; maida flour | | 125
 Besan | gram flour; chickpea flour; chana flour; kadalai maavu | | 100
 Sooji | semolina; rava; suji; rawa; sooji rava; upma rava | | 170

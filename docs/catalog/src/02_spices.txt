@@ -11,7 +11,7 @@ Nigella Seeds | kalonji; black seed; mangrela; kala jeera (nigella); onion seeds
 Poppy Seeds | khus khus; khus-khus; posto; gasagasa; white poppy seeds | | 
 Sesame Seeds (White) | til; safed til; white til; ellu; nuvvulu; sesame | | 
 Sesame Seeds (Black) | kala til; black til; karuppu ellu | | 
-Black Pepper (Whole) | kali mirch; peppercorns; milagu; menasu; miriyalu; whole black pepper | | 
+Black Pepper (Whole) | kali mirch; peppercorns; milagu; menasu; miriyalu; whole black pepper; black pepper; black peppercorns; black peppercorn | | 
 White Pepper (Whole) | safed mirch whole; white peppercorns | | 
 Cloves | laung; lavang; lavangam; krambu | | 
 Green Cardamom | choti elaichi; elaichi; elakkai; yalakki; cardamom; green elaichi | | 
@@ -24,7 +24,8 @@ Mace | javitri; japatri; jaipatri | |
 Nutmeg | jaiphal; jathikai; jajikaya | | 
 Dried Red Chilli | kashmiri mirch whole; kashmiri red chilli whole; byadgi chilli; byadgi mirch; dried kashmiri chilli; guntur chilli; sannam chilli; teja chilli; gundu mulagai; ramnad mundu; resham patti; sukhi lal mirch; whole red chilli; sabut lal mirch; dry red chilli; vattal mulagai; bird eye chilli dried; thai chilli dried; dried thai chilli; kanthari dried; dry bird's eye | | 
 Dry Mango Powder Whole (Amchur Slices) | amchur slices; dried raw mango; mango slices dried | | 
-Kokum | kokam; amsul; punarpuli; garcinia indica | | 
+Kokum | kokam; amsul; punarpuli; garcinia indica | |
+Kudampuli (Gambooge) | kudampuli; gambooge; kodampuli; malabar tamarind; garcinia cambogia; fish tamarind; pot tamarind | 5 |
 Tamarind | imli; puli; chinta pandu; hunase; tamarind block | | 
 Asafoetida (Hing) | hing; heeng; perungayam; inguva; asafetida | | 
 Stone Flower | dagad phool; kalpasi; patthar ke phool; lichen | | 

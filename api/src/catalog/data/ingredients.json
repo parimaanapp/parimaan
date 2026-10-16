@@ -1104,7 +1104,9 @@
       "gehun ka atta",
       "chakki atta",
       "aata",
-      "whole wheat atta"
+      "whole wheat atta",
+      "whole wheat flour",
+      "whole wheat flour (aata)"
     ],
     "allowedUnits": [
       "g",
@@ -2820,7 +2822,10 @@
       "milagu",
       "menasu",
       "miriyalu",
-      "whole black pepper"
+      "whole black pepper",
+      "black pepper",
+      "black peppercorns",
+      "black peppercorn"
     ],
     "allowedUnits": [
       "g",
@@ -3759,7 +3764,8 @@
     "aliases": [
       "salted butter",
       "makhan salted",
-      "amul butter"
+      "amul butter",
+      "butter"
     ],
     "allowedUnits": [
       "g",
@@ -7969,7 +7975,8 @@
       "heavy cream",
       "amul cream",
       "double cream",
-      "whipping cream"
+      "whipping cream",
+      "cream"
     ],
     "allowedUnits": [
       "ml",
@@ -12180,7 +12187,11 @@
       "pachai milagai",
       "hasi menasinakayi",
       "mirapakaya",
-      "chillies"
+      "chillies",
+      "green chili",
+      "green chilly",
+      "green chillies",
+      "green chilies"
     ],
     "allowedUnits": [
       "g",
@@ -15487,6 +15498,31 @@
     "note": ""
   },
   {
+    "id": "kudampuli_gambooge",
+    "canonicalName": "Kudampuli (Gambooge)",
+    "appCategory": "spice",
+    "subcategory": "spice_whole",
+    "aliases": [
+      "kudampuli",
+      "gambooge",
+      "kodampuli",
+      "malabar tamarind",
+      "garcinia cambogia",
+      "fish tamarind",
+      "pot tamarind"
+    ],
+    "allowedUnits": [
+      "g",
+      "tsp",
+      "tbsp",
+      "piece"
+    ],
+    "defaultUnit": "g",
+    "pieceG": 5,
+    "cupG": null,
+    "note": ""
+  },
+  {
     "id": "kulcha",
     "canonicalName": "Kulcha",
     "appCategory": "bakery",
@@ -15740,7 +15776,8 @@
       "nimmakaya",
       "nimbehannu",
       "lime",
-      "sweet lime (nimbu)"
+      "sweet lime (nimbu)",
+      "lemon juice"
     ],
     "allowedUnits": [
       "g",
@@ -21885,6 +21922,30 @@
     "note": ""
   },
   {
+    "id": "poha",
+    "canonicalName": "Poha",
+    "appCategory": "dry_goods",
+    "subcategory": "whole_grain",
+    "aliases": [
+      "flattened rice",
+      "poha (flattened rice)",
+      "beaten rice",
+      "rice flakes",
+      "aval",
+      "avalakki",
+      "atukulu"
+    ],
+    "allowedUnits": [
+      "g",
+      "kg",
+      "cup"
+    ],
+    "defaultUnit": "g",
+    "pieceG": null,
+    "cupG": 85,
+    "note": ""
+  },
+  {
     "id": "poha_flour",
     "canonicalName": "Poha Flour",
     "appCategory": "dry_goods",
@@ -22015,7 +22076,9 @@
       "dalimbe",
       "madhulai",
       "danimma",
-      "dadam"
+      "dadam",
+      "pomegranate seeds",
+      "pomegranate arils"
     ],
     "allowedUnits": [
       "g",
@@ -23542,7 +23605,9 @@
       "kidney beans",
       "red rajma",
       "red kidney beans",
-      "rajmah"
+      "rajmah",
+      "rajma",
+      "rajma (kidney beans)"
     ],
     "allowedUnits": [
       "g",

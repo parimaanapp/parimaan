@@ -87,3 +87,24 @@ Aggregated amounts are rounded once after merging (`api/src/domain/shoppingQuant
 
 ### Recipes removed
 `Anda Bhurji` and `Egg Bhurji` were removed as duplicates of **Anda Bhurji Masala** (the same Punjabi scrambled eggs with onion, tomato and green chilli; the kept one has the richest method and spice set). Idli, Dosa, Appam and Neer Dosa stay split by role (same title, different role). Rava Kesari / Sooji Halwa, Sprouts Chaat / Sprouted Moong Salad and Kala Chana Curry / Kadala Curry were reviewed and kept: different regional dishes or different roles.
+
+## Legacy seed names (backfill dry-run backlog)
+
+A dev backfill dry-run over 7,699 `recipe_ingredients` rows from older seed recipes left the names below unmatched. Each is resolved by an alias or a new ingredient in `src/*.txt` (rebuilt with `build_catalog.py`), guarded by `api/src/catalog/legacySeedAliases.test.ts`, which also runs the literal names through `planRecipeIngredientBackfill`. After deploy, `pnpm --filter ./api catalog:backfill` (dry run, then `--execute`) picks these rows up.
+
+| Typed name (rows) | Resolution | Reason |
+|---|---|---|
+| `cream` (130) | alias of **Cream (Fresh)** | The everyday cooking cream. Cream (Whipping) stays its own entry |
+| `lemon juice` (130) | alias of **Lemon**, plus juice conversions | Follows the "lemon cannot split" rule above: shoppers buy lemons. Lemon gains ingredient conversions ml / tsp / tbsp to g (1 lemon = 40 g yields about 30 ml, so 1 ml = 1.3333 g, 1 tsp = 6.6667 g, 1 tbsp = 20 g). "2 tbsp lemon juice" becomes `Lemon 40 g` with note `2 tbsp`, which merges with `1 piece Lemon` through `piece_g`. **Lemon Juice (Bottled)** stays a separate condiment, reached only by its own names |
+| `rajma (kidney beans)` (120) | aliases `rajma` and `rajma (kidney beans)` on **Rajma (Red)** | Red kidney beans already carry "kidney beans" and "rajmah". Chitra (pinto) stays explicit |
+| `green chili` (119) | aliases `green chili`, `green chilly`, `green chillies`, `green chilies` on **Green Chilli** | Spelling variants |
+| `butter` (12) | alias of **Butter (Salted)** | Unmarked butter in India is salted (Amul). Unsalted and Spreadable keep their own names |
+| `black peppercorns` (9), `black pepper` (3) | aliases on **Black Pepper (Whole)** | Whole is the default form (`kali mirch`, `peppercorns` already point there); Black Pepper Powder is reached by "pepper powder". Both are on the always-staple list (salt and every pepper are "to taste" staples), so shopping lists still exclude them |
+| `whole wheat flour (aata)` (9) | aliases `whole wheat flour`, `whole wheat flour (aata)` on **Atta (Whole Wheat Flour)** | `aata` and `whole wheat atta` were already aliases |
+| `kudampuli (gambooge)` (4) | **new ingredient** Kudampuli (Gambooge), spice_whole, 5 g per piece | Malabar tamarind (Garcinia gummi-gutta) is a different fruit from kokum (Garcinia indica) and Kerala recipes name it, so it is not an alias of Kokum. Aliases: kudampuli, gambooge, kodampuli, malabar tamarind, garcinia cambogia, fish tamarind, pot tamarind. Removed from `KNOWN_CATALOG_GAPS` in the recipe lint |
+| `poha (flattened rice)` (3), `flattened rice` (1) | **new generic ingredient** Poha, dry goods, 85 g per cup | Same pattern as generic Rice: Poha (Thick) / (Thin) remain named varieties, but unspecified poha had nowhere to land. Aliases: flattened rice, poha (flattened rice), beaten rice, rice flakes, aval, avalakki, atukulu. Brown, Red, Ragi and Chira entries keep their own names |
+| `pomegranate seeds` (3) | aliases `pomegranate seeds`, `pomegranate arils` on **Pomegranate** | In recipes these are the fresh arils. Dried seeds are **Pomegranate Seeds (Dried)** (anardana), reached by "dried pomegranate seeds" or "anardana" |
+| `oil` (229) | **left unresolved** | Generic across Vegetable, Sunflower, Mustard, Groundnut, Coconut and others, and no default generic oil is recorded. Kept as typed (`catalog_match = unresolved`), never guessed |
+| `chicken` (3), `fish` (3) | **left unresolved** | Generic across whole, curry cut, breast, thigh, mince and species. No default cut is recorded; the user picks when editing the line |
+
+If a default cooking oil is wanted later, the obvious candidate is **Vegetable Oil** (it already carries "cooking oil" and "refined oil"); adding `oil` as its alias is a one-line catalog change.

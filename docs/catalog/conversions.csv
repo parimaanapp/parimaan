@@ -229,6 +229,7 @@ ingredient,Jaggery,cup,g,160
 ingredient,Powdered Sugar,cup,g,130
 ingredient,Sugar,cup,g,200
 ingredient,Murmura,cup,g,25
+ingredient,Poha,cup,g,85
 ingredient,Poha (Thick),cup,g,90
 ingredient,Poha (Thin),cup,g,80
 ingredient,Puffed Millet,cup,g,25
@@ -502,6 +503,9 @@ ingredient,Ker Berries,piece,g,2
 ingredient,Kohlrabi,piece,g,150
 ingredient,Leek,piece,g,150
 ingredient,Lemon,piece,g,40
+ingredient,Lemon,ml,g,1.3333
+ingredient,Lemon,tsp,g,6.6667
+ingredient,Lemon,tbsp,g,20
 ingredient,Lettuce,piece,g,300
 ingredient,Lotus Stem,piece,g,150
 ingredient,Madras Cucumber,piece,g,400
@@ -572,4 +576,5 @@ ingredient,Cloves,piece,g,0.1
 ingredient,Dried Red Chilli,piece,g,2
 ingredient,Dried Turmeric Root,piece,g,8
 ingredient,Green Cardamom,piece,g,0.5
+ingredient,Kudampuli (Gambooge),piece,g,5
 ingredient,Star Anise,piece,g,1

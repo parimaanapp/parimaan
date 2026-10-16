@@ -5,7 +5,7 @@ Apple | seb; sebu; apple (red) | 180 |
 Mango (Ripe) | aam; mamidi; maambazham; mavinahannu; mango; alphonso; dasheri | 250 | 
 Orange | santra; narangi; kamala; orange (indian) | 150 | 
 Sweet Lime | mosambi; mosambi; sathukudi; battayi; sweet lime juice fruit; lemon (sweet) | 150 | 
-Pomegranate | anar; dalimbe; madhulai; danimma; dadam | 250 | 
+Pomegranate | anar; dalimbe; madhulai; danimma; dadam; pomegranate seeds; pomegranate arils | 250 | 
 Grapes (Green) | angoor; draksh; thirakshai; dhrakshi; seedless grapes | | 
 Grapes (Black) | kale angoor; black grapes | | 
 Papaya (Ripe) | papita; pappali; parangi kai; papaya | 800 | 

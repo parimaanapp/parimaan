@@ -23,7 +23,7 @@ export interface CatalogLintResult {
  * lint stays green; the catalog is NOT extended here. Remove an entry once
  * the catalog gains the ingredient.
  */
-export const KNOWN_CATALOG_GAPS: ReadonlySet<string> = new Set(['Boondi', 'Kudampuli (Gambooge)']);
+export const KNOWN_CATALOG_GAPS: ReadonlySet<string> = new Set(['Boondi']);
 
 /** Salt and every pepper are "to taste" staples (decisions.md). */
 const ALWAYS_STAPLE: ReadonlySet<string> = new Set([

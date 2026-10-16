@@ -10,7 +10,7 @@
   "role": "sabzi_dal",
   "ingredients": [
     { "name": "Surmai", "quantity": 500, "unit": "g", "category": "meat_fish", "notes": "kingfish (seer fish); pomfret also works, cut into steaks" },
-    { "name": "Kudampuli (Gambooge)", "quantity": 3, "unit": "piece", "category": "condiment", "notes": "soaked in warm water for 15 minutes" },
+    { "name": "Kudampuli (Gambooge)", "quantity": 3, "unit": "piece", "category": "spice", "notes": "soaked in warm water for 15 minutes" },
     { "name": "Coconut Oil", "quantity": 2, "unit": "tbsp", "category": "oil" },
     { "name": "Mustard Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice" },
     { "name": "Fenugreek Seeds", "quantity": 0.25, "unit": "tsp", "category": "spice" },
