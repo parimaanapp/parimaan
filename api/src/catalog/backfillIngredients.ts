@@ -16,7 +16,8 @@ import type {
  *
  * It reads and writes across all households, so it must run as a role that
  * bypasses RLS (superuser / BYPASSRLS), like the data migrations do.
- * Dry-run (`execute: false`) reads only.
+ * Dry-run (`execute: false`) reads only. Execute mode commits per batch and
+ * never waits on application writes (see `runIngredientBackfill`).
  */
 
 export interface BackfillQueryClient {
@@ -25,7 +26,7 @@ export interface BackfillQueryClient {
 
 export interface BackfillOptions {
   readonly execute: boolean;
-  /** Rows read and written per statement. */
+  /** Rows locked, read and written per transaction (execute) or page (dry run). */
   readonly batchSize?: number;
 }
 
@@ -50,7 +51,7 @@ export interface BackfillReport {
   readonly topUnmatched: readonly UnmatchedName[];
 }
 
-const DEFAULT_BATCH_SIZE = 1000;
+const DEFAULT_BATCH_SIZE = 200;
 const TOP_UNMATCHED = 25;
 /** Arbitrary constant namespacing this backfill's advisory lock. */
 const BACKFILL_LOCK_KEY = 7_204_002;
@@ -157,82 +158,119 @@ const toPantryRow = (row: Record<string, unknown>): PantryBackfillRow => ({
   catalogMatch: asStringOrNull(row['catalog_match']) as CatalogMatch | null,
 });
 
-interface Scan {
-  readonly client: BackfillQueryClient;
-  readonly options: Required<BackfillOptions>;
-  readonly unmatched: Map<string, number>;
-  readonly tally: Tally;
+/** One table's batch loop: how to read a keyset page, plan a row and write the changed ones. */
+interface TableSpec<Row extends { id: string; name: string; catalogMatch: CatalogMatch | null }> {
+  readonly selectSql: string;
+  readonly toRow: (row: Record<string, unknown>) => Row;
+  readonly plan: (row: Row, canonicaliser: IngredientCanonicaliser) => Row | null;
+  readonly write: (client: BackfillQueryClient, updates: readonly Row[]) => Promise<unknown>;
 }
 
-/** Counts one scanned row (using its post-plan state) and returns its update, if any. */
-const tallyRow = <Row extends { id: string; name: string; catalogMatch: CatalogMatch | null }>(
-  scan: Scan,
-  current: Row,
-  update: Row | null,
-): Row | null => {
-  const status = update?.catalogMatch ?? current.catalogMatch;
-  scan.tally.scanned += 1;
-  countStatus(scan.tally, status);
-  recordUnmatched(scan.unmatched, update?.name ?? current.name, status);
-  return update;
+const RECIPE_SPEC: TableSpec<RecipeIngredientBackfillRow> = {
+  selectSql: `SELECT id, name, quantity, unit, notes, ingredient_id, catalog_match
+                FROM recipe_ingredients WHERE id > $1 ORDER BY id LIMIT $2`,
+  toRow: toRecipeRow,
+  plan: planRecipeIngredientBackfill,
+  write: writeRecipeIngredients,
+};
+
+const PANTRY_SPEC: TableSpec<PantryBackfillRow> = {
+  selectSql: `SELECT id, name, ingredient_id, catalog_match
+                FROM pantry_items WHERE id > $1 ORDER BY id LIMIT $2`,
+  toRow: toPantryRow,
+  plan: planPantryBackfill,
+  write: writePantryItems,
 };
 
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
-const backfillRecipeIngredients = async (
-  client: BackfillQueryClient,
-  canonicaliser: IngredientCanonicaliser,
-  options: Required<BackfillOptions>,
-  unmatched: Map<string, number>,
-): Promise<TableBackfillReport> => {
-  const scan: Scan = { client, options, unmatched, tally: emptyTally() };
-  let lastId = NIL_UUID;
-  for (;;) {
-    const { rows } = await client.query(
-      `SELECT id, name, quantity, unit, notes, ingredient_id, catalog_match
-         FROM recipe_ingredients WHERE id > $1 ORDER BY id LIMIT $2`,
-      [lastId, options.batchSize],
-    );
-    if (rows.length === 0) {
-      return scan.tally;
-    }
-    const current = rows.map(toRecipeRow);
-    const updates = current
-      .map((row) => tallyRow(scan, row, planRecipeIngredientBackfill(row, canonicaliser)))
-      .filter((update): update is RecipeIngredientUpdate => update !== null);
-    scan.tally.changed += updates.length;
-    if (options.execute && updates.length > 0) {
-      await writeRecipeIngredients(client, updates);
-    }
-    lastId = current[current.length - 1]?.id ?? lastId;
+/**
+ * Execute-mode reads lock the batch (`FOR UPDATE SKIP LOCKED`) inside the
+ * batch's own transaction, so the state that is planned from is the state that
+ * is overwritten: a concurrent rename either committed before the read (and is
+ * classified) or holds the row lock (and the row is skipped, to be picked up
+ * by the next run). Nothing waits on application writes, so no deadlocks.
+ */
+const lockedSql = (sql: string): string => `${sql} FOR UPDATE SKIP LOCKED`;
+
+/** Rolls back without letting a failing rollback hide the error that caused it. */
+const safeRollback = async (client: BackfillQueryClient): Promise<void> => {
+  try {
+    await client.query('ROLLBACK');
+  } catch {
+    // The connection is already unusable; the original error is what matters.
   }
 };
 
-const backfillPantryItems = async (
+interface BatchOutcome {
+  readonly keys: string[];
+  readonly scanned: number;
+  readonly updates: number;
+}
+
+const processBatch = async <Row extends { id: string; name: string; catalogMatch: CatalogMatch | null }>(
   client: BackfillQueryClient,
+  spec: TableSpec<Row>,
+  canonicaliser: IngredientCanonicaliser,
+  scan: { tally: Tally; unmatched: Map<string, number> },
+  page: { lastId: string; size: number },
+  execute: boolean,
+): Promise<BatchOutcome> => {
+  const { rows } = await client.query(execute ? lockedSql(spec.selectSql) : spec.selectSql, [page.lastId, page.size]);
+  const current = rows.map(spec.toRow);
+  const updates: Row[] = [];
+  for (const row of current) {
+    const update = spec.plan(row, canonicaliser);
+    const status = update?.catalogMatch ?? row.catalogMatch;
+    scan.tally.scanned += 1;
+    countStatus(scan.tally, status);
+    recordUnmatched(scan.unmatched, update?.name ?? row.name, status);
+    if (update !== null) {
+      updates.push(update);
+    }
+  }
+  scan.tally.changed += updates.length;
+  if (execute && updates.length > 0) {
+    await spec.write(client, updates);
+  }
+  return { keys: current.map((row) => row.id), scanned: current.length, updates: updates.length };
+};
+
+/**
+ * Scans one table in keyset batches. Execute mode commits every batch in its
+ * own short transaction (the work is idempotent, so a failure keeps earlier
+ * batches and a re-run finishes the rest).
+ */
+const backfillTable = async <Row extends { id: string; name: string; catalogMatch: CatalogMatch | null }>(
+  client: BackfillQueryClient,
+  spec: TableSpec<Row>,
   canonicaliser: IngredientCanonicaliser,
   options: Required<BackfillOptions>,
   unmatched: Map<string, number>,
 ): Promise<TableBackfillReport> => {
-  const scan: Scan = { client, options, unmatched, tally: emptyTally() };
+  const scan = { tally: emptyTally(), unmatched };
   let lastId = NIL_UUID;
   for (;;) {
-    const { rows } = await client.query(
-      `SELECT id, name, ingredient_id, catalog_match FROM pantry_items WHERE id > $1 ORDER BY id LIMIT $2`,
-      [lastId, options.batchSize],
-    );
-    if (rows.length === 0) {
+    if (options.execute) {
+      await client.query('BEGIN');
+    }
+    let outcome: BatchOutcome;
+    try {
+      outcome = await processBatch(client, spec, canonicaliser, scan, { lastId, size: options.batchSize }, options.execute);
+      if (options.execute) {
+        await client.query('COMMIT');
+      }
+    } catch (error: unknown) {
+      if (options.execute) {
+        await safeRollback(client);
+      }
+      throw error;
+    }
+    const last = outcome.keys[outcome.keys.length - 1];
+    if (last === undefined) {
       return scan.tally;
     }
-    const current = rows.map(toPantryRow);
-    const updates = current
-      .map((row) => tallyRow(scan, row, planPantryBackfill(row, canonicaliser)))
-      .filter((update): update is PantryUpdate => update !== null);
-    scan.tally.changed += updates.length;
-    if (options.execute && updates.length > 0) {
-      await writePantryItems(client, updates);
-    }
-    lastId = current[current.length - 1]?.id ?? lastId;
+    lastId = last;
   }
 };
 
@@ -243,9 +281,10 @@ const topUnmatched = (counts: ReadonlyMap<string, number>): UnmatchedName[] =>
     .slice(0, TOP_UNMATCHED);
 
 /**
- * Runs the backfill. In execute mode everything happens in one transaction
- * under an advisory lock (a failure rolls back every table); a dry run reads
- * the same rows and reports what would change.
+ * Runs the backfill. A dry run only reads. Execute mode holds a session
+ * advisory lock (one backfill at a time) and commits per batch, locking rows
+ * with SKIP LOCKED: rows a concurrent request holds are left for the next run,
+ * so keep re-running until `changed` is 0.
  */
 export const runIngredientBackfill = async (
   client: BackfillQueryClient,
@@ -257,25 +296,21 @@ export const runIngredientBackfill = async (
     batchSize: options.batchSize ?? DEFAULT_BATCH_SIZE,
   };
   await assertCanBypassRowSecurity(client);
-  const unmatched = new Map<string, number>();
   if (resolved.execute) {
-    await client.query('BEGIN');
+    const { rows } = await client.query('SELECT pg_try_advisory_lock($1) AS locked', [BACKFILL_LOCK_KEY]);
+    if (rows[0]?.['locked'] !== true) {
+      throw new Error('Another ingredient backfill is already running.');
+    }
   }
   try {
-    if (resolved.execute) {
-      await client.query('SELECT pg_advisory_xact_lock($1)', [BACKFILL_LOCK_KEY]);
-    }
-    const recipeIngredients = await backfillRecipeIngredients(client, canonicaliser, resolved, unmatched);
-    const pantryItems = await backfillPantryItems(client, canonicaliser, resolved, unmatched);
-    if (resolved.execute) {
-      await client.query('COMMIT');
-    }
+    const unmatched = new Map<string, number>();
+    const recipeIngredients = await backfillTable(client, RECIPE_SPEC, canonicaliser, resolved, unmatched);
+    const pantryItems = await backfillTable(client, PANTRY_SPEC, canonicaliser, resolved, unmatched);
     return { executed: resolved.execute, recipeIngredients, pantryItems, topUnmatched: topUnmatched(unmatched) };
-  } catch (error: unknown) {
+  } finally {
     if (resolved.execute) {
-      await client.query('ROLLBACK');
+      await client.query('SELECT pg_advisory_unlock($1)', [BACKFILL_LOCK_KEY]).catch(() => undefined);
     }
-    throw error;
   }
 };
 

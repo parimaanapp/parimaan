@@ -231,6 +231,68 @@ describe('canonicalise on write (B2b)', () => {
     }
   });
 
+  describe('stale catalog cache (an ingredient deleted by a sync)', () => {
+    const warmCacheThenDeleteOnion = async (): Promise<void> => {
+      // Prime the module cache, then let a "sync" delete the ingredient behind its back.
+      await createRecipe([{ name: 'Pyaz', quantity: 1, unit: 'piece' }]);
+      await db.adminClient.query(`DELETE FROM ingredient_catalog WHERE id = 'onion'`);
+    };
+    const restoreCatalog = async (): Promise<void> => {
+      await db.adminClient.query('DELETE FROM catalog_sync_state');
+      await syncCatalog(db.adminClient, BUNDLE);
+      resetCatalogCacheForTesting();
+    };
+
+    it('createRecipe falls back to a null id instead of failing on the FK', async () => {
+      await warmCacheThenDeleteOnion();
+      try {
+        const recipeId = await createRecipe([
+          { name: 'Pyaz', quantity: 2, unit: 'piece' },
+          { name: 'namak', quantity: 1, unit: 'tsp' },
+        ]);
+        const rows = await ingredientsOf(recipeId);
+        expect(rows).toHaveLength(2);
+        expect(rows[0]).toMatchObject({ ingredientId: null, catalogMatch: null });
+        expect(rows[1]).toMatchObject({ ingredientId: 'salt', catalogMatch: 'resolved' });
+      } finally {
+        await restoreCatalog();
+      }
+    });
+
+    it('pantry adds fall back the same way', async () => {
+      await warmCacheThenDeleteOnion();
+      try {
+        await createAddPantryItemHandler(deps)(
+          event({ householdId, input: { name: 'kanda', quantity: 3, unit: 'piece' } }, SUB, 'addPantryItem'),
+        );
+        await createBulkAddPantryItemsHandler(deps)(
+          event({ householdId, items: [{ name: 'pyaz', quantity: 1, unit: 'kg' }] }, SUB, 'bulkAddPantryItems'),
+        );
+        const rows = await pantryOf();
+        expect(rows).toHaveLength(2);
+        expect(rows.every((row) => row.ingredientId === null && row.catalogMatch === null)).toBe(true);
+      } finally {
+        await restoreCatalog();
+      }
+    });
+
+    it('a rename to a deleted ingredient falls back too', async () => {
+      const added = await createAddPantryItemHandler(deps)(
+        event({ householdId, input: { name: 'Mystery', quantity: 1, unit: 'kg' } }, SUB, 'addPantryItem'),
+      );
+      await warmCacheThenDeleteOnion();
+      try {
+        const renamed = await createUpdatePantryItemHandler(deps)(
+          event({ id: added.id, input: { name: 'pyaz' } }, SUB, 'updatePantryItem'),
+        );
+        expect(renamed.name).toBe('Onion');
+        expect((await pantryOf())[0]).toMatchObject({ ingredientId: null, catalogMatch: null });
+      } finally {
+        await restoreCatalog();
+      }
+    });
+  });
+
   describe('shopping list', () => {
     const seed = async (client: PoolClient): Promise<{ recipeId: string; recipe2Id: string }> => {
       const make = async (title: string): Promise<string> =>

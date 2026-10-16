@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 
 import type { CatalogMatch } from '../domain/canonicaliseIngredient.js';
+import { withIngredientFkFallback } from './ingredientFkFallback.js';
 
 export type RecipeSourceType = 'user' | 'url' | 'curated' | 'ai' | 'freeform_ai';
 
@@ -313,7 +314,15 @@ export interface InsertRecipeIngredientInput {
   catalogMatch?: CatalogMatch | null;
 }
 
-export const insertRecipeIngredient = async (
+export const insertRecipeIngredient = (
+  client: PoolClient,
+  input: InsertRecipeIngredientInput,
+): Promise<RecipeIngredientRow> =>
+  withIngredientFkFallback(client, (input.ingredientId ?? null) !== null, (drop) =>
+    insertRecipeIngredientRow(client, drop ? { ...input, ingredientId: null, catalogMatch: null } : input),
+  );
+
+const insertRecipeIngredientRow = async (
   client: PoolClient,
   input: InsertRecipeIngredientInput,
 ): Promise<RecipeIngredientRow> => {

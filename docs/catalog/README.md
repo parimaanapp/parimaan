@@ -55,9 +55,9 @@ Every path below resolves each name with `resolveIngredient` (module-cached cata
 
 Rules:
 
-- **Never fails a save.** A catalog load error or an empty catalog (sync not run yet) is logged and the row is stored as typed with `catalog_match = NULL`.
+- **Never fails a save.** A catalog load error or an empty catalog (sync not run yet) logs one structured line (`{"event":"catalog_unavailable",...}`, suitable for a CloudWatch metric filter) and the row is stored as typed with `catalog_match = NULL`; the backfill reconciles those rows. The cached catalog can be up to 10 minutes stale, so an id deleted by a sync may still resolve: inserts and pantry renames run inside a savepoint and, on that FK violation only, retry with `ingredient_id`/`catalog_match` NULL (logged as `ingredient_id_stale`).
 - **Unresolved and ambiguous names are kept as typed**, `ingredient_id = NULL`, flagged. An ambiguous name never picks a candidate.
-- **Nothing is lost silently.** Recipe lines: words in `(...)` that the canonical name does not carry move into `notes` ("Onion (finely chopped)" becomes `Onion`, notes `finely chopped`). Pantry rows have no notes column, so when resolving would drop a qualifier the typed name is kept and only the id is recorded.
+- **Nothing is lost silently.** What the typed name says beyond the canonical name is: bracketed parts the canonical name's own words do not cover (including an unbalanced tail such as `Onion (finely chopped`, and extra groups after a parenthesised canonical name such as `Ragi (Finger Millet, Whole) (sprouted)`), and filler words the resolver ignores (`fresh`, `organic`, `large`, `small`, `medium`, `big`). Recipe lines: that text is appended to `notes` ("Small potato" becomes `Potato`, notes `small`), de-duplicated by whole `;`-separated segment. Pantry rows have no notes column, so when anything would be lost the typed name is kept and only the id is recorded.
 - **Unit conversion on write is narrow.** Only recipe lines, and only when the written unit is not in the ingredient's `allowed_units` AND `unit_conversions` (ingredient scope, then subcategory scope) defines a factor into an allowed unit. The quantity is converted, rounded to 3 decimals, and the original amount is appended to `notes` (`1.5 cup`). Any other unit is stored untouched. Pantry quantities and units are never rewritten.
 - `category` and `is_staple` pass through unchanged, so salt and pepper stay staples.
 
@@ -72,7 +72,7 @@ Rules:
 
 `pnpm --filter ./api catalog:backfill` (`api/scripts/backfillIngredientIds.ts`, logic in `api/src/catalog/backfillIngredients.ts`):
 
-- **Dry run by default**: reads every row, prints counts (scanned, would update, resolved / ambiguous / unresolved per table) and the most frequent unmatched names (a curation backlog; no household data). `--execute` writes everything in one transaction under an advisory lock.
+- **Dry run by default**: reads every row (no locks), prints counts (scanned, would update, resolved / ambiguous / unresolved per table) and the most frequent unmatched names (a curation backlog; no household data). `--execute` takes a session advisory lock (one backfill at a time) and commits every batch of 200 rows in its own short transaction, selecting with `FOR UPDATE SKIP LOCKED`: the state planned from is the state overwritten, a concurrent rename is never clobbered, nothing waits on app writes, and a failure keeps earlier batches. Rows a request had locked are skipped; re-run until `would update` / `updated` is 0.
 - **Idempotent**: canonical names re-resolve to themselves and a converted unit is an allowed unit, so a second run changes nothing. It also picks up rows that did not resolve earlier once the catalog gains an alias.
 - Needs a role that bypasses RLS (superuser or `BYPASSRLS`, as the data migrations do); it checks this and refuses otherwise.
 - Environment: `PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD` (optional `PGSERVERNAME`). The catalog must already be synced. No deploy runs it; run it by hand per environment, dry run first.

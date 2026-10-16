@@ -1,12 +1,17 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { Pool } from 'pg';
+import { Client, Pool } from 'pg';
 import { startTestDatabase } from '../testing/postgres.js';
 import type { TestDatabase } from '../testing/postgres.js';
 import { syncCatalog } from './syncCatalog.js';
 import type { CatalogBundle } from './buildBundle.js';
 import { resetCatalogCacheForTesting, loadCatalog } from '../repositories/catalogRepository.js';
 import { createCanonicaliser } from '../domain/canonicaliseIngredient.js';
-import { assertCanBypassRowSecurity, formatBackfillReport, runIngredientBackfill } from './backfillIngredients.js';
+import {
+  assertCanBypassRowSecurity,
+  formatBackfillReport,
+  runIngredientBackfill,
+} from './backfillIngredients.js';
+import type { BackfillQueryClient } from './backfillIngredients.js';
 
 const BUNDLE: CatalogBundle = {
   ingredients: [
@@ -138,5 +143,95 @@ describe('runIngredientBackfill', () => {
     const second = await runIngredientBackfill(db.adminClient, await canonicaliser(), { execute: true });
     expect(second.recipeIngredients.changed).toBe(0);
     expect(second.pantryItems.changed).toBe(0);
+  });
+
+  describe('concurrency and failure handling', () => {
+    const seedPantry = async (names: string[]): Promise<string[]> => {
+      await db.adminClient.query('DELETE FROM pantry_items');
+      const household = (await db.adminClient.query('SELECT id FROM households LIMIT 1')).rows[0].id as string;
+      const user = (await db.adminClient.query('SELECT id FROM users LIMIT 1')).rows[0].id as string;
+      const ids: string[] = [];
+      for (const name of names) {
+        const row = await db.adminClient.query(
+          `INSERT INTO pantry_items (household_id, name, quantity, unit, added_by) VALUES ($1, $2, 1, 'kg', $3) RETURNING id`,
+          [household, name, user],
+        );
+        ids.push(row.rows[0].id as string);
+      }
+      return ids;
+    };
+
+    it('does not block on, or overwrite, a row a concurrent request has locked and renamed', async () => {
+      const [id] = await seedPantry(['pyaz']);
+      const other = new Client({ connectionString: db.uri });
+      await other.connect();
+      try {
+        await other.query('BEGIN');
+        await other.query(`UPDATE pantry_items SET name = 'Mystery Powder' WHERE id = $1`, [id]);
+
+        const report = await runIngredientBackfill(db.adminClient, await canonicaliser(), { execute: true });
+        expect(report.pantryItems.scanned).toBe(0);
+
+        await other.query('COMMIT');
+      } finally {
+        await other.end();
+      }
+      const afterRename = await db.adminClient.query('SELECT name, ingredient_id FROM pantry_items WHERE id = $1', [id]);
+      expect(afterRename.rows[0]).toEqual({ name: 'Mystery Powder', ingredient_id: null });
+
+      // The next run sees the committed name and classifies that, not the stale one.
+      await runIngredientBackfill(db.adminClient, await canonicaliser(), { execute: true });
+      const final = await db.adminClient.query('SELECT name, catalog_match FROM pantry_items WHERE id = $1', [id]);
+      expect(final.rows[0]).toEqual({ name: 'Mystery Powder', catalog_match: 'unresolved' });
+    });
+
+    it('commits each batch on its own, so a later failure keeps earlier batches', async () => {
+      await seedPantry(['pyaz', 'kanda', 'chawal']);
+      let updates = 0;
+      const failing: BackfillQueryClient = {
+        query: async (text, values) => {
+          if (text.includes('UPDATE pantry_items')) {
+            updates += 1;
+            if (updates === 2) {
+              throw new Error('write failed');
+            }
+          }
+          return db.adminClient.query(text, values as unknown[]);
+        },
+      };
+      await expect(
+        runIngredientBackfill(failing, await canonicaliser(), { execute: true, batchSize: 1 }),
+      ).rejects.toThrow('write failed');
+      const done = await db.adminClient.query(`SELECT count(*)::int AS n FROM pantry_items WHERE catalog_match IS NOT NULL`);
+      expect(done.rows[0].n).toBe(1);
+      // Re-running finishes the rest.
+      await runIngredientBackfill(db.adminClient, await canonicaliser(), { execute: true, batchSize: 1 });
+      const all = await db.adminClient.query(`SELECT count(*)::int AS n FROM pantry_items WHERE catalog_match IS NOT NULL`);
+      expect(all.rows[0].n).toBe(3);
+    });
+
+    it('reports the original error when the rollback itself fails', async () => {
+      const calls: string[] = [];
+      const broken: BackfillQueryClient = {
+        query: async (text) => {
+          calls.push(text);
+          if (text.includes('pg_roles')) {
+            return { rows: [{ bypass: true }] };
+          }
+          if (text.includes('pg_try_advisory_lock')) {
+            return { rows: [{ locked: true }] };
+          }
+          if (text === 'ROLLBACK') {
+            throw new Error('connection lost during rollback');
+          }
+          if (text.includes('FROM recipe_ingredients')) {
+            throw new Error('read failed');
+          }
+          return { rows: [] };
+        },
+      };
+      await expect(runIngredientBackfill(broken, await canonicaliser(), { execute: true })).rejects.toThrow('read failed');
+      expect(calls).toContain('ROLLBACK');
+    });
   });
 });

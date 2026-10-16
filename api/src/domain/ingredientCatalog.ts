@@ -114,7 +114,7 @@ const foldKey = (key: string): string => key.split(' ').map(foldPlural).join(' '
 const tokenSetKey = (key: string): string => key.split(' ').filter(Boolean).sort().join(' ');
 
 /** Descriptors that never change which product is meant. */
-const FILLER_WORDS: ReadonlySet<string> = new Set(['fresh', 'organic', 'large', 'small', 'medium', 'big']);
+export const FILLER_WORDS: ReadonlySet<string> = new Set(['fresh', 'organic', 'large', 'small', 'medium', 'big']);
 const MAX_TOKENS = 8;
 const HEAD_NOUN = 'dal';
 const HEAD_NOUN_CATEGORY = 'dal';

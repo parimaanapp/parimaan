@@ -39,10 +39,11 @@ describe('loadIngredientCanonicaliser', () => {
   });
 
   it('falls back to the identity canonicaliser when the catalog cannot be read, so a save never fails', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const canonicaliser = await loadIngredientCanonicaliser(pool, () => Promise.reject(new Error('db down')));
     expect(canonicaliser).toBe(IDENTITY_CANONICALISER);
-    expect(error).toHaveBeenCalled();
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toMatchObject({ event: 'catalog_unavailable', error: 'db down' });
     error.mockRestore();
   });
 
@@ -59,7 +60,7 @@ describe('loadUnitConverter', () => {
   });
 
   it('returns undefined (physical families only) when the catalog cannot be read', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     expect(await loadUnitConverter(pool, () => Promise.reject(new Error('db down')))).toBeUndefined();
     error.mockRestore();
   });

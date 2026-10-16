@@ -6,6 +6,7 @@ import type { UnitConverter } from '../domain/ingredientConversion.js';
 import { ingredientsMatch, unitsCompatible } from '../domain/shoppingListGeneration.js';
 import type { DeductionLine } from '../domain/pantryDeduction.js';
 import type { CatalogMatch } from '../domain/canonicaliseIngredient.js';
+import { withIngredientFkFallback } from './ingredientFkFallback.js';
 
 export interface PantryItemRow {
   id: string;
@@ -79,10 +80,12 @@ export interface InsertPantryItemInput {
   catalogMatch?: CatalogMatch | null;
 }
 
-export const insertPantryItem = async (
-  client: PoolClient,
-  input: InsertPantryItemInput,
-): Promise<PantryItemRow> => {
+export const insertPantryItem = (client: PoolClient, input: InsertPantryItemInput): Promise<PantryItemRow> =>
+  withIngredientFkFallback(client, (input.ingredientId ?? null) !== null, (drop) =>
+    insertPantryItemRow(client, drop ? { ...input, ingredientId: null, catalogMatch: null } : input),
+  );
+
+const insertPantryItemRow = async (client: PoolClient, input: InsertPantryItemInput): Promise<PantryItemRow> => {
   const result = await client.query<RawPantryItemRow>(
     `INSERT INTO pantry_items
        (household_id, name, quantity, unit, category, is_staple, expiry_date, low_threshold, added_by,
@@ -515,7 +518,16 @@ const patchParameters = (id: string, patch: PantryItemPatch): unknown[] => [
   patch.catalogMatch ?? null,
 ];
 
-export const updatePantryItemPartial = async (
+export const updatePantryItemPartial = (
+  client: PoolClient,
+  id: string,
+  patch: PantryItemPatch,
+): Promise<PantryItemRow | null> =>
+  withIngredientFkFallback(client, (patch.ingredientId ?? null) !== null, (drop) =>
+    updatePantryItemPartialRow(client, id, drop ? { ...patch, ingredientId: null, catalogMatch: null } : patch),
+  );
+
+const updatePantryItemPartialRow = async (
   client: PoolClient,
   id: string,
   patch: PantryItemPatch,

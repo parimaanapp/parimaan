@@ -1,4 +1,4 @@
-import { resolveIngredient } from './ingredientCatalog.js';
+import { FILLER_WORDS, normaliseKey, resolveIngredient } from './ingredientCatalog.js';
 import type { CatalogEntry, CatalogIndex } from './ingredientCatalog.js';
 import type { ConversionLookup } from './ingredientConversion.js';
 import { canonicalizePantryUnit } from './pantryUnits.js';
@@ -48,39 +48,84 @@ export interface IngredientCanonicaliser {
 }
 
 const PARENTHETICAL = /[([]([^)\]]*)[)\]]/g;
+const UNBALANCED_TAIL = /[([]([^)\]]*)$/;
 const QUANTITY_DECIMALS = 3;
 
 type Lookup =
   | { readonly status: 'resolved'; readonly entry: CatalogEntry }
   | { readonly status: 'ambiguous' | 'unresolved' };
 
-const lookupName = (name: string, index: CatalogIndex): Lookup => {
+const classify = (name: string, index: CatalogIndex): Lookup | null => {
   const result = resolveIngredient(name, index);
   if (result === null) {
-    return { status: 'unresolved' };
+    return null;
   }
   return result.status === 'resolved' ? { status: 'resolved', entry: result.entry } : { status: 'ambiguous' };
 };
 
-const hasParenthetical = (text: string): boolean => /[([]/.test(text);
+const LAST_GROUP = /\s*([([][^()[\]]*[)\]]|[([][^)\]]*)\s*$/;
+const MAX_STRIPS = 3;
 
-const parentheticalsOf = (text: string): string[] =>
-  [...text.matchAll(PARENTHETICAL)].map((match) => (match[1] ?? '').trim()).filter((part) => part !== '');
+/**
+ * Resolves the typed name; when that fails, drops trailing bracketed parts one
+ * at a time ("Ragi (Finger Millet, Whole) (sprouted)" -> "Ragi (Finger Millet,
+ * Whole)"). The dropped text is recovered by `lostText`, never discarded.
+ */
+const lookupName = (name: string, index: CatalogIndex): Lookup => {
+  let candidate = name;
+  for (let strip = 0; strip <= MAX_STRIPS; strip += 1) {
+    const found = classify(candidate, index);
+    if (found !== null) {
+      return found;
+    }
+    const shorter = candidate.replace(LAST_GROUP, '');
+    if (shorter === candidate || shorter.trim() === '') {
+      break;
+    }
+    candidate = shorter;
+  }
+  return { status: 'unresolved' };
+};
+
+/** Every bracketed part of a typed name, including the text after an unbalanced opening bracket. */
+const parentheticalsOf = (text: string): string[] => {
+  const balanced = [...text.matchAll(PARENTHETICAL)].map((match) => (match[1] ?? '').trim());
+  const tail = (text.replace(PARENTHETICAL, ' ').match(UNBALANCED_TAIL)?.[1] ?? '').trim();
+  return [...balanced, tail].filter((part) => part !== '');
+};
+
+const tokensOf = (text: string): string[] => normaliseKey(text, { keepParentheticals: true }).split(' ').filter(Boolean);
+
+/** A typed part is kept by the canonical name when all its words already appear in it. */
+const carriedBy = (part: string, entry: CatalogEntry): boolean => {
+  const canonical = new Set(tokensOf(entry.canonicalName));
+  return tokensOf(part).every((token) => canonical.has(token));
+};
+
+/** Filler words (fresh, small, ...) the resolver ignores, when the canonical name does not itself contain them. */
+const droppedFillers = (original: string, entry: CatalogEntry): string[] => {
+  const canonical = new Set(tokensOf(entry.canonicalName));
+  return normaliseKey(original)
+    .split(' ')
+    .filter((token) => FILLER_WORDS.has(token) && !canonical.has(token));
+};
+
+/** Everything the typed name said that the canonical name does not: bracketed qualifiers, then filler words. */
+const lostText = (original: string, entry: CatalogEntry): string[] => [
+  ...parentheticalsOf(original).filter((part) => !carriedBy(part, entry)),
+  ...droppedFillers(original, entry),
+];
 
 const appendNote = (notes: string | null, addition: string): string => {
   if (notes === null || notes.trim() === '') {
     return addition;
   }
-  return notes.toLowerCase().includes(addition.toLowerCase()) ? notes : `${notes}; ${addition}`;
+  const segments = notes.split(';').map((segment) => segment.trim().toLowerCase());
+  return segments.includes(addition.trim().toLowerCase()) ? notes : `${notes}; ${addition}`;
 };
 
-/** Words in (...) that the canonical name does not carry would otherwise vanish with the rename. */
-const withDroppedQualifiers = (original: string, entry: CatalogEntry, notes: string | null): string | null => {
-  if (!hasParenthetical(original) || hasParenthetical(entry.canonicalName)) {
-    return notes;
-  }
-  return parentheticalsOf(original).reduce<string | null>((acc, part) => appendNote(acc, part), notes);
-};
+const withLostText = (original: string, entry: CatalogEntry, notes: string | null): string | null =>
+  lostText(original, entry).reduce<string | null>((acc, part) => appendNote(acc, part), notes);
 
 const roundQuantity = (value: number): number => Number(value.toFixed(QUANTITY_DECIMALS));
 
@@ -122,7 +167,7 @@ export const canonicaliseRecipeLine = (line: RecipeLineInput, context: Canonical
   if (found.status !== 'resolved') {
     return { ...line, ingredientId: null, catalogMatch: found.status };
   }
-  const notes = withDroppedQualifiers(line.name, found.entry, line.notes);
+  const notes = withLostText(line.name, found.entry, line.notes);
   const measure = convertMeasure(line, notes, found.entry, context);
   return {
     name: found.entry.canonicalName,
@@ -145,7 +190,7 @@ export const canonicalisePantryItem = (name: string, context: CanonicaliserConte
   if (found.status !== 'resolved') {
     return { name, ingredientId: null, catalogMatch: found.status };
   }
-  const losesQualifier = hasParenthetical(name) && !hasParenthetical(found.entry.canonicalName);
+  const losesQualifier = lostText(name, found.entry).length > 0;
   return {
     name: losesQualifier ? name : found.entry.canonicalName,
     ingredientId: found.entry.id,

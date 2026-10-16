@@ -17,6 +17,9 @@ export const shorthands: ColumnDefinitions | undefined = undefined;
 //                  (`scripts/backfillIngredientIds.ts`) classifies these.
 // The FK is ON DELETE SET NULL because the deploy-time catalog sync deletes
 // ingredients that leave the bundle; the next backfill re-resolves the row.
+// The two indexes are built non-concurrently (a brief write lock): acceptable
+// at current table sizes, and node-pg-migrate runs each migration in a
+// transaction where CREATE INDEX CONCURRENTLY is not allowed.
 // No RLS changes: both tables keep their existing household policies and
 // table-level grants, which already cover new columns.
 

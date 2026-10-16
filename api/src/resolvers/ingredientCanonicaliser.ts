@@ -8,6 +8,22 @@ import type { CatalogSnapshot } from '../repositories/catalogRepository.js';
 
 /** What a resolver needs from the catalog; injectable so resolver tests do not need a database. */
 export type CanonicaliserLoader = (pool: Pool) => Promise<IngredientCanonicaliser>;
+/**
+ * One structured line per skipped canonicalisation, greppable in CloudWatch
+ * (metric filter on `catalog_unavailable`). Rows saved meanwhile have
+ * `catalog_match` NULL; the backfill reconciles them.
+ */
+const warnCatalogUnavailable = (effect: string, error: unknown): void => {
+  console.warn(
+    JSON.stringify({
+      level: 'warn',
+      event: 'catalog_unavailable',
+      effect,
+      error: error instanceof Error ? error.message : String(error),
+    }),
+  );
+};
+
 export type CatalogSnapshotLoader = (pool: Pool) => Promise<CatalogSnapshot>;
 
 /**
@@ -28,7 +44,7 @@ export const loadIngredientCanonicaliser = async (
     }
     return createCanonicaliser({ index: snapshot.index, lookup: snapshot.conversionLookup });
   } catch (error: unknown) {
-    console.error('Ingredient catalog unavailable; saving without canonicalisation:', error);
+    warnCatalogUnavailable('saved_without_canonicalisation', error);
     return IDENTITY_CANONICALISER;
   }
 };
@@ -54,7 +70,7 @@ export const loadCatalogTools = async (
       convert: createUnitConverter(snapshot.conversionLookup),
     };
   } catch (error: unknown) {
-    console.error('Ingredient catalog unavailable; continuing without it:', error);
+    warnCatalogUnavailable('canonicalisation_and_catalog_units_skipped', error);
     return { canonicaliser: IDENTITY_CANONICALISER, convert: undefined };
   }
 };
@@ -68,7 +84,7 @@ export const loadUnitConverter = async (
     const snapshot = await load(pool);
     return snapshot.entries.length === 0 ? undefined : createUnitConverter(snapshot.conversionLookup);
   } catch (error: unknown) {
-    console.error('Ingredient catalog unavailable; using physical unit conversions only:', error);
+    warnCatalogUnavailable('physical_units_only', error);
     return undefined;
   }
 };

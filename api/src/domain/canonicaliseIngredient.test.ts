@@ -33,6 +33,9 @@ const ENTRIES = [
   entry('magaz_a', 'Pumpkin Seeds', ['g'], ['magaz']),
   entry('magaz_b', 'Watermelon Seeds', ['g'], ['magaz']),
   entry('bread_white', 'Bread (White)', ['slice', 'loaf'], ['white bread']),
+  entry('ragi', 'Ragi (Finger Millet, Whole)', ['g'], ['nachni']),
+  entry('potato', 'Potato', ['g', 'piece'], ['aloo']),
+  entry('turmeric', 'Turmeric Powder', ['g', 'tsp'], ['haldi']),
 ];
 const context = {
   index: buildCatalogIndex(ENTRIES),
@@ -106,6 +109,62 @@ describe('canonicaliseRecipeLine', () => {
     expect(canonicaliseRecipeLine(line('chawal', { quantity: 2, unit: null }), context)).toMatchObject({
       quantity: 2,
       unit: null,
+    });
+  });
+});
+
+describe('qualifiers and filler words are never lost (recipe)', () => {
+  it('keeps a typed parenthetical the canonical parentheses do not carry', () => {
+    const result = canonicaliseRecipeLine(line('Ragi (Finger Millet, Whole) (sprouted)'), context);
+    expect(result).toMatchObject({ name: 'Ragi (Finger Millet, Whole)', ingredientId: 'ragi' });
+    expect(result.notes).toBe('sprouted');
+  });
+
+  it('preserves the text of an unbalanced bracket tail', () => {
+    const result = canonicaliseRecipeLine(line('Onion (finely chopped'), context);
+    expect(result).toMatchObject({ name: 'Onion', ingredientId: 'onion' });
+    expect(result.notes).toBe('finely chopped');
+  });
+
+  it('adds a dropped filler word to the notes', () => {
+    const result = canonicaliseRecipeLine(line('Small potato', { notes: 'boiled' }), context);
+    expect(result).toMatchObject({ name: 'Potato', ingredientId: 'potato' });
+    expect(result.notes).toBe('boiled; small');
+  });
+
+  it('notes both a filler and a qualifier', () => {
+    const result = canonicaliseRecipeLine(line('Fresh Onion (red)'), context);
+    expect(result.notes).toBe('red; fresh');
+  });
+
+  it('dedupes notes by whole segment, not substring', () => {
+    expect(canonicaliseRecipeLine(line('Onion (red)', { notes: 'powdered' }), context).notes).toBe('powdered; red');
+    expect(canonicaliseRecipeLine(line('Onion (red)', { notes: 'Red' }), context).notes).toBe('Red');
+    const converted = canonicaliseRecipeLine(line('chawal', { quantity: 1, unit: 'cup', notes: '11 cup pot' }), context);
+    expect(converted.notes).toBe('11 cup pot; 1 cup');
+  });
+});
+
+describe('qualifiers and filler words are never lost (pantry)', () => {
+  it('keeps the typed name for extra parentheticals on a parenthesised canonical name', () => {
+    expect(canonicalisePantryItem('Ragi (Finger Millet, Whole) (sprouted)', context)).toMatchObject({
+      name: 'Ragi (Finger Millet, Whole) (sprouted)',
+      ingredientId: 'ragi',
+    });
+  });
+
+  it('keeps the typed name for an unbalanced tail', () => {
+    expect(canonicalisePantryItem('Onion (finely chopped', context)).toMatchObject({
+      name: 'Onion (finely chopped',
+      ingredientId: 'onion',
+    });
+  });
+
+  it('keeps the typed name when a filler word would be lost', () => {
+    expect(canonicalisePantryItem('Small potato', context)).toMatchObject({
+      name: 'Small potato',
+      ingredientId: 'potato',
+      catalogMatch: 'resolved',
     });
   });
 });
