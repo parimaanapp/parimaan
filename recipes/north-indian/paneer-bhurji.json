@@ -81,10 +81,11 @@
       "isStaple": true
     },
     {
-      "name": "Kasuri Methi Powder",
+      "name": "Dried Fenugreek Leaves",
       "quantity": 0.5,
       "unit": "tsp",
-      "category": "spice"
+      "category": "spice",
+      "notes": "crushed"
     },
     {
       "name": "Salt",

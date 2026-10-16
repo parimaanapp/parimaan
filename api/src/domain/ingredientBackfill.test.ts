@@ -5,6 +5,7 @@ import { createConversionLookup } from './ingredientConversion.js';
 import { createCanonicaliser, IDENTITY_CANONICALISER } from './canonicaliseIngredient.js';
 import { planPantryBackfill, planRecipeIngredientBackfill } from './ingredientBackfill.js';
 import type { PantryBackfillRow, RecipeIngredientBackfillRow } from './ingredientBackfill.js';
+import { catalogBundle } from '../catalog/bundle.js';
 
 const entry = (id: string, name: string, units: string[], aliases: string[] = []): CatalogEntry => ({
   id,
@@ -105,5 +106,37 @@ describe('planPantryBackfill', () => {
   it('keeps a typed qualifier but records the id', () => {
     const update = planPantryBackfill(pantryRow({ name: 'Pyaz (red)' }), canonicaliser);
     expect(update).toMatchObject({ name: 'Pyaz (red)', ingredientId: 'onion', catalogMatch: 'resolved' });
+  });
+});
+
+describe('rows pointing at an ingredient merged away (catalog dedupe)', () => {
+  // The deploy sync deletes the merged ingredient; `ON DELETE SET NULL` leaves
+  // `ingredient_id = NULL` while `catalog_match` still says 'resolved' and the
+  // stored name is the old canonical one. The next backfill must re-resolve.
+  const real = createCanonicaliser({
+    index: buildCatalogIndex(catalogBundle.ingredients),
+    lookup: createConversionLookup(catalogBundle.ingredients, []),
+  });
+
+  it('re-resolves a recipe line to the surviving ingredient and renames it', () => {
+    const update = planRecipeIngredientBackfill(
+      recipeRow({ name: 'Garlic (Clove)', quantity: 4, unit: 'piece', ingredientId: null, catalogMatch: 'resolved' }),
+      real,
+    );
+    expect(update).toMatchObject({ name: 'Garlic', quantity: 4, unit: 'piece', ingredientId: 'garlic', catalogMatch: 'resolved' });
+  });
+
+  it('records the surviving id on a pantry row and keeps the typed qualifier', () => {
+    const update = planPantryBackfill(pantryRow({ name: 'Garlic (Clove)', ingredientId: null, catalogMatch: 'resolved' }), real);
+    expect(update).toMatchObject({ ingredientId: 'garlic', catalogMatch: 'resolved' });
+  });
+
+  it('settles after one pass', () => {
+    const first = planRecipeIngredientBackfill(
+      recipeRow({ name: 'Roasted Cumin Powder', quantity: 1, unit: 'tsp', ingredientId: null, catalogMatch: 'resolved' }),
+      real,
+    );
+    expect(first).toMatchObject({ name: 'Cumin Powder', ingredientId: 'cumin_powder' });
+    expect(planRecipeIngredientBackfill({ ...recipeRow({}), ...first } as RecipeIngredientBackfillRow, real)).toBeNull();
   });
 });

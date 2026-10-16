@@ -12,7 +12,7 @@
     { "name": "Kala Chana", "quantity": 1.5, "unit": "cup", "category": "dal", "notes": "soaked overnight" },
     { "name": "Water", "quantity": 3, "unit": "cup", "category": "beverages" },
     { "name": "Salt", "quantity": 1.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
-    { "name": "Coconut (Grated)", "quantity": 45, "unit": "g", "category": "produce", "notes": "grated" },
+    { "name": "Coconut (Fresh)", "quantity": 45, "unit": "g", "category": "produce", "notes": "grated" },
     { "name": "Coriander Seeds", "quantity": 1, "unit": "tbsp", "category": "spice" },
     { "name": "Dried Red Chilli", "quantity": 3, "unit": "piece", "category": "spice" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "roughly chopped" },

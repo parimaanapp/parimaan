@@ -9,8 +9,7 @@ Powdered Sugar | icing sugar; confectioner sugar; pisi hui cheeni; castor sugar 
 Sugar Cubes | | | 
 Mishri | rock sugar; khadi sakar; kalkandu; kal sakkare; sakkar misri | | 
 Palm Jaggery | karupatti; palm sugar; nolen gur; taadgola | | 
-Jaggery | gur; gud; bellam; vellam; bella; jaggery block | | 160
-Jaggery Powder | gur powder; shakkar powder | | 160
+Jaggery | gur; gud; bellam; vellam; bella; jaggery block; gur powder; shakkar powder; jaggery powder |  | 160
 Honey | shahad; madhu; then | | 
 Maple Syrup | | | 
 Molasses | | | 

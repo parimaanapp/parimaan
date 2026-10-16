@@ -21,10 +21,11 @@
       "category": "grain"
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 100,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Coconut Oil",

@@ -13,7 +13,7 @@
     { "name": "Water", "quantity": 500, "unit": "ml", "category": "beverages", "notes": "cold" },
     { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
     { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice" },
-    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "roasted" },
     { "name": "Mint Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "finely chopped" },
     { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, optional" }
   ],

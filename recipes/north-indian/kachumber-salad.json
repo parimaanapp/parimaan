@@ -16,7 +16,7 @@
     { "name": "Lemon", "quantity": 1, "unit": "piece", "category": "produce", "notes": "juiced" },
     { "name": "Coriander Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "chopped" },
     { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
-    { "name": "Roasted Cumin Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "notes": "optional" }
+    { "name": "Cumin Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "notes": "optional; roasted" }
   ],
   "steps": [
     "Combine the diced cucumber, tomato and onion in a mixing bowl.",

@@ -6,14 +6,11 @@ Raja Mirchi | king chilli; naga chilli; raja mircha; bhut jolokia fresh; ghost p
 Squash (Chayote Shoots) | chowchow shoots; chayote tendrils; squash tendrils; sechium shoots; dragon beard |  | 
 Yongchak | stink bean; petai; parkia; tree bean; sator beans; sataw | 10 | 
 Bhindi (Baby) | baby okra; small bhindi; tender okra; chhoti bhindi; lady finger small | 8 | 
-Mirch (Banana Pepper) | bajji mirchi; bhajji mulaga; milagai bajji | 40 | 
 Cabbage (Savoy) | savoy cabbage; curly cabbage; crinkled cabbage | 800 | 
 Peas in Pod | matar phali; peas pod; green peas pods; matar in shell; pea pods; pattani | 200 | 
 Capsicum (Orange) | orange capsicum; orange bell pepper; orange shimla mirch | 150 | 
 Sweet Potato (White) | white sweet potato; safed shakarkand; white shakarkand; sakkaravalli white | 200 | 
-Tomato (Desi) | desi tomato; country tomato; naati tomato; nattu thakkali; sour tomato; gavran tomato | 70 | 
 Tomato (Roma) | roma tomato; plum tomato; paste tomato; italian tomato | 60 | 
-Onion (Red) | lal pyaz; lal kanda; salad onion; purple onion; erra ullipaya | 100 | 
 ## leafy_herb
 Wild Garlic Leaves | ramps; ramson; bear garlic; jangli lehsun patta; wild garlic |  | 
 Water Cress | watercress; water cress leaves; brahmi watercress; jal kumbhi cress |  | 

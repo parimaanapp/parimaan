@@ -1,6 +1,6 @@
 # Ingredient catalog — DRAFT for founder sign-off
 
-1467 canonical ingredients · 4919 aliases · 15 app categories.
+1450 canonical ingredients · 4933 aliases · 15 app categories.
 
 Columns: **Canonical name** (what the app stores and shows) · **Also called** (aliases mapped to it on import) · **Units** (first is the default).
 
@@ -463,7 +463,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Val (Field Beans) | vaal; field beans dried; avarekalu dried; dried field beans |
 | White Peas | safed vatana; white vatana; dried white peas |
 
-## Dry Goods — 109
+## Dry Goods — 106
 ### flour — 13  ·  units: `g / kg / cup`
 | Canonical name | Also called |
 |---|---|
@@ -481,7 +481,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Sooji (Fine) | bombay rava; fine rava; idli rava (fine) |
 | Vermicelli | semiya; sewai; seviyan; seviya |
 
-### nut_seed — 61  ·  units: `g / kg / cup / tbsp`
+### nut_seed — 59  ·  units: `g / kg / cup / tbsp`
 | Canonical name | Also called |
 |---|---|
 | Almonds | badam; badham; almond; california almonds; mamra almonds (premium) |
@@ -492,8 +492,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Black Raisins | kali kishmish; munakka; dried black grapes |
 | Brazil Nuts |  |
 | Cantaloupe Seeds | kharbuja ke beej; melon seeds |
-| Cashew Nuts | kaju; mundiri; godambi; jeedipappu; cashews; cashewnuts; kaju whole |
-| Cashew Pieces | kaju tukda; broken cashews; kaju pieces |
+| Cashew Nuts | kaju; mundiri; godambi; jeedipappu; cashews; cashewnuts; kaju whole; kaju tukda; broken cashews; kaju pieces; cashew pieces |
 | Chia Seeds | sabja; sabja seeds; tukmaria; basil seeds; falooda seeds |
 | Chironji | charoli; chiraunji; achar seeds; piyal seeds |
 | Coconut (Desiccated) | sukha nariyal; nariyal powder; coconut flakes; shredded coconut; coconut grated dry |
@@ -524,7 +523,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Mixed Dry Fruits | dry fruits mix; trail mix; meva |
 | Mixed Nuts | assorted nuts; nut mix; roasted mixed nuts; trail mix nuts |
 | Peanut Chikki |  |
-| Peanuts | moongfali; mungfali; shengdana; verkadalai; kadalekai; groundnuts; verkadalai; peanut |
+| Peanuts | moongfali; mungfali; shengdana; verkadalai; kadalekai; groundnuts; verkadalai; peanut; bhuna moongfali; roasted groundnuts; fried peanuts; shengdana roasted; roasted peanuts |
 | Peanuts (Fried Masala) | masala peanuts; masala shengdana; masala moongphali; chatpata peanuts |
 | Peanuts (Skinless) | blanched peanuts; peeled peanuts |
 | Pecans |  |
@@ -538,7 +537,6 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Raisins | kishmish; kishmish; dried grapes; kismis; drakshi; ular thiratchai; sultanas |
 | Roasted Chana | bhuna chana; dalia (roasted chana); putani; pottukadalai; fried gram; hurigadale; futana; roasted gram |
 | Roasted Chana Dal | pottukadalai dal; dalia chana |
-| Roasted Peanuts | bhuna moongfali; roasted groundnuts; fried peanuts; shengdana roasted |
 | Sesame Seeds (Toasted) | roasted til; roasted sesame |
 | Sunflower Seeds | surajmukhi ke beej |
 | Walnut Halves |  |
@@ -546,7 +544,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Walnuts (Kashmiri Kernels) | akhrot giri; kashmiri akhrot; walnut kernels; walnut giri |
 | Watermelon Seeds | magaz; tarbooz ke beej |
 
-### salt_sugar — 30  ·  units: `g / kg / tsp / tbsp / cup`
+### salt_sugar — 29  ·  units: `g / kg / tsp / tbsp / cup`
 | Canonical name | Also called |
 |---|---|
 | Agave Syrup | agave nectar; blue agave; agave |
@@ -554,12 +552,11 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Chikki Jaggery | chikki gud; chikki gul; chikki bellam; chikki vellam |
 | Honey | shahad; madhu; then |
 | Honey (Raw) | raw honey; unprocessed honey; forest honey; wild honey; shahad raw; jungle honey |
-| Jaggery | gur; gud; bellam; vellam; bella; jaggery block |
+| Jaggery | gur; gud; bellam; vellam; bella; jaggery block; gur powder; shakkar powder; jaggery powder |
 | Jaggery (Coconut) | thengai vellam; kobbari bellam; nariyal gud; kerala coconut jaggery; palm jaggery coconut |
 | Jaggery (Date Palm Patali) | patali gur; patali jaggery; khejur gur; date palm jaggery; khajur gur; nolen gud |
 | Jaggery (Kolhapuri) | kolhapuri gul; kolhapur jaggery; kolhapuri gud; maharashtrian gul; kolhapuri jaggery |
 | Jaggery (Sugarcane Liquid Kakvi) | kakvi jaggery; kakavi; kakavi gul; sugarcane syrup; sugarcane molasses; ras gud |
-| Jaggery Powder | gur powder; shakkar powder |
 | Kosher Salt | coarse salt; sea salt coarse; kosher; rock salt coarse |
 | Liquid Jaggery | gur syrup; kakvi; kolhapuri jaggery syrup |
 | Maple Syrup |  |
@@ -751,8 +748,8 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Wheat Flakes | whole wheat flakes; wheat cereal; wheat flake cereal |
 | Wheat Germ | gehun ka germ; gehu germ |
 
-## Meat & Fish (NEW) — 131
-### fish — 74  ·  units: `g / kg / piece`
+## Meat & Fish (NEW) — 130
+### fish — 73  ·  units: `g / kg / piece`
 | Canonical name | Also called |
 |---|---|
 | Anchovies |  |
@@ -806,8 +803,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Pomfret (Black) | halwa; kala paplet; black pomfret |
 | Pomfret (Silver) | silver pomfret; silver paplet; chandi paplet; chandi pomfret; pomfret silver; white pomfret silver |
 | Pomfret (White) | white pomfret; safed paplet; avoli; vavval; vaval |
-| Prawns | shrimp; jhinga; chemmeen; konju; yerra; kolambi; kolim |
-| Prawns (Large) | tiger prawns; king prawns; jumbo prawns |
+| Prawns | shrimp; jhinga; chemmeen; konju; yerra; kolambi; kolim; tiger prawns; king prawns; jumbo prawns; prawns (large) |
 | Puti | puti mach; puti machh; punti; punti fish; swamp barb; puntius |
 | Ravas | indian salmon; rawas; kala |
 | Ribbon Fish | ribbonfish; bala; bale; vala; vaala; baala |
@@ -994,8 +990,8 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Xanthan Gum | xanthan; xanthan powder; gluten free binder; thickener xanthan |
 | Yeast (Dry) | instant yeast; active dry yeast; khamir |
 
-## Produce — 295
-### fruit — 86  ·  units: `g / kg / piece / dozen`
+## Produce — 287
+### fruit — 85  ·  units: `g / kg / piece / dozen`
 | Canonical name | Also called |
 |---|---|
 | Apple | seb; sebu; apple (red) |
@@ -1031,7 +1027,6 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Karonda | karonda; karwanda; kalakkai |
 | Kiwi |  |
 | Lemon (Gondhoraj) | gondhoraj; gandhoraj lebu; gondhoraj lebu |
-| Lemon (Sweet) |  |
 | Lime (Key) | key lime; mexican lime; small lime; kaffir lime fruit |
 | Litchi | lichi; lychee |
 | Mandarin |  |
@@ -1077,7 +1072,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Rose Apple | jamrul; jamrool; water apple; jambu; chambakka; champakka |
 | Star Fruit | kamrakh; carambola |
 | Strawberry |  |
-| Sweet Lime | mosambi; mosambi; sathukudi; battayi; sweet lime juice fruit |
+| Sweet Lime | mosambi; mosambi; sathukudi; battayi; sweet lime juice fruit; lemon (sweet) |
 | Tamarind Fruit (Fresh) |  |
 | Tangerine | clementine; satsuma; easy peel orange |
 | Watermelon | tarbooz; kalingad; tarbuj; kallangadi; pucchakaya |
@@ -1085,7 +1080,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Wood Apple | bael; bel; kaith; kath bel; vilam pazham; belada hannu; velaga |
 | Wood Apple (Kaith) | kavath; kapitha; velaga pandu; elephant apple wood |
 
-### leafy_herb — 60  ·  units: `bunch / g / tbsp`
+### leafy_herb — 59  ·  units: `bunch / g / tbsp`
 | Canonical name | Also called |
 |---|---|
 | Agathi Leaves | agati; hummingbird tree; agase soppu |
@@ -1118,8 +1113,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Lettuce Leaves |  |
 | Marigold Petals | genda phool; edible marigold; zendu petals; chendu petals |
 | Microgreens |  |
-| Mint Leaves | pudina; pudina patta; pudhina; pudina leaves; mint |
-| Mint Sprigs |  |
+| Mint Leaves | pudina; pudina patta; pudhina; pudina leaves; mint; mint sprigs |
 | Mulla Keerai |  |
 | Mustard Greens | sarson ka saag; sarson saag; mustard leaves |
 | Neem Leaves | neem; neem patta; kadu limbu; veppilai; vepa aaku; bevu |
@@ -1149,7 +1143,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Water Cress | watercress; water cress leaves; brahmi watercress; jal kumbhi cress |
 | Wild Garlic Leaves | ramps; ramson; bear garlic; jangli lehsun patta; wild garlic |
 
-### vegetable — 149  ·  units: `g / kg / piece`
+### vegetable — 143  ·  units: `g / kg / piece`
 | Canonical name | Also called |
 |---|---|
 | Ambade (Gongura) Stem |  |
@@ -1167,7 +1161,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Bean Sprouts | moong bean sprouts; taugey; beansprouts; toge |
 | Beetroot | chukandar; beet; beetroot |
 | Bell Pepper Mix |  |
-| Bhavnagri Chilli | bhavnagri mirch; mild chilli; bajji chilli; banana pepper; mirchi bajji chilli |
+| Bhavnagri Chilli | bhavnagri mirch; mild chilli; bajji chilli; banana pepper; mirchi bajji chilli; bajji mirchi; bhajji mulaga; milagai bajji; mirch (banana pepper) |
 | Bhindi (Baby) | baby okra; small bhindi; tender okra; chhoti bhindi; lady finger small |
 | Bitter Gourd | karela; karle; pavakkai; hagalakayi; kakarakaya; bitter melon |
 | Bottle Gourd | lauki; dudhi; ghiya; sorakkai; sorekayi; anapakaya; doodhi |
@@ -1192,8 +1186,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Chayote | chow chow; bangalore brinjal; seemai badanekayi; chow chow vegetable |
 | Cherry Tomato |  |
 | Cluster Beans | gavar; gawar; guar; kothavarangai; gorikayi; goruchikkudu |
-| Coconut (Fresh) | nariyal; thengai; khobra; kobbari; tenginakayi; fresh coconut |
-| Coconut (Grated) | nariyal grated; kasu thengai; grated coconut; coconut grated |
+| Coconut (Fresh) | nariyal; thengai; khobra; kobbari; tenginakayi; fresh coconut; nariyal grated; kasu thengai; grated coconut; coconut grated; coconut (grated) |
 | Colocasia (Arbi) | arbi; arvi; seppankizhangu; kesavedantu; chaamagadda; taro root; kacchu |
 | Corn (Sweet) | bhutta; makka; sweet corn; corn cob; makkai |
 | Cowpea Pods | lobia pods; long beans; yardlong bean; barbati; chawli pods |
@@ -1208,9 +1201,8 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Fennel Bulb | saunf bulb |
 | French Beans | farasbi; green beans; beans; fansi |
 | Fresh Green Chickpeas | hara chana; choliya; green chickpeas; hare chane; harbara; hara bhara chana |
-| Garlic | lehsun; lasun; poondu; bellulli; vellulli; garlic bulb |
+| Garlic | lehsun; lasun; poondu; bellulli; vellulli; garlic clove; lehsun kali; garlic (clove) |
 | Garlic (Baby/Single Clove) | ekpothi garlic; single pod garlic; kashmiri garlic |
-| Garlic (Clove) | garlic clove; lehsun kali |
 | Gilki | sponge gourd (small) |
 | Ginger | adrak; inji; shunti; allam; fresh ginger |
 | Green Chilli | hari mirch; pachi mirchi; pachai milagai; hasi menasinakayi; mirapakaya; chillies |
@@ -1231,7 +1223,6 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Lotus Stem | kamal kakdi; kamal kakri; nadru; lotus root; thamarai thandu |
 | Madras Cucumber | sambar cucumber; dosakai; mogi kai; yellow cucumber; sambar vellarikai |
 | Methi Dana Sprouts | sprouted methi |
-| Mirch (Banana Pepper) | bajji mirchi; bhajji mulaga; milagai bajji |
 | Mogri | rat tail radish; mogri pods; rattail radish; mogri phali |
 | Moong Sprouts | sprouted moong; moong sprouts |
 | Moringa Pods | shevgyachya shenga; munaga kaya; nugge kai |
@@ -1239,8 +1230,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Mushroom (Oyster) | oyster mushroom |
 | Mushroom (Shiitake) |  |
 | Okra | bhindi; ladyfinger; ladies finger; vendakkai; bendekayi; bendakaya |
-| Onion | pyaz; kanda; vengayam; eerulli; ullipaya; red onion; pyaaz |
-| Onion (Red) | lal pyaz; lal kanda; salad onion; purple onion; erra ullipaya |
+| Onion | pyaz; kanda; vengayam; eerulli; ullipaya; red onion; pyaaz; lal pyaz; lal kanda; salad onion; purple onion; erra ullipaya; onion (red) |
 | Papdi (Flat Beans) | papdi beans; sem phali; flat beans; chikkudu |
 | Parsnip |  |
 | Parval | palwal; patal; potol; potoli |
@@ -1249,7 +1239,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Pink Radish |  |
 | Pointed Gourd | parwal; patol; kovakkai (parwal) |
 | Potato | aloo; batata; urulaikizhangu; alugadde; bangaladumpa |
-| Pumpkin | kaddu; bhopla; sitaphal; kumro; parangikai; kumbalakayi |
+| Pumpkin | kaddu; bhopla; sitaphal; kumro; parangikai; kumbalakayi; peela kaddu; kaddu yellow; yellow pumpkin |
 | Purple Yam | ratalu kand; dioscorea |
 | Radish (Red) |  |
 | Radish (White) | mooli; muli; mullangi; mullangi; daikon |
@@ -1286,8 +1276,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Taro Tuber (Large) | kachalu; kachu; mukhi; chamadumpa |
 | Tender Coconut | nariyal pani; elaneer; ilaneer; kobbari bondam; young coconut |
 | Tinda | apple gourd; round gourd; indian round gourd; tinde; dhemse; tinda gourd |
-| Tomato | tamatar; thakkali; tamate; tomatoes |
-| Tomato (Desi) | desi tomato; country tomato; naati tomato; nattu thakkali; sour tomato; gavran tomato |
+| Tomato | tamatar; thakkali; tamate; tomatoes; desi tomato; country tomato; naati tomato; nattu thakkali; sour tomato; gavran tomato; tomato (desi) |
 | Tomato (Roma) | roma tomato; plum tomato; paste tomato; italian tomato |
 | Turmeric (Raw) | kacchi haldi; fresh turmeric; pachai manjal; arisina kombu |
 | Turnip | shalgam; shalgam |
@@ -1298,7 +1287,6 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | White Onion | safed pyaz |
 | Yam (Elephant Foot) | suran; jimikand; senai kizhangu; suvarna gadde; kanda |
 | Yam (Purple) | kand; ratalu (purple yam); violet yam |
-| Yellow Pumpkin | peela kaddu; kaddu yellow |
 | Yongchak | stink bean; petai; parkia; tree bean; sator beans; sataw |
 | Zucchini | courgette |
 
@@ -1395,7 +1383,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Til Ladoo | til laddu; sesame ladoo; sesame laddu; tilgul ladoo; til ke ladoo; ellunda |
 | Upma Mix | instant upma |
 
-## Spice — 200
+## Spice — 195
 ### masala_blend — 97  ·  units: `g / tsp / tbsp / packet`
 | Canonical name | Also called |
 |---|---|
@@ -1497,7 +1485,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Xacuti Masala | cafreal masala |
 | Za'atar | zaatar; zatar; zahtar; zaater; thyme sumac mix |
 
-### spice_ground — 35  ·  units: `g / tsp / tbsp`
+### spice_ground — 32  ·  units: `g / tsp / tbsp`
 | Canonical name | Also called |
 |---|---|
 | Amla Powder | amla churna; indian gooseberry powder |
@@ -1510,17 +1498,15 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Citric Acid | nimbu ka satva; lemon salt; sour salt |
 | Clove Powder | laung powder |
 | Coriander Powder | dhania powder; dhaniya powder; malli podi; kothimbir powder |
-| Cumin Powder | jeera powder; zeera powder; roasted cumin powder; bhuna jeera powder |
+| Cumin Powder | jeera powder; zeera powder; roasted cumin powder; bhuna jeera powder; bhuna jeera |
 | Curry Leaf Powder | karuvepilai podi (plain); kadi patta powder |
 | Curry Powder | madras curry powder; yellow curry powder; curry masala powder |
-| Dry Ginger Powder | sonth; saunth; sukku podi; adrak powder |
 | Dry Mango Powder | amchur; amchoor; aamchur; mango powder; amchur powder |
 | Fenugreek Powder | methi powder |
 | Garlic Granules | lahsun granules; dried garlic granules; garlic flakes |
 | Garlic Powder | lehsun powder |
-| Ginger Powder | adrak powder |
+| Ginger Powder | adrak powder; sonth; saunth; sukku podi; dry ginger powder |
 | Hing Powder | asafoetida powder; compounded hing |
-| Kasuri Methi Powder |  |
 | Moringa Powder | drumstick leaf powder; murungai powder; sahjan powder; moringa leaf powder; munaga podi; nuggekai soppu pudi |
 | Mustard Powder | rai powder; sarson powder |
 | Nutmeg Powder | jaiphal powder |
@@ -1529,14 +1515,13 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Paprika |  |
 | Pudina Powder | mint powder |
 | Red Chilli Powder | kashmiri chilli powder; kashmiri lal mirch; kashmiri lal mirch powder; kashmiri mirch powder; kashmiri red chilli powder; deggi mirch; lal mirch; laal mirch; lal mirch powder; laal mirch powder; red chili powder; mirchi powder; chilli powder; mulagai podi (chilli) |
-| Roasted Cumin Powder | bhuna jeera |
 | Smoked Paprika |  |
 | Tamarind Powder | imli powder; tamarind pulp powder; imli ka powder |
 | Turmeric (Black) Powder | kali haldi powder |
 | Turmeric Powder | haldi; haldi powder; manjal; arishina; pasupu; turmeric |
 | White Pepper Powder | safed mirch powder |
 
-### spice_whole — 68  ·  units: `g / tsp / tbsp / piece`
+### spice_whole — 66  ·  units: `g / tsp / tbsp / piece`
 | Canonical name | Also called |
 |---|---|
 | Alum (Edible) | phitkari |
@@ -1546,9 +1531,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Bay Leaf | tej patta; tejpatta; indian bay leaf; biryani aaku; brinji ilai |
 | Black Cardamom | badi elaichi; kali elaichi; moti elaichi; big cardamom |
 | Black Cumin Seeds | shahi jeera; kala jeera; caraway (indian); shah jeera |
-| Black Mustard Seeds | kali sarson; rai kali |
 | Black Pepper (Whole) | kali mirch; peppercorns; milagu; menasu; miriyalu; whole black pepper |
-| Brown Mustard Seeds | brown mustard; indian mustard seeds; rai brown |
 | Carom Seeds | ajwain; ajwan; omam; ova; bishop's weed |
 | Cassia Bark | taj; tej bark; cassia |
 | Chilli Flakes | red chilli flakes; crushed chilli; pizza chilli flakes; crushed red pepper |
@@ -1561,7 +1544,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Dried Bay Leaf (Indian) | cassia leaf; tejpat; malabathrum |
 | Dried Butterfly Pea Flower | butterfly pea; aparajita; shankhpushpi flowers; clitoria; sangu pushpam; gokarna flower |
 | Dried Curry Leaves | dried kadi patta |
-| Dried Fenugreek Leaves | kasuri methi; dried methi; kasoori methi; kasturi methi |
+| Dried Fenugreek Leaves | kasuri methi; dried methi; kasoori methi; kasturi methi; kasuri methi powder |
 | Dried Galangal | galangal dried; kulanjan; aratha; dried galangal root; khao laos |
 | Dried Ginger (Whole) | sonth whole; sukku; dry ginger whole |
 | Dried Hibiscus | hibiscus flowers; gudhal dried; hibiscus tea flowers; roselle; gongura dried flower; jamaica flower |
@@ -1589,7 +1572,7 @@ Columns: **Canonical name** (what the app stores and shows) · **Also called** (
 | Long Pepper | pippali; pipli; thippili |
 | Mace | javitri; japatri; jaipatri |
 | Marathi Moggu | kapok buds; moggu |
-| Mustard Seeds | rai; sarson; black mustard; kadugu; sasive; raee |
+| Mustard Seeds | rai; sarson; black mustard; kadugu; sasive; raee; kali sarson; rai kali; black mustard seeds; brown mustard; indian mustard seeds; rai brown; brown mustard seeds |
 | Nagkesar | naag kesar; nag kesar; cobra saffron; nagakesara |
 | Nigella Seeds | kalonji; black seed; mangrela; kala jeera (nigella); onion seeds |
 | Nutmeg | jaiphal; jathikai; jajikaya |

@@ -11,7 +11,7 @@
   "ingredients": [
     { "name": "Curd", "quantity": 2, "unit": "cup", "category": "dairy" },
     { "name": "Boondi", "quantity": 0.5, "unit": "cup", "category": "dry_goods", "notes": "plain, unsweetened" },
-    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "roasted" },
     { "name": "Red Chilli Powder", "quantity": 0.25, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "or regular salt to taste" },
     { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }

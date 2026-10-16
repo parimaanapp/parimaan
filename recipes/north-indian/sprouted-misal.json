@@ -76,10 +76,11 @@
       "notes": "chopped"
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 20,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Turmeric Powder",

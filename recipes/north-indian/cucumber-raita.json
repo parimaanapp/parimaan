@@ -11,7 +11,7 @@
   "ingredients": [
     { "name": "Curd", "quantity": 2, "unit": "cup", "category": "dairy" },
     { "name": "Cucumber", "quantity": 1, "unit": "piece", "category": "produce", "notes": "grated, excess water squeezed out" },
-    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "roasted" },
     { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "or regular salt to taste" },
     { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped, optional" },
     { "name": "Coriander Leaves", "quantity": 1, "unit": "tbsp", "category": "produce", "notes": "chopped, for garnish" }

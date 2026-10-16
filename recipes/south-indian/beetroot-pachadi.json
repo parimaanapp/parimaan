@@ -12,7 +12,7 @@
     { "name": "Beetroot", "quantity": 2, "unit": "piece", "category": "produce", "notes": "peeled and grated" },
     { "name": "Water", "quantity": 0.25, "unit": "cup", "category": "beverages" },
     { "name": "Salt", "quantity": 0.75, "unit": "tsp", "category": "dry_goods", "isStaple": true },
-    { "name": "Coconut (Grated)", "quantity": 45, "unit": "g", "category": "produce", "notes": "grated" },
+    { "name": "Coconut (Fresh)", "quantity": 45, "unit": "g", "category": "produce", "notes": "grated" },
     { "name": "Green Chilli", "quantity": 2, "unit": "piece", "category": "produce" },
     { "name": "Cumin Seeds", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
     { "name": "Curd", "quantity": 0.75, "unit": "cup", "category": "dairy", "notes": "whisked" },

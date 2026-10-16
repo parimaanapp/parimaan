@@ -13,7 +13,7 @@
     { "name": "Vegetable Oil", "quantity": 1, "unit": "tbsp", "category": "oil" },
     { "name": "Chaat Masala", "quantity": 1, "unit": "tsp", "category": "spice" },
     { "name": "Red Chilli Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "isStaple": true },
-    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" },
+    { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "roasted" },
     { "name": "Salt", "quantity": 0.5, "unit": "tsp", "category": "dry_goods", "isStaple": true },
     { "name": "Onion", "quantity": 0.5, "unit": "piece", "category": "produce", "notes": "finely chopped" },
     { "name": "Green Chilli", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },

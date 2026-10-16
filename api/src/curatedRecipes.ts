@@ -29,7 +29,7 @@ export type CuratedRecipeInput = RecipeInput;
  * Injectable seam for `createHousehold`'s curated-recipe-list source
  * (W16 §22.3 S4) — tests inject a small fixture list; the real
  * implementation (below, `getCuratedRecipesFromCorpus`) reads/parses all
- * curated JSON files from the `recipes/` cuisine folders (north-indian, south-indian, pan-india, indo-chinese; 202 seeds),
+ * curated JSON files from the `recipes/` cuisine folders (north-indian, south-indian, pan-india, indo-chinese; 200 seeds),
  * bundled with the Lambda at build time and cached module-level after
  * first read, per D2/S4's own "no new I/O dependency, read once at
  * cold-start" design.
@@ -39,7 +39,7 @@ export type GetCuratedRecipesFn = () => CuratedRecipeInput[];
 /**
  * TODO(W16 S5): replace this with the real module that reads and parses
  * the curated JSON files from the `recipes/` cuisine
- * folders (north-indian, south-indian, pan-india, indo-chinese; 202 seeds) at Lambda cold-start, caching the parsed result
+ * folders (north-indian, south-indian, pan-india, indo-chinese; 200 seeds) at Lambda cold-start, caching the parsed result
  * in a module-level variable (read once, reuse — the same posture this
  * codebase already applies to other cold-start-loaded config). Until then,
  * this is `createHousehold`'s default for `getCuratedRecipes` whenever a
@@ -203,7 +203,7 @@ let cachedCuratedRecipes: CuratedRecipeInput[] | null = null;
 /**
  * The real, production `GetCuratedRecipesFn` (W16 S5) — reads and parses
  * every curated recipe JSON file from the `recipes/` cuisine
- * folders (north-indian, south-indian, pan-india, indo-chinese; 202 seeds) (via `resolveCuratedRecipesDir`'s bundled/local
+ * folders (north-indian, south-indian, pan-india, indo-chinese; 200 seeds) (via `resolveCuratedRecipesDir`'s bundled/local
  * path resolution), validates each against the shared Zod schema, and
  * caches the result in `cachedCuratedRecipes` so repeated calls within the
  * same warm Lambda instance don't re-read the filesystem. Throws (rather

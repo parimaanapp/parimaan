@@ -21,10 +21,11 @@
       "notes": "steaks"
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 80,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Dried Red Chilli",

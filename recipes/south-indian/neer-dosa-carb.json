@@ -22,10 +22,11 @@
       "notes": "soaked 3 hours"
     },
     {
-      "name": "Coconut (Grated)",
+      "name": "Coconut (Fresh)",
       "quantity": 50,
       "unit": "g",
-      "category": "produce"
+      "category": "produce",
+      "notes": "grated"
     },
     {
       "name": "Water",

@@ -14,11 +14,11 @@
   "role": "sabzi_dal",
   "ingredients": [
     {
-      "name": "Prawns (Large)",
+      "name": "Prawns",
       "quantity": 500,
       "unit": "g",
       "category": "meat_fish",
-      "notes": "cleaned and deveined"
+      "notes": "cleaned and deveined; large"
     },
     {
       "name": "Coconut Milk",

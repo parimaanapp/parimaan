@@ -15,7 +15,7 @@
     { "name": "Mint Leaves", "quantity": 2, "unit": "tbsp", "category": "produce", "notes": "finely chopped" },
     { "name": "Sugar", "quantity": 1, "unit": "tbsp", "category": "dry_goods" },
     { "name": "Black Salt", "quantity": 0.5, "unit": "tsp", "category": "spice" },
-    { "name": "Roasted Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice" }
+    { "name": "Cumin Powder", "quantity": 0.5, "unit": "tsp", "category": "spice", "notes": "roasted" }
   ],
   "steps": [
     "Stir the jaljeera powder, sugar, black salt and roasted cumin powder into 100 ml of the cold water until dissolved.",

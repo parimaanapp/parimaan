@@ -14,7 +14,7 @@
     { "name": "Dabeli Masala", "quantity": 1.5, "unit": "tsp", "category": "spice" },
     { "name": "Jaggery Tamarind Chutney", "quantity": 2, "unit": "tbsp", "category": "condiment" },
     { "name": "Coriander Chutney", "quantity": 1, "unit": "tbsp", "category": "condiment" },
-    { "name": "Roasted Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods" },
+    { "name": "Peanuts", "quantity": 2, "unit": "tbsp", "category": "dry_goods", "notes": "roasted" },
     { "name": "Pomegranate", "quantity": 30, "unit": "g", "category": "produce", "notes": "seeds" },
     { "name": "Sev", "quantity": 20, "unit": "g", "category": "snacks" },
     { "name": "Onion", "quantity": 1, "unit": "piece", "category": "produce", "notes": "finely chopped" },
