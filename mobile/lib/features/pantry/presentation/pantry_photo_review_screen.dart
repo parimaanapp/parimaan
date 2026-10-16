@@ -19,6 +19,7 @@ import 'pantry_error_copy.dart';
 import 'photo_analysis_failure_copy.dart';
 import 'photo_dead_end.dart';
 import 'photo_item_edit_sheet.dart';
+import '../../../shared/format/quantity_format.dart';
 
 /// Flow 9, frame 9.4 (W20 S6): "here's what I think is on your shelf — you
 /// decide". Nothing is written until the user confirms; every row can be
@@ -341,9 +342,7 @@ class _ReviewRow extends StatelessWidget {
     if (q == null || unit == null) {
       return '';
     }
-    final String number = q == q.roundToDouble()
-        ? q.toInt().toString()
-        : q.toString();
+    final String number = formatQuantity(q);
     return '$number $unit';
   }
 

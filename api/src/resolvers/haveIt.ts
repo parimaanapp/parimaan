@@ -17,11 +17,15 @@ import type { GraphQLShoppingList } from '../mappers/shoppingList.js';
 import { haveItArgsSchema } from '../validation/haveIt.js';
 import { ConflictError, ForbiddenError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadCatalogTools } from './ingredientCanonicaliser.js';
+import type { CatalogTools } from './ingredientCanonicaliser.js';
 
 export interface HaveItResolverDeps {
   getPool: () => Promise<Pool>;
   /** Injectable seam matching `upsertOrIncrementPantryItemForHaveIt`'s own signature, for forced-failure atomicity tests. */
   upsertOrIncrementPantryItemForHaveIt?: typeof upsertOrIncrementPantryItemForHaveItRepo;
+  /** Catalog seam (B2b): canonical pantry name/id and catalog-aware unit conversion. */
+  loadCatalogTools?: (pool: Pool) => Promise<CatalogTools>;
   /** Injectable seam matching `markItemHaveIt`'s own signature, for forced-failure atomicity tests. */
   markItemHaveIt?: typeof markItemHaveItRepo;
 }
@@ -73,6 +77,7 @@ export const createHaveItHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const { canonicaliser, convert } = await (deps.loadCatalogTools ?? loadCatalogTools)(pool);
 
     return withUserTransaction(
       callerUser.id,
@@ -83,14 +88,18 @@ export const createHaveItHandler =
         }
         await requireHouseholdMember(client, callerUser.id, found.householdId);
 
+        const pantryName = canonicaliser.pantryItem(found.item.name);
         const upsertOrIncrementPantryItemForHaveIt =
           deps.upsertOrIncrementPantryItemForHaveIt ?? upsertOrIncrementPantryItemForHaveItRepo;
         await upsertOrIncrementPantryItemForHaveIt(client, {
           householdId: found.householdId,
-          name: found.item.name,
+          name: pantryName.name,
           quantity,
           unit: found.item.unit,
           addedBy: callerUser.id,
+          ingredientId: pantryName.ingredientId,
+          catalogMatch: pantryName.catalogMatch,
+          ...(convert === undefined ? {} : { convert }),
         });
 
         const markItemHaveIt = deps.markItemHaveIt ?? markItemHaveItRepo;

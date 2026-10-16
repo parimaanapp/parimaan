@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/ui/colors.dart';
+import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/auth_session.dart';
@@ -32,79 +33,83 @@ class SignInScreen extends ConsumerWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.s6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Image.asset(
-                'assets/branding/parimaan-mark-1024.png',
-                key: SignInScreen.markKey,
-                width: 72,
-                height: 72,
-              ),
-              const SizedBox(height: AppSpacing.s4),
-              Text(
-                SignInScreen._wordmark,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: AppFontFamily.wordmark,
-                  fontSize: 40,
-                  height: 44 / 40,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s3),
-              Text(
-                'One kitchen, one plan.',
-                textAlign: TextAlign.center,
-                style: AppTypography.body.copyWith(color: AppColors.inkSoft),
-              ),
-              const SizedBox(height: AppSpacing.s5),
-              // TODO(design-system): migrate to the shared `PButton` primary
-              // variant once that component lands — it will own the focus ring
-              // and the "one primary per screen" rule that `theme.dart`
-              // deliberately does not encode. Until then this is the themed
-              // ElevatedButton, not a bespoke style, so the migration is a
-              // widget swap rather than a restyle.
-              ElevatedButton(
-                onPressed: isBusy
-                    ? null
-                    : () => ref
-                          .read(authControllerProvider.notifier)
-                          .signInWithGoogle(),
-                child: Text(isBusy ? 'Signing in…' : 'Continue with Google'),
-              ),
-              if (errorMessage != null) ...<Widget>[
-                const SizedBox(height: AppSpacing.s3),
-                Text(
-                  errorMessage,
-                  key: errorKey,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.label.copyWith(color: AppColors.danger),
-                ),
-                // TEMPORARY, beta-only (2026-10-06): the app has no crash
-                // reporting yet (PostHog is W24) and this beta is sideloaded,
-                // not store-distributed, so there is no console to read a
-                // tester's logs from either. Showing the raw technical cause
-                // here — the one thing `AuthFailure.cause`'s own doc comment
-                // normally forbids — lets a tester literally screenshot the
-                // real error back to us instead of relaying "something went
-                // wrong" with no detail. Remove this block (and only this
-                // block — the rule above it stays correct) once PostHog/
-                // crash reporting exists, and before any store build.
-                if (auth.error != null) ...<Widget>[
-                  const SizedBox(height: AppSpacing.s2),
+          // Scrollable so 2x text on a 320pt phone can never overflow.
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Image.asset(
+                    'assets/branding/parimaan-mark-1024.png',
+                    key: SignInScreen.markKey,
+                    width: 72,
+                    height: 72,
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
                   Text(
-                    '[beta debug] ${auth.error}',
+                    SignInScreen._wordmark,
                     textAlign: TextAlign.center,
-                    style: AppTypography.meta.copyWith(
+                    style: const TextStyle(
+                      fontFamily: AppFontFamily.wordmark,
+                      fontSize: 40,
+                      height: 44 / 40,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  Text(
+                    'One kitchen, one plan.',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.body.copyWith(
                       color: AppColors.inkSoft,
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.s5),
+                  PButton(
+                    label: 'Continue with Google',
+                    loadingLabel: 'Signing in…',
+                    isLoading: isBusy,
+                    expand: true,
+                    onPressed: () => ref
+                        .read(authControllerProvider.notifier)
+                        .signInWithGoogle(),
+                  ),
+                  if (errorMessage != null) ...<Widget>[
+                    const SizedBox(height: AppSpacing.s3),
+                    Text(
+                      errorMessage,
+                      key: errorKey,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.label.copyWith(
+                        color: AppColors.danger,
+                      ),
+                    ),
+                    // TEMPORARY, beta-only (2026-10-06): the app has no crash
+                    // reporting yet (PostHog is W24) and this beta is sideloaded,
+                    // not store-distributed, so there is no console to read a
+                    // tester's logs from either. Showing the raw technical cause
+                    // here — the one thing `AuthFailure.cause`'s own doc comment
+                    // normally forbids — lets a tester literally screenshot the
+                    // real error back to us instead of relaying "something went
+                    // wrong" with no detail. Remove this block (and only this
+                    // block — the rule above it stays correct) once PostHog/
+                    // crash reporting exists, and before any store build.
+                    if (auth.error != null) ...<Widget>[
+                      const SizedBox(height: AppSpacing.s2),
+                      Text(
+                        '[beta debug] ${auth.error}',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.meta.copyWith(
+                          color: AppColors.inkSoft,
+                        ),
+                      ),
+                    ],
+                  ],
                 ],
-              ],
-            ],
+              ),
+            ),
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import { groupShoppingListItemsByCategory, shoppingListCategoryLabel } from '@/domain/shoppingListGrouping';
 import type { ShoppingListQueryResult } from '@/graphql/queries';
+import { formatQuantity } from '@/domain/formatQuantity';
 
 interface ShoppingListSectionProps {
   shoppingList: ShoppingListQueryResult['shoppingList'];
@@ -37,7 +38,7 @@ export function ShoppingListSection({ shoppingList }: ShoppingListSectionProps) 
             {group.items.map((item) => (
               <li key={item.id} data-purchased={item.purchased}>
                 {item.name}
-                {item.quantity != null ? ` — ${item.quantity}${item.unit ? ` ${item.unit}` : ''}` : ''}
+                {item.quantity != null ? ` — ${formatQuantity(item.quantity)}${item.unit ? ` ${item.unit}` : ''}` : ''}
               </li>
             ))}
           </ul>

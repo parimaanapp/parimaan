@@ -6,6 +6,7 @@ import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../../recipes/domain/ai_recipe_draft_ingredient.dart';
 import '../domain/cook_suggestion.dart';
+import '../../../shared/format/quantity_format.dart';
 
 /// Flow 11, frame 11.3 (W21 S5/S6): one suggested recipe, in full — the
 /// ingredients marked against the real pantry, never a tappable link (D11:
@@ -185,9 +186,7 @@ class _IngredientRow extends StatelessWidget {
     if (q == null) {
       return ingredient.name;
     }
-    final String number = q == q.roundToDouble()
-        ? q.toInt().toString()
-        : q.toString();
+    final String number = formatQuantity(q);
     return '${ingredient.name} · $number${unit == null ? '' : ' $unit'}';
   }
 

@@ -471,6 +471,37 @@ void main() {
       );
     });
 
+    testWidgets('an untouched rounded quantity is not written back', (
+      WidgetTester tester,
+    ) async {
+      final PantryItem precise = PantryItem(
+        id: 'item-2',
+        householdId: 'household-1',
+        name: 'Toor Dal',
+        quantity: 0.3333333333333333,
+        unit: 'kg',
+        category: 'dal',
+        isStaple: true,
+        addedBy: 'user-1',
+        addedAt: DateTime.utc(2026, 8, 25),
+        updatedAt: DateTime.utc(2026, 8, 25),
+      );
+      final FakePantryRepository repository = FakePantryRepository(
+        updateResult: precise,
+      );
+      await _pumpPushed(tester, repository: repository, initialItem: precise);
+
+      await tester.enterText(
+        find.byKey(ManualAddScreen.nameFieldKey),
+        'Toor Dal 2',
+      );
+      await tester.tap(find.byKey(ManualAddScreen.submitButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(repository.updateCalls, hasLength(1));
+      expect(repository.updateCalls.single.patch.quantity, isNull);
+    });
+
     testWidgets('submitting with only one field changed sends a patch with only that field', (
       WidgetTester tester,
     ) async {

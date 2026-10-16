@@ -11,8 +11,8 @@
 |---|---|---|
 | Bottom tabs | Today · Plan · Pantry · **List** | Today · Plan · Pantry · **Recipes**. The shopping list opens from Plan (and the week-confirmed screen). |
 | Tab icons | Text glyphs ◉ ▦ ◈ ☰ (placeholders) | Drawn icons of the same shapes |
-| First tab label | Today | Today (the app currently says "Home") |
-| Screen title | Centred Instrument Serif | Centred (the app currently left-aligns) |
+| First tab label | Today | Today (implemented) |
+| Screen title | Centred Instrument Serif | Centred (implemented) |
 | Back control | Small `‹` | Bold chevron, 44×44 tap target |
 | Chips | Solid ink when selected, no check | Same (the app's ✓ prefix is removed) |
 | AI badge | Soft haldi "◆ AI proposal" | Same (the app's blue pill is replaced) |

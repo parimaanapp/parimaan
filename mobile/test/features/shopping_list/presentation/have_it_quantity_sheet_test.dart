@@ -72,6 +72,31 @@ void main() {
   });
 
   group('HaveItQuantitySheet — confirm', () {
+    testWidgets('confirming an untouched field keeps the full-precision quantity',
+        (WidgetTester tester) async {
+      final ShoppingListItem precise = ShoppingListItem(
+        id: 'item-p',
+        name: 'Rice',
+        quantity: 0.3333333333333333,
+        unit: 'kg',
+        category: 'grains',
+        sourceRecipeId: 'recipe-1',
+        purchased: false,
+        purchasedBy: null,
+        purchasedAt: null,
+        movedToPantry: false,
+      );
+      final List<double> confirmed = await _pumpAndGetConfirmedQuantities(
+        tester,
+        item: precise,
+      );
+
+      await tester.tap(find.byKey(HaveItQuantitySheet.confirmButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(confirmed, <double>[0.3333333333333333]);
+    });
+
     testWidgets(
       'confirming without editing calls onConfirm with the default quantity',
       (WidgetTester tester) async {

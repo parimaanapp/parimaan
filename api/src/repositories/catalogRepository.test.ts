@@ -38,8 +38,14 @@ const BUNDLE: CatalogBundle = {
       aliases: ['doodh'],
     },
   ],
-  conversions: [],
+  conversions: [
+    { scope: 'ingredient', key: 'toor_dal', unit: 'cup', baseUnit: 'g', amount: 200 },
+    { scope: 'subcategory', key: 'dairy_liquid', unit: 'cup', baseUnit: 'ml', amount: 240 },
+  ],
 };
+
+/** Entries (with aliases) and unit conversions are read by one query each. */
+const QUERIES_PER_LOAD = 2;
 
 describe('catalogRepository.loadCatalog', () => {
   let db: TestDatabase;
@@ -80,6 +86,18 @@ describe('catalogRepository.loadCatalog', () => {
     });
   });
 
+  it('loads unit conversions with numeric amounts and builds a lookup', async () => {
+    const catalog = await loadCatalog(pool);
+    expect(catalog.conversions).toEqual(
+      expect.arrayContaining([
+        { scope: 'ingredient', key: 'toor_dal', unit: 'cup', baseUnit: 'g', amount: 200 },
+        { scope: 'subcategory', key: 'dairy_liquid', unit: 'cup', baseUnit: 'ml', amount: 240 },
+      ]),
+    );
+    expect(catalog.conversionLookup.factorFor('milk', 'cup')).toEqual({ baseUnit: 'ml', amount: 240 });
+    expect(catalog.conversionLookup.factorFor('toor_dal', 'cup')).toEqual({ baseUnit: 'g', amount: 200 });
+  });
+
   it('returns an index that resolves aliases', async () => {
     const catalog = await loadCatalog(pool);
     const result = resolveIngredient('doodh', catalog.index);
@@ -91,7 +109,7 @@ describe('catalogRepository.loadCatalog', () => {
     await loadCatalog(pool);
     await loadCatalog(pool);
     await loadCatalog(pool);
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(QUERIES_PER_LOAD);
     spy.mockRestore();
   });
 
@@ -99,7 +117,7 @@ describe('catalogRepository.loadCatalog', () => {
     const spy = vi.spyOn(pool, 'query');
     const [a, b] = await Promise.all([loadCatalog(pool), loadCatalog(pool)]);
     expect(a).toBe(b);
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(QUERIES_PER_LOAD);
     spy.mockRestore();
   });
 

@@ -8,6 +8,7 @@ import 'package:mobile/features/auth/domain/auth_failure.dart';
 import 'package:mobile/features/auth/domain/auth_session.dart';
 import 'package:mobile/features/auth/presentation/sign_in_screen.dart';
 import 'package:mobile/features/auth/state/auth_controller.dart';
+import 'package:mobile/shared/ui/components/components.dart';
 import 'package:mobile/shared/ui/theme.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -41,7 +42,56 @@ void main() {
       await _pumpSignIn(tester, stubbedAuthRepository());
 
       expect(find.text('Continue with Google'), findsOneWidget);
-      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(find.byType(PButton), findsOneWidget);
+    });
+
+    testWidgets('label meets the filled-button rule (>=18.7px, w600)', (
+      WidgetTester tester,
+    ) async {
+      await _pumpSignIn(tester, stubbedAuthRepository());
+
+      final Text label = tester.widget<Text>(find.text('Continue with Google'));
+      final TextStyle style = DefaultTextStyle.of(
+        tester.element(find.text('Continue with Google')),
+      ).style.merge(label.style);
+      expect(style.fontSize, greaterThanOrEqualTo(18.7));
+      expect(style.fontWeight, FontWeight.w600);
+    });
+
+    testWidgets('label wraps without overflow at 320pt and 2x text scale', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(640, 1136);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          authRepositoryProvider.overrideWithValue(stubbedAuthRepository()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: parimaanTheme(),
+            builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: const SignInScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Continue with Google'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(PButton)).width,
+        lessThanOrEqualTo(320),
+      );
     });
 
     testWidgets('renders the Parimaan mark above the wordmark', (
@@ -85,7 +135,7 @@ void main() {
       expect(find.text('Continue with Google'), findsNothing);
       expect(find.text('Signing in…'), findsOneWidget);
       expect(
-        tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
+        tester.widget<TextButton>(find.byType(TextButton)).onPressed,
         isNull,
       );
 

@@ -13,11 +13,15 @@ import type { GraphQLPantryItem } from '../mappers/pantryItem.js';
 import { bulkAddPantryItemsArgsSchema } from '../validation/bulkAddPantryItems.js';
 import { ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadIngredientCanonicaliser } from './ingredientCanonicaliser.js';
+import type { CanonicaliserLoader } from './ingredientCanonicaliser.js';
 
 export interface BulkAddPantryItemsResolverDeps {
   getPool: () => Promise<Pool>;
   /** Injectable seam matching `insertPantryItem`'s own signature, for forced-mid-batch-failure/rollback tests. */
   insertPantryItem?: typeof insertPantryItemRepo;
+  /** Catalog canonicaliser seam (B2b). */
+  loadCanonicaliser?: CanonicaliserLoader;
 }
 
 export const productionDeps: BulkAddPantryItemsResolverDeps = { getPool };
@@ -49,6 +53,7 @@ export const createBulkAddPantryItemsHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const canonicaliser = await (deps.loadCanonicaliser ?? loadIngredientCanonicaliser)(pool);
 
     return withUserTransaction(
       callerUser.id,
@@ -58,9 +63,12 @@ export const createBulkAddPantryItemsHandler =
         const insertPantryItem = deps.insertPantryItem ?? insertPantryItemRepo;
         const inserted: GraphQLPantryItem[] = [];
         for (const item of items) {
+          const resolved = canonicaliser.pantryItem(item.name);
           const row = await insertPantryItem(client, {
             householdId,
-            name: item.name,
+            name: resolved.name,
+            ingredientId: resolved.ingredientId,
+            catalogMatch: resolved.catalogMatch,
             quantity: item.quantity,
             unit: canonicalizePantryUnit(item.unit),
             category: item.category == null ? null : canonicalizePantryCategory(item.category),

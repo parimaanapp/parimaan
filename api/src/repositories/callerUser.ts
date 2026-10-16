@@ -36,31 +36,41 @@ let callerUserCache = new TtlCache<string, UserRow>(CALLER_USER_CACHE_TTL_MS);
  * ≤30s stale-window acceptance already documented for the membership cache
  * in `auth/requireHouseholdMember.ts` (W8 S5, D2 part 4).
  */
+/**
+ * Concurrent first requests for the same sub share one upsert: two simultaneous
+ * inserts of a brand-new user race on the unique email and one fails with a
+ * spurious ConflictError (seen when a retry arrives while the first call is
+ * still resolving the user).
+ */
+const inFlightUpserts = new Map<string, Promise<UserRow>>();
+
+const upsertAndCache = async (pool: Pool, identity: CallerIdentity): Promise<UserRow> => {
+  const client = await pool.connect();
+  try {
+    const user = await upsertUserByCognitoSub(client, identity);
+    callerUserCache.set(identity.cognitoSub, user);
+    return user;
+  } finally {
+    client.release();
+  }
+};
+
 export const resolveCallerUser = async (pool: Pool, identity: CallerIdentity): Promise<UserRow> => {
   const cached = callerUserCache.get(identity.cognitoSub);
   if (cached !== undefined) {
     return cached;
   }
-
-  const client = await pool.connect();
-  let user: UserRow;
-  try {
-    user = await upsertUserByCognitoSub(client, identity);
-  } finally {
-    client.release();
+  const pending = inFlightUpserts.get(identity.cognitoSub);
+  if (pending !== undefined) {
+    return pending;
   }
-  callerUserCache.set(identity.cognitoSub, user);
-  return user;
+  const started = upsertAndCache(pool, identity).finally(() => {
+    inFlightUpserts.delete(identity.cognitoSub);
+  });
+  inFlightUpserts.set(identity.cognitoSub, started);
+  return started;
 };
 
-/**
- * Replaces the module-scope cache with a freshly-configured one — test-only,
- * mirroring `requireHouseholdMember.ts`'s `resetMembershipCacheForTesting`.
- * Lets a test supply a controllable `now` and a short `ttlMs` so TTL-expiry
- * behavior can be asserted deterministically and instantly, and guarantees
- * every test starts from an empty cache regardless of what an earlier test
- * in the same file left behind.
- */
 export const resetCallerUserCacheForTesting = (options: { ttlMs?: number; now?: () => number } = {}): void => {
   callerUserCache = new TtlCache<string, UserRow>(options.ttlMs ?? CALLER_USER_CACHE_TTL_MS, options.now);
 };

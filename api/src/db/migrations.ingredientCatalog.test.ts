@@ -165,7 +165,7 @@ describe('ingredient catalog tables, once migrated', () => {
   });
 
   it('can be reversed and re-applied (down then up)', async () => {
-    await runMigrations(container.getConnectionUri(), 'down', undefined, [], 1);
+    await runMigrations(container.getConnectionUri(), 'down', undefined, [], 2);
     expect(await tableExists(admin, 'ingredient_catalog')).toBe(false);
     await runMigrations(container.getConnectionUri(), 'up');
     expect(await tableExists(admin, 'ingredient_catalog')).toBe(true);

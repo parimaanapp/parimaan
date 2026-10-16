@@ -110,6 +110,11 @@ final ButtonStyle _primaryButtonStyle = _buttonBase.copyWith(
     },
   ),
   foregroundColor: const WidgetStatePropertyAll<Color>(AppColors.paper),
+  // Filled-on-terracotta label is WCAG "large text" (18.7px / w600); see
+  // `p_button.dart`. Raw ElevatedButtons must not fall below it.
+  textStyle: WidgetStatePropertyAll<TextStyle>(
+    AppTypography.bodyStrong.copyWith(fontSize: 18.7, height: 24 / 18.7),
+  ),
 );
 
 /// Secondary — outlined, ink label on the page surface.

@@ -80,6 +80,38 @@ void main() {
       },
     );
 
+    testWidgets('formats fractional quantities to two decimals', (
+      WidgetTester tester,
+    ) async {
+      final CookSuggestion base = _suggestion();
+      await _pump(
+        tester,
+        suggestion: CookSuggestion(
+          id: base.id,
+          draft: AiRecipeDraft(
+            title: 'Aloo Jeera',
+            servings: 4,
+            cookMin: 25,
+            dietaryTags: const <String>['veg'],
+            ingredients: const <AiRecipeDraftIngredient>[
+              AiRecipeDraftIngredient(
+                raw: 'x',
+                name: 'Potato',
+                quantity: 0.6666666666666666,
+                unit: 'kg',
+              ),
+            ],
+            role: RecipeRole.sabziDal,
+          ),
+          ingredientMatches: const <CookIngredientMatch>[],
+          have: const <String>[],
+          missing: const <String>[],
+        ),
+      );
+
+      expect(find.textContaining('Potato · 0.67 kg'), findsOneWidget);
+    });
+
     testWidgets(
       'marks each ingredient in pantry or missing, in the recipe\'s own order, colour never the only signal',
       (WidgetTester tester) async {

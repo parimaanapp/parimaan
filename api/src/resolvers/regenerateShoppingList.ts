@@ -25,6 +25,8 @@ import { computeFreshShoppingListItems, createFreshShoppingList } from './shoppi
 import { regenerateShoppingListArgsSchema } from '../validation/shoppingList.js';
 import { ForbiddenError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadUnitConverter } from './ingredientCanonicaliser.js';
+import type { UnitConverter } from '../domain/ingredientConversion.js';
 import { invokeStaplesNoteFn } from '../aiInvoke/staplesNoteInvoker.js';
 import type { StaplesNoteInvokePayload } from '../aiInvoke/staplesNoteInvoker.js';
 
@@ -32,6 +34,8 @@ export interface RegenerateShoppingListResolverDeps {
   getPool: () => Promise<Pool>;
   /** Same injectable seam as `GenerateShoppingListResolverDeps`'s identical field — see that file's own doc. */
   invokeStaplesNoteFn?: (payload: StaplesNoteInvokePayload) => Promise<void>;
+  /** Catalog-aware unit conversion seam (B2b); `undefined` result = physical unit families only. */
+  loadUnitConverter?: (pool: Pool) => Promise<UnitConverter | undefined>;
 }
 
 export const productionDeps: RegenerateShoppingListResolverDeps = { getPool, invokeStaplesNoteFn };
@@ -50,8 +54,9 @@ const buildPreview = async (
   client: PoolClient,
   menu: MenuRow,
   existingList: ShoppingListRow | null,
+  convert: UnitConverter | undefined,
 ): Promise<GraphQLShoppingList> => {
-  const freshAutoItems = await computeFreshShoppingListItems(client, menu);
+  const freshAutoItems = await computeFreshShoppingListItems(client, menu, convert);
 
   if (existingList === null) {
     return buildEphemeralNewShoppingListPreview(menu.householdId, menu.id, freshAutoItems);
@@ -101,6 +106,7 @@ export const createRegenerateShoppingListHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    const convert = await (deps.loadUnitConverter ?? loadUnitConverter)(pool);
 
     const result = await withUserTransaction(
       callerUser.id,
@@ -126,16 +132,16 @@ export const createRegenerateShoppingListHandler =
         const existingList = await findShoppingListByMenu(client, menuId);
 
         if (!confirmed) {
-          const preview = await buildPreview(client, menu, existingList);
+          const preview = await buildPreview(client, menu, existingList, convert);
           return { list: preview, wrote: false };
         }
 
         if (existingList === null) {
-          const { list, items } = await createFreshShoppingList(client, menu);
+          const { list, items } = await createFreshShoppingList(client, menu, convert);
           return { list: toGraphQLShoppingList(list, items), wrote: true };
         }
 
-        const freshAutoItems = await computeFreshShoppingListItems(client, menu);
+        const freshAutoItems = await computeFreshShoppingListItems(client, menu, convert);
         const currentItems = await findShoppingListItems(client, existingList.id);
         const preservedItems = currentItems.filter(isPreservedShoppingListItem);
         const dedupedFreshItems = excludeItemsAlreadyPreserved(freshAutoItems, preservedItems);

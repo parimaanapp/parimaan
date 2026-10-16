@@ -87,7 +87,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('renders ingredients and steps in order', (WidgetTester tester) async {
+    testWidgets('renders ingredients and steps in order', (
+      WidgetTester tester,
+    ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
         detailResult: _recipe(),
       );
@@ -102,6 +104,36 @@ void main() {
       expect(find.text('3. Simmer.'), findsOneWidget);
     });
 
+    testWidgets('formats ingredient quantities to at most two decimals', (
+      WidgetTester tester,
+    ) async {
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        detailResult: _recipe(
+          ingredients: const <RecipeIngredient>[
+            RecipeIngredient(
+              id: 'a',
+              name: 'Toor dal',
+              quantity: 2.0,
+              unit: 'cup',
+              isStaple: true,
+            ),
+            RecipeIngredient(
+              id: 'b',
+              name: 'Onion',
+              quantity: 0.3333333333333333,
+              unit: 'kg',
+              isStaple: false,
+            ),
+          ],
+        ),
+      );
+      await _pump(tester, recipeRepository: repository);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('2 cup Toor dal'), findsOneWidget);
+      expect(find.textContaining('0.33 kg Onion'), findsOneWidget);
+    });
+
     testWidgets('renders a zero-ingredient recipe without crashing', (
       WidgetTester tester,
     ) async {
@@ -111,11 +143,16 @@ void main() {
       await _pump(tester, recipeRepository: repository);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(RecipeDetailScreen.ingredientsEmptyKey), findsOneWidget);
+      expect(
+        find.byKey(RecipeDetailScreen.ingredientsEmptyKey),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('shows the favorite and in-rotation badges', (WidgetTester tester) async {
+    testWidgets('shows the favorite and in-rotation badges', (
+      WidgetTester tester,
+    ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
         detailResult: _recipe(),
       );
@@ -130,7 +167,9 @@ void main() {
       WidgetTester tester,
     ) async {
       final FakeRecipeRepository repository = FakeRecipeRepository(
-        detailError: const ForbiddenError('You are not a member of this household.'),
+        detailError: const ForbiddenError(
+          'You are not a member of this household.',
+        ),
       );
       await _pump(tester, recipeRepository: repository);
       await tester.pumpAndSettle();

@@ -12,6 +12,8 @@ const baseRow: PantryItemRow = {
   isStaple: true,
   expiryDate: '2027-03-01',
   lowThreshold: 0.5,
+  ingredientId: 'toor_dal',
+  catalogMatch: 'resolved',
   addedBy: 'user-1',
   addedAt: new Date('2026-08-25T10:00:00.000Z'),
   updatedAt: new Date('2026-08-25T11:00:00.000Z'),

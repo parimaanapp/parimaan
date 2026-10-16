@@ -20,6 +20,11 @@ import { updateRecipeArgsSchema } from '../validation/updateRecipe.js';
 import type { RecipePatchInput } from '../validation/updateRecipe.js';
 import { NotFoundError, ValidationError } from '../errors.js';
 import { withErrorHandling } from './withErrorHandling.js';
+import { loadIngredientCanonicaliser } from './ingredientCanonicaliser.js';
+import type { CanonicaliserLoader } from './ingredientCanonicaliser.js';
+import { toRecipeIngredientInsert } from './recipeIngredientInput.js';
+import { IDENTITY_CANONICALISER } from '../domain/canonicaliseIngredient.js';
+import type { IngredientCanonicaliser } from '../domain/canonicaliseIngredient.js';
 
 /**
  * Strips `ingredients` (handled separately, below — it isn't a `recipes`
@@ -97,6 +102,8 @@ export interface UpdateRecipeResolverDeps {
   updateRecipePartial?: typeof updateRecipePartialRepo;
   deleteRecipeIngredientsByRecipeId?: typeof deleteRecipeIngredientsByRecipeIdRepo;
   insertRecipeIngredient?: typeof insertRecipeIngredientRepo;
+  /** Catalog canonicaliser seam (B2b). Defaults to the module-cached catalog; a failure there never fails the save. */
+  loadCanonicaliser?: CanonicaliserLoader;
 }
 
 export const productionDeps: UpdateRecipeResolverDeps = { getPool };
@@ -115,19 +122,11 @@ const replaceRecipeIngredients = async (
   ingredients: RecipePatchInput['ingredients'],
   deleteAll: typeof deleteRecipeIngredientsByRecipeIdRepo,
   insertOne: typeof insertRecipeIngredientRepo,
+  canonicaliser: IngredientCanonicaliser,
 ): Promise<void> => {
   await deleteAll(client, recipeId);
   for (const [index, ingredient] of (ingredients ?? []).entries()) {
-    await insertOne(client, {
-      recipeId,
-      name: ingredient.name,
-      quantity: ingredient.quantity ?? null,
-      unit: ingredient.unit ?? null,
-      category: ingredient.category ?? null,
-      notes: ingredient.notes ?? null,
-      isStaple: ingredient.isStaple ?? false,
-      sortOrder: index,
-    });
+    await insertOne(client, toRecipeIngredientInsert(recipeId, ingredient, index, canonicaliser));
   }
 };
 
@@ -161,6 +160,11 @@ export const createUpdateRecipeHandler =
 
     const pool = await deps.getPool();
     const callerUser = await resolveCallerUser(pool, identity);
+    // Only a request that replaces the ingredient list needs the catalog.
+    const canonicaliser =
+      input.ingredients === undefined
+        ? IDENTITY_CANONICALISER
+        : await (deps.loadCanonicaliser ?? loadIngredientCanonicaliser)(pool);
 
     return withUserTransaction(
       callerUser.id,
@@ -188,6 +192,7 @@ export const createUpdateRecipeHandler =
             input.ingredients,
             deleteRecipeIngredientsByRecipeId,
             insertRecipeIngredient,
+            canonicaliser,
           );
         }
 

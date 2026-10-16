@@ -568,6 +568,58 @@ void main() {
       expect(patch.steps, isNull);
     });
 
+    testWidgets('picking a catalog match keeps an untouched full-precision quantity', (
+      WidgetTester tester,
+    ) async {
+      final Recipe precise = Recipe(
+        id: 'recipe-2',
+        householdId: 'household-1',
+        sourceType: RecipeSource.user,
+        title: 'Dal',
+        servings: 4,
+        dietaryTags: const <String>[],
+        role: RecipeRole.sabziDal,
+        inRotation: false,
+        isFavorite: false,
+        ingredients: const <RecipeIngredient>[
+          RecipeIngredient(
+            id: 'ing-9',
+            name: 'dal',
+            quantity: 0.3333333333,
+            unit: 'g',
+            isStaple: false,
+          ),
+        ],
+        steps: const <String>['Boil.'],
+        createdAt: DateTime.utc(2026, 8, 25),
+        updatedAt: DateTime.utc(2026, 8, 25),
+      );
+      final FakeRecipeRepository repository = FakeRecipeRepository(
+        updateResult: precise,
+      );
+      await _pumpPushed(tester, repository: repository, initialRecipe: precise);
+
+      await tester.enterText(
+        find.byKey(IngredientRowEditor.nameFieldKey(0)),
+        'arhar',
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(IngredientPickerField.resultKey(fixtureToorDal.id)),
+      );
+      await tester.tap(
+        find.byKey(IngredientPickerField.resultKey(fixtureToorDal.id)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(RecipeFormScreen.submitButtonKey));
+      await tester.pumpAndSettle();
+
+      final ingredient = repository.updateCalls.single.patch.ingredients!.single;
+      expect(ingredient.name, 'Toor Dal');
+      expect(ingredient.quantity, 0.3333333333);
+    });
+
     testWidgets('editing the ingredient list sends the whole current list even though nothing else changed', (
       WidgetTester tester,
     ) async {
