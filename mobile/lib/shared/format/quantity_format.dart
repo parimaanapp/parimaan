@@ -1,7 +1,7 @@
-/// Display form of a list quantity: at most two decimals, trailing zeros
+/// Display form of any quantity (list, pantry, recipes, cook): at most two decimals, trailing zeros
 /// dropped, so `0.3333333333333333` reads `0.33` and `2.0` reads `2`.
 /// Display only — the stored quantity is never rounded.
-String formatShoppingQuantity(double quantity) {
+String formatQuantity(double quantity) {
   final String fixed = quantity.toStringAsFixed(2);
   final String trimmed = fixed.contains('.')
       ? fixed.replaceFirst(RegExp(r'\.?0+$'), '')

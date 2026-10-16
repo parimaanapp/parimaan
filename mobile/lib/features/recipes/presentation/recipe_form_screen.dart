@@ -23,6 +23,7 @@ import 'ai_proposal.dart';
 import 'recipes_error_copy.dart';
 import 'ingredient_row_editor.dart';
 import 'step_row_editor.dart';
+import '../../../shared/format/quantity_format.dart';
 
 /// Wireframe screen 8.2 — the structured create/edit form, pulled forward
 /// from W7 (D2) — used for both create and edit (§11.2.7's seeded-form
@@ -172,10 +173,8 @@ class _StepRow {
   void dispose() => controller.dispose();
 }
 
-/// Drops a trailing `.0` — matches `ManualAddScreen._formatNumber`.
-String _formatNumber(double value) => value == value.roundToDouble()
-    ? value.toInt().toString()
-    : value.toString();
+/// At most two decimals, no trailing `.0` — see [formatQuantity].
+String _formatNumber(double value) => formatQuantity(value);
 
 double? _parseNumber(String text) {
   final String trimmed = text.trim();

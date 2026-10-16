@@ -11,7 +11,7 @@ import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_category_order.dart';
 import '../domain/shopping_list_item.dart';
-import '../domain/shopping_quantity_format.dart';
+import '../../../shared/format/quantity_format.dart';
 import '../state/current_shopping_list_controller.dart';
 import 'checklist_check_box.dart';
 import 'have_it_quantity_sheet.dart';
@@ -108,7 +108,7 @@ class _ChecklistItemState extends ConsumerState<ChecklistItem> {
     if (quantity == null && unit == null) return '';
     final String quantityPart = quantity == null
         ? ''
-        : formatShoppingQuantity(quantity);
+        : formatQuantity(quantity);
     if (unit == null) return quantityPart;
     return quantityPart.isEmpty ? unit : '$quantityPart $unit';
   }

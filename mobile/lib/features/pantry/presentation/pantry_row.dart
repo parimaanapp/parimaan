@@ -5,6 +5,7 @@ import '../../../shared/ui/components/components.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/pantry_item.dart';
+import '../../../shared/format/quantity_format.dart';
 
 /// One row in the Pantry List (wireframe 9.1) — name, quantity+unit, and
 /// the staple / running-low affordances, matching `MembersListScreen`'s
@@ -46,7 +47,9 @@ class PantryRow extends StatelessWidget {
               children: <Widget>[
                 Text(
                   item.name,
-                  style: AppTypography.bodyStrong.copyWith(color: AppColors.ink),
+                  style: AppTypography.bodyStrong.copyWith(
+                    color: AppColors.ink,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.s0),
                 Text(
@@ -58,7 +61,9 @@ class PantryRow extends StatelessWidget {
                   Text(
                     'Expires $expiryDate',
                     key: expiryKey,
-                    style: AppTypography.label.copyWith(color: AppColors.inkMid),
+                    style: AppTypography.label.copyWith(
+                      color: AppColors.inkMid,
+                    ),
                   ),
                 ],
               ],
@@ -95,5 +100,5 @@ class PantryRow extends StatelessWidget {
     );
   }
 
-  String _quantityLabel() => '${item.quantity} ${item.unit}';
+  String _quantityLabel() => '${formatQuantity(item.quantity)} ${item.unit}';
 }

@@ -39,6 +39,23 @@ void main() {
       expect(find.textContaining('kg'), findsOneWidget);
     });
 
+    testWidgets('shows whole quantities without a trailing .0', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(tester, PantryRow(item: _item(quantity: 2.0)));
+      expect(find.text('2 kg'), findsOneWidget);
+    });
+
+    testWidgets('caps long fractional quantities at two decimals', (
+      WidgetTester tester,
+    ) async {
+      await pumpComponent(
+        tester,
+        PantryRow(item: _item(quantity: 0.3333333333333333)),
+      );
+      expect(find.text('0.33 kg'), findsOneWidget);
+    });
+
     testWidgets('shows a staple badge when isStaple is true', (
       WidgetTester tester,
     ) async {

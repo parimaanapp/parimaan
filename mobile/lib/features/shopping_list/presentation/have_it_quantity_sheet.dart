@@ -8,6 +8,7 @@ import '../../../shared/ui/sizing.dart';
 import '../../../shared/ui/spacing.dart';
 import '../../../shared/ui/typography.dart';
 import '../domain/shopping_list_item.dart';
+import '../../../shared/format/quantity_format.dart';
 
 /// The Have-it quantity sheet (wireframe 39/49, E2E_MVP_PLAN.md §17.1/§17.3
 /// S7) — D5's locked design (§17.2.5/§17.7): defaults to the shopping-list
@@ -74,9 +75,7 @@ class HaveItQuantitySheet extends StatefulWidget {
   /// a literal `"null"`.
   static String formatDefaultQuantity(double? quantity) {
     if (quantity == null) return '';
-    return quantity == quantity.roundToDouble()
-        ? quantity.toStringAsFixed(0)
-        : quantity.toString();
+    return formatQuantity(quantity);
   }
 
   @override
