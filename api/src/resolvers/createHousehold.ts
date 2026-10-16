@@ -13,11 +13,7 @@ import {
 } from '../repositories/householdRepository.js';
 import { countMembershipsForUser } from '../repositories/membershipCount.js';
 import type { MembershipRow, SettingsRow } from '../repositories/householdRepository.js';
-import {
-  insertRecipe,
-  insertRecipeIngredient as insertRecipeIngredientRepo,
-} from '../repositories/recipeRepository.js';
-import type { InsertRecipeInput } from '../repositories/recipeRepository.js';
+import { insertRecipesWithIngredients } from '../repositories/recipeBulkRepository.js';
 import type { RandomIntFn } from '../domain/inviteCode.js';
 import { attemptWithFreshInviteCode } from '../domain/inviteCodeAttempts.js';
 import { toGraphQLHousehold, toGraphQLMembership } from '../mappers/household.js';
@@ -25,13 +21,13 @@ import type { GraphQLHousehold } from '../mappers/household.js';
 import { toGraphQLUser } from '../mappers/user.js';
 import { createHouseholdArgsSchema } from '../validation/createHousehold.js';
 import { getCuratedRecipesFromCorpus, getCuratedRecipesNotYetWired } from '../curatedRecipes.js';
-import type { CuratedRecipeInput, GetCuratedRecipesFn } from '../curatedRecipes.js';
+import type { GetCuratedRecipesFn } from '../curatedRecipes.js';
 import { ValidationError } from '../errors.js';
 import { buildGraphQLHousehold } from './householdView.js';
 import { withErrorHandling } from './withErrorHandling.js';
 import { loadIngredientCanonicaliser } from './ingredientCanonicaliser.js';
 import type { CanonicaliserLoader } from './ingredientCanonicaliser.js';
-import { toRecipeIngredientInsert } from './recipeIngredientInput.js';
+import { toBulkCuratedRecipe } from './curatedRecipeSeed.js';
 import type { IngredientCanonicaliser } from '../domain/canonicaliseIngredient.js';
 
 /**
@@ -96,39 +92,6 @@ export const productionDeps: CreateHouseholdResolverDeps = {
   getCuratedRecipes: getCuratedRecipesFromCorpus,
 };
 
-/**
- * Builds the fifth transaction step's `insertRecipe` input for one curated
- * recipe (W16 §22.2.3 D3, §22.2.4 D4) — mirrors `createRecipe.ts`'s own
- * `toInsertRecipeInput`, with two columns FIXED rather than derived from
- * caller input: `sourceType: 'curated'` (never left to `insertRecipe`'s own
- * `'user'`-shaped default) and `sourceUrl: null` (curated recipes carry no
- * source URL). `createdBy` is the household's own creator
- * (`callerUser.id`), never a sentinel user — D3's own locked decision.
- */
-const toInsertCuratedRecipeInput = (
-  householdId: string,
-  input: CuratedRecipeInput,
-  createdBy: string,
-): InsertRecipeInput => ({
-  householdId,
-  sourceType: 'curated',
-  sourceUrl: null,
-  title: input.title,
-  description: input.description ?? null,
-  servings: input.servings ?? 4,
-  prepMin: input.prepMin ?? null,
-  cookMin: input.cookMin ?? null,
-  cuisineTier1: input.cuisineTier1 ?? null,
-  cuisineTier2: input.cuisineTier2 ?? null,
-  dietaryTags: input.dietaryTags ?? [],
-  role: input.role,
-  // Not special-cased for seeded rows (D4) — takes `insertRecipe`'s own
-  // normal default (`true`), identical to a manually created recipe.
-  inRotation: input.inRotation ?? true,
-  steps: input.steps,
-  createdBy,
-});
-
 /** Inserts the household and everything seeded with it, in the caller's open transaction. */
 const createFreshHousehold = async (
   txClient: PoolClient,
@@ -169,18 +132,11 @@ const createFreshHousehold = async (
     // no settings, no partial recipes survive.
     const getCuratedRecipes = deps.getCuratedRecipes ?? getCuratedRecipesNotYetWired;
     const curatedRecipes = getCuratedRecipes();
-    for (const curatedRecipe of curatedRecipes) {
-      const recipe = await insertRecipe(
-        txClient,
-        toInsertCuratedRecipeInput(household.id, curatedRecipe, callerId),
-      );
-      for (const [index, ingredient] of curatedRecipe.ingredients.entries()) {
-        await insertRecipeIngredientRepo(
-          txClient,
-          toRecipeIngredientInsert(recipe.id, ingredient, index, canonicaliser),
-        );
-      }
-    }
+    // Batched: the whole corpus is two multi-row INSERTs, not ~2,400 round trips.
+    await insertRecipesWithIngredients(
+      txClient,
+      curatedRecipes.map((curatedRecipe) => toBulkCuratedRecipe(household.id, curatedRecipe, callerId, canonicaliser)),
+    );
 
     const membership = toGraphQLMembership(
       { ...membershipRow, household, settings },

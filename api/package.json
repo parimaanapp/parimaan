@@ -12,7 +12,8 @@
     "validate:recipes": "vitest run scripts/validateCuratedRecipes.test.ts scripts/validateCuratedRecipes.catalog.test.ts scripts/recipeCatalog.test.ts",
     "wipe:accounts": "tsx scripts/accountWipe.ts",
     "catalog:build": "tsx scripts/buildCatalog.ts",
-    "catalog:backfill": "tsx scripts/backfillIngredientIds.ts"
+    "catalog:backfill": "tsx scripts/backfillIngredientIds.ts",
+    "recipes:topup": "tsx scripts/topUpCuratedRecipes.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "3.1131.0",
