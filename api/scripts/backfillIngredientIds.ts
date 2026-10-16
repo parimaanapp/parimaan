@@ -17,42 +17,12 @@
 import { Pool } from 'pg';
 import { runIngredientBackfill, formatBackfillReport } from '../src/catalog/backfillIngredients.js';
 import { createCanonicaliser } from '../src/domain/canonicaliseIngredient.js';
-import { RDS_GLOBAL_BUNDLE_CA } from '../src/db/rdsGlobalBundleCa.js';
+import { readPgConfig } from './pgEnvConfig.js';
 import { loadCatalog } from '../src/repositories/catalogRepository.js';
-
-const REQUIRED = ['PGHOST', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGPASSWORD'] as const;
-const LOCAL_HOSTS: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '::1']);
-
-const readConfig = (env: NodeJS.ProcessEnv) => {
-  const missing = REQUIRED.filter((name) => (env[name] ?? '').trim() === '');
-  if (missing.length > 0) {
-    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
-  }
-  const host = env['PGHOST'] as string;
-  const port = Number(env['PGPORT']);
-  if (!Number.isInteger(port) || port <= 0) {
-    throw new Error('PGPORT must be a positive integer.');
-  }
-  const servername = (env['PGSERVERNAME'] ?? '').trim();
-  return {
-    host,
-    port,
-    database: env['PGDATABASE'] as string,
-    user: env['PGUSER'] as string,
-    password: env['PGPASSWORD'] as string,
-    ssl: LOCAL_HOSTS.has(host)
-      ? false
-      : {
-          rejectUnauthorized: true,
-          ca: RDS_GLOBAL_BUNDLE_CA,
-          ...(servername === '' ? {} : { servername }),
-        },
-  };
-};
 
 const main = async (): Promise<void> => {
   const execute = process.argv.includes('--execute');
-  const config = readConfig(process.env);
+  const config = readPgConfig(process.env);
   // Explicit parts only, never a connection string (its parameters would override these).
   const pool = new Pool({ ...config, max: 2 });
   try {

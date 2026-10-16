@@ -76,3 +76,12 @@ Rules:
 - **Idempotent**: canonical names re-resolve to themselves and a converted unit is an allowed unit, so a second run changes nothing. It also picks up rows that did not resolve earlier once the catalog gains an alias.
 - Needs a role that bypasses RLS (superuser or `BYPASSRLS`, as the data migrations do); it checks this and refuses otherwise.
 - Environment: `PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD` (optional `PGSERVERNAME`). The catalog must already be synced. No deploy runs it; run it by hand per environment, dry run first.
+
+### Curated recipe top-up (existing households)
+
+New households receive the whole curated corpus at `createHousehold`. Households created before the corpus grew are brought up to date with `pnpm --filter ./api recipes:topup` (`api/scripts/topUpCuratedRecipes.ts`, logic in `api/src/catalog/topUpCuratedRecipes.ts`):
+
+- **Dry run by default**: prints households scanned, households needing recipes and recipes missing; writes nothing. `--execute` applies it, one transaction per household under a transaction-level advisory lock on that household.
+- **Idempotent**: a recipe is skipped when the household already has one with the same title and role (case-insensitive, any source, so a user's own copy is never duplicated). A second run adds nothing.
+- **Same rows as seeding**: `source_type = 'curated'`, owned by the household's primary user, ingredients canonicalised through the catalog (B2b), salt and pepper always staples. Both paths share `toBulkCuratedRecipe` and the batched `insertRecipesWithIngredients`.
+- Needs a role that bypasses RLS (the script refuses otherwise) and `PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD` (optional `PGSERVERNAME`). The catalog must already be synced. No deploy runs it; run it by hand per environment, dry run first.
